@@ -1,0 +1,162 @@
+import React, { useState } from 'react';
+import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock } from 'lucide-react';
+
+export default function SecureBaseLandingZone() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [deploymentLog, setDeploymentLog] = useState([]);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [devEnvStep, setDevEnvStep] = useState('config');
+  const [devConfig, setDevConfig] = useState({
+    environment: 'development',
+    region: 'us-east-1',
+    enabledModules: {
+      core: true,
+      security: true,
+      logging: true,
+      networking: false,
+      identity: true,
+      monitoring: false
+    }
+  });
+
+  const modules = [
+    { id: 'core', name: 'AWS Organizations', icon: Cloud, description: 'Production-grade org structure with account factory and SCP guardrails', resources: ['Organizations', 'OUs', 'Accounts', 'SCPs'], status: 'essential', devCost: '$0/month', compliance: ['CIS', 'SOC2', 'NIST 800-53'] },
+    { id: 'identity', name: 'IAM Identity Center', icon: Users, description: 'Zero long-lived credentials with SSO, MFA enforcement, and break-glass access', resources: ['Identity Center', 'Permission Sets', 'Break-Glass Role', 'Password Policy'], status: 'essential', devCost: '$0/month', compliance: ['CIS', 'SOC2', 'NIST AC/IA'] },
+    { id: 'security', name: 'Security & Compliance', icon: Shield, description: 'GuardDuty, Security Hub, Config Rules, and compliance monitoring', resources: ['GuardDuty', 'Security Hub', 'Config', 'CloudTrail', 'KMS'], status: 'essential', devCost: '$10-15/month', compliance: ['CIS', 'PCI-DSS', 'HIPAA'] },
+    { id: 'logging', name: 'Centralized Logging', icon: Database, description: 'CloudTrail, VPC Flow Logs, and centralized log aggregation', resources: ['CloudTrail', 'CloudWatch', 'S3 Log Buckets', 'VPC Flow Logs'], status: 'essential', devCost: '$5-10/month', compliance: ['NIST AU', 'SOC2', 'RMF'] },
+    { id: 'networking', name: 'Network Foundation', icon: GitBranch, description: 'Transit Gateway, VPC setup, and network segmentation', resources: ['Transit Gateway', 'VPCs', 'Subnets', 'Route Tables', 'NACLs'], status: 'recommended', devCost: '$30-40/month', compliance: ['NIST SC', 'Zero Trust'] },
+    { id: 'monitoring', name: 'Monitoring & Alerts', icon: Eye, description: 'CloudWatch dashboards, alarms, and SNS notifications', resources: ['CloudWatch Dashboards', 'SNS Topics', 'EventBridge Rules'], status: 'recommended', devCost: '$5-8/month', compliance: ['NIST SI', 'SOC2'] }
+  ];
+
+  const features = [
+    { icon: Shield, title: 'Audit-Ready', description: 'CIS, SOC2, NIST 800-53, RMF compliant from day one' },
+    { icon: Zap, title: 'Deploy in Hours', description: 'Production Terraform with no Control Tower dependency' },
+    { icon: Lock, title: 'Zero Trust', description: 'No long-lived credentials, MFA enforced, SCPs enabled' },
+    { icon: CheckCircle, title: 'Fintech Grade', description: 'Built for fintech audits and government requirements' },
+    { icon: GitBranch, title: 'Multi-Account', description: 'Opinionated OU structure with blast-radius control' },
+    { icon: Eye, title: 'Break-Glass Ready', description: 'Auditor-approved emergency access with CloudTrail logging' }
+  ];
+
+  const addLog = (message, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDeploymentLog(prev => [...prev, { timestamp, message, type }]);
+  };
+
+  const simulateDeployment = async () => {
+    setIsDeploying(true);
+    setDeploymentLog([]);
+    setDevEnvStep('deploying');
+    const steps = [
+      { msg: 'Initializing Terraform backend...', delay: 1000 },
+      { msg: 'Validating AWS credentials...', delay: 800 },
+      { msg: 'Creating terraform.tfvars...', delay: 600 },
+      { msg: '✓ Terraform initialized successfully', delay: 500, type: 'success' },
+    ];
+    for (const step of steps) {
+      await new Promise(resolve => setTimeout(resolve, step.delay));
+      addLog(step.msg, step.type || 'info');
+    }
+    setIsDeploying(false);
+    setDevEnvStep('complete');
+  };
+
+  const moduleDetails = {
+    core: `Module 1: AWS Organizations\nProduction-grade structure with SCP guardrails.`,
+    identity: `Module 2: IAM Identity Center\nEscaped Var: AWS = "arn:aws:iam::\${var.management_account_id}:root"`,
+    security: `Module 3: Security & Compliance\nGuardDuty and Security Hub automation.`,
+    logging: `Module 4: Centralized Logging\nS3 Bucket: "\${var.org_name}-logs"`,
+    networking: `Module 5: Networking\nTransit Gateway and VPC Hub-Spoke.`,
+    monitoring: `Module 6: Monitoring\nCloudWatch Dashboards and Alarms.`
+  };
+
+  const quickStartCode = `git clone https://github.com/securebase/terraform\nterraform init\nterraform apply`;
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white font-sans">
+      {/* Header */}
+      <header className="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Shield className="text-blue-500 w-8 h-8" />
+            <span className="text-2xl font-bold tracking-tight">SecureBase</span>
+          </div>
+          <nav className="flex gap-6">
+            <button onClick={() => setActiveTab('overview')} className={`text-sm ${activeTab === 'overview' ? 'text-blue-400' : 'text-slate-400'}`}>Overview</button>
+            <button onClick={() => setActiveTab('modules')} className={`text-sm ${activeTab === 'modules' ? 'text-blue-400' : 'text-slate-400'}`}>Modules</button>
+            <button onClick={() => setActiveTab('devenv')} className="bg-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition">Deploy</button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {activeTab === 'overview' && (
+          <div className="space-y-16">
+            <section className="text-center space-y-6">
+              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">AWS Landing Zone for Fintech</h1>
+              <p className="text-slate-400 text-xl max-w-2xl mx-auto">Production-ready Terraform modules. Built for SOC2, HIPAA, and PCI-DSS compliance.</p>
+            </section>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              {features.map((f, i) => (
+                <div key={i} className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700">
+                  <f.icon className="text-blue-500 mb-4" />
+                  <h3 className="text-lg font-bold mb-2">{f.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{f.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'modules' && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {modules.map((m) => (
+              <div key={m.id} className="p-6 bg-slate-800 rounded-xl border border-slate-700 hover:border-blue-500 transition cursor-pointer" onClick={() => setSelectedModule(m.id)}>
+                <div className="flex justify-between items-start mb-4">
+                  <m.icon className="text-blue-400" size={32} />
+                  <span className="text-xs font-mono text-blue-300 bg-blue-500/10 px-2 py-1 rounded">{m.status}</span>
+                </div>
+                <h3 className="text-xl font-bold mb-2">{m.name}</h3>
+                <p className="text-slate-400 text-sm mb-4">{m.description}</p>
+                {selectedModule === m.id && (
+                  <pre className="mt-4 p-4 bg-black/50 rounded text-xs text-green-400 overflow-x-auto">
+                    {moduleDetails[m.id]}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'devenv' && (
+          <div className="max-w-3xl mx-auto bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+            <div className="p-8 border-b border-slate-700">
+              <h2 className="text-2xl font-bold mb-2">Simulated Deployment</h2>
+              <p className="text-slate-400">Configure and test your landing zone deployment.</p>
+            </div>
+            <div className="p-8 space-y-6">
+              <button 
+                onClick={simulateDeployment} 
+                disabled={isDeploying}
+                className="w-full py-4 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                {isDeploying ? <Clock className="animate-spin" /> : <Rocket />}
+                {isDeploying ? 'Deploying...' : 'Start Production Deployment'}
+              </button>
+              
+              <div className="bg-black rounded-lg p-4 font-mono text-sm h-64 overflow-y-auto">
+                {deploymentLog.map((log, i) => (
+                  <div key={i} className={log.type === 'success' ? 'text-green-400' : 'text-slate-300'}>
+                    <span className="text-slate-600">[{log.timestamp}]</span> {log.message}
+                  </div>
+                ))}
+                {deploymentLog.length === 0 && <span className="text-slate-600">Waiting for deployment...</span>}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,24 @@
+# SecureBase Development Environment Configuration
+
+organization_name = "acme-corp-dev"
+
+accounts = {
+  "security-log-archive-dev" = {
+    email = "aws-logs-dev@acme.com"
+    ou_id = "REPLACE_WITH_SECURITY_OU_ID"
+  }
+  "dev-workload" = {
+    email = "aws-dev@acme.com"
+    ou_id = "REPLACE_WITH_WORKLOADS_OU_ID"
+  }
+}
+
+allowed_regions = ["us-east-1", "us-west-2"]
+
+management_account_id = "123456789012"
+
+tags = {
+  Environment = "development"
+  ManagedBy   = "Terraform"
+  Project     = "SecureBase"
+}
