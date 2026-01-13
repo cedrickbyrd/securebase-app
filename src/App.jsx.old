@@ -1,0 +1,857 @@
+import React, { useState } from 'react';
+import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock } from 'lucide-react';
+
+  
+
+// ... (keep your imports at the top)
+
+export default function SecureBaseLandingZone() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedModule, setSelectedModule] = useState(null);
+
+  // Use backticks for multi-line strings
+  // NOTE: If you see ${} inside these strings, change them to \${} 
+  // to tell React "this is just text, not a variable"
+  
+  const quickStart = `
+# SecureBase - AWS Landing Zone Terraform
+# ... (rest of your markdown)
+`;
+
+  // Check your moduleDetails object specifically. 
+  // Any AWS ARN or Terraform variable using ${} needs a backslash:
+  const moduleDetails = {
+    core: `
+      # Example fix for the error you saw:
+      AWS = "arn:aws:iam::\${var.management_account_id}:root"
+    `,
+    // ... apply the same \${} fix to other modules
+  };
+
+  // ... (rest of your component return)
+}
+  const [deploymentLog, setDeploymentLog] = useState([]);
+  const [isDeploying, setIsDeploying] = useState(false);
+
+  const modules = [
+    {
+      id: 'core',
+      name: 'AWS Organizations',
+      icon: Cloud,
+      description: 'Production-grade org structure with account factory and SCP guardrails',
+      resources: ['Organizations', 'OUs', 'Accounts', 'SCPs'],
+      status: 'essential',
+      devCost: '$0/month',
+      compliance: ['CIS', 'SOC2', 'NIST 800-53']
+    },
+    {
+      id: 'identity',
+      name: 'IAM Identity Center',
+      icon: Users,
+      description: 'Zero long-lived credentials with SSO, MFA enforcement, and break-glass access',
+      resources: ['Identity Center', 'Permission Sets', 'Break-Glass Role', 'Password Policy'],
+      status: 'essential',
+      devCost: '$0/month',
+      compliance: ['CIS', 'SOC2', 'NIST AC/IA']
+    },
+    {
+      id: 'security',
+      name: 'Security & Compliance',
+      icon: Shield,
+      description: 'GuardDuty, Security Hub, Config Rules, and compliance monitoring',
+      resources: ['GuardDuty', 'Security Hub', 'Config', 'CloudTrail', 'KMS'],
+      status: 'essential',
+      devCost: '$10-15/month',
+      compliance: ['CIS', 'PCI-DSS', 'HIPAA']
+    },
+    {
+      id: 'logging',
+      name: 'Centralized Logging',
+      icon: Database,
+      description: 'CloudTrail, VPC Flow Logs, and centralized log aggregation',
+      resources: ['CloudTrail', 'CloudWatch', 'S3 Log Buckets', 'VPC Flow Logs'],
+      status: 'essential',
+      devCost: '$5-10/month',
+      compliance: ['NIST AU', 'SOC2', 'RMF']
+    },
+    {
+      id: 'networking',
+      name: 'Network Foundation',
+      icon: GitBranch,
+      description: 'Transit Gateway, VPC setup, and network segmentation',
+      resources: ['Transit Gateway', 'VPCs', 'Subnets', 'Route Tables', 'NACLs'],
+      status: 'recommended',
+      devCost: '$30-40/month',
+      compliance: ['NIST SC', 'Zero Trust']
+    },
+    {
+      id: 'monitoring',
+      name: 'Monitoring & Alerts',
+      icon: Eye,
+      description: 'CloudWatch dashboards, alarms, and SNS notifications',
+      resources: ['CloudWatch Dashboards', 'SNS Topics', 'EventBridge Rules'],
+      status: 'recommended',
+      devCost: '$5-8/month',
+      compliance: ['NIST SI', 'SOC2']
+    }
+  ];
+
+  const features = [
+    { icon: Shield, title: 'Audit-Ready', description: 'CIS, SOC2, NIST 800-53, RMF compliant from day one' },
+    { icon: Zap, title: 'Deploy in Hours', description: 'Production Terraform with no Control Tower dependency' },
+    { icon: Lock, title: 'Zero Trust', description: 'No long-lived credentials, MFA enforced, SCPs enabled' },
+    { icon: CheckCircle, title: 'Fintech Grade', description: 'Built for fintech audits and government requirements' },
+    { icon: GitBranch, title: 'Multi-Account', description: 'Opinionated OU structure with blast-radius control' },
+    { icon: Eye, title: 'Break-Glass Ready', description: 'Auditor-approved emergency access with CloudTrail logging' }
+  ];
+
+  const addLog = (message, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDeploymentLog(prev => [...prev, { timestamp, message, type }]);
+  };
+
+  const simulateDeployment = async () => {
+    setIsDeploying(true);
+    setDeploymentLog([]);
+    setDevEnvStep('deploying');
+
+    const steps = [
+      { msg: 'Initializing Terraform backend...', delay: 1000 },
+      { msg: 'Validating AWS credentials...', delay: 800 },
+      { msg: 'Creating terraform.tfvars from configuration...', delay: 600 },
+      { msg: 'Running terraform init...', delay: 1200 },
+      { msg: '✓ Terraform initialized successfully', delay: 500, type: 'success' },
+      { msg: 'Generating deployment plan...', delay: 1500 },
+      { msg: 'Planning to create 23 resources...', delay: 800 },
+    ];
+
+    if (devConfig.enabledModules.core) {
+      steps.push(
+        { msg: '[Core] Creating AWS Organization...', delay: 1000 },
+        { msg: '[Core] Configuring organizational units...', delay: 800 },
+        { msg: '[Core] ✓ Core infrastructure ready', delay: 600, type: 'success' }
+      );
+    }
+
+    if (devConfig.enabledModules.security) {
+      steps.push(
+        { msg: '[Security] Enabling GuardDuty...', delay: 1200 },
+        { msg: '[Security] Configuring Security Hub...', delay: 900 },
+        { msg: '[Security] Setting up Config rules...', delay: 800 },
+        { msg: '[Security] ✓ Security services active', delay: 600, type: 'success' }
+      );
+    }
+
+    if (devConfig.enabledModules.logging) {
+      steps.push(
+        { msg: '[Logging] Creating S3 buckets for logs...', delay: 1000 },
+        { msg: '[Logging] Enabling CloudTrail...', delay: 900 },
+        { msg: '[Logging] ✓ Logging infrastructure deployed', delay: 600, type: 'success' }
+      );
+    }
+
+    steps.push(
+      { msg: '', delay: 500 },
+      { msg: '🎉 Deployment complete!', delay: 1000, type: 'success' },
+      { msg: `Environment: ${devConfig.environment}`, delay: 300, type: 'info' },
+      { msg: `Region: ${devConfig.region}`, delay: 300, type: 'info' },
+      { msg: 'Next: Review resources in AWS Console', delay: 500, type: 'info' }
+    );
+
+    for (const step of steps) {
+      await new Promise(resolve => setTimeout(resolve, step.delay));
+      addLog(step.msg, step.type || 'info');
+    }
+
+    setIsDeploying(false);
+    setDevEnvStep('complete');
+  };
+
+  const calculateCost = () => {
+    let total = 0;
+    Object.entries(devConfig.enabledModules).forEach(([key, enabled]) => {
+      if (enabled) {
+        const module = modules.find(m => m.id === key);
+        if (module?.devCost) {
+          const cost = module.devCost.match(/\$(\d+)/);
+          if (cost) total += parseInt(cost[1]);
+        }
+      }
+    });
+    return total;
+  };
+
+  const quickStart = `SecureBase - AWS Landing Zone Terraform
+
+Quick Start (5 minutes)
+
+Prerequisites:
+- AWS Account with admin access
+- Terraform 1.5.0 or later
+- AWS CLI configured
+
+Step 1: Clone and Initialize
+git clone https://github.com/yourorg/securebase-terraform
+cd securebase-terraform
+
+Step 2: Configure Your Environment
+cp terraform.tfvars.example terraform.tfvars
+Edit terraform.tfvars with your organization details
+
+Step 3: Review the Plan
+terraform init
+terraform plan -out=landing-zone.tfplan
+
+Step 4: Deploy
+terraform apply landing-zone.tfplan
+
+Step 5: Verify Deployment
+./scripts/verify-deployment.sh
+
+What Gets Deployed:
+- Management Account: Organization root with billing
+- Security Account: GuardDuty, Security Hub, Config
+- Log Archive Account: Centralized logging
+- Audit Account: Read-only access for auditors
+- Workload Accounts: Dev, Staging, Production
+
+Configuration Example:
+organization_name = "acme-corp"
+root_email = "aws-root@acme.com"
+
+Account structure with emails and SSO groups
+Compliance frameworks: soc2, hipaa, pci
+Network configuration with VPC CIDR and availability zones
+Transit Gateway enabled for multi-account networking`;
+  const moduleDetails = {
+    core: `Module 1: AWS Organizations and Account Factory
+
+Production-grade Terraform for AWS Organizations with fintech and government compliance.
+
+Account Structure:
+- Management (root)
+- Security OU (Log Archive, Audit)
+- Shared Services OU (Networking, CI/CD)
+- Workloads OU (Prod, NonProd)
+
+Service Control Policies:
+- Deny root user access
+- Deny public S3 buckets
+- Enforce MFA
+- Region restrictions
+
+Compliance:
+- CIS AWS Foundations
+- SOC2 Type II
+- NIST 800-53
+- No Control Tower dependency`,
+
+    security: `# Security & Compliance Module
+
+Implements security services across all accounts.
+
+## Resources Created
+
+### GuardDuty
+- Multi-account GuardDuty with delegated administrator
+- Automatic member invitation
+- S3 and EKS protection enabled
+
+### Security Hub
+- CIS AWS Foundations Benchmark
+- PCI DSS standard
+- AWS Foundational Security Best Practices
+
+### AWS Config
+\`\`\`hcl
+module "security_compliance" {
+  source = "./modules/security"
+
+  compliance_frameworks = ["soc2", "hipaa", "pci"]
+  
+  guardduty_config = {
+    enable_s3_protection       = true
+    enable_eks_protection      = true
+    finding_publishing_frequency = "FIFTEEN_MINUTES"
+  }
+
+  config_rules = [
+    "encrypted-volumes",
+    "rds-encryption-enabled",
+    "s3-bucket-public-read-prohibited",
+    "iam-password-policy",
+    "mfa-enabled-for-iam-console-access"
+  ]
+}
+\`\`\`
+
+### KMS Keys
+- Automatic key rotation
+- Cross-account access for logs
+- CloudTrail encryption`,
+
+    logging: `# Centralized Logging Module
+
+Aggregates all logs in dedicated Log Archive account.
+
+## Resources Created
+
+### CloudTrail
+\`\`\`hcl
+module "centralized_logging" {
+  source = "./modules/logging"
+
+  log_retention_days = 365
+  
+  cloudtrail_config = {
+    enable_log_file_validation = true
+    include_global_service_events = true
+    is_multi_region_trail = true
+    enable_logging = true
+  }
+  
+  log_bucket_lifecycle = {
+    transition_to_glacier_days = 90
+    expiration_days = 2555  # 7 years
+  }
+}
+\`\`\`
+
+### S3 Log Buckets
+- Versioning enabled
+- MFA delete protection
+- Lifecycle policies (IA → Glacier → Delete)
+- Cross-account access policies
+
+### VPC Flow Logs
+- All VPCs across all accounts
+- Centralized to Log Archive account
+- Retention: 365 days`,
+
+    networking: `# Network Foundation Module
+
+Creates secure, scalable network architecture.
+
+## Resources Created
+
+### Transit Gateway
+\`\`\`hcl
+module "network_foundation" {
+  source = "./modules/networking"
+
+  vpc_configurations = {
+    production = {
+      cidr = "10.0.0.0/16"
+      availability_zones = 3
+      nat_gateway_per_az = true
+      enable_dns_hostnames = true
+    }
+    staging = {
+      cidr = "10.1.0.0/16"
+      availability_zones = 2
+    }
+  }
+
+  transit_gateway_config = {
+    amazon_side_asn = 64512
+    auto_accept_shared_attachments = "enable"
+    default_route_table_association = "disable"
+  }
+}
+\`\`\`
+
+### VPC Architecture
+- Public subnets (NAT Gateways, Load Balancers)
+- Private subnets (Application tier)
+- Database subnets (Isolated tier)
+- Network ACLs for defense in depth
+
+### Connectivity
+- VPC peering connections
+- Transit Gateway attachments
+- Route table configurations`,
+
+    identity: `# Module 2: iam — Identity Center + Role Model
+
+Zero long-lived credentials, MFA enforced, auditor-friendly.
+
+## modules/iam/main.tf
+
+\`\`\`hcl
+# IAM Identity Center (SSO)
+data "aws_ssoadmin_instances" "this" {}
+
+locals {
+  sso_instance_arn = data.aws_ssoadmin_instances.this.arns[0]
+}
+
+# Permission Set: Admin (Emergency Only)
+resource "aws_ssoadmin_permission_set" "admin" {
+  name         = "AdminAccess"
+  instance_arn = local.sso_instance_arn
+  session_duration = "PT1H"  # 1 hour max
+}
+
+resource "aws_ssoadmin_managed_policy_attachment" "admin" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.admin.arn
+  managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Permission Set: Platform Engineer (Day-to-Day)
+resource "aws_ssoadmin_permission_set" "platform" {
+  name         = "PlatformEngineer"
+  instance_arn = local.sso_instance_arn
+  session_duration = "PT4H"  # 4 hours
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "platform" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.platform.arn
+
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:*",
+          "ecs:*",
+          "eks:*",
+          "lambda:*",
+          "s3:*",
+          "rds:*",
+          "dynamodb:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Deny"
+        Action = [
+          "iam:*",
+          "organizations:*",
+          "account:*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Permission Set: Read-Only Auditor (Critical for Gov + Fintech)
+resource "aws_ssoadmin_permission_set" "auditor" {
+  name         = "ReadOnlyAuditor"
+  instance_arn = local.sso_instance_arn
+  session_duration = "PT8H"  # 8 hours
+}
+
+resource "aws_ssoadmin_managed_policy_attachment" "auditor_readonly" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.auditor.arn
+  managed_policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_ssoadmin_managed_policy_attachment" "auditor_cloudtrail" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.auditor.arn
+  managed_policy_arn = "arn:aws:iam::aws:policy/CloudTrailReadOnlyAccess"
+}
+\`\`\`
+
+## Break-Glass Role (Required for Audits)
+
+\`\`\`hcl
+resource "aws_iam_role" "break_glass" {
+  name = "BreakGlassAdmin"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = "arn:aws:iam::${var.management_account_id}:root"
+      }
+      Action = "sts:AssumeRole"
+      Condition = {
+        Bool = {
+          "aws:MultiFactorAuthPresent" = "true"
+        }
+      }
+    }]
+  })
+
+  max_session_duration = 3600  # 1 hour max
+}
+
+resource "aws_iam_role_policy_attachment" "break_glass_admin" {
+  role       = aws_iam_role.break_glass.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+\`\`\`
+
+## Mandatory IAM Password Policy
+
+\`\`\`hcl
+resource "aws_iam_account_password_policy" "strict" {
+  minimum_password_length        = 16
+  require_uppercase_characters   = true
+  require_lowercase_characters   = true
+  require_numbers                = true
+  require_symbols                = true
+  max_password_age               = 90
+  password_reuse_prevention      = 24
+  allow_users_to_change_password = true
+  hard_expiry                    = false
+}
+\`\`\`
+
+## Account Assignment Example
+
+\`\`\`hcl
+# Assign Platform Engineers to Prod account
+resource "aws_ssoadmin_account_assignment" "platform_prod" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.platform.arn
+
+  principal_id   = aws_identitystore_group.platform_engineers.group_id
+  principal_type = "GROUP"
+
+  target_id   = aws_organizations_account.accounts["prod-app"].id
+  target_type = "AWS_ACCOUNT"
+}
+\`\`\`
+
+## Why This Sells
+
+✅ Meets CIS AWS Foundations
+✅ Maps to NIST 800-53 AC/IA/AU families
+✅ Works for:
+  - Fintech SOC2 compliance
+  - Government RMF pre-ATO
+  - Healthcare HIPAA requirements
+  
+🔒 Controls:
+  - Manual MFA device required
+  - Credentials stored offline
+  - All access logged via CloudTrail
+  - Auditor read-only access built-in`,
+
+    monitoring: `# Monitoring & Alerts Module
+
+Provides visibility and incident response.
+
+## Resources Created
+
+### CloudWatch Dashboards
+\`\`\`hcl
+module "monitoring_alerts" {
+  source = "./modules/monitoring"
+
+  alert_email = "ops-team@example.com"
+  
+  critical_alarms = [
+    "root-account-usage",
+    "unauthorized-api-calls",
+    "iam-policy-changes",
+    "security-group-changes",
+    "network-acl-changes"
+  ]
+
+  cost_anomaly_detection = {
+    enabled = true
+    threshold_percentage = 20
+  }
+}
+\`\`\`
+
+### EventBridge Rules
+- Security findings (GuardDuty, Security Hub)
+- Compliance changes (Config)
+- Cost anomalies
+- Service health events
+
+### SNS Topics
+- Critical security alerts
+- Compliance notifications
+- Cost alerts
+- Operational notifications`
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+      {/* Header */}
+      <header className="border-b border-blue-800 bg-slate-900/50 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Shield className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">SecureBase</h1>
+                <p className="text-blue-300 text-sm">AWS Landing Zone Terraform</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition">
+                <Download className="w-4 h-4" />
+                Download
+              </button>
+              <button 
+                onClick={() => setActiveTab('devenv')}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg flex items-center gap-2 transition"
+              >
+                <Rocket className="w-4 h-4" />
+                Deploy Dev Env
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="max-w-7xl mx-auto px-6 py-16 text-center">
+        <div className="inline-block px-4 py-2 bg-blue-600/20 border border-blue-500/50 rounded-full text-blue-300 text-sm mb-6">
+          Production-Grade Terraform • CIS Compliant • SOC2 + Gov Ready
+        </div>
+        <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+          Fintech & Gov-Ready AWS Landing Zone
+        </h2>
+        <p className="text-xl text-blue-200 max-w-3xl mx-auto mb-8">
+          Real Terraform modules with zero Control Tower dependency. Built for SOC2, NIST 800-53, RMF, and fintech audits. Deploy in hours with production-grade security controls.
+        </p>
+        
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-6 max-w-4xl mx-auto mt-12">
+          <div className="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700">
+            <div className="text-3xl font-bold text-green-400">2-4hrs</div>
+            <div className="text-sm text-slate-400">Deployment Time</div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700">
+            <div className="text-3xl font-bold text-blue-400">50+</div>
+            <div className="text-sm text-slate-400">Security Controls</div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700">
+            <div className="text-3xl font-bold text-purple-400">6</div>
+            <div className="text-sm text-slate-400">Core Modules</div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700">
+            <div className="text-3xl font-bold text-cyan-400">100%</div>
+            <div className="text-sm text-slate-400">IaC Coverage</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <h3 className="text-3xl font-bold mb-12 text-center">Why SecureBase?</h3>
+        <div className="grid grid-cols-3 gap-8">
+          {features.map((feature, idx) => (
+            <div key={idx} className="bg-slate-800/50 backdrop-blur rounded-lg p-6 border border-slate-700 hover:border-blue-500 transition">
+              <feature.icon className="w-10 h-10 text-blue-400 mb-4" />
+              <h4 className="text-xl font-semibold mb-2">{feature.title}</h4>
+              <p className="text-slate-400">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Tabs */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex gap-2 mb-8 border-b border-slate-700">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-6 py-3 font-semibold transition ${
+              activeTab === 'overview'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('modules')}
+            className={`px-6 py-3 font-semibold transition ${
+              activeTab === 'modules'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Modules
+          </button>
+          <button
+            onClick={() => setActiveTab('quickstart')}
+            className={`px-6 py-3 font-semibold transition ${
+              activeTab === 'quickstart'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Quick Start
+          </button>
+          <button
+            onClick={() => setActiveTab('devenv')}
+            className={`px-6 py-3 font-semibold transition flex items-center gap-2 ${
+              activeTab === 'devenv'
+                ? 'text-green-400 border-b-2 border-green-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Rocket className="w-4 h-4" />
+            Dev Environment
+          </button>
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            <div className="bg-slate-800/50 backdrop-blur rounded-lg p-8 border border-slate-700">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Settings className="w-6 h-6 text-blue-400" />
+                Architecture Overview
+              </h3>
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 text-blue-300">Account Structure</h4>
+                  <ul className="space-y-2 text-slate-300">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span><strong>Management Account:</strong> Organization root, billing consolidation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span><strong>Security Account:</strong> GuardDuty, Security Hub, Config aggregation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span><strong>Log Archive Account:</strong> Centralized logging and retention</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span><strong>Audit Account:</strong> Read-only access for compliance teams</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span><strong>Workload Accounts:</strong> Dev, Staging, Production isolation</span>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 text-blue-300">Security Controls</h4>
+                  <ul className="space-y-2 text-slate-300">
+                    <li className="flex items-start gap-2">
+                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>Multi-region CloudTrail with log validation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>GuardDuty threat detection across all accounts</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>AWS Config compliance monitoring with auto-remediation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>Encryption at rest and in transit (KMS, TLS)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span>Service Control Policies enforcing security baselines</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-amber-900/20 to-amber-800/20 border border-amber-700/50 rounded-lg p-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-amber-300 mb-2">Important Prerequisites</h4>
+                  <ul className="text-amber-100 space-y-1 text-sm">
+                    <li>• AWS account with no existing Organizations (or willingness to migrate)</li>
+                    <li>• Admin access to create Organizations and accounts</li>
+                    <li>• Valid email addresses for each account (must be unique)</li>
+                    <li>• Terraform 1.5.0 or later installed locally</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modules Tab */}
+        {activeTab === 'modules' && (
+          <div className="grid grid-cols-2 gap-6">
+            {modules.map((module) => (
+              <div
+                key={module.id}
+                onClick={() => setSelectedModule(module.id)}
+                className={`bg-slate-800/50 backdrop-blur rounded-lg p-6 border cursor-pointer transition ${
+                  selectedModule === module.id
+                    ? 'border-blue-500 ring-2 ring-blue-500/50'
+                    : 'border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <module.icon className="w-8 h-8 text-blue-400" />
+                    <div>
+                      <h4 className="text-lg font-semibold">{module.name}</h4>
+                                              <div className="flex gap-2 mt-1">
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          module.status === 'essential'
+                            ? 'bg-red-900/30 text-red-300'
+                            : 'bg-blue-900/30 text-blue-300'
+                        }`}>
+                          {module.status}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded bg-green-900/30 text-green-300">
+                          {module.devCost}
+                        </span>
+                      </div>
+                      {module.compliance && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {module.compliance.map((comp, idx) => (
+                            <span key={idx} className="text-xs px-1.5 py-0.5 bg-purple-900/30 text-purple-300 rounded">
+                              {comp}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-slate-400 mb-4 text-sm">{module.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  {module.resources.map((resource, idx) => (
+                    <span key={idx} className="text-xs px-2 py-1 bg-slate-700/50 rounded text-slate-300">
+                      {resource}
+                    </span>
+                  ))}
+                </div>
+                
+                {selectedModule === module.id && moduleDetails[module.id] && (
+                  <div className="mt-6 pt-6 border-t border-slate-700">
+                    <pre className="bg-slate-900/80 p-4 rounded text-xs overflow-x-auto text-slate-300 border border-slate-700">
+                      {moduleDetails[module.id]}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Quick Start Tab */}
+        {activeTab === 'quickstart' && (
+          <div className="bg-slate-800/50 backdrop-blur rounded-lg border border-slate-700">
+            <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <FileCode className="w-6 h-6 text-blue-400" />
+                Quick Start Guide
+              </h3>
+              <button className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                Copy All
+              </button>
