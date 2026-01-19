@@ -88,21 +88,24 @@ resource "aws_organizations_policy" "block_iam_users" {
 resource "aws_guardduty_detector" "org" {
   enable = true
 }
-resource "aws_guardduty_organization_configuration" "org" {
-  detector_id                      = aws_guardduty_detector.org.id
-  auto_enable_organization_members = "ALL"
 
-  datasources {
-    s3_logs {
-      auto_enable = true
-    }
-    kubernetes {
-      audit_logs {
-        enable = true
-      }
-    }
-  }
-}
+# Note: GuardDuty organization configuration requires delegated administrator
+# Commented out for initial deployment - enable after org is fully set up
+#resource "aws_guardduty_organization_configuration" "org" {
+#  detector_id                      = aws_guardduty_detector.org.id
+#  auto_enable_organization_members = "ALL"
+#
+#  datasources {
+#    s3_logs {
+#      auto_enable = true
+#    }
+#    kubernetes {
+#      audit_logs {
+#        enable = true
+#      }
+#    }
+#  }
+#}
 
 #resource "aws_guardduty_organization_configuration" "org" {
 #  detector_id = aws_guardduty_detector.org.id
@@ -115,7 +118,10 @@ resource "aws_guardduty_organization_configuration" "org" {
 
 resource "aws_securityhub_account" "org" {}
 
-resource "aws_securityhub_organization_configuration" "org" {
-  auto_enable = true
-}
+# Note: Security Hub organization configuration requires delegated administrator
+# This must be configured after organization is set up with dedicated security account
+# Commented out for initial deployment
+#resource "aws_securityhub_organization_configuration" "org" {
+#  auto_enable = true
+#}
 

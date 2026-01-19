@@ -1,0 +1,10 @@
+# Example backend configuration for Terraform remote state
+# Copy to environments/<env>/backend.hcl and update values
+
+bucket = "<org>-terraform-state-<env>"      # e.g., securebase-terraform-state-dev
+key    = "landing-zone/terraform.tfstate"   # path within bucket
+region = "us-east-1"                        # choose your AWS region
+encrypt = true
+
+# Locking: prefer S3 lockfile (Terraform >= 1.5)
+use_lockfile = true

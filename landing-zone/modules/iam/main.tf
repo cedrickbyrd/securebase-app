@@ -37,6 +37,28 @@ resource "aws_ssoadmin_permission_set" "platform" {
   description      = "Platform engineering team - daily operations"
 }
 
+# AWS Config role for this organization's management account
+resource "aws_iam_role" "aws_config_role" {
+  name        = "AWSConfigRole"
+  description = "Role for AWS Config to record and evaluate configuration"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "config.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Purpose   = "ConfigRecorder"
+    ManagedBy = "Terraform"
+  }
+}
+
 resource "aws_iam_role" "break_glass" {
   name                 = "BreakGlassAdmin"
   max_session_duration = 3600
