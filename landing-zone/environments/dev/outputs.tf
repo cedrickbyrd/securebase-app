@@ -1,40 +1,44 @@
 output "organization_id" {
   description = "AWS Organization ID"
-  value       = module.org.organization_id
+  value       = module.securebase.organization_id
+}
+
+output "organization_arn" {
+  description = "AWS Organization ARN"
+  value       = module.securebase.organization_arn
 }
 
 output "security_ou_id" {
-  description = "Security OU ID - use this in terraform.tfvars"
-  value       = module.org.security_ou_id
+  description = "Security OU ID"
+  value       = module.securebase.security_ou_id
 }
 
 output "shared_ou_id" {
-  description = "Shared Services OU ID - use this in terraform.tfvars"
-  value       = module.org.shared_ou_id
+  description = "Shared Services OU ID"
+  value       = module.securebase.shared_ou_id
 }
 
 output "workloads_ou_id" {
-  description = "Workloads OU ID - use this in terraform.tfvars"
-  value       = module.org.workloads_ou_id
+  description = "Workloads OU ID"
+  value       = module.securebase.workloads_ou_id
 }
 
-output "account_ids" {
-  description = "Created account IDs"
-  value       = module.org.account_ids
+output "client_account_ids" {
+  description = "Map of client names to their AWS account IDs"
+  value       = module.securebase.client_account_ids
 }
 
-output "break_glass_role_arn" {
-  description = "Break-glass emergency role ARN"
-  value       = module.iam.break_glass_role_arn
-}
-output "organization_console_url" {
-  description = "Console login URL for TxImhotep organization"
-  value       = module.organization.console_login_url
+output "client_details" {
+  description = "Detailed information about deployed clients"
+  value       = module.securebase.client_details
 }
 
-output "organization_account_alias" {
-  description = "IAM account alias for the management account"
-  value       = module.organization.account_alias
+output "customer_ou_ids" {
+  description = "Map of customer tier OUs to their IDs"
+  value       = module.securebase.customer_ou_ids
 }
 
-# Your existing outputs remain below...
+output "central_log_bucket" {
+  description = "Central logging S3 bucket name"
+  value       = module.securebase.central_log_bucket
+}

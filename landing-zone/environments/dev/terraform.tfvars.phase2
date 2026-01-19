@@ -1,0 +1,43 @@
+# SecureBase Phase 2 Deployment Configuration
+# Copy this to terraform.tfvars to enable Phase 2 deployment
+
+org_name       = "SecureBase-Phase2"
+target_region  = "us-east-1"
+environment    = "dev"
+
+# Phase 2 Database Configuration
+enable_phase2          = true
+max_aurora_capacity    = 4                    # Max 4 ACUs for dev
+min_aurora_capacity    = 0.5                  # Min 0.5 ACUs (auto-scales down)
+rds_backup_retention   = 35                   # 35-day backup retention
+
+# Leave null to auto-create VPC and subnets
+default_vpc_id         = null
+database_subnets       = null
+lambda_subnets         = null
+
+# Common Tags
+tags = {
+  Project   = "SecureBase"
+  Phase     = "Phase2-Database"
+  ManagedBy = "Terraform"
+  Environment = "dev"
+}
+
+# Multi-Tenant Client Configuration (Optional for Phase 2)
+clients = {
+  # Example customer configurations (uncomment to add)
+  # customer_a = {
+  #   tier         = "standard"
+  #   email        = "aws+customer-a@yourdomain.com"
+  #   prefix       = "cust-a"
+  #   framework    = "soc2"
+  #   vpc_cidr     = "10.1.0.0/16"
+  #   tags = {
+  #     Customer = "Customer-A"
+  #     Tier     = "Standard"
+  #   }
+  # }
+}
+
+enable_vpc = false  # Disable per-customer VPCs for Phase 2 dev (use shared VPC)
