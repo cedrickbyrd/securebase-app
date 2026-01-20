@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBase - Compliant AWS Infrastructure in 48 Hours</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-20">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-5xl font-bold mb-4">SecureBase</h1>
+            <p class="text-xl mb-8">Deploy compliant AWS infrastructure in 48 hours, not 12 months</p>
+            <div class="bg-yellow-400 text-black inline-block px-6 py-3 rounded-full font-semibold">
+                🎉 50% OFF PILOT PROGRAM - First 20 Customers Only!
+            </div>
+        </div>
+    </header>
+
+    <!-- Pricing Tiers -->
+    <section class="py-16">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">Choose Your Compliance Framework</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                
+                <!-- Standard Tier -->
+                <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-gray-200">
+                    <h3 class="text-xl font-bold mb-2">Standard</h3>
+                    <p class="text-gray-600 mb-4">CIS Foundations Benchmark</p>
+                    <div class="mb-4">
+                        <span class="text-3xl font-bold">$1,000</span>
+                        <span class="text-gray-500 line-through ml-2">$2,000</span>
+                        <p class="text-sm text-green-600">50% off pilot pricing</p>
+                    </div>
+                    <ul class="text-sm mb-6 space-y-2">
+                        <li>✅ CIS AWS Foundations</li>
+                        <li>✅ Security Hub monitoring</li>
+                        <li>✅ CloudTrail logging</li>
+                        <li>✅ 90-day retention</li>
+                        <li>✅ Email support</li>
+                    </ul>
+                    <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition" 
+                            onclick="selectTier('standard', 1000)">
+                        Start Pilot Trial
+                    </button>
+                </div>
+
+                <!-- Fintech Tier -->
+                <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-500 relative">
+                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-sm">
+                        Most Popular
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Fintech</h3>
+                    <p class="text-gray-600 mb-4">SOC2 Type II Compliance</p>
+                    <div class="mb-4">
+                        <span class="text-3xl font-bold">$4,000</span>
+                        <span class="text-gray-500 line-through ml-2">$8,000</span>
+                        <p class="text-sm text-green-600">50% off pilot pricing</p>
+                    </div>
+                    <ul class="text-sm mb-6 space-y-2">
+                        <li>✅ SOC2 Type II controls</li>
+                        <li>✅ All Standard features</li>
+                        <li>✅ GuardDuty threat detection</li>
+                        <li>✅ 1-year log retention</li>
+                        <li>✅ Priority support</li>
+                    </ul>
+                    <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition" 
+                            onclick="selectTier('fintech', 4000)">
+                        Start Pilot Trial
+                    </button>
+                </div>
+
+                <!-- Healthcare Tier -->
+                <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-green-500">
+                    <h3 class="text-xl font-bold mb-2">Healthcare</h3>
+                    <p class="text-gray-600 mb-4">HIPAA Compliance</p>
+                    <div class="mb-4">
+                        <span class="text-3xl font-bold">$7,500</span>
+                        <span class="text-gray-500 line-through ml-2">$15,000</span>
+                        <p class="text-sm text-green-600">50% off pilot pricing</p>
+                    </div>
+                    <ul class="text-sm mb-6 space-y-2">
+                        <li>✅ HIPAA compliance</li>
+                        <li>✅ All Fintech features</li>
+                        <li>✅ 7-year log retention</li>
+                        <li>✅ Encrypted EBS volumes</li>
+                        <li>✅ Dedicated support</li>
+                    </ul>
+                    <button class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition" 
+                            onclick="selectTier('healthcare', 7500)">
+                        Start Pilot Trial
+                    </button>
+                </div>
+
+                <!-- Government Tier -->
+                <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-purple-500">
+                    <h3 class="text-xl font-bold mb-2">Government</h3>
+                    <p class="text-gray-600 mb-4">FedRAMP Alignment</p>
+                    <div class="mb-4">
+                        <span class="text-3xl font-bold">$12,500</span>
+                        <span class="text-gray-500 line-through ml-2">$25,000</span>
+                        <p class="text-sm text-green-600">50% off pilot pricing</p>
+                    </div>
+                    <ul class="text-sm mb-6 space-y-2">
+                        <li>✅ FedRAMP alignment</li>
+                        <li>✅ All Healthcare features</li>
+                        <li>✅ Gov cloud hosting</li>
+                        <li>✅ FIPS 140-2 encryption</li>
+                        <li>✅ 24/7 dedicated support</li>
+                    </ul>
+                    <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition" 
+                            onclick="selectTier('government', 12500)">
+                        Start Pilot Trial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Proposition -->
+    <section class="bg-gray-100 py-16">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div>
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-xl font-bold mb-2">48 Hours vs 12 Months</h3>
+                    <p class="text-gray-600">Deploy production-ready infrastructure in days, not years</p>
+                </div>
+                <div>
+                    <div class="text-4xl mb-4">💰</div>
+                    <h3 class="text-xl font-bold mb-2">$25K vs $500K+</h3>
+                    <p class="text-gray-600">Save 95% on infrastructure setup costs</p>
+                </div>
+                <div>
+                    <div class="text-4xl mb-4">🛡️</div>
+                    <h3 class="text-xl font-bold mb-2">Compliance Ready</h3>
+                    <p class="text-gray-600">HIPAA, SOC2, FedRAMP frameworks included</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="py-16 text-center">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-4">Ready to Deploy Compliant Infrastructure?</h2>
+            <p class="text-xl text-gray-600 mb-8">Book a 15-minute demo and see your AWS Landing Zone deployed live</p>
+            <a href="https://calendly.com/securebase/demo" 
+               class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-lg transition">
+                Book Demo Call
+            </a>
+        </div>
+    </section>
+
+    <script>
+        // Stripe configuration
+        const stripe = Stripe('pk_live_51SrfvJ5bg6XXXrmNrXuAY0aNgBMe20PDcXVpv86x4ZBUL5ysRA1oNAN2THoxymRls1veb0WJF0yVqgd2aGAaF04900QhrVHUH8');
+        
+        const priceIds = {
+            standard: 'price_1SrgoR5bg6XXXrmNXe0tTgki',
+            fintech: 'price_1SrgqV5bg6XXXrmNL6XoLDcD',
+            healthcare: 'price_1Srgnn5bg6XXXrmNCv8fLvLz',
+            government: 'price_1SrgoR5bg6XXXrmNUUveBMDw'
+        };
+
+        async function selectTier(tier, amount) {
+            try {
+                // Create checkout session
+                const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer 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',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        'success_url': window.location.origin + '/success',
+                        'cancel_url': window.location.origin,
+                        'payment_method_types[]': 'card',
+                        'mode': 'subscription',
+                        'line_items[0][price]': priceIds[tier],
+                        'line_items[0][quantity]': '1',
+                        'subscription_data[trial_period_days]': '30',
+                        'metadata[tier]': tier,
+                        'metadata[pilot_program]': 'true'
+                    })
+                });
+
+                const session = await response.json();
+                
+                if (session.error) {
+                    alert('Error: ' + session.error.message);
+                    return;
+                }
+
+                // Redirect to Stripe checkout
+                const result = await stripe.redirectToCheckout({
+                    sessionId: session.id
+                });
+
+                if (result.error) {
+                    alert('Error: ' + result.error.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('There was an error processing your request. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
