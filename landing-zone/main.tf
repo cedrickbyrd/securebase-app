@@ -2,6 +2,17 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Outputs for API Gateway endpoint
+output "api_gateway_endpoint" {
+  description = "Base URL for API Gateway"
+  value       = try(module.api_gateway.api_gateway_endpoint, "Not deployed yet")
+}
+
+output "api_endpoints" {
+  description = "Map of all API endpoints"
+  value       = try(module.api_gateway.api_endpoints, {})
+}
+
 provider "aws" {
   region = var.target_region
 }
@@ -310,4 +321,88 @@ module "security" {
   source = "./modules/security"
 
   central_log_bucket_name = module.central_logging.central_log_bucket_name
+}
+
+# --- Phase 2: Lambda Functions ---
+module "lambda_functions" {
+  source = "./modules/lambda-functions"
+
+  environment = var.environment
+  aws_region  = var.target_region
+
+  # Lambda packages (ZIP files)
+  lambda_packages = {
+    auth_v2          = "${path.root}/../phase2-backend/deploy/auth_v2.zip"
+    webhook_manager  = "${path.root}/../phase2-backend/deploy/webhook_manager.zip"
+    billing_worker   = "${path.root}/../phase2-backend/deploy/billing_worker.zip"
+    support_tickets  = "${path.root}/../phase2-backend/deploy/support_tickets.zip"
+    cost_forecasting = "${path.root}/../phase2-backend/deploy/cost_forecasting.zip"
+  }
+
+  # Database configuration
+  jwt_secret_arn      = module.phase2_database.jwt_secret_arn
+  dynamodb_table_name = module.phase2_database.customers_table_name
+  rds_proxy_endpoint  = module.phase2_database.rds_proxy_endpoint
+  database_name       = "securebase"
+
+  # VPC configuration
+  private_subnet_ids       = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
+  lambda_security_group_id = module.phase2_database.lambda_security_group_id
+
+  tags = merge(var.tags, {
+    Phase = "Phase2-Lambda"
+  })
+
+  depends_on = [module.phase2_database]
+}
+
+# --- Phase 3: API Gateway ---
+module "api_gateway" {
+  source = "./modules/api-gateway"
+
+  environment = var.environment
+  aws_region  = var.target_region
+
+  # Lambda function ARNs
+  auth_lambda_arn        = module.lambda_functions.auth_v2_arn
+  auth_lambda_name       = module.lambda_functions.auth_v2_name
+  webhook_lambda_arn     = module.lambda_functions.webhook_manager_arn
+  webhook_lambda_name    = module.lambda_functions.webhook_manager_name
+  billing_lambda_arn     = module.lambda_functions.billing_worker_arn
+  billing_lambda_name    = module.lambda_functions.billing_worker_name
+  support_lambda_arn     = module.lambda_functions.support_tickets_arn
+  support_lambda_name    = module.lambda_functions.support_tickets_name
+  forecasting_lambda_arn = module.lambda_functions.cost_forecasting_arn
+  forecasting_lambda_name = module.lambda_functions.cost_forecasting_name
+
+  # Phase 4: Analytics Lambda
+  analytics_lambda_arn        = try(module.analytics.report_engine_function_arn, null)
+  analytics_lambda_name       = try(module.analytics.report_engine_function_name, null)
+  analytics_lambda_invoke_arn = try(module.analytics.report_engine_invoke_arn, null)
+
+  # Security settings
+  default_rate_limit  = 100
+  default_burst_limit = 200
+  log_retention_days  = 30
+
+  # CORS
+  allowed_origins = ["http://localhost:5173", "https://portal.securebase.com"]
+
+  tags = merge(var.tags, {
+    Phase = "Phase3-API"
+  })
+
+  depends_on = [module.lambda_functions, module.analytics]
+}
+
+# --- Phase 4: Advanced Analytics & Reporting ---
+module "analytics" {
+  source = "./modules/analytics"
+
+  environment = var.environment
+
+  tags = merge(var.tags, {
+    Phase     = "Phase4-Analytics"
+    Component = "Analytics"
+  })
 }

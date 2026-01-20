@@ -403,3 +403,28 @@ resource "aws_cloudwatch_log_group" "rds_upgrade" {
   
   tags = var.tags
 }
+
+# ============================================
+# JWT Secret for Authentication
+# ============================================
+
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = true
+}
+
+resource "aws_secretsmanager_secret" "jwt_secret" {
+  name        = "securebase/${var.environment}/jwt-secret"
+  description = "JWT signing secret for SecureBase authentication"
+  
+  tags = merge(var.tags, {
+    Name = "securebase-${var.environment}-jwt-secret"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "jwt_secret" {
+  secret_id     = aws_secretsmanager_secret.jwt_secret.id
+  secret_string = jsonencode({
+    secret_key = random_password.jwt_secret.result
+  })
+}

@@ -26,6 +26,7 @@ import SupportTickets from './components/SupportTickets';
 import { Forecasting } from './components/Forecasting';
 import Webhooks from './components/Webhooks';
 import Login from './components/Login';
+import Signup from './components/Signup';
 import './App.css';
 
 const Navigation = ({ isOpen, setIsOpen }) => {
@@ -183,6 +184,7 @@ function App() {
           {/* Routes */}
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             <Route
               path="/dashboard"
               element={

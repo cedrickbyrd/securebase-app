@@ -1,0 +1,17 @@
+{
+  "httpMethod": "GET",
+  "path": "/analytics",
+  "queryStringParameters": {
+    "dateRange": "30d",
+    "dimension": "service"
+  },
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}

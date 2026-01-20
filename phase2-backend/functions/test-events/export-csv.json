@@ -1,0 +1,14 @@
+{
+  "httpMethod": "POST",
+  "path": "/analytics",
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"format\":\"csv\",\"name\":\"cost-report\",\"data\":[{\"service\":\"EC2\",\"cost\":1234.56,\"region\":\"us-east-1\"},{\"service\":\"S3\",\"cost\":567.89,\"region\":\"us-east-1\"},{\"service\":\"RDS\",\"cost\":890.12,\"region\":\"us-west-2\"}]}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
