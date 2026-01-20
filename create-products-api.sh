@@ -2,7 +2,7 @@
 # 🚀 Create Stripe Products via API (No CLI needed)
 # Replace YOUR_LIVE_SECRET_KEY with your actual sk_live_... key
 
-SECRET_KEY="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"
+SECRET_KEY="YOUR_LIVE_SECRET_KEY_HERE"
 
 echo "🏥 Creating Healthcare tier..."
 HEALTHCARE_PRODUCT=$(curl -s https://api.stripe.com/v1/products \
