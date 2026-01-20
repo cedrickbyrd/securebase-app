@@ -1,32 +1,38 @@
 # Phase 5 & Phase 6 Roadmap
 
-**Status:** Planning Phase  
-**Current Phase:** 3b (in progress), Phase 4 (upcoming)  
-**Phase 5 Target:** Q3 2026  
-**Phase 6 Target:** Q4 2026
+**Status:** Detailed Scope (Updated Jan 19, 2026)  
+**Current Phase:** Phase 4 (in progress)  
+**Phase 5 Target:** May-June 2026 (6 weeks)  
+**Phase 6 Target:** July-August 2026 (4-5 weeks)
 
 ---
 
 ## 📊 Project Roadmap Overview
 
 ```
-Phase 1: Landing Zone (Terraform)           ✅ COMPLETE
-Phase 2: Backend APIs & Database            ✅ COMPLETE
-Phase 3a: Customer Portal                   ✅ COMPLETE
-Phase 3b: Advanced Features                 🔄 IN PROGRESS (45% - Support Tickets, Notifications)
-Phase 4: Enterprise Features                📅 PLANNED (Feb-Apr 2026)
-Phase 5: Observability & Monitoring         📅 PLANNED (May-Jun 2026)
+Phase 1: Landing Zone (Terraform)           ✅ COMPLETE (100%)
+Phase 2: Backend APIs & Database            ✅ COMPLETE (100%)
+Phase 3a: Customer Portal                   ✅ COMPLETE (100%)
+Phase 3b: Advanced Features                 ✅ COMPLETE (100%)
+Phase 4: Enterprise Features                🔄 IN PROGRESS (12% - Week 1 Day 1)
+Phase 5: Observability & Multi-Region DR    📅 PLANNED (May-Jun 2026)
 Phase 6: Compliance & Operations Scale      📅 PLANNED (Jul-Aug 2026)
 ```
 
 ---
 
-## Phase 5: Observability & Monitoring
+## Phase 5: Observability, Monitoring & Multi-Region DR
 
-**Duration:** 5-6 weeks  
-**Team:** 3 engineers (1 FE, 1 BE, 1 DevOps)  
-**Budget:** $50,000 - $75,000  
+**Duration:** 6 weeks (May 5 - June 14, 2026)  
+**Team:** 4 engineers (1 FE, 1 BE, 1 DevOps, 1 SRE)  
+**Budget:** $75,000 - $110,000  
 **Priority:** HIGH (required before enterprise customers)
+
+### Updated Scope (Jan 19, 2026)
+Phase 5 now includes **Multi-Region Disaster Recovery** in addition to observability:
+- Observability & Monitoring (Weeks 1-3)
+- Multi-Region Architecture (Weeks 4-6)
+- Target: 99.95% uptime SLA with <15 min RTO
 
 ### 5.1 Executive/Admin Dashboard
 **Features**
@@ -176,61 +182,144 @@ CloudWatch:
 
 ---
 
-## Phase 6: Compliance & Operations Scale
+### 5.6 Multi-Region Disaster Recovery (NEW - Critical Addition)
+**Duration:** 3 weeks | **Team:** 2 BE, 1 DevOps | **Priority:** HIGH
 
-**Duration:** 4-5 weeks  
-**Team:** 4 engineers (1 FE, 2 BE, 1 DevOps)  
-**Budget:** $75,000 - $100,000  
-**Priority:** HIGH (required for enterprise security)
-
-### 6.1 Advanced Data Isolation
 **Features**
-- Multi-tier tenant isolation (logical + physical)
-- Separate AWS accounts per enterprise tenant (optional)
-- Cross-account role assumption with audit logging
-- Data residency enforcement (compliance by region)
-- Encryption at rest + in transit (customer-managed keys)
-- Secure key rotation policies
+- Aurora Global Database (us-east-1 → us-west-2)
+- DynamoDB Global Tables (automatic replication)
+- S3 Cross-Region Replication (CRR)
+- Route53 health-based failover routing
+- Lambda deployment in secondary region
+- API Gateway multi-region deployment
+- Automated failover testing framework
+- DR runbooks and playbooks
 
 **Technical Stack**
-- Database: PostgreSQL RLS + Column-level encryption
-- Secrets: AWS Secrets Manager
-- Encryption: AWS KMS with customer master keys
-- Networking: VPC isolation + security groups
+- Primary: us-east-1 (N. Virginia) - Active
+- Secondary: us-west-2 (Oregon) - Standby
+- Database: Aurora Global Database
+- Storage: S3 CRR
+- DNS: Route53 with health checks
+- CDN: CloudFront with multi-region origins
+
+**Architecture**
+```
+us-east-1 (PRIMARY)                  us-west-2 (SECONDARY)
+├── Aurora Writer                    ├── Aurora Reader (Global DB)
+├── DynamoDB (Active)                ├── DynamoDB Replica (Global Table)
+├── Lambda Functions                 ├── Lambda Functions (Standby)
+├── API Gateway                      ├── API Gateway (Standby)
+├── S3 Buckets                       ├── S3 Replica Buckets
+└── CloudFront Origin                └── CloudFront Failover Origin
+```
 
 **Deliverables**
 ```
-Infrastructure:
-- AWS Organizations structure
-- Cross-account IAM roles
-- KMS key policies
-- VPC network policies
-- RLS policy enforcement
+Infrastructure (Terraform):
+- landing-zone/modules/multi-region/
+  ├── aurora-global.tf            (Global database cluster)
+  ├── dynamodb-global.tf          (Global tables)
+  ├── s3-replication.tf           (Cross-region replication)
+  ├── route53-failover.tf         (Health checks + routing)
+  ├── lambda-replication.tf       (Secondary region deployment)
+  └── outputs.tf
+
+- landing-zone/environments/prod-us-west-2/
+  (Mirror of prod us-east-1 environment)
+
+Lambda Functions:
+- failover_orchestrator.py (Automated failover logic)
+- health_check_aggregator.py (Custom health checks)
 
 Documentation:
-- Tenant Isolation Architecture
-- Data Residency Guide
-- Encryption Key Management Procedure
+- DISASTER_RECOVERY_PLAN.md (RTO/RPO, procedures)
+- DR_RUNBOOK.md (Step-by-step failover)
+- FAILBACK_PROCEDURE.md (Return to primary)
+
+Testing:
+- Automated DR drill (monthly)
+- Failover time measurement
+- Data consistency validation
 ```
 
-### 6.2 Enhanced API Security
-**Features**
-- OAuth 2.0 / OpenID Connect (from Phase 4)
-- API key management with rotation
-- Rate limiting (intelligent throttling)
-- IP whitelisting per customer
-- TLS 1.3 enforcement
-- Request signing (HMAC-SHA256)
-- DDoS protection (AWS Shield)
+**RTO/RPO Targets**
+- **RTO:** <15 minutes (automated failover)
+- **RPO:** <1 minute (Aurora global database lag)
+- **Uptime SLA:** 99.95% (4.4 hours downtime/year)
 
-**Technical Stack**
-- API Gateway: AWS API Gateway with WAF
-- Authentication: AWS Cognito + custom OIDC
-- Rate limiting: Lambda + DynamoDB (request count tracking)
-- DDoS: AWS Shield Advanced
+**Cost Impact**
+- Additional $90-170/month (2x infrastructure in us-west-2)
+- Data transfer: ~$10-20/month
+- Total Phase 5 multi-region cost: ~$250-400/month
+
+**Success Metrics**
+- Failover completes in <15 minutes (99% of tests)
+- Zero data loss during failover
+- Automated failover success rate >95%
+- Manual failback in <30 minutes
+
+---
+
+### 5.7 Infrastructure Scaling & Cost Optimization
+**Duration:** 1 week | **Team:** 1 DevOps | **Priority:** MEDIUM
+
+**Features**
+- Auto-scaling policies for Lambda concurrent executions
+- DynamoDB on-demand vs provisioned capacity analysis
+- Aurora Serverless v2 scaling optimization
+- CloudFront cache optimization
+- S3 lifecycle policies (Intelligent-Tiering)
+- Cost anomaly detection (AWS Cost Anomaly Detection)
+- Reserved Instance / Savings Plan analysis
 
 **Deliverables**
 ```
+- Auto-scaling configurations
+- Cost optimization playbook
+- Quarterly cost review process
+- Capacity planning models
+```
+
+---
+
+## Phase 5 Timeline (6 Weeks)
+
+| Week | Component | Deliverables |
+|------|-----------|--------------|
+| **Week 1** (May 5-9) | Executive Dashboard | AdminDashboard.jsx, metrics aggregation |
+| **Week 2** (May 12-16) | Tenant Dashboard | TenantDashboard.jsx, compliance drift |
+| **Week 3** (May 19-23) | SRE Dashboard + Logging | SREDashboard.jsx, X-Ray tracing |
+| **Week 4** (May 26-30) | Multi-Region Setup | Aurora Global DB, DynamoDB Global Tables |
+| **Week 5** (Jun 2-6) | Failover Implementation | Route53, Lambda replication, testing |
+| **Week 6** (Jun 9-13) | DR Testing + Documentation | Runbooks, automated drills, UAT |
+
+---
+
+## Phase 5 Budget (Updated for Multi-Region)
+
+### Development Costs
+| Category | Hours | Rate | Cost |
+|----------|-------|------|------|
+| Frontend development | 160 | $150/hr | $24,000 |
+| Backend development | 160 | $160/hr | $25,600 |
+| DevOps/SRE | 240 | $170/hr | $40,800 |
+| QA/Testing | 80 | $120/hr | $9,600 |
+| **Subtotal** | 640 hrs | | **$100,000** |
+
+### Infrastructure & Other Costs
+| Item | Cost |
+|------|------|
+| AWS infrastructure (6 weeks dev + 1 month prod multi-region) | $12,000 |
+| Third-party monitoring tools (Grafana, PagerDuty trials) | $2,000 |
+| DR testing (data transfer, snapshot copies) | $1,500 |
+| Documentation/Training | $2,000 |
+| Contingency (10%) | $11,750 |
+| **Total** | **$129,250** |
+
+**Budget Range:** $75,000 - $130,000 (updated for multi-region)
+
+---
 Features:
 - IP whitelist management UI
 - API key rotation scheduler

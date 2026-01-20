@@ -1,0 +1,182 @@
+# Lambda Function Test Events
+
+Test events for the report_engine Lambda function.
+
+## Test Event 1: Get Analytics
+
+```json
+{
+  "httpMethod": "GET",
+  "path": "/analytics",
+  "queryStringParameters": {
+    "dateRange": "30d",
+    "dimension": "service"
+  },
+  "headers": {
+    "Authorization": "Bearer test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Test Event 2: Export CSV
+
+```json
+{
+  "httpMethod": "POST",
+  "path": "/analytics",
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"format\":\"csv\",\"name\":\"cost-report\",\"data\":[{\"service\":\"EC2\",\"cost\":1234.56,\"region\":\"us-east-1\"},{\"service\":\"S3\",\"cost\":567.89,\"region\":\"us-east-1\"}]}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Test Event 3: Export PDF
+
+```json
+{
+  "httpMethod": "POST",
+  "path": "/analytics",
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"format\":\"pdf\",\"name\":\"Security Report\",\"data\":[{\"service\":\"GuardDuty\",\"findings\":15,\"severity\":\"High\"},{\"service\":\"SecurityHub\",\"findings\":8,\"severity\":\"Medium\"}]}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Test Event 4: List Reports
+
+```json
+{
+  "httpMethod": "GET",
+  "path": "/analytics/reports",
+  "headers": {
+    "Authorization": "Bearer test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Test Event 5: Create Report
+
+```json
+{
+  "httpMethod": "POST",
+  "path": "/analytics/reports",
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"name\":\"Monthly Cost Analysis\",\"dateRange\":\"30d\",\"dimension\":\"service\",\"config\":{\"fields\":[\"service\",\"cost\",\"region\"],\"filters\":{\"region\":\"us-east-1\"}}}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Test Event 6: Export Excel
+
+```json
+{
+  "httpMethod": "POST",
+  "path": "/analytics",
+  "headers": {
+    "Authorization": "Bearer test-token",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"format\":\"excel\",\"name\":\"compliance-report\",\"data\":[{\"framework\":\"SOC2\",\"score\":92,\"violations\":3},{\"framework\":\"HIPAA\",\"score\":88,\"violations\":5},{\"framework\":\"PCI-DSS\",\"score\":95,\"violations\":1}]}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
+```
+
+## Testing Locally
+
+You can test these events using the AWS SAM CLI:
+
+```bash
+# Install SAM CLI if not already installed
+# pip install aws-sam-cli
+
+# Test with a specific event
+sam local invoke report_engine -e test-events.json
+```
+
+## Testing in AWS Console
+
+1. Go to Lambda console
+2. Select `securebase-dev-report-engine`
+3. Click "Test" tab
+4. Create new test event
+5. Paste one of the JSON events above
+6. Click "Test" button
+
+## Expected Responses
+
+### Get Analytics (200 OK)
+```json
+{
+  "statusCode": 200,
+  "body": "{\"data\": [...], \"summary\": {...}}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  }
+}
+```
+
+### Export CSV (200 OK)
+```
+statusCode: 200
+headers:
+  Content-Type: text/csv
+  Content-Disposition: attachment; filename="cost-report_20260119_120000.csv"
+body: "service,cost,region\nEC2,1234.56,us-east-1\n..."
+```
+
+### Export PDF (200 OK)
+```
+statusCode: 200
+headers:
+  Content-Type: application/pdf
+  Content-Disposition: attachment; filename="report_20260119.pdf"
+body: <base64 encoded PDF>
+isBase64Encoded: true
+```
+
+### Error Response (400/500)
+```json
+{
+  "statusCode": 400,
+  "body": "{\"error\": \"Invalid request\", \"message\": \"...\"}",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}
+```

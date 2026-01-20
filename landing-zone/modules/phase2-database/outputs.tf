@@ -53,6 +53,16 @@ output "lambda_security_group_id" {
   value       = aws_security_group.lambda.id
 }
 
+output "customers_table_name" {
+  description = "DynamoDB customers table name"
+  value       = "securebase-${var.environment}-customers"
+}
+
+output "jwt_secret_arn" {
+  description = "ARN of JWT secret in Secrets Manager"
+  value       = aws_secretsmanager_secret.jwt_secret.arn
+}
+
 output "rds_security_group_id" {
   description = "Security group ID for RDS cluster"
   value       = aws_security_group.rds.id

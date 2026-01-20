@@ -1,0 +1,11 @@
+# Lambda Layer Requirements for Report Engine
+# Phase 4 - Advanced Analytics & Reporting
+
+# PDF Generation
+reportlab==4.0.7
+
+# Excel Generation
+openpyxl==3.1.2
+
+# Additional dependencies (if needed)
+Pillow==10.1.0  # For image support in PDFs

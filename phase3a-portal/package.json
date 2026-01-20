@@ -18,7 +18,9 @@
     "lucide-react": "^0.309.0",
     "chart.js": "^4.4.1",
     "react-chartjs-2": "^5.2.0",
-    "date-fns": "^3.0.6"
+    "recharts": "^2.10.3",
+    "date-fns": "^3.0.6",
+    "@stripe/stripe-js": "^2.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",

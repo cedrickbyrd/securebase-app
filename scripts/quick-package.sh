@@ -1,0 +1,39 @@
+#!/bin/bash
+# Quick Lambda Packaging Script
+# Creates minimal deployment packages without dependencies
+
+set -e
+
+echo "📦 Packaging Lambda Functions..."
+echo ""
+
+cd /workspaces/securebase-app/phase2-backend/functions
+mkdir -p ../deploy
+
+# Package each function
+echo "→ auth_v2.zip"
+zip -q ../deploy/auth_v2.zip auth_v2.py
+echo "  ✅ Created"
+
+echo "→ webhook_manager.zip"
+zip -q ../deploy/webhook_manager.zip webhook_manager.py
+echo "  ✅ Created"
+
+echo "→ billing_worker.zip"
+zip -q ../deploy/billing_worker.zip billing-worker.py
+echo "  ✅ Created"
+
+echo "→ support_tickets.zip"
+zip -q ../deploy/support_tickets.zip support_tickets.py
+echo "  ✅ Created"
+
+echo "→ cost_forecasting.zip"
+zip -q ../deploy/cost_forecasting.zip cost_forecasting.py
+echo "  ✅ Created"
+
+echo ""
+echo "✅ All packages created!"
+ls -lh ../deploy/*.zip
+
+echo ""
+echo "Next: cd /workspaces/securebase-app/landing-zone && terraform init && terraform plan"

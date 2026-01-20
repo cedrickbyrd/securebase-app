@@ -1,0 +1,67 @@
+# 🚀 Copy and paste these commands in your terminal
+
+# Healthcare tier
+curl -s https://api.stripe.com/v1/products \
+  -u "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": \
+  -d "name=SecureBase Healthcare" \
+  -d "description=HIPAA-compliant AWS Landing Zone" \
+  -d "metadata[tier]=healthcare"
+
+# Copy the product ID from above (prod_...) and use it here:
+curl -s https://api.stripe.com/v1/prices \
+  -u "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": \
+  -d "product=PASTE_HEALTHCARE_PRODUCT_ID_HERE" \
+  -d "currency=usd" \
+  -d "unit_amount=1500000" \
+  -d "recurring[interval]=month"
+
+# Fintech tier  
+curl -s https://api.stripe.com/v1/products \
+  -u "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": \
+  -d "name=SecureBase Fintech" \
+  -d "description=SOC2 Type II compliant AWS Landing Zone" \
+  -d "metadata[tier]=fintech"
+
+curl -s https://api.stripe.com/v1/prices \
+  -u "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": \
+  -d "product=PASTE_FINTECH_PRODUCT_ID_HERE" \
+  -d "currency=usd" \
+  -d "unit_amount=800000" \
+  -d "recurring[interval]=month"
+
+# Government tier
+curl -s https://api.stripe.com/v1/products \
+  -u "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": \
+  -d "name=SecureBase Government" \
+  -d "description=FedRAMP-aligned AWS Landing Zone" \
+  -d "metadata[tier]=government"
+
+curl -s https://api.stripe.com/v1/prices \
+  -u "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": \
+  -d "product=PASTE_GOVERNMENT_PRODUCT_ID_HERE" \
+  -d "currency=usd" \
+  -d "unit_amount=2500000" \
+  -d "recurring[interval]=month"
+
+# Standard tier
+curl -s https://api.stripe.com/v1/products \
+  -u "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": \
+  -d "name=SecureBase Standard" \
+  -d "description=CIS Foundations compliant AWS Landing Zone" \
+  -d "metadata[tier]=standard"
+
+curl -s https://api.stripe.com/v1/prices \
+  -u "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": \
+  -d "product=PASTE_STANDARD_PRODUCT_ID_HERE" \
+  -d "currency=usd" \
+  -d "unit_amount=200000" \
+  -d "recurring[interval]=month"
+
+# Pilot coupon
+curl -s https://api.stripe.com/v1/coupons \
+  -u "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": \
+  -d "percent_off=50" \
+  -d "duration=repeating" \
+  -d "duration_in_months=6" \
+  -d "max_redemptions=20" \
+  -d "name=SecureBase Pilot Program"

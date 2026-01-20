@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/analytics/reports",
+  "headers": {
+    "Authorization": "Bearer test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123"
+    }
+  }
+}
