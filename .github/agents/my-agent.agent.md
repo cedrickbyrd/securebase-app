@@ -10,4 +10,4 @@ description:
 
 # My Agent
 
-My agent assists deploying securebase using terraform
+My agent assists deploying securebase using terraform viewing my repo
