@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code } from 'lucide-react';
 
 export default function SecureBaseLandingZone() {
@@ -545,6 +546,7 @@ COMPLIANCE:
 
   return (
     <div className="min-h-screen bg-slate-900 text-white font-sans">
+      <Analytics />
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
