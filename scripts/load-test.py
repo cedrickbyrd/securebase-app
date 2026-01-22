@@ -222,8 +222,8 @@ class LoadTester:
                 'min_duration_ms': min(durations),
                 'max_duration_ms': max(durations),
                 'p50_duration_ms': statistics.median(durations),
-                'p95_duration_ms': sorted(durations)[int(len(durations) * 0.95)],
-                'p99_duration_ms': sorted(durations)[int(len(durations) * 0.99)]
+                'p95_duration_ms': sorted(durations)[min(int(len(durations) * 0.95), len(durations) - 1)] if len(durations) > 0 else 0,
+                'p99_duration_ms': sorted(durations)[min(int(len(durations) * 0.99), len(durations) - 1)] if len(durations) > 0 else 0
             },
             'by_endpoint': endpoint_stats
         }

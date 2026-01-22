@@ -189,7 +189,12 @@ if [ -d "phase3a-portal" ]; then
             echo "Gzipped sizes:"
             for file in dist/assets/*.js; do
                 if [ -f "$file" ]; then
-                    original=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file")
+                    # Portable file size check (works on both Linux and macOS)
+                    if stat -c%s "$file" &>/dev/null 2>&1; then
+                        original=$(stat -c%s "$file")
+                    else
+                        original=$(stat -f%z "$file")
+                    fi
                     gzipped=$(gzip -c "$file" | wc -c)
                     echo "  $(basename "$file"): $original bytes -> $gzipped bytes ($(echo "scale=1; $gzipped * 100 / $original" | bc)%)"
                 fi
