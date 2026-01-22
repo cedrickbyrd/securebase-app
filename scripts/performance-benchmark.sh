@@ -150,7 +150,7 @@ echo "  }" >> "$RESULTS_FILE.tmp"
 echo "}" >> "$RESULTS_FILE.tmp"
 
 # Format JSON properly (remove trailing commas)
-cat "$RESULTS_FILE.tmp" | sed 's/,\([^,]*\)$/\1/' > "$RESULTS_FILE"
+sed 's/,\([^,]*\)$/\1/' "$RESULTS_FILE.tmp" > "$RESULTS_FILE"
 rm "$RESULTS_FILE.tmp"
 
 echo "================================================"
