@@ -11,18 +11,6 @@ terraform {
   }
 }
 
-variable "environment" {
-  description = "Environment name (dev, staging, prod)"
-  type        = string
-  default     = "dev"
-}
-
-variable "project_name" {
-  description = "Project name prefix"
-  type        = string
-  default     = "securebase"
-}
-
 # ============================================
 # DynamoDB Tables with Auto-Scaling
 # ============================================
