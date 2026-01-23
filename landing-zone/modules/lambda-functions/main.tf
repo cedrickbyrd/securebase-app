@@ -11,6 +11,12 @@ terraform {
 }
 
 # ============================================================================
+# Data Sources
+# ============================================================================
+
+data "aws_caller_identity" "current" {}
+
+# ============================================================================
 # Lambda Execution Role
 # ============================================================================
 
@@ -88,7 +94,7 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "sns:Publish"
         ]
         Resource = [
-          "arn:aws:sns:${var.aws_region}:*:securebase-${var.environment}-*"
+          "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:securebase-${var.environment}-*"
         ]
       },
       {

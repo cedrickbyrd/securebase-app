@@ -333,10 +333,10 @@ module "lambda_functions" {
   # Lambda packages (ZIP files)
   lambda_packages = {
     auth_v2          = "${path.root}/../phase2-backend/deploy/auth_v2.zip"
-    webhook_manager  = "${path.root}/../phase2-backend/deploy/phase3b/webhook_manager.zip"
+    webhook_manager  = fileexists("${path.root}/../phase2-backend/deploy/phase3b/webhook_manager.zip") ? "${path.root}/../phase2-backend/deploy/phase3b/webhook_manager.zip" : "${path.root}/../phase2-backend/deploy/webhook_manager.zip"
     billing_worker   = "${path.root}/../phase2-backend/deploy/billing_worker.zip"
-    support_tickets  = "${path.root}/../phase2-backend/deploy/phase3b/support_tickets.zip"
-    cost_forecasting = "${path.root}/../phase2-backend/deploy/phase3b/cost_forecasting.zip"
+    support_tickets  = fileexists("${path.root}/../phase2-backend/deploy/phase3b/support_tickets.zip") ? "${path.root}/../phase2-backend/deploy/phase3b/support_tickets.zip" : "${path.root}/../phase2-backend/deploy/support_tickets.zip"
+    cost_forecasting = fileexists("${path.root}/../phase2-backend/deploy/phase3b/cost_forecasting.zip") ? "${path.root}/../phase2-backend/deploy/phase3b/cost_forecasting.zip" : "${path.root}/../phase2-backend/deploy/cost_forecasting.zip"
   }
 
   # Database configuration
