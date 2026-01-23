@@ -26,7 +26,10 @@ import base64
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Mock AWS services before importing
+# Set AWS environment variables before importing
+os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+os.environ['AWS_ACCESS_KEY_ID'] = 'test'
+os.environ['AWS_SECRET_ACCESS_KEY'] = 'test'
 os.environ['REPORTS_TABLE'] = 'test-reports'
 os.environ['SCHEDULES_TABLE'] = 'test-schedules'
 os.environ['METRICS_TABLE'] = 'test-metrics'
@@ -34,8 +37,9 @@ os.environ['CACHE_TABLE'] = 'test-cache'
 os.environ['S3_BUCKET'] = 'test-bucket'
 os.environ['ENVIRONMENT'] = 'test'
 
-# Import the module to test
-import report_engine
+# Mock AWS clients at module level before import
+with patch('boto3.resource'), patch('boto3.client'):
+    import report_engine
 
 
 class TestReportEngineLambda(unittest.TestCase):
