@@ -26,12 +26,15 @@ echo ""
 echo "Packaging Phase 3b Lambda Functions..."
 echo ""
 
+MISSING_FUNCTIONS=0
+
 for function in "${PHASE3B_FUNCTIONS[@]}"; do
     echo "→ Packaging ${function}..."
     
     # Check if function file exists
     if [ ! -f "${FUNCTIONS_DIR}/${function}.py" ]; then
-        echo "  ⚠️  WARNING: ${function}.py not found, skipping..."
+        echo "  ❌ ERROR: ${function}.py not found"
+        MISSING_FUNCTIONS=$((MISSING_FUNCTIONS + 1))
         continue
     fi
     
@@ -60,6 +63,15 @@ for function in "${PHASE3B_FUNCTIONS[@]}"; do
 done
 
 echo ""
+
+if [ $MISSING_FUNCTIONS -gt 0 ]; then
+    echo "=========================================="
+    echo "❌ ERROR: ${MISSING_FUNCTIONS} function(s) not found"
+    echo "Packaging incomplete. Please ensure all required .py files exist."
+    echo "=========================================="
+    exit 1
+fi
+
 echo "=========================================="
 echo "✓ Phase 3b Lambda packaging complete!"
 echo ""
