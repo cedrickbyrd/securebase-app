@@ -67,3 +67,27 @@ output "rds_security_group_id" {
   description = "Security group ID for RDS cluster"
   value       = aws_security_group.rds.id
 }
+
+# ============================================
+# Phase 3b Outputs
+# ============================================
+
+output "support_tickets_table_name" {
+  description = "DynamoDB support tickets table name"
+  value       = aws_dynamodb_table.support_tickets.name
+}
+
+output "ticket_comments_table_name" {
+  description = "DynamoDB ticket comments table name"
+  value       = aws_dynamodb_table.ticket_comments.name
+}
+
+output "notifications_table_name" {
+  description = "DynamoDB notifications table name"
+  value       = aws_dynamodb_table.notifications.name
+}
+
+output "cost_forecasts_table_name" {
+  description = "DynamoDB cost forecasts table name"
+  value       = aws_dynamodb_table.cost_forecasts.name
+}

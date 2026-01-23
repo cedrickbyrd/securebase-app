@@ -219,6 +219,173 @@ resource "aws_dynamodb_table" "cache" {
 }
 
 # ============================================
+# Phase 3b: Support Tickets & Advanced Features
+# ============================================
+
+# Support Tickets table
+resource "aws_dynamodb_table" "support_tickets" {
+  name           = "securebase-support-tickets-${var.environment}"
+  billing_mode   = var.dynamodb_billing_mode
+  hash_key       = "customer_id"
+  range_key      = "id"
+  
+  attribute {
+    name = "customer_id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "status"
+    type = "S"
+  }
+  
+  attribute {
+    name = "priority"
+    type = "S"
+  }
+  
+  # GSI for filtering by status
+  global_secondary_index {
+    name            = "status-index"
+    hash_key        = "customer_id"
+    range_key       = "status"
+    projection_type = "ALL"
+  }
+  
+  # GSI for filtering by priority
+  global_secondary_index {
+    name            = "priority-index"
+    hash_key        = "customer_id"
+    range_key       = "priority"
+    projection_type = "ALL"
+  }
+  
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+  
+  point_in_time_recovery {
+    enabled = true
+  }
+  
+  tags = merge(var.tags, {
+    Name = "SecureBase-Support-Tickets"
+  })
+}
+
+# Ticket Comments table
+resource "aws_dynamodb_table" "ticket_comments" {
+  name           = "securebase-ticket-comments-${var.environment}"
+  billing_mode   = var.dynamodb_billing_mode
+  hash_key       = "ticket_id"
+  range_key      = "id"
+  
+  attribute {
+    name = "ticket_id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+  
+  point_in_time_recovery {
+    enabled = true
+  }
+  
+  tags = merge(var.tags, {
+    Name = "SecureBase-Ticket-Comments"
+  })
+}
+
+# Notifications table
+resource "aws_dynamodb_table" "notifications" {
+  name           = "securebase-notifications-${var.environment}"
+  billing_mode   = var.dynamodb_billing_mode
+  hash_key       = "customer_id"
+  range_key      = "id"
+  
+  attribute {
+    name = "customer_id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "created_at"
+    type = "S"
+  }
+  
+  # GSI for sorting by creation time
+  global_secondary_index {
+    name            = "created_at-index"
+    hash_key        = "customer_id"
+    range_key       = "created_at"
+    projection_type = "ALL"
+  }
+  
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+  
+  point_in_time_recovery {
+    enabled = true
+  }
+  
+  tags = merge(var.tags, {
+    Name = "SecureBase-Notifications"
+  })
+}
+
+# Cost Forecasts table
+resource "aws_dynamodb_table" "cost_forecasts" {
+  name           = "securebase-cost-forecasts-${var.environment}"
+  billing_mode   = var.dynamodb_billing_mode
+  hash_key       = "customer_id"
+  range_key      = "period_month"
+  
+  attribute {
+    name = "customer_id"
+    type = "S"
+  }
+  
+  attribute {
+    name = "period_month"
+    type = "S"
+  }
+  
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+  
+  point_in_time_recovery {
+    enabled = true
+  }
+  
+  tags = merge(var.tags, {
+    Name = "SecureBase-Cost-Forecasts"
+  })
+}
+
+# ============================================
 # KMS Keys for Encryption
 # ============================================
 
