@@ -101,6 +101,7 @@ case "$TEST_TYPE" in
             --cov=report_engine \
             --cov-report=term-missing \
             --cov-report=html:htmlcov \
+            --cov-report=json:coverage.json \
             -x
         
         RESULT=$?
@@ -113,22 +114,22 @@ case "$TEST_TYPE" in
             print_error "Some tests failed!"
             exit $RESULT
         fi
+        
+        # Check coverage threshold (only if coverage.json was generated)
+        if [ -f "coverage.json" ]; then
+            COVERAGE=$(python3 -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
+            COVERAGE_INT=${COVERAGE%.*}
+            
+            if [ "$COVERAGE_INT" -ge 90 ]; then
+                print_success "Coverage: ${COVERAGE}% (>= 90% requirement met)"
+            else
+                print_warning "Coverage: ${COVERAGE}% (< 90% requirement)"
+            fi
+        fi
         ;;
 esac
 
 echo ""
 print_status "Test suite completed"
-
-# Check coverage threshold
-if [ -f "coverage.json" ]; then
-    COVERAGE=$(python3 -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
-    COVERAGE_INT=${COVERAGE%.*}
-    
-    if [ "$COVERAGE_INT" -ge 90 ]; then
-        print_success "Coverage: ${COVERAGE}% (>= 90% requirement met)"
-    else
-        print_warning "Coverage: ${COVERAGE}% (< 90% requirement)"
-    fi
-fi
 
 exit 0

@@ -143,7 +143,9 @@ class TestAnalyticsIntegration(unittest.TestCase):
         self.assertEqual(export_response['headers']['Content-Type'], 'text/csv')
         
         # Step 4: Verify the complete workflow succeeded
-        self.assertTrue(True, "Complete workflow executed successfully")
+        self.assertIsNotNone(created_report.get('report'))
+        self.assertIsNotNone(query_data.get('data'))
+        self.assertEqual(export_response['statusCode'], 200)
     
     def test_multi_format_export_workflow(self):
         """Test exporting the same data in multiple formats"""

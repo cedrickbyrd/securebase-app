@@ -396,6 +396,9 @@ API_KEY="your-api-key"
 
 echo "Testing PDF export performance..."
 
+total_time=0
+count=0
+
 for i in {1..10}; do
     start=$(date +%s.%N)
     
@@ -414,7 +417,25 @@ for i in {1..10}; do
     duration=$(echo "$end - $start" | bc)
     
     echo "Export $i: ${duration}s"
+    
+    # Accumulate for average
+    total_time=$(echo "$total_time + $duration" | bc)
+    ((count++))
 done
+
+# Calculate average
+avg_time=$(echo "scale=2; $total_time / $count" | bc)
+echo ""
+echo "Average export time: ${avg_time}s"
+echo "Target: < 10s"
+
+if (( $(echo "$avg_time < 10.0" | bc -l) )); then
+    echo "✓ PASS"
+    exit 0
+else
+    echo "✗ FAIL"
+    exit 1
+fi
 ```
 
 ---

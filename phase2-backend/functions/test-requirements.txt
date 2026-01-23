@@ -10,9 +10,6 @@ pytest-asyncio>=0.21.1
 # Code coverage
 coverage>=7.3.0
 
-# Mocking
-moto>=4.2.0  # Mock AWS services
-
 # Test data generation
 faker>=19.6.0
 
