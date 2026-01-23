@@ -13,14 +13,19 @@ import boto3
 from datetime import datetime, timedelta
 import time
 
-# Set test environment
+# Set AWS environment
+os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+os.environ['AWS_ACCESS_KEY_ID'] = 'test'
+os.environ['AWS_SECRET_ACCESS_KEY'] = 'test'
 os.environ['REPORTS_TABLE'] = 'test-reports'
 os.environ['METRICS_TABLE'] = 'test-metrics'
 os.environ['CACHE_TABLE'] = 'test-cache'
 os.environ['S3_BUCKET'] = 'test-bucket'
 os.environ['ENVIRONMENT'] = 'test'
 
-import report_engine
+# Mock AWS clients before import
+with patch('boto3.resource'), patch('boto3.client'):
+    import report_engine
 
 
 class TestAnalyticsIntegration(unittest.TestCase):
