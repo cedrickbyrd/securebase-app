@@ -1,0 +1,36 @@
+# Test Dependencies for SecureBase
+# Phase 4: Testing & Quality Assurance
+
+# Python Testing Framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# HTTP Testing
+requests>=2.31.0
+
+# AWS Testing
+boto3>=1.28.0
+moto>=4.2.0  # Mock AWS services
+
+# Database Testing
+psycopg2-binary>=2.9.0
+
+# Security Testing
+safety>=2.3.0
+bandit>=1.7.0
+
+# Code Quality
+pylint>=2.17.0
+black>=23.7.0
+flake8>=6.1.0
+
+# Performance Testing
+locust>=2.15.0
+
+# Browser Testing (for accessibility)
+selenium>=4.12.0
+axe-selenium-python>=2.1.0
+
+# Coverage Reporting
+coverage>=7.3.0
