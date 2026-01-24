@@ -200,6 +200,7 @@ class LoadTester:
         endpoint_stats = {}
         for endpoint, results in by_endpoint.items():
             durations = [r['duration_ms'] for r in results]
+            sorted_durations = sorted(durations)
             endpoint_stats[endpoint] = {
                 'total_requests': len(results),
                 'successful': sum(1 for r in results if r['success']),
@@ -208,8 +209,8 @@ class LoadTester:
                 'min_duration_ms': min(durations),
                 'max_duration_ms': max(durations),
                 'p50_duration_ms': statistics.median(durations),
-                'p95_duration_ms': sorted(durations)[min(int(len(durations) * 0.95), len(durations) - 1)] if len(durations) > 0 else 0,
-                'p99_duration_ms': sorted(durations)[min(int(len(durations) * 0.99), len(durations) - 1)] if len(durations) > 0 else 0
+                'p95_duration_ms': sorted_durations[min(int(len(sorted_durations) * 0.95), len(sorted_durations) - 1)] if len(sorted_durations) > 0 else 0,
+                'p99_duration_ms': sorted_durations[min(int(len(sorted_durations) * 0.99), len(sorted_durations) - 1)] if len(sorted_durations) > 0 else 0
             }
         
         return {

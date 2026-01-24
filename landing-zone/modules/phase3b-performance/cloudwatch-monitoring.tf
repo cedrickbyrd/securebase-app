@@ -1,5 +1,10 @@
 # CloudWatch Dashboard for Phase 3B Performance Monitoring
 
+# Local values for reusable logic
+locals {
+  alarm_actions = var.enable_performance_monitoring && var.performance_alerts_topic_arn != "" ? [var.performance_alerts_topic_arn] : []
+}
+
 resource "aws_cloudwatch_dashboard" "phase3b_performance" {
   dashboard_name = "${var.project_name}-${var.environment}-phase3b-performance"
 
@@ -237,7 +242,7 @@ resource "aws_cloudwatch_metric_alarm" "support_tickets_high_duration" {
   threshold           = 1000  # 1 second
   alarm_description   = "Alert when support tickets Lambda duration exceeds 1s"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.enable_performance_monitoring ? (var.performance_alerts_topic_arn != "" ? [var.performance_alerts_topic_arn] : []) : []
+  alarm_actions       = local.alarm_actions
 
   dimensions = {
     FunctionName = "${var.project_name}-${var.environment}-support-tickets"
@@ -260,7 +265,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   threshold           = 10
   alarm_description   = "Alert when Lambda errors exceed 10 in 5 minutes"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.enable_performance_monitoring ? (var.performance_alerts_topic_arn != "" ? [var.performance_alerts_topic_arn] : []) : []
+  alarm_actions       = local.alarm_actions
 
   tags = {
     Environment = var.environment

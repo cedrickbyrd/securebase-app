@@ -62,7 +62,7 @@ measure_endpoint() {
         fi
         
         # Check if curl succeeded and response_time is valid
-        if [ $curl_exit_code -eq 0 ] && [ -n "$response_time" ] && [[ "$response_time" =~ ^[0-9.]+$ ]]; then
+        if [ $curl_exit_code -eq 0 ] && [ -n "$response_time" ] && [[ "$response_time" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
             # Convert to milliseconds
             time_ms=$(echo "$response_time * 1000" | bc)
             
