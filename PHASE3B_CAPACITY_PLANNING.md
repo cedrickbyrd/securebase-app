@@ -81,6 +81,8 @@ This document provides comprehensive capacity planning, performance benchmarks, 
 | webhooks | 5 (auto-scale to 20) | 5 (auto-scale to 20) | ~500 MB | ~5,000 | $6.25 |
 | notifications | 50 (auto-scale to 200) | 50 (auto-scale to 200) | ~3 GB | ~200,000 | $62.50 |
 
+**Note:** The `phase3b-performance` Terraform module currently provisions the `support_tickets` table with auto-scaling. Additional tables (ticket_comments, cost_forecasts, webhooks, notifications) are documented here for capacity planning purposes and may be provisioned by other modules or in future phases.
+
 **Total DynamoDB Monthly Cost:** ~$118.75 (at baseline, before auto-scaling)
 
 #### WebSocket Connections

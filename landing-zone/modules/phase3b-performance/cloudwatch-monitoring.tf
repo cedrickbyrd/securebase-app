@@ -237,6 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "support_tickets_high_duration" {
   threshold           = 1000  # 1 second
   alarm_description   = "Alert when support tickets Lambda duration exceeds 1s"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = var.enable_performance_monitoring ? (var.performance_alerts_topic_arn != "" ? [var.performance_alerts_topic_arn] : []) : []
 
   dimensions = {
     FunctionName = "${var.project_name}-${var.environment}-support-tickets"
@@ -259,6 +260,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   threshold           = 10
   alarm_description   = "Alert when Lambda errors exceed 10 in 5 minutes"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = var.enable_performance_monitoring ? (var.performance_alerts_topic_arn != "" ? [var.performance_alerts_topic_arn] : []) : []
 
   tags = {
     Environment = var.environment

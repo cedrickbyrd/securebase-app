@@ -155,36 +155,62 @@ pip install --target ./package --no-deps boto3 requests
 **Strategy 3: Connection Pooling**
 
 ```python
-# db_utils.py - Add connection pooling
-from functools import lru_cache
+# db_utils.py - Lambda-optimized connection caching
+import os
+import threading
 import psycopg2
-from psycopg2 import pool
 
-# Create connection pool (max 10 connections per Lambda container)
-connection_pool = None
-
-def get_connection_pool():
-    global connection_pool
-    if connection_pool is None:
-        connection_pool = psycopg2.pool.SimpleConnectionPool(
-            1,  # min connections
-            10, # max connections
-            host=os.environ['DB_HOST'],
-            database=os.environ['DB_NAME'],
-            user=os.environ['DB_USER'],
-            password=os.environ['DB_PASSWORD']
-        )
-    return connection_pool
+# Single cached connection per Lambda container (thread-safe initialization)
+_connection = None
+_connection_lock = threading.Lock()
 
 def get_db_connection():
-    """Get connection from pool (fast)"""
-    pool = get_connection_pool()
-    return pool.getconn()
+    """
+    Get a cached DB connection.
+    
+    Uses a single connection per warm Lambda container, with
+    thread-safe lazy initialization to avoid race conditions.
+    Lambda processes one request at a time, so connection pooling
+    with multiple connections is unnecessary.
+    """
+    global _connection
+    
+    # Fast path: reuse existing open connection
+    if _connection is not None:
+        try:
+            # Check if connection is still alive
+            if _connection.closed == 0:
+                return _connection
+        except:
+            pass
+    
+    # Slow path: initialize or reinitialize connection safely
+    with _connection_lock:
+        # Double-check pattern
+        if _connection is None or _connection.closed != 0:
+            _connection = psycopg2.connect(
+                host=os.environ['DB_HOST'],
+                database=os.environ['DB_NAME'],
+                user=os.environ['DB_USER'],
+                password=os.environ['DB_PASSWORD']
+            )
+        return _connection
 
 def release_db_connection(conn):
-    """Return connection to pool"""
-    pool = get_connection_pool()
-    pool.putconn(conn)
+    """
+    Commit any pending transaction.
+    
+    Note: Does not close the connection, as it's reused across invocations.
+    """
+    try:
+        if conn is not None and conn.closed == 0:
+            conn.commit()
+    except Exception:
+        # In case of error, rollback
+        try:
+            conn.rollback()
+        except:
+            pass
 ```
 
 **Usage in Lambda:**
