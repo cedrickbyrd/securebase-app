@@ -165,10 +165,11 @@ first_line=true
 while IFS='|' read -r name avg min max iterations; do
     if [ "$first_line" = true ]; then
         first_line=false
+        echo -n "    \"$name\": {\"avg\": $avg, \"min\": $min, \"max\": $max, \"iterations\": $iterations}" >> "$RESULTS_FILE"
     else
         echo "," >> "$RESULTS_FILE"
+        echo -n "    \"$name\": {\"avg\": $avg, \"min\": $min, \"max\": $max, \"iterations\": $iterations}" >> "$RESULTS_FILE"
     fi
-    echo -n "    \"$name\": {\"avg\": $avg, \"min\": $min, \"max\": $max, \"iterations\": $iterations}" >> "$RESULTS_FILE"
 done < "$RESULTS_FILE.tmp"
 
 echo "" >> "$RESULTS_FILE"

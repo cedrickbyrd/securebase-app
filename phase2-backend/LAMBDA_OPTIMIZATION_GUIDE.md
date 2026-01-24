@@ -181,20 +181,25 @@ def get_db_connection():
             # Check if connection is still alive
             if _connection.closed == 0:
                 return _connection
-        except Exception:
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
             # Connection is invalid, will recreate below
             pass
     
     # Slow path: initialize or reinitialize connection safely
     with _connection_lock:
         # Double-check pattern
-        if _connection is None or _connection.closed != 0:
-            _connection = psycopg2.connect(
-                host=os.environ['DB_HOST'],
-                database=os.environ['DB_NAME'],
-                user=os.environ['DB_USER'],
-                password=os.environ['DB_PASSWORD']
-            )
+        try:
+            if _connection is None or _connection.closed != 0:
+                _connection = psycopg2.connect(
+                    host=os.environ['DB_HOST'],
+                    database=os.environ['DB_NAME'],
+                    user=os.environ['DB_USER'],
+                    password=os.environ['DB_PASSWORD']
+                )
+        except psycopg2.Error as e:
+            # Log and re-raise connection errors
+            print(f"Database connection error: {e}")
+            raise
         return _connection
 
 def release_db_connection(conn):
@@ -206,12 +211,12 @@ def release_db_connection(conn):
     try:
         if conn is not None and conn.closed == 0:
             conn.commit()
-    except Exception:
-        # In case of error, rollback
+    except psycopg2.Error:
+        # In case of database error, rollback
         try:
             conn.rollback()
-        except Exception:
-            # If rollback also fails, ignore
+        except psycopg2.Error:
+            # If rollback also fails, log and ignore
             pass
 ```
 
