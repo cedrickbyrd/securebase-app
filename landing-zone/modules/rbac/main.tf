@@ -418,7 +418,8 @@ resource "aws_iam_role_policy" "session_management_permissions" {
         Resource = [
           aws_dynamodb_table.user_sessions.arn,
           aws_dynamodb_table.activity_feed.arn,
-          "${aws_dynamodb_table.user_sessions.arn}/index/*"
+          "${aws_dynamodb_table.user_sessions.arn}/index/*",
+          "${aws_dynamodb_table.activity_feed.arn}/index/*"
         ]
       },
       {
