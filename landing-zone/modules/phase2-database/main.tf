@@ -224,7 +224,7 @@ resource "aws_dynamodb_table" "cache" {
 
 # Support Tickets table
 resource "aws_dynamodb_table" "support_tickets" {
-  name           = "securebase-support-tickets-${var.environment}"
+  name           = "securebase-${var.environment}-support-tickets"
   billing_mode   = var.dynamodb_billing_mode
   hash_key       = "customer_id"
   range_key      = "id"
@@ -274,6 +274,10 @@ resource "aws_dynamodb_table" "support_tickets" {
     enabled = true
   }
   
+  server_side_encryption {
+    enabled = true
+  }
+  
   tags = merge(var.tags, {
     Name = "SecureBase-Support-Tickets"
   })
@@ -281,7 +285,7 @@ resource "aws_dynamodb_table" "support_tickets" {
 
 # Ticket Comments table
 resource "aws_dynamodb_table" "ticket_comments" {
-  name           = "securebase-ticket-comments-${var.environment}"
+  name           = "securebase-${var.environment}-ticket-comments"
   billing_mode   = var.dynamodb_billing_mode
   hash_key       = "ticket_id"
   range_key      = "id"
@@ -305,6 +309,10 @@ resource "aws_dynamodb_table" "ticket_comments" {
     enabled = true
   }
   
+  server_side_encryption {
+    enabled = true
+  }
+  
   tags = merge(var.tags, {
     Name = "SecureBase-Ticket-Comments"
   })
@@ -312,7 +320,7 @@ resource "aws_dynamodb_table" "ticket_comments" {
 
 # Notifications table
 resource "aws_dynamodb_table" "notifications" {
-  name           = "securebase-notifications-${var.environment}"
+  name           = "securebase-${var.environment}-notifications"
   billing_mode   = var.dynamodb_billing_mode
   hash_key       = "customer_id"
   range_key      = "id"
@@ -349,6 +357,10 @@ resource "aws_dynamodb_table" "notifications" {
     enabled = true
   }
   
+  server_side_encryption {
+    enabled = true
+  }
+  
   tags = merge(var.tags, {
     Name = "SecureBase-Notifications"
   })
@@ -356,7 +368,7 @@ resource "aws_dynamodb_table" "notifications" {
 
 # Cost Forecasts table
 resource "aws_dynamodb_table" "cost_forecasts" {
-  name           = "securebase-cost-forecasts-${var.environment}"
+  name           = "securebase-${var.environment}-cost-forecasts"
   billing_mode   = var.dynamodb_billing_mode
   hash_key       = "customer_id"
   range_key      = "period_month"
@@ -377,6 +389,10 @@ resource "aws_dynamodb_table" "cost_forecasts" {
   }
   
   point_in_time_recovery {
+    enabled = true
+  }
+  
+  server_side_encryption {
     enabled = true
   }
   
