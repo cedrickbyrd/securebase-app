@@ -4,7 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithRouter } from '../../test/testUtils';
 import { Login } from '../Login';
 
 // Mock the API service
@@ -27,24 +28,24 @@ describe('Login Component', () => {
   });
 
   it('should render Login component', () => {
-    render(<Login />);
+    renderWithRouter(<Login />);
     expect(screen.getByText(/login|sign in/i)).toBeInTheDocument();
   });
 
   it('should have email and API key input fields', () => {
-    render(<Login />);
+    renderWithRouter(<Login />);
     
     expect(screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/api key/i) || screen.getByPlaceholderText(/api key/i)).toBeInTheDocument();
   });
 
   it('should have a submit button', () => {
-    render(<Login />);
+    renderWithRouter(<Login />);
     expect(screen.getByRole('button', { name: /login|sign in/i })).toBeInTheDocument();
   });
 
   it('should validate required fields', async () => {
-    render(<Login />);
+    renderWithRouter(<Login />);
     
     const submitButton = screen.getByRole('button', { name: /login|sign in/i });
     fireEvent.click(submitButton);
@@ -59,7 +60,7 @@ describe('Login Component', () => {
   it('should call login API with valid credentials', async () => {
     const { login } = await import('../../services/apiService');
     
-    render(<Login />);
+    renderWithRouter(<Login />);
     
     const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
     const apiKeyInput = screen.getByLabelText(/api key/i) || screen.getByPlaceholderText(/api key/i);
@@ -77,7 +78,7 @@ describe('Login Component', () => {
   it('should display error message on login failure', async () => {
     const { login } = await import('../../services/apiService');
     
-    render(<Login />);
+    renderWithRouter(<Login />);
     
     const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
     const apiKeyInput = screen.getByLabelText(/api key/i) || screen.getByPlaceholderText(/api key/i);
@@ -93,7 +94,7 @@ describe('Login Component', () => {
   });
 
   it('should disable submit button while logging in', async () => {
-    render(<Login />);
+    renderWithRouter(<Login />);
     
     const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
     const apiKeyInput = screen.getByLabelText(/api key/i) || screen.getByPlaceholderText(/api key/i);
