@@ -1,0 +1,280 @@
+# SecureBase Load Testing Configuration (Artillery)
+# Tests API performance under various load scenarios
+
+config:
+  target: 'https://api.securebase.com'
+  phases:
+    # Warm-up phase: Gradually increase load
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    
+    # Baseline performance test
+    - duration: 300
+      arrivalRate: 20
+      name: "Baseline load (20 req/s)"
+    
+    # Sustained load test
+    - duration: 600
+      arrivalRate: 100
+      name: "Sustained load (100 req/s)"
+    
+    # Spike test
+    - duration: 120
+      arrivalRate: 300
+      name: "Spike test (300 req/s)"
+    
+    # Cool down
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+  
+  # Environment variables
+  variables:
+    apiVersion: 'v1'
+  
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1          # Max 1% errors
+    p95: 100                 # p95 latency < 100ms
+    p99: 200                 # p99 latency < 200ms
+  
+  # Plugins
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+    expect: {}
+
+  # Default headers for all requests
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+      Accept: 'application/json'
+      X-Test-Run: 'load-test'
+
+# Test scenarios
+scenarios:
+  # Scenario 1: Anonymous user accessing public endpoints
+  - name: "Public API Access"
+    weight: 10
+    flow:
+      - get:
+          url: "/{{ apiVersion }}/health"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: status
+      - think: 1  # 1 second pause
+      
+      - get:
+          url: "/{{ apiVersion }}/pricing"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  # Scenario 2: Authenticated customer accessing dashboard
+  - name: "Customer Dashboard"
+    weight: 40
+    flow:
+      # Authentication
+      - post:
+          url: "/{{ apiVersion }}/auth/login"
+          json:
+            email: "test{{ $randomNumber() }}@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.customer_id"
+              as: "customerId"
+          expect:
+            - statusCode: 200
+      
+      - think: 2
+      
+      # Get customer invoices
+      - get:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/invoices"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      
+      - think: 3
+      
+      # Get usage metrics
+      - get:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/metrics?period=30d"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 5
+      
+      # Get compliance status
+      - get:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/compliance"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  # Scenario 3: Customer managing API keys
+  - name: "API Key Management"
+    weight: 20
+    flow:
+      # Login
+      - post:
+          url: "/{{ apiVersion }}/auth/login"
+          json:
+            email: "admin{{ $randomNumber() }}@example.com"
+            password: "AdminPassword123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.customer_id"
+              as: "customerId"
+      
+      - think: 2
+      
+      # List API keys
+      - get:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/api-keys"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 3
+      
+      # Create new API key
+      - post:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/api-keys"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            name: "Load Test Key {{ $randomString() }}"
+            permissions: ["read:invoices", "read:metrics"]
+          capture:
+            - json: "$.api_key_id"
+              as: "apiKeyId"
+          expect:
+            - statusCode: 201
+      
+      - think: 5
+      
+      # Delete API key (cleanup)
+      - delete:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/api-keys/{{ apiKeyId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 204
+
+  # Scenario 4: Analytics and reporting
+  - name: "Analytics Queries"
+    weight: 20
+    flow:
+      # Login
+      - post:
+          url: "/{{ apiVersion }}/auth/login"
+          json:
+            email: "analyst{{ $randomNumber() }}@example.com"
+            password: "AnalystPassword123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.customer_id"
+              as: "customerId"
+      
+      - think: 2
+      
+      # Get cost breakdown
+      - get:
+          url: "/{{ apiVersion }}/analytics/cost-breakdown?customer_id={{ customerId }}&period=30d"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: data
+      
+      - think: 4
+      
+      # Get security findings
+      - get:
+          url: "/{{ apiVersion }}/analytics/security?customer_id={{ customerId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 3
+      
+      # Get compliance score
+      - get:
+          url: "/{{ apiVersion }}/analytics/compliance?customer_id={{ customerId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  # Scenario 5: Support ticket creation (lower frequency)
+  - name: "Support Tickets"
+    weight: 10
+    flow:
+      # Login
+      - post:
+          url: "/{{ apiVersion }}/auth/login"
+          json:
+            email: "support{{ $randomNumber() }}@example.com"
+            password: "SupportPassword123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.customer_id"
+              as: "customerId"
+      
+      - think: 3
+      
+      # List tickets
+      - get:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/tickets"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 10
+      
+      # Create ticket
+      - post:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/tickets"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            subject: "Load test ticket {{ $randomString() }}"
+            description: "This is a test ticket created during load testing"
+            priority: "medium"
+            category: "billing"
+          capture:
+            - json: "$.ticket_id"
+              as: "ticketId"
+          expect:
+            - statusCode: 201
+      
+      - think: 5
+      
+      # Add comment
+      - post:
+          url: "/{{ apiVersion }}/customers/{{ customerId }}/tickets/{{ ticketId }}/comments"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            comment: "Additional information for the ticket"
+          expect:
+            - statusCode: 201
+
+# Custom functions for data generation
+processor: "./load-test-processor.js"
