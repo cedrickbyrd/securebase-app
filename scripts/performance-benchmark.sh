@@ -81,27 +81,33 @@ measure_endpoint() {
         fi
     done
     
-    # Calculate average
-    avg_time=$(echo "scale=2; $total_time / $ITERATIONS" | bc)
-    
-    # Determine status based on target
-    local status="✓"
-    local color=$GREEN
-    
-    if (( $(echo "$avg_time > 500" | bc -l) )); then
-        status="⚠"
-        color=$YELLOW
+    # Calculate average only if we had successful requests
+    if [ $success_count -gt 0 ]; then
+        avg_time=$(echo "scale=2; $total_time / $success_count" | bc)
+        
+        # Determine status based on target
+        local status="✓"
+        local color=$GREEN
+        
+        if (( $(echo "$avg_time > 500" | bc -l) )); then
+            status="⚠"
+            color=$YELLOW
+        fi
+        
+        if (( $(echo "$avg_time > 1000" | bc -l) )); then
+            status="✗"
+            color=$RED
+        fi
+        
+        echo -e "${color}${status} Avg: ${avg_time}ms (Min: ${min_time}ms, Max: ${max_time}ms) [${success_count}/${ITERATIONS} succeeded]${NC}"
+        
+        # Store results (will be collected and properly formatted at the end)
+        echo "${name}|${avg_time}|${min_time}|${max_time}|${ITERATIONS}" >> "$RESULTS_FILE.tmp"
+    else
+        echo -e "${RED}✗ All requests failed (0/${ITERATIONS} succeeded)${NC}"
+        # Store failure result
+        echo "${name}|0|0|0|0" >> "$RESULTS_FILE.tmp"
     fi
-    
-    if (( $(echo "$avg_time > 1000" | bc -l) )); then
-        status="✗"
-        color=$RED
-    fi
-    
-    echo -e "${color}${status} Avg: ${avg_time}ms (Min: ${min_time}ms, Max: ${max_time}ms)${NC}"
-    
-    # Store results (will be collected and properly formatted at the end)
-    echo "${name}|${avg_time}|${min_time}|${max_time}|${ITERATIONS}" >> "$RESULTS_FILE.tmp"
 }
 
 # Initialize results file
