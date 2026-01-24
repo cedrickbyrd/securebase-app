@@ -394,6 +394,19 @@ module "api_gateway" {
   analytics_lambda_name       = try(module.analytics.report_engine_function_name, null)
   analytics_lambda_invoke_arn = try(module.analytics.report_engine_invoke_arn, null)
 
+  # Phase 4: RBAC Lambdas
+  user_management_lambda_arn        = try(module.rbac.user_management_function_arn, null)
+  user_management_lambda_name       = try(module.rbac.user_management_function_name, null)
+  user_management_lambda_invoke_arn = try(module.rbac.user_management_invoke_arn, null)
+  
+  session_management_lambda_arn        = try(module.rbac.session_management_function_arn, null)
+  session_management_lambda_name       = try(module.rbac.session_management_function_name, null)
+  session_management_lambda_invoke_arn = try(module.rbac.session_management_invoke_arn, null)
+  
+  permission_management_lambda_arn        = try(module.rbac.permission_management_function_arn, null)
+  permission_management_lambda_name       = try(module.rbac.permission_management_function_name, null)
+  permission_management_lambda_invoke_arn = try(module.rbac.permission_management_invoke_arn, null)
+
   # Security settings
   default_rate_limit  = 100
   default_burst_limit = 200
@@ -406,7 +419,7 @@ module "api_gateway" {
     Phase = "Phase3-API"
   })
 
-  depends_on = [module.lambda_functions, module.analytics]
+  depends_on = [module.lambda_functions, module.analytics, module.rbac]
 }
 
 # --- Phase 4: Advanced Analytics & Reporting ---
@@ -419,4 +432,22 @@ module "analytics" {
     Phase     = "Phase4-Analytics"
     Component = "Analytics"
   })
+}
+
+# --- Phase 4: RBAC & User Management ---
+module "rbac" {
+  source = "./modules/rbac"
+
+  environment         = var.environment
+  database_endpoint   = module.phase2_database.rds_proxy_endpoint
+  database_name       = "securebase"
+  database_secret_arn = module.phase2_database.database_secret_arn
+  jwt_secret_arn      = module.phase2_database.jwt_secret_arn
+
+  tags = merge(var.tags, {
+    Phase     = "Phase4-RBAC"
+    Component = "UserManagement"
+  })
+
+  depends_on = [module.phase2_database]
 }
