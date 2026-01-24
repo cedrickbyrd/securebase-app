@@ -44,13 +44,13 @@ export const options = {
     'http_req_duration{endpoint:analytics}': ['p(95)<500'], // Analytics < 500ms
   },
   
-  // External metrics (DataDog, etc.)
-  ext: {
-    loadimpact: {
-      projectID: 3579745,
-      name: 'SecureBase API Load Test'
-    }
-  }
+  // External metrics (k6 Cloud - optional)
+  // ext: {
+  //   loadimpact: {
+  //     projectID: parseInt(__ENV.K6_PROJECT_ID || '0'),
+  //     name: 'SecureBase API Load Test'
+  //   }
+  // }
 };
 
 // Test data
@@ -285,11 +285,11 @@ export function teardown(data) {
 export function handleSummary(data) {
   return {
     'summary.json': JSON.stringify(data, null, 2),
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
+    'stdout': generateTextSummary(data, { indent: ' ', enableColors: true }),
   };
 }
 
-function textSummary(data, options) {
+function generateTextSummary(data, options) {
   const { indent = '', enableColors = false } = options;
   
   let summary = '\n';

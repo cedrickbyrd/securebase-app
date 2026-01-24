@@ -80,7 +80,7 @@ scenarios:
       - post:
           url: "/{{ apiVersion }}/auth/login"
           json:
-            email: "test{{ $randomNumber() }}@example.com"
+            email: "loadtest-{{ $randomString() }}@example.com"
             password: "TestPassword123!"
           capture:
             - json: "$.token"
@@ -129,7 +129,7 @@ scenarios:
       - post:
           url: "/{{ apiVersion }}/auth/login"
           json:
-            email: "admin{{ $randomNumber() }}@example.com"
+            email: "admin-{{ $randomString() }}@example.com"
             password: "AdminPassword123!"
           capture:
             - json: "$.token"
@@ -181,7 +181,7 @@ scenarios:
       - post:
           url: "/{{ apiVersion }}/auth/login"
           json:
-            email: "analyst{{ $randomNumber() }}@example.com"
+            email: "analyst-{{ $randomString() }}@example.com"
             password: "AnalystPassword123!"
           capture:
             - json: "$.token"
@@ -228,7 +228,7 @@ scenarios:
       - post:
           url: "/{{ apiVersion }}/auth/login"
           json:
-            email: "support{{ $randomNumber() }}@example.com"
+            email: "support-{{ $randomString() }}@example.com"
             password: "SupportPassword123!"
           capture:
             - json: "$.token"
