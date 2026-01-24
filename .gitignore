@@ -37,3 +37,18 @@ dist-ssr
 # Potential sensitive files
 auth_token.txt
 kubeconfig
+
+# Python test artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.coverage
+htmlcov/
+.pytest_cache/
+coverage.json
+
+# Frontend test artifacts
+coverage/
+.vitest/
