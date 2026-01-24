@@ -29,7 +29,8 @@ export default defineConfig({
         // Aggressive code splitting for better caching
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'charts': ['chart.js', 'react-chartjs-2', 'recharts'],
+          'charts-legacy': ['chart.js', 'react-chartjs-2'],
+          'charts-modern': ['recharts'],
           'ui-vendor': ['lucide-react', 'date-fns'],
           'network': ['axios'],
         },

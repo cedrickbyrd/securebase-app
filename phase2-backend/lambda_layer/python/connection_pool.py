@@ -12,10 +12,24 @@ import os
 import json
 import logging
 from contextlib import contextmanager
-import psycopg2
-from psycopg2 import pool
-import boto3
 from functools import lru_cache
+
+try:
+    import psycopg2
+    from psycopg2 import pool
+except ImportError as e:
+    raise ImportError(
+        "psycopg2-binary is required for database connection pooling. "
+        "Install it in your Lambda layer: pip install psycopg2-binary"
+    ) from e
+
+try:
+    import boto3
+except ImportError as e:
+    raise ImportError(
+        "boto3 is required for AWS service integration. "
+        "It should be available in the Lambda runtime by default."
+    ) from e
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
