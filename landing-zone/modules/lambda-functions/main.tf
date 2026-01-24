@@ -11,6 +11,12 @@ terraform {
 }
 
 # ============================================================================
+# Data Sources
+# ============================================================================
+
+data "aws_caller_identity" "current" {}
+
+# ============================================================================
 # Lambda Execution Role
 # ============================================================================
 
@@ -43,7 +49,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# Custom policy for DynamoDB, RDS, Secrets Manager
+# Custom policy for DynamoDB, RDS, Secrets Manager, SNS, SES
 resource "aws_iam_role_policy" "lambda_custom" {
   name = "lambda-custom-permissions"
   role = aws_iam_role.lambda_execution.id
@@ -79,6 +85,23 @@ resource "aws_iam_role_policy" "lambda_custom" {
         Action = [
           "rds:DescribeDBClusters",
           "rds:DescribeDBInstances"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = [
+          "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:securebase-${var.environment}-*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
         ]
         Resource = "*"
       },
@@ -202,6 +225,7 @@ resource "aws_lambda_function" "support_tickets" {
     variables = {
       ENVIRONMENT       = var.environment
       SUPPORT_TICKETS_TABLE = "securebase-${var.environment}-support-tickets"
+      TICKET_COMMENTS_TABLE = "securebase-${var.environment}-ticket-comments"
     }
   }
 
@@ -228,9 +252,10 @@ resource "aws_lambda_function" "cost_forecasting" {
 
   environment {
     variables = {
-      ENVIRONMENT    = var.environment
+      ENVIRONMENT        = var.environment
       RDS_PROXY_ENDPOINT = var.rds_proxy_endpoint
-      METRICS_TABLE  = "securebase-${var.environment}-metrics"
+      METRICS_TABLE      = "securebase-${var.environment}-metrics"
+      FORECASTS_TABLE    = "securebase-${var.environment}-cost-forecasts"
     }
   }
 
