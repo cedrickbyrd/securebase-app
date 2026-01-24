@@ -222,15 +222,21 @@ def create_user(customer_id: str, current_user_id: str, current_user_role: str, 
         # Send welcome email with temporary password
         send_welcome_email(email, full_name, temp_password)
         
-        return success_response({
+        # Only return temporary password in development mode
+        response_data = {
             'user_id': str(user_id),
             'email': user[1],
             'full_name': user[2],
             'role': user[3],
             'status': user[4],
-            'created_at': user[5].isoformat() if user[5] else None,
-            'temporary_password': temp_password  # Only returned on creation
-        })
+            'created_at': user[5].isoformat() if user[5] else None
+        }
+        
+        # Only include temp password in dev/test environments (never in production)
+        if os.environ.get('ENVIRONMENT') in ['dev', 'development', 'test']:
+            response_data['temporary_password'] = temp_password
+        
+        return success_response(response_data)
     
     except Exception as e:
         if conn:
@@ -805,12 +811,17 @@ def reset_user_password(customer_id: str, current_user_id: str, current_user_rol
         # Send email with new password
         send_password_reset_email(user_email, user_name, temp_password)
         
-        return success_response({
+        response_data = {
             'message': 'Password reset successfully',
             'user_id': str(user_id),
-            'email': user_email,
-            'temporary_password': temp_password  # Only returned for testing, remove in production
-        })
+            'email': user_email
+        }
+        
+        # Only include temp password in dev/test environments (never in production)
+        if os.environ.get('ENVIRONMENT') in ['dev', 'development', 'test']:
+            response_data['temporary_password'] = temp_password
+        
+        return success_response(response_data)
     
     except Exception as e:
         if conn:

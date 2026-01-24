@@ -20,7 +20,8 @@ import {
   ShieldCheckIcon,
   LockClosedIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import teamService from '../services/teamService';
 
@@ -28,8 +29,11 @@ const TeamManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [filters, setFilters] = useState({
     role: '',
@@ -98,25 +102,48 @@ const TeamManagement = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      await teamService.deleteUser(userId, sessionToken);
-      await loadUsers();
-    } catch (err) {
-      setError(err.message || 'Failed to delete user');
-    }
+    setConfirmAction({
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      confirmText: 'Delete',
+      confirmClass: 'bg-red-600 hover:bg-red-700',
+      onConfirm: async () => {
+        try {
+          await teamService.deleteUser(userId, sessionToken);
+          setSuccess('User deleted successfully');
+          setTimeout(() => setSuccess(null), 3000);
+          await loadUsers();
+        } catch (err) {
+          setError(err.message || 'Failed to delete user');
+        } finally {
+          setShowConfirmDialog(false);
+          setConfirmAction(null);
+        }
+      }
+    });
+    setShowConfirmDialog(true);
   };
 
   const handleResetPassword = async (userId) => {
-    if (!confirm('Send password reset email to this user?')) return;
-    
-    try {
-      await teamService.resetUserPassword(userId, sessionToken);
-      alert('Password reset email sent successfully');
-    } catch (err) {
-      setError(err.message || 'Failed to reset password');
-    }
+    setConfirmAction({
+      title: 'Reset Password',
+      message: 'Send password reset email to this user?',
+      confirmText: 'Send Email',
+      confirmClass: 'bg-yellow-600 hover:bg-yellow-700',
+      onConfirm: async () => {
+        try {
+          await teamService.resetUserPassword(userId, sessionToken);
+          setSuccess('Password reset email sent successfully');
+          setTimeout(() => setSuccess(null), 3000);
+        } catch (err) {
+          setError(err.message || 'Failed to reset password');
+        } finally {
+          setShowConfirmDialog(false);
+          setConfirmAction(null);
+        }
+      }
+    });
+    setShowConfirmDialog(true);
   };
 
   const handleUnlockAccount = async (userId) => {
@@ -184,6 +211,17 @@ const TeamManagement = () => {
             <XCircleIcon className="w-5 h-5 text-red-600" />
             <span className="text-red-800">{error}</span>
             <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-800">
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Success Alert */}
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <CheckCircleIcon className="w-5 h-5 text-green-600" />
+            <span className="text-green-800">{success}</span>
+            <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-800">
               ×
             </button>
           </div>
@@ -384,6 +422,21 @@ const TeamManagement = () => {
             onUpdateRole={(role) => handleUpdateRole(selectedUser.id, role)}
             onUpdateStatus={(status) => handleUpdateStatus(selectedUser.id, status)}
             currentUserRole={currentUserRole}
+          />
+        )}
+
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && confirmAction && (
+          <ConfirmDialog
+            title={confirmAction.title}
+            message={confirmAction.message}
+            confirmText={confirmAction.confirmText}
+            confirmClass={confirmAction.confirmClass}
+            onConfirm={confirmAction.onConfirm}
+            onCancel={() => {
+              setShowConfirmDialog(false);
+              setConfirmAction(null);
+            }}
           />
         )}
       </div>
@@ -620,6 +673,39 @@ const EditUserModal = ({ user, onClose, onSubmit, onUpdateRole, onUpdateStatus, 
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Confirmation Dialog Component
+const ConfirmDialog = ({ title, message, confirmText, confirmClass, onConfirm, onCancel }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="flex items-center gap-3 mb-4">
+          <ExclamationTriangleIcon className="w-8 h-8 text-yellow-600" />
+          <h2 className="text-2xl font-bold">{title}</h2>
+        </div>
+        
+        <p className="text-gray-700 mb-6">{message}</p>
+        
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`flex-1 px-4 py-2 text-white rounded-lg ${confirmClass || 'bg-blue-600 hover:bg-blue-700'}`}
+          >
+            {confirmText || 'Confirm'}
+          </button>
+        </div>
       </div>
     </div>
   );

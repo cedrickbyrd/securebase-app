@@ -407,8 +407,9 @@ def setup_mfa(data: Dict) -> Dict:
         return success_response({
             'secret': totp_secret,
             'provisioning_uri': provisioning_uri,
-            'qr_code_url': f'https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl={provisioning_uri}',
-            'message': 'Scan QR code with authenticator app and verify to enable MFA'
+            # Note: For production, generate QR code on frontend using qrcode.js library
+            # to avoid exposing secret to third-party services
+            'message': 'Use provisioning_uri to generate QR code on client side, then scan with authenticator app'
         })
     
     except Exception as e:
