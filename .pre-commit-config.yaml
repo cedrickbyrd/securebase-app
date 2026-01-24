@@ -1,0 +1,58 @@
+# Pre-commit hooks for Terraform validation
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.88.0
+    hooks:
+      - id: terraform_fmt
+        name: Terraform Format
+        description: Rewrites all Terraform configuration files to canonical format
+        
+      - id: terraform_validate
+        name: Terraform Validate
+        description: Validates all Terraform configuration files
+        
+      - id: terraform_docs
+        name: Terraform Docs
+        description: Inserts/updates terraform-docs in README.md files
+        args:
+          - --hook-config=--path-to-file=README.md
+          - --hook-config=--add-to-existing-file=true
+          - --hook-config=--create-file-if-not-exist=true
+        
+      - id: terraform_tflint
+        name: Terraform Lint
+        description: Validates all Terraform configuration files with TFLint
+        
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        
+      - id: check-yaml
+        name: Check YAML
+        
+      - id: check-added-large-files
+        name: Check for Large Files
+        args: ['--maxkb=500']
+        
+      - id: check-merge-conflict
+        name: Check for Merge Conflicts
+        
+      - id: detect-private-key
+        name: Detect Private Keys
+        
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock.json
