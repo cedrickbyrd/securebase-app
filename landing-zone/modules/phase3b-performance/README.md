@@ -76,7 +76,6 @@ https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=
 
 - `support_tickets_table_name` - Name of the support tickets DynamoDB table
 - `performance_dashboard_url` - URL to CloudWatch dashboard
-- `alert_topic_arn` - SNS topic ARN for performance alerts
 
 ## Cost Optimization
 

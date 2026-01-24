@@ -47,33 +47,38 @@ measure_endpoint() {
     
     for i in $(seq 1 $ITERATIONS); do
         if [ "$method" = "GET" ]; then
-            response_time=$(curl -w '%{time_total}' -s -o /dev/null \
+            response_time=$(curl -w '%{time_total}' -s -o /dev/null -f \
                 -H "X-API-Key: $API_KEY" \
-                "$API_BASE_URL$endpoint")
+                "$API_BASE_URL$endpoint" 2>/dev/null)
+            curl_exit_code=$?
         else
-            response_time=$(curl -w '%{time_total}' -s -o /dev/null \
+            response_time=$(curl -w '%{time_total}' -s -o /dev/null -f \
                 -X "$method" \
                 -H "Content-Type: application/json" \
                 -H "X-API-Key: $API_KEY" \
                 -d "$data" \
-                "$API_BASE_URL$endpoint")
+                "$API_BASE_URL$endpoint" 2>/dev/null)
+            curl_exit_code=$?
         fi
         
-        # Convert to milliseconds
-        time_ms=$(echo "$response_time * 1000" | bc)
-        
-        # Update statistics
-        total_time=$(echo "$total_time + $time_ms" | bc)
-        
-        if (( $(echo "$time_ms < $min_time" | bc -l) )); then
-            min_time=$time_ms
+        # Check if curl succeeded and response_time is valid
+        if [ $curl_exit_code -eq 0 ] && [ -n "$response_time" ] && [[ "$response_time" =~ ^[0-9.]+$ ]]; then
+            # Convert to milliseconds
+            time_ms=$(echo "$response_time * 1000" | bc)
+            
+            # Update statistics
+            total_time=$(echo "$total_time + $time_ms" | bc)
+            
+            if (( $(echo "$time_ms < $min_time" | bc -l) )); then
+                min_time=$time_ms
+            fi
+            
+            if (( $(echo "$time_ms > $max_time" | bc -l) )); then
+                max_time=$time_ms
+            fi
+            
+            success_count=$((success_count + 1))
         fi
-        
-        if (( $(echo "$time_ms > $max_time" | bc -l) )); then
-            max_time=$time_ms
-        fi
-        
-        success_count=$((success_count + 1))
     done
     
     # Calculate average
@@ -95,18 +100,13 @@ measure_endpoint() {
     
     echo -e "${color}${status} Avg: ${avg_time}ms (Min: ${min_time}ms, Max: ${max_time}ms)${NC}"
     
-    # Store results
-    echo "    \"$name\": {\"avg\": $avg_time, \"min\": $min_time, \"max\": $max_time, \"iterations\": $ITERATIONS}" >> "$RESULTS_FILE.tmp"
+    # Store results (will be collected and properly formatted at the end)
+    echo "${name}|${avg_time}|${min_time}|${max_time}|${ITERATIONS}" >> "$RESULTS_FILE.tmp"
 }
 
 # Initialize results file
-echo "{" > "$RESULTS_FILE.tmp"
-echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> "$RESULTS_FILE.tmp"
-echo "  \"config\": {" >> "$RESULTS_FILE.tmp"
-echo "    \"iterations\": $ITERATIONS," >> "$RESULTS_FILE.tmp"
-echo "    \"api_base_url\": \"$API_BASE_URL\"" >> "$RESULTS_FILE.tmp"
-echo "  }," >> "$RESULTS_FILE.tmp"
-echo "  \"results\": {" >> "$RESULTS_FILE.tmp"
+rm -f "$RESULTS_FILE.tmp"
+touch "$RESULTS_FILE.tmp"
 
 echo "================================================"
 echo "Phase 3B Endpoint Performance Tests"
@@ -145,13 +145,31 @@ measure_endpoint "Create Webhook" "POST" "/webhooks" '{"url":"https://example.co
 
 echo ""
 
-# Close results JSON
-echo "  }" >> "$RESULTS_FILE.tmp"
-echo "}" >> "$RESULTS_FILE.tmp"
+# Generate properly formatted JSON from collected results
+echo "{" > "$RESULTS_FILE"
+echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> "$RESULTS_FILE"
+echo "  \"config\": {" >> "$RESULTS_FILE"
+echo "    \"iterations\": $ITERATIONS," >> "$RESULTS_FILE"
+echo "    \"api_base_url\": \"$API_BASE_URL\"" >> "$RESULTS_FILE"
+echo "  }," >> "$RESULTS_FILE"
+echo "  \"results\": {" >> "$RESULTS_FILE"
 
-# Format JSON properly (remove trailing commas)
-sed 's/,\([^,]*\)$/\1/' "$RESULTS_FILE.tmp" > "$RESULTS_FILE"
-rm "$RESULTS_FILE.tmp"
+# Process collected results
+first_line=true
+while IFS='|' read -r name avg min max iterations; do
+    if [ "$first_line" = true ]; then
+        first_line=false
+    else
+        echo "," >> "$RESULTS_FILE"
+    fi
+    echo -n "    \"$name\": {\"avg\": $avg, \"min\": $min, \"max\": $max, \"iterations\": $iterations}" >> "$RESULTS_FILE"
+done < "$RESULTS_FILE.tmp"
+
+echo "" >> "$RESULTS_FILE"
+echo "  }" >> "$RESULTS_FILE"
+echo "}" >> "$RESULTS_FILE"
+
+rm -f "$RESULTS_FILE.tmp"
 
 echo "================================================"
 echo "Performance Benchmarking Complete"

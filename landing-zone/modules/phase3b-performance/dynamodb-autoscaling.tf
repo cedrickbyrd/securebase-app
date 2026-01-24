@@ -168,6 +168,100 @@ resource "aws_appautoscaling_policy" "support_tickets_status_index_read_policy" 
   }
 }
 
+# Auto-scaling for GSI write capacity
+resource "aws_appautoscaling_target" "support_tickets_status_index_write" {
+  max_capacity       = 50
+  min_capacity       = 10
+  resource_id        = "table/${aws_dynamodb_table.support_tickets.name}/index/status-created-index"
+  scalable_dimension = "dynamodb:index:WriteCapacityUnits"
+  service_namespace  = "dynamodb"
+}
+
+resource "aws_appautoscaling_policy" "support_tickets_status_index_write_policy" {
+  name               = "${var.project_name}-${var.environment}-support-tickets-status-index-write-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.support_tickets_status_index_write.resource_id
+  scalable_dimension = aws_appautoscaling_target.support_tickets_status_index_write.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.support_tickets_status_index_write.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "DynamoDBWriteCapacityUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 30
+  }
+}
+
+resource "aws_appautoscaling_target" "support_tickets_priority_index_read" {
+  max_capacity       = 50
+  min_capacity       = 10
+  resource_id        = "table/${aws_dynamodb_table.support_tickets.name}/index/priority-created-index"
+  scalable_dimension = "dynamodb:index:ReadCapacityUnits"
+  service_namespace  = "dynamodb"
+}
+
+resource "aws_appautoscaling_policy" "support_tickets_priority_index_read_policy" {
+  name               = "${var.project_name}-${var.environment}-support-tickets-priority-index-read-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.support_tickets_priority_index_read.resource_id
+  scalable_dimension = aws_appautoscaling_target.support_tickets_priority_index_read.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.support_tickets_priority_index_read.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "DynamoDBReadCapacityUtilization"
+    }
+    target_value = 70.0
+  }
+}
+
+resource "aws_appautoscaling_target" "support_tickets_priority_index_write" {
+  max_capacity       = 50
+  min_capacity       = 10
+  resource_id        = "table/${aws_dynamodb_table.support_tickets.name}/index/priority-created-index"
+  scalable_dimension = "dynamodb:index:WriteCapacityUnits"
+  service_namespace  = "dynamodb"
+}
+
+resource "aws_appautoscaling_policy" "support_tickets_priority_index_write_policy" {
+  name               = "${var.project_name}-${var.environment}-support-tickets-priority-index-write-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.support_tickets_priority_index_write.resource_id
+  scalable_dimension = aws_appautoscaling_target.support_tickets_priority_index_write.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.support_tickets_priority_index_write.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "DynamoDBWriteCapacityUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 30
+  }
+}
+
+# ============================================
+# SNS Topic for Performance Alerts
+# ============================================
+
+resource "aws_sns_topic" "performance_alerts" {
+  name = "${var.project_name}-${var.environment}-phase3b-performance-alerts"
+
+  tags = {
+    Environment = var.environment
+    Purpose     = "performance-monitoring"
+  }
+}
+
+resource "aws_sns_topic_subscription" "performance_alerts_email" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.performance_alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
 # ============================================
 # CloudWatch Alarms for DynamoDB
 # ============================================
@@ -182,6 +276,7 @@ resource "aws_cloudwatch_metric_alarm" "support_tickets_throttles" {
   statistic           = "Sum"
   threshold           = 5
   alarm_description   = "Alert when support tickets table experiences throttling"
+  alarm_actions       = [aws_sns_topic.performance_alerts.arn]
 
   dimensions = {
     TableName = aws_dynamodb_table.support_tickets.name
@@ -200,4 +295,9 @@ resource "aws_cloudwatch_metric_alarm" "support_tickets_throttles" {
 output "support_tickets_table_name" {
   description = "Name of the support tickets DynamoDB table"
   value       = aws_dynamodb_table.support_tickets.name
+}
+
+output "performance_alerts_topic_arn" {
+  description = "ARN of the performance alerts SNS topic"
+  value       = aws_sns_topic.performance_alerts.arn
 }
