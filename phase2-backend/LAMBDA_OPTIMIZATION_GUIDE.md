@@ -181,7 +181,8 @@ def get_db_connection():
             # Check if connection is still alive
             if _connection.closed == 0:
                 return _connection
-        except:
+        except Exception:
+            # Connection is invalid, will recreate below
             pass
     
     # Slow path: initialize or reinitialize connection safely
@@ -209,7 +210,8 @@ def release_db_connection(conn):
         # In case of error, rollback
         try:
             conn.rollback()
-        except:
+        except Exception:
+            # If rollback also fails, ignore
             pass
 ```
 
