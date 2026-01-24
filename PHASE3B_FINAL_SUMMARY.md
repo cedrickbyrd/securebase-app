@@ -215,7 +215,7 @@ Created `phase2-backend/functions/package-phase3b.sh`:
    - PHASE3B_INFRASTRUCTURE_CHECKLIST.md
    - PHASE3B_COMPLETE_SUMMARY.md
 
-✏️ Modified Files (3):
+✏️ Modified Files (4):
    - landing-zone/main.tf
    - landing-zone/modules/lambda-functions/main.tf
    - landing-zone/modules/phase2-database/main.tf
