@@ -6,6 +6,7 @@ Database: support_tickets and ticket_comments tables (Phase 2 schema)
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
@@ -22,9 +23,12 @@ dynamodb = boto3.resource('dynamodb')
 sqs = boto3.client('sqs')
 sns = boto3.client('sns')
 
-# Database tables
-tickets_table = dynamodb.Table('support_tickets')
-comments_table = dynamodb.Table('ticket_comments')
+# Database tables - use environment variables for proper naming
+SUPPORT_TICKETS_TABLE = os.environ.get('SUPPORT_TICKETS_TABLE', 'support_tickets')
+TICKET_COMMENTS_TABLE = os.environ.get('TICKET_COMMENTS_TABLE', 'ticket_comments')
+
+tickets_table = dynamodb.Table(SUPPORT_TICKETS_TABLE)
+comments_table = dynamodb.Table(TICKET_COMMENTS_TABLE)
 
 # SLA configurations (in hours)
 SLA_CONFIG = {
