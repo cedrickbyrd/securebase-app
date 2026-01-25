@@ -131,7 +131,7 @@ if [ "$AWS_CONFIGURED" = true ]; then
         echo -n "Testing: Lambda invocation (GET analytics)... "
         if aws lambda invoke \
             --function-name securebase-dev-report-engine \
-            --payload file://phase2-backend/functions/test-events/get-analytics.json \
+            --payload file://$REPO_ROOT/phase2-backend/functions/test-events/get-analytics.json \
             --region us-east-1 \
             /tmp/lambda-output.json > /dev/null 2>&1; then
             
