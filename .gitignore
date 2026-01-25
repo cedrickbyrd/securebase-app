@@ -52,3 +52,7 @@ coverage.json
 # Frontend test artifacts
 coverage/
 .vitest/
+
+# Python bytecode
+__pycache__/
+*.pyc
