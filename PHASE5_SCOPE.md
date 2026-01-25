@@ -447,11 +447,11 @@ Increase: +$78-156/month (~2x)
 - [ ] [ADMIN_DASHBOARD_GUIDE.md](to be created) - How to use admin dashboard
 - [ ] [TENANT_DASHBOARD_GUIDE.md](to be created) - Customer-facing guide
 - [ ] [SRE_RUNBOOK.md](to be created) - On-call engineer procedures
-- [ ] [DISASTER_RECOVERY_PLAN.md](to be created) - RTO/RPO, failover procedures
-- [ ] [DR_RUNBOOK.md](to be created) - Step-by-step failover guide
-- [ ] [FAILBACK_PROCEDURE.md](to be created) - Return to us-east-1
+- [x] [DISASTER_RECOVERY_PLAN.md](DISASTER_RECOVERY_PLAN.md) - RTO/RPO, failover procedures ✅ Created Jan 25, 2026
+- [x] [DR_RUNBOOK.md](DR_RUNBOOK.md) - Step-by-step failover guide ✅ Created Jan 25, 2026
+- [ ] [FAILBACK_PROCEDURE.md](to be created) - Return to us-east-1 (Covered in DR_RUNBOOK.md Section 5)
 - [ ] [MULTI_REGION_TESTING_GUIDE.md](to be created) - Monthly drill procedures
-- [ ] [COST_OPTIMIZATION_PLAYBOOK.md](to be created) - Scaling best practices
+- [x] [COST_OPTIMIZATION_PLAYBOOK.md](COST_OPTIMIZATION_PLAYBOOK.md) - Scaling best practices ✅ Created Jan 25, 2026
 - [ ] [PAGERDUTY_SETUP_GUIDE.md](to be created) - Alert integration
 
 ---
