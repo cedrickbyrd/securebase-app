@@ -18,6 +18,9 @@ NC='\033[0m' # No Color
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+# Determine repository root
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 # Function to run a test
 run_test() {
     local test_name="$1"
@@ -46,42 +49,42 @@ echo ""
 
 # Test 1: Check Lambda function exists
 run_test "Lambda function file exists" \
-    "test -f /workspaces/securebase-app/phase2-backend/functions/report_engine.py"
+    "test -f $REPO_ROOT/phase2-backend/functions/report_engine.py"
 
 # Test 2: Check Lambda function syntax
 run_test "Lambda function Python syntax" \
-    "python3 -m py_compile /workspaces/securebase-app/phase2-backend/functions/report_engine.py"
+    "python3 -m py_compile $REPO_ROOT/phase2-backend/functions/report_engine.py"
 
 # Test 3: Check test events exist
 run_test "Test events directory exists" \
-    "test -d /workspaces/securebase-app/phase2-backend/functions/test-events"
+    "test -d $REPO_ROOT/phase2-backend/functions/test-events"
 
 # Test 4: Validate test event JSON
 run_test "GET analytics test event valid JSON" \
-    "python3 -m json.tool /workspaces/securebase-app/phase2-backend/functions/test-events/get-analytics.json > /dev/null"
+    "python3 -m json.tool $REPO_ROOT/phase2-backend/functions/test-events/get-analytics.json > /dev/null"
 
 run_test "Export CSV test event valid JSON" \
-    "python3 -m json.tool /workspaces/securebase-app/phase2-backend/functions/test-events/export-csv.json > /dev/null"
+    "python3 -m json.tool $REPO_ROOT/phase2-backend/functions/test-events/export-csv.json > /dev/null"
 
 # Test 5: Check Terraform modules exist
 run_test "Analytics Terraform module exists" \
-    "test -d /workspaces/securebase-app/landing-zone/modules/analytics"
+    "test -d $REPO_ROOT/landing-zone/modules/analytics"
 
 run_test "Analytics DynamoDB config exists" \
-    "test -f /workspaces/securebase-app/landing-zone/modules/analytics/dynamodb.tf"
+    "test -f $REPO_ROOT/landing-zone/modules/analytics/dynamodb.tf"
 
 run_test "Analytics Lambda config exists" \
-    "test -f /workspaces/securebase-app/landing-zone/modules/analytics/lambda.tf"
+    "test -f $REPO_ROOT/landing-zone/modules/analytics/lambda.tf"
 
 # Test 6: Check deployment scripts
 run_test "Automated deployment script exists" \
-    "test -f /workspaces/securebase-app/DEPLOY_PHASE4_NOW.sh"
+    "test -f $REPO_ROOT/DEPLOY_PHASE4_NOW.sh"
 
 run_test "Lambda packaging script exists" \
-    "test -f /workspaces/securebase-app/phase2-backend/functions/package-lambda.sh"
+    "test -f $REPO_ROOT/phase2-backend/functions/package-lambda.sh"
 
 run_test "Lambda layer build script exists" \
-    "test -f /workspaces/securebase-app/phase2-backend/layers/reporting/build-layer.sh"
+    "test -f $REPO_ROOT/phase2-backend/layers/reporting/build-layer.sh"
 
 echo ""
 echo "=== AWS Deployment Check ==="
