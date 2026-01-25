@@ -8,9 +8,12 @@ echo "🚀 SecureBase Phase 4 Component 1: Analytics Deployment"
 echo "=========================================================="
 echo ""
 
+# Determine repository root
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 # Step 1: Package Lambda Function
 echo "📦 Step 1/5: Packaging Lambda function..."
-cd /workspaces/securebase-app/phase2-backend/functions
+cd "$REPO_ROOT/phase2-backend/functions"
 rm -f ../deploy/report_engine.zip
 mkdir -p ../deploy
 zip -j ../deploy/report_engine.zip report_engine.py
@@ -19,7 +22,7 @@ echo ""
 
 # Step 2: Build Lambda Layer
 echo "🔨 Step 2/5: Building Lambda layer with dependencies..."
-cd /workspaces/securebase-app/phase2-backend/layers/reporting
+cd "$REPO_ROOT/phase2-backend/layers/reporting"
 rm -rf python reporting-layer.zip
 mkdir -p python/lib/python3.11/site-packages
 pip install -q -r requirements.txt -t python/lib/python3.11/site-packages
@@ -43,7 +46,7 @@ echo ""
 
 # Step 4: Update Terraform with Layer ARN
 echo "📝 Step 4/5: Configuring Terraform..."
-cd /workspaces/securebase-app/landing-zone
+cd "$REPO_ROOT/landing-zone"
 
 # Check if terraform.tfvars exists, create if not
 if [ ! -f terraform.tfvars ]; then
