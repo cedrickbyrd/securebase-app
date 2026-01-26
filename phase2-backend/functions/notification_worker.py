@@ -21,9 +21,9 @@ Status: Scaffold - Implementation Pending
 """
 
 import json
-import os
-from typing import Dict, Any, List, Optional
-from datetime import datetime
+# import os
+from typing import Dict, Any  # , List, Optional
+# from datetime import datetime
 
 # TODO: Import required libraries
 # import boto3
@@ -46,31 +46,31 @@ from datetime import datetime
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Main Lambda handler for notification processing
-    
+
     TODO: Implement handler logic
-    
+
     Args:
         event: SQS event with notification messages
         context: Lambda context
-        
+
     Returns:
         dict: Processing results
     """
     # TODO: Validate environment variables
     # validate_environment()
-    
+
     # TODO: Parse SQS records
     # records = event.get('Records', [])
     # if not records:
     #     return {'statusCode': 200, 'body': 'No records to process'}
-    
+
     # TODO: Process each notification
     # results = {
     #     'processed': 0,
     #     'failed': 0,
     #     'errors': []
     # }
-    
+
     # for record in records:
     #     try:
     #         message = parse_sqs_message(record)
@@ -80,12 +80,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     #         results['failed'] += 1
     #         results['errors'].append(str(e))
     #         print(f"Error processing notification: {e}")
-    
+
     # return {
     #     'statusCode': 200,
     #     'body': json.dumps(results)
     # }
-    
+
     # Placeholder return
     print("TODO: Implement lambda_handler")
     return {
@@ -97,7 +97,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 def validate_environment() -> None:
     """
     Validate required environment variables
-    
+
     TODO: Implement validation
     """
     # required_vars = [
@@ -106,11 +106,11 @@ def validate_environment() -> None:
     #     'DYNAMODB_TABLE_NOTIFICATIONS',
     #     'SES_FROM_EMAIL'
     # ]
-    # 
+    #
     # missing = [var for var in required_vars if not os.environ.get(var)]
     # if missing:
     #     raise ValueError(f"Missing required environment variables: {missing}")
-    
+
     print("TODO: Implement validate_environment")
     pass
 
@@ -118,18 +118,18 @@ def validate_environment() -> None:
 def parse_sqs_message(record: Dict[str, Any]) -> Dict[str, Any]:
     """
     Parse SQS message from SNS
-    
+
     TODO: Implement parsing
-    
+
     Args:
         record: SQS record
-        
+
     Returns:
         dict: Parsed notification message
     """
     # body = json.loads(record['body'])
     # message = json.loads(body['Message'])
-    # 
+    #
     # return {
     #     'notification_id': message.get('id'),
     #     'customer_id': message.get('customer_id'),
@@ -141,7 +141,7 @@ def parse_sqs_message(record: Dict[str, Any]) -> Dict[str, Any]:
     #     'channels': message.get('channels', ['in_app']),
     #     'metadata': message.get('metadata', {})
     # }
-    
+
     print("TODO: Implement parse_sqs_message")
     return {}
 
@@ -149,15 +149,15 @@ def parse_sqs_message(record: Dict[str, Any]) -> Dict[str, Any]:
 def process_notification(notification: Dict[str, Any]) -> None:
     """
     Process and dispatch notification to all channels
-    
+
     TODO: Implement processing
-    
+
     Args:
         notification: Notification message
     """
     # # Render template
     # rendered = render_template(notification)
-    # 
+    #
     # # Dispatch to each channel
     # for channel in notification['channels']:
     #     try:
@@ -169,39 +169,39 @@ def process_notification(notification: Dict[str, Any]) -> None:
     #             send_webhook(notification, rendered)
     #         elif channel == 'in_app':
     #             store_in_app(notification, rendered)
-    #         
+    #
     #         log_delivery(notification['notification_id'], channel, 'success')
     #     except Exception as e:
     #         log_delivery(notification['notification_id'], channel, 'failed', str(e))
     #         raise
-    
+
     print("TODO: Implement process_notification")
 
 
 def render_template(notification: Dict[str, Any]) -> Dict[str, str]:
     """
     Render notification template with variables
-    
+
     TODO: Implement template rendering
-    
+
     Args:
         notification: Notification message
-        
+
     Returns:
         dict: Rendered subject and body
     """
     # # Fetch template from DynamoDB
     # template = get_template(notification['type'], notification['customer_id'])
-    # 
+    #
     # # Replace variables in template
     # subject = template['subject'].format(**notification['metadata'])
     # body = template['body'].format(**notification['metadata'])
-    # 
+    #
     # return {
     #     'subject': subject,
     #     'body': body
     # }
-    
+
     print("TODO: Implement render_template")
     return {
         'subject': notification.get('title', ''),
@@ -212,16 +212,16 @@ def render_template(notification: Dict[str, Any]) -> Dict[str, str]:
 def send_email(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
     """
     Send notification via email (SES)
-    
+
     TODO: Implement email sending
-    
+
     Args:
         notification: Notification message
         rendered: Rendered subject and body
     """
     # # Get user email
     # user_email = get_user_email(notification['user_id'])
-    # 
+    #
     # # Send via SES
     # ses_client.send_email(
     #     Source=SES_FROM_EMAIL,
@@ -231,49 +231,49 @@ def send_email(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
     #         'Body': {'Html': {'Data': rendered['body']}}
     #     }
     # )
-    # 
+    #
     # print(f"Email sent to {user_email}")
-    
+
     print("TODO: Implement send_email")
 
 
 def send_sms(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
     """
     Send notification via SMS (SNS)
-    
+
     TODO: Implement SMS sending
-    
+
     Args:
         notification: Notification message
         rendered: Rendered subject and body
     """
     # # Get user phone number
     # phone_number = get_user_phone(notification['user_id'])
-    # 
+    #
     # # Send via SNS SMS
     # sns_client.publish(
     #     PhoneNumber=phone_number,
     #     Message=f"{rendered['subject']}\n\n{rendered['body']}"
     # )
-    # 
+    #
     # print(f"SMS sent to {phone_number}")
-    
+
     print("TODO: Implement send_sms")
 
 
 def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
     """
     Send notification via webhook (HTTP POST)
-    
+
     TODO: Implement webhook delivery
-    
+
     Args:
         notification: Notification message
         rendered: Rendered subject and body
     """
     # # Get webhook URL
     # webhook_url = get_webhook_url(notification['customer_id'])
-    # 
+    #
     # # Send HTTP POST
     # import requests
     # response = requests.post(
@@ -287,25 +287,25 @@ def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str]) -> None
     #     },
     #     timeout=WEBHOOK_TIMEOUT
     # )
-    # 
+    #
     # response.raise_for_status()
     # print(f"Webhook delivered to {webhook_url}")
-    
+
     print("TODO: Implement send_webhook")
 
 
 def store_in_app(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
     """
     Store notification in DynamoDB for in-app display
-    
+
     TODO: Implement DynamoDB storage
-    
+
     Args:
         notification: Notification message
         rendered: Rendered subject and body
     """
     # table = dynamodb.Table(DYNAMODB_TABLE)
-    # 
+    #
     # item = {
     #     'id': notification['notification_id'],
     #     'customer_id': notification['customer_id'],
@@ -318,19 +318,19 @@ def store_in_app(notification: Dict[str, Any], rendered: Dict[str, str]) -> None
     #     'created_at': datetime.utcnow().isoformat(),
     #     'ttl': int((datetime.utcnow() + timedelta(days=90)).timestamp())
     # }
-    # 
+    #
     # table.put_item(Item=item)
     # print(f"Notification stored in DynamoDB: {notification['notification_id']}")
-    
+
     print("TODO: Implement store_in_app")
 
 
-def log_delivery(notification_id: str, channel: str, status: str, error: Optional[str] = None) -> None:
+def log_delivery(notification_id: str, channel: str, status: str, error: str = None) -> None:
     """
     Log notification delivery status to audit trail
-    
+
     TODO: Implement audit logging
-    
+
     Args:
         notification_id: Notification ID
         channel: Delivery channel
@@ -344,10 +344,10 @@ def log_delivery(notification_id: str, channel: str, status: str, error: Optiona
     #     'error': error,
     #     'timestamp': datetime.utcnow().isoformat()
     # }
-    # 
+    #
     # # Log to CloudWatch or database
     # print(json.dumps(audit_log))
-    
+
     print(f"TODO: Implement log_delivery - {notification_id}, {channel}, {status}")
 
 
