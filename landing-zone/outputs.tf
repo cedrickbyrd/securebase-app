@@ -108,3 +108,34 @@ output "analytics_s3_bucket" {
   description = "S3 bucket name for report exports"
   value       = try(module.analytics.reports_bucket_name, null)
 }
+
+# --- Phase 2: Database & API Outputs ---
+
+output "rds_cluster_endpoint" {
+  description = "Aurora PostgreSQL cluster endpoint (writer)"
+  value       = try(module.phase2_database.rds_cluster_endpoint, null)
+}
+
+output "rds_proxy_endpoint" {
+  description = "RDS Proxy endpoint for Lambda connections"
+  value       = try(module.phase2_database.rds_proxy_endpoint, null)
+}
+
+output "database_name" {
+  description = "PostgreSQL database name"
+  value       = try(module.phase2_database.rds_database_name, "securebase")
+}
+
+output "api_gateway_endpoint" {
+  description = "API Gateway base URL"
+  value       = try(module.api_gateway.api_gateway_endpoint, "Not deployed yet")
+}
+
+output "phase2_dynamodb_tables" {
+  description = "Phase 2 DynamoDB table names"
+  value = try({
+    metrics = module.phase2_database.dynamodb_metrics_table
+    events  = module.phase2_database.dynamodb_events_table
+    cache   = module.phase2_database.dynamodb_cache_table
+  }, {})
+}
