@@ -1,0 +1,21 @@
+{
+  "name": "SecureBase-CloudWatch",
+  "type": "cloudwatch",
+  "access": "proxy",
+  "jsonData": {
+    "defaultRegion": "us-east-1",
+    "authType": "keys",
+    "customMetricsNamespaces": "SecureBase/SRE,SecureBase/Application",
+    "assumeRoleArn": "arn:aws:iam::ACCOUNT_ID:role/GrafanaCloudWatchRole"
+  },
+  "secureJsonData": {
+    "accessKey": "USE_ENVIRONMENT_VARIABLE_OR_SECRETS_MANAGER",
+    "secretKey": "USE_ENVIRONMENT_VARIABLE_OR_SECRETS_MANAGER"
+  },
+  "readOnly": false,
+  "_comments": {
+    "security": "⚠️ SECURITY WARNING: Never commit real AWS credentials to version control!",
+    "setup": "Replace placeholder values with environment variables or use AWS IAM roles for Grafana",
+    "recommended": "Use Grafana Cloud's AWS CloudWatch integration with IAM role assumption instead of access keys"
+  }
+}

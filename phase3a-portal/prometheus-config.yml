@@ -1,0 +1,103 @@
+# Prometheus Exporter Configuration for SecureBase
+# Optional component for advanced monitoring
+
+# Global settings
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    environment: 'production'
+    platform: 'securebase'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'
+
+# Scrape configurations
+scrape_configs:
+  # CloudWatch Exporter for AWS Metrics
+  - job_name: 'cloudwatch-exporter'
+    static_configs:
+      - targets:
+          - 'localhost:9106'
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # Lambda Function Metrics
+  - job_name: 'lambda-metrics'
+    ec2_sd_configs:
+      - region: us-east-1
+        port: 9100
+        filters:
+          - name: tag:Service
+            values:
+              - lambda-exporter
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance
+
+  # Aurora Database Metrics
+  - job_name: 'aurora-metrics'
+    static_configs:
+      - targets:
+          - 'aurora-exporter:9187'
+    scrape_interval: 30s
+
+  # DynamoDB Metrics
+  - job_name: 'dynamodb-metrics'
+    static_configs:
+      - targets:
+          - 'dynamodb-exporter:9501'
+    scrape_interval: 60s
+
+  # ElastiCache/Redis Metrics
+  - job_name: 'redis-metrics'
+    static_configs:
+      - targets:
+          - 'redis-exporter:9121'
+    scrape_interval: 30s
+
+  # API Gateway Metrics
+  - job_name: 'api-gateway-metrics'
+    static_configs:
+      - targets:
+          - 'apigateway-exporter:9106'
+    scrape_interval: 60s
+
+  # Node Exporter (EC2 Infrastructure)
+  - job_name: 'node-exporter'
+    ec2_sd_configs:
+      - region: us-east-1
+        port: 9100
+        filters:
+          - name: tag:Monitoring
+            values:
+              - enabled
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
+
+  # Custom Application Metrics
+  - job_name: 'securebase-app'
+    static_configs:
+      - targets:
+          - 'app-metrics:9090'
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+# Recording rules for aggregated metrics
+rule_files:
+  - 'prometheus-rules.yml'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention:
+      time: 30d
+      size: 50GB
