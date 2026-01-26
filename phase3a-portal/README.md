@@ -163,3 +163,59 @@ npm run build
 ## License
 
 Proprietary - SecureBase 2026
+
+---
+
+## 🌍 Staging Deployment
+
+### Quick Deploy to Staging
+
+```bash
+# Automated deployment script
+./deploy-staging.sh
+```
+
+### Build for Staging
+
+```bash
+# Build with staging environment variables
+npm run build:staging
+
+# Output will be in dist/ directory
+```
+
+### Manual Staging Deployment
+
+```bash
+# 1. Build
+npm run build:staging
+
+# 2. Create S3 bucket (if not exists)
+aws s3 mb s3://securebase-phase3a-staging --region us-east-1
+
+# 3. Enable static website hosting
+aws s3 website s3://securebase-phase3a-staging \
+  --index-document index.html \
+  --error-document index.html
+
+# 4. Upload files
+aws s3 sync dist/ s3://securebase-phase3a-staging/ --delete
+
+# 5. Access staging site
+# http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
+```
+
+### Staging Environment
+
+- **URL:** http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
+- **API:** https://staging-api.securebase.com/v1
+- **WebSocket:** wss://staging-ws.securebase.com
+- **Stripe:** Test mode
+
+For detailed staging deployment instructions, see [STAGING_DEPLOYMENT.md](STAGING_DEPLOYMENT.md).
+
+---
+
+**Last Updated:** January 26, 2026  
+**Version:** 1.0.0  
+**Status:** ✅ Production Ready with Staging Support
