@@ -4,6 +4,7 @@ import {
   Clock, User, Filter, Search, RefreshCw, ExternalLink,
   ChevronDown, ChevronRight, Archive, CheckSquare, X, Activity
 } from 'lucide-react';
+// import { sreService } from '../services/sreService'; // TODO: Use sreService for production API calls
 
 /**
  * AlertManagement Component - Phase 5 Component 3

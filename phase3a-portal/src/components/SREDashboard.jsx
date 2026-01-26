@@ -19,6 +19,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+// import { sreService } from '../services/sreService'; // TODO: Use sreService for production API calls
 
 // Register ChartJS components
 ChartJS.register(
