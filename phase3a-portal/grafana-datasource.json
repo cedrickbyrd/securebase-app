@@ -1,0 +1,16 @@
+{
+  "name": "SecureBase-CloudWatch",
+  "type": "cloudwatch",
+  "access": "proxy",
+  "jsonData": {
+    "defaultRegion": "us-east-1",
+    "authType": "keys",
+    "customMetricsNamespaces": "SecureBase/SRE,SecureBase/Application",
+    "assumeRoleArn": "arn:aws:iam::ACCOUNT_ID:role/GrafanaCloudWatchRole"
+  },
+  "secureJsonData": {
+    "accessKey": "YOUR_AWS_ACCESS_KEY",
+    "secretKey": "YOUR_AWS_SECRET_KEY"
+  },
+  "readOnly": false
+}
