@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Key,
   Shield,
-  TicketOpen,
+  Ticket,
   Webhook,
   LogOut,
   Menu,
@@ -44,7 +44,7 @@ const Navigation = ({ isOpen, setIsOpen }) => {
     { path: '/api-keys', label: 'API Keys', icon: Key },
     { path: '/compliance', label: 'Compliance', icon: Shield },
     { path: '/webhooks', label: 'Webhooks', icon: Webhook },
-    { path: '/support', label: 'Support', icon: TicketOpen },
+    { path: '/support', label: 'Support', icon: Ticket },
   ];
 
   const isActive = (path) => location.pathname === path;

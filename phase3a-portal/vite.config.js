@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: '/securebase-app/',  // GitHub Pages base path
+  base: mode === 'production' ? '/securebase-app/' : '/',  // GitHub Pages base path for production only
   server: {
     port: 3000,
     open: true,
@@ -13,13 +13,7 @@ export default defineConfig({
     sourcemap: true,
     // Performance optimizations
     target: 'es2015',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild',  // Use esbuild instead of terser (faster and built-in)
     rollupOptions: {
       output: {
         // Content-hashed filenames for cache busting
@@ -56,4 +50,4 @@ export default defineConfig({
   define: {
     'process.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1'),
   },
-});
+}));
