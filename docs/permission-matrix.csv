@@ -1,0 +1,38 @@
+role,resource,action,description
+Admin,users,create,Create new users and send invitations
+Admin,users,read,View all users in the customer account
+Admin,users,update,Edit user profiles and change roles
+Admin,users,delete,Remove users from the customer account
+Admin,invoices,create,Generate invoices (auto-billing only)
+Admin,invoices,read,View all invoices and payment history
+Admin,invoices,update,Update invoice details (metadata only)
+Admin,invoices,delete,Archive invoices (soft delete)
+Admin,reports,create,Create custom reports and schedules
+Admin,reports,read,View all reports created by any user
+Admin,reports,update,Edit report configurations
+Admin,reports,delete,Delete reports and schedules
+Admin,api-keys,create,Generate new API keys
+Admin,api-keys,read,View all API keys (masked)
+Admin,api-keys,update,Rotate or rename API keys
+Admin,api-keys,delete,Revoke API keys
+Admin,support-tickets,create,Create support tickets
+Admin,support-tickets,read,View all support tickets
+Admin,support-tickets,update,Update ticket status and comments
+Admin,support-tickets,delete,Close and archive tickets
+Admin,audit-logs,read,View all audit logs for compliance
+Manager,users,read,View all users in the customer account
+Manager,invoices,read,View all invoices and payment history
+Manager,reports,create,Create custom reports and schedules
+Manager,reports,read,View all reports created by any user
+Manager,reports,update,Edit own report configurations
+Manager,api-keys,read,View API keys (masked)
+Manager,support-tickets,create,Create support tickets
+Manager,support-tickets,read,View all support tickets
+Manager,support-tickets,update,Update ticket status and comments
+Manager,audit-logs,read,View audit logs for own team
+Analyst,users,read,View basic user information (name email role)
+Analyst,invoices,read,View all invoices and payment history
+Analyst,reports,read,View all reports created by any user
+Analyst,support-tickets,read,View support tickets (limited)
+Viewer,invoices,read,View invoices (summary only)
+Viewer,reports,read,View reports (limited fields)
