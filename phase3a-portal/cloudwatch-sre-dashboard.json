@@ -1,0 +1,195 @@
+{
+  "dashboardName": "SecureBase-SRE-Dashboard",
+  "dashboardBody": {
+    "widgets": [
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/Lambda", "ConcurrentExecutions", { "stat": "Maximum" } ],
+            [ ".", "Invocations", { "stat": "Sum" } ],
+            [ ".", "Errors", { "stat": "Sum" } ],
+            [ ".", "Throttles", { "stat": "Sum" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "Lambda Overview",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/Lambda", "Duration", { "stat": "Average" } ],
+            [ "...", { "stat": "p50" } ],
+            [ "...", { "stat": "p95" } ],
+            [ "...", { "stat": "p99" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "Lambda Duration Percentiles",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "label": "Milliseconds",
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/RDS", "DatabaseConnections", { "stat": "Average" } ],
+            [ ".", "CPUUtilization", { "stat": "Average", "yAxis": "right" } ],
+            [ ".", "ReadLatency", { "stat": "Average" } ],
+            [ ".", "WriteLatency", { "stat": "Average" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "Aurora Database Performance",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "label": "Milliseconds",
+              "min": 0
+            },
+            "right": {
+              "label": "Percent",
+              "min": 0,
+              "max": 100
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/DynamoDB", "ConsumedReadCapacityUnits", { "stat": "Sum" } ],
+            [ ".", "ConsumedWriteCapacityUnits", { "stat": "Sum" } ],
+            [ ".", "UserErrors", { "stat": "Sum" } ],
+            [ ".", "SystemErrors", { "stat": "Sum" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "DynamoDB Performance",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/ApiGateway", "Count", { "stat": "Sum" } ],
+            [ ".", "4XXError", { "stat": "Sum" } ],
+            [ ".", "5XXError", { "stat": "Sum" } ],
+            [ ".", "Latency", { "stat": "Average", "yAxis": "right" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "API Gateway Metrics",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "min": 0
+            },
+            "right": {
+              "label": "Milliseconds",
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/ElastiCache", "CPUUtilization", { "stat": "Average" } ],
+            [ ".", "NetworkBytesIn", { "stat": "Sum" } ],
+            [ ".", "NetworkBytesOut", { "stat": "Sum" } ],
+            [ ".", "CacheHits", { "stat": "Sum" } ],
+            [ ".", "CacheMisses", { "stat": "Sum" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "ElastiCache Performance",
+          "period": 300
+        }
+      },
+      {
+        "type": "log",
+        "properties": {
+          "query": "SOURCE '/aws/lambda/securebase-auth-v2'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20",
+          "region": "us-east-1",
+          "stacked": false,
+          "title": "Recent Lambda Errors",
+          "view": "table"
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ { "expression": "m1/m2*100", "label": "Error Rate %", "id": "e1" } ],
+            [ "AWS/Lambda", "Errors", { "id": "m1", "visible": false } ],
+            [ ".", "Invocations", { "id": "m2", "visible": false } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "Lambda Error Rate",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "label": "Percent",
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/EC2", "CPUUtilization", { "stat": "Average" } ],
+            [ ".", "NetworkIn", { "stat": "Sum" } ],
+            [ ".", "NetworkOut", { "stat": "Sum" } ],
+            [ ".", "DiskReadBytes", { "stat": "Sum" } ],
+            [ ".", "DiskWriteBytes", { "stat": "Sum" } ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "us-east-1",
+          "title": "EC2 Infrastructure Metrics",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [ "AWS/Billing", "EstimatedCharges", { "stat": "Maximum" } ]
+          ],
+          "view": "singleValue",
+          "region": "us-east-1",
+          "title": "Estimated Monthly Charges",
+          "period": 86400
+        }
+      }
+    ]
+  }
+}
