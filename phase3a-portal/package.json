@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:staging": "cp .env.staging .env && vite build --mode staging",
+    "build:production": "cp .env.production .env && vite build --mode production",
     "preview": "vite preview",
+    "deploy:staging": "./deploy-staging.sh",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
     "test:ui": "vitest --ui",

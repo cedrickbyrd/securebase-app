@@ -9,7 +9,7 @@ import {
   CreditCard,
   Key,
   Shield,
-  TicketOpen,
+  Ticket,
   TrendingUp,
   Download,
   Plus,
@@ -157,7 +157,7 @@ export const Dashboard = () => {
                   {dashboardData.pendingTickets}
                 </p>
               </div>
-              <TicketOpen className="w-10 h-10 text-orange-600 opacity-20" />
+              <Ticket className="w-10 h-10 text-orange-600 opacity-20" />
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ export const Dashboard = () => {
                 href="/support"
                 className="flex items-center px-4 py-3 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition font-medium"
               >
-                <TicketOpen className="w-5 h-5 mr-2" />
+                <Ticket className="w-5 h-5 mr-2" />
                 Submit Ticket
               </a>
             </div>
