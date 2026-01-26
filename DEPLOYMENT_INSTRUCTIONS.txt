@@ -1,0 +1,284 @@
+================================================================================
+Phase 3A Customer Portal - Staging Deployment Instructions
+================================================================================
+Date: January 26, 2026
+Status: ✅ READY FOR DEPLOYMENT
+Branch: copilot/deploy-phase-3a-customer-portal
+================================================================================
+
+QUICK START - ONE COMMAND DEPLOYMENT
+====================================
+
+cd /home/runner/work/securebase-app/securebase-app/phase3a-portal
+./deploy-staging.sh
+
+That's it! The script handles everything.
+
+================================================================================
+
+WHAT WAS BUILT
+==============
+
+Configuration Files:
+  ✅ .env.staging              - Staging environment variables
+  ✅ .gitignore               - Git exclusions for build artifacts
+  ✅ deploy-staging.sh        - Automated deployment script (executable)
+
+Build Configuration:
+  ✅ vite.config.js           - Multi-environment build support
+  ✅ package.json             - Added staging build scripts
+
+Documentation (1,400+ lines):
+  ✅ STAGING_DEPLOYMENT.md             - Comprehensive deployment guide (500+ lines)
+  ✅ PHASE3A_STAGING_STATUS.md         - Status tracker (340+ lines)
+  ✅ PHASE3A_DEPLOYMENT_SUMMARY.md     - Complete summary (400+ lines)
+  ✅ README.md updates                 - Staging deployment section
+
+Code Fixes:
+  ✅ Fixed TicketOpen icon (replaced with Ticket)
+  ✅ Fixed build minifier (terser → esbuild)
+  ✅ Build verified successful (205 KB gzipped)
+
+================================================================================
+
+DEPLOYMENT STEPS
+================
+
+Step 1: Prerequisites
+---------------------
+Ensure you have:
+  □ AWS CLI installed and configured
+  □ AWS credentials with S3 + CloudFront access
+  □ Node.js 18+ installed
+  □ Phase 2 staging backend API running
+
+Step 2: Navigate to Portal
+---------------------------
+cd /home/runner/work/securebase-app/securebase-app/phase3a-portal
+
+Step 3: Run Deployment Script
+------------------------------
+./deploy-staging.sh
+
+The script will:
+  ✓ Check prerequisites (AWS CLI, credentials)
+  ✓ Install dependencies if needed
+  ✓ Run linter
+  ✓ Build production bundle (staging mode)
+  ✓ Create S3 bucket (if not exists)
+  ✓ Configure static website hosting
+  ✓ Upload files with cache headers
+  ✓ Invalidate CloudFront (if configured)
+  ✓ Display deployment summary
+
+Step 4: Validate Deployment
+---------------------------
+Access staging portal:
+  http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
+
+Run smoke tests:
+  1. Login with test API key
+  2. Navigate to Dashboard
+  3. Check Invoices page
+  4. Test API Keys creation
+  5. View Compliance page
+  6. Verify mobile responsive
+
+================================================================================
+
+BUILD STATS
+===========
+
+Bundle Size (gzipped): 205 KB ✅ (under 300 KB target)
+Build Time: ~4.5 seconds
+Code Splitting: 8 chunks
+Modules Transformed: 2,284
+
+Breakdown:
+  - react-vendor.js:    53 KB
+  - charts-modern.js:  106 KB
+  - index.js:           21 KB
+  - network.js:         16 KB
+  - ui-vendor.js:        3 KB
+  - index.css:           6 KB
+
+================================================================================
+
+ENVIRONMENT CONFIGURATION
+=========================
+
+Staging Environment Variables (.env.staging):
+  VITE_API_BASE_URL=https://staging-api.securebase.com/v1
+  VITE_WS_URL=wss://staging-ws.securebase.com
+  VITE_ENV=staging
+  VITE_STRIPE_PUBLIC_KEY=pk_test_... (test mode)
+
+AWS Configuration:
+  S3 Bucket: securebase-phase3a-staging
+  Region: us-east-1
+  Hosting: Static website enabled
+  Access: Public read
+  Cache: CloudFront (optional)
+
+================================================================================
+
+MANUAL DEPLOYMENT (Alternative)
+================================
+
+If you prefer manual control:
+
+1. Build
+   cd phase3a-portal
+   npm run build:staging
+
+2. Create S3 Bucket (if not exists)
+   aws s3 mb s3://securebase-phase3a-staging --region us-east-1
+
+3. Enable Static Website Hosting
+   aws s3 website s3://securebase-phase3a-staging \
+     --index-document index.html \
+     --error-document index.html
+
+4. Upload Files
+   aws s3 sync dist/ s3://securebase-phase3a-staging/ --delete
+
+5. Access Staging
+   http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
+
+================================================================================
+
+POST-DEPLOYMENT VALIDATION
+==========================
+
+Smoke Tests Checklist:
+  □ Portal accessible at staging URL
+  □ Login page loads
+  □ Authentication works with test API key
+  □ Dashboard displays metrics
+  □ Invoices page loads and lists invoices
+  □ API Keys page allows creation
+  □ Compliance page shows status
+  □ Mobile layout responsive (375px, 768px, 1024px+)
+  □ No console errors in browser
+  □ API calls reach staging backend
+  □ CORS configured correctly
+
+Performance Validation:
+  □ First load < 2 seconds
+  □ Page navigation < 300ms
+  □ Lighthouse score > 90
+  □ Accessibility score > 95
+
+================================================================================
+
+TROUBLESHOOTING
+===============
+
+Build Fails:
+  rm -rf node_modules package-lock.json
+  npm install
+  npm run build:staging
+
+CORS Errors:
+  Ensure Phase 2 backend has:
+  Access-Control-Allow-Origin: https://staging-portal.securebase.com
+
+Environment Variables Not Loading:
+  cp .env.staging .env
+  npm run build:staging
+
+CloudFront Shows Old Version:
+  aws cloudfront create-invalidation \
+    --distribution-id YOUR_DIST_ID \
+    --paths "/*"
+
+================================================================================
+
+NEXT STEPS AFTER DEPLOYMENT
+============================
+
+Immediate:
+  1. Verify staging deployment
+  2. Run all smoke tests
+  3. Document staging URL for team
+  4. Share access with stakeholders
+
+Short-term (1-2 days):
+  1. Full regression testing
+  2. Performance validation
+  3. Security audit
+  4. Gather feedback
+
+Medium-term (Next week):
+  1. Production deployment preparation
+  2. CloudFront CDN setup
+  3. Custom domain (portal.securebase.com)
+  4. Monitoring and alerts
+
+================================================================================
+
+DOCUMENTATION LINKS
+===================
+
+Detailed Guides:
+  - phase3a-portal/STAGING_DEPLOYMENT.md      (500+ lines, comprehensive)
+  - PHASE3A_STAGING_STATUS.md                 (340+ lines, status tracker)
+  - PHASE3A_DEPLOYMENT_SUMMARY.md             (400+ lines, complete summary)
+  - phase3a-portal/README.md                  (updated with staging info)
+
+Reference:
+  - PHASE3A_DEPLOYMENT_GUIDE.md               (Original deployment guide)
+  - PHASE3A_STATUS.md                         (Feature status)
+  - PHASE3A_QUICK_REFERENCE.md                (Quick commands)
+
+================================================================================
+
+SUPPORT
+=======
+
+Questions or Issues:
+  - Documentation: See STAGING_DEPLOYMENT.md
+  - Deployment: Run ./deploy-staging.sh --help
+  - Backend: Contact Phase 2 team
+  - Infrastructure: DevOps team
+
+================================================================================
+
+SUCCESS CRITERIA
+================
+
+Deployment is successful when:
+  ✅ Build completes without errors
+  ⏳ Portal accessible at staging URL
+  ⏳ All pages load correctly
+  ⏳ API integration working
+  ⏳ No console errors
+  ⏳ Mobile responsive verified
+  ⏳ Performance targets met (< 2s load)
+
+================================================================================
+
+DEPLOYMENT SUMMARY
+==================
+
+Files Created: 6
+  - Configuration: 2 (.env.staging, .gitignore)
+  - Scripts: 1 (deploy-staging.sh)
+  - Documentation: 3 (STAGING_DEPLOYMENT.md, STATUS, SUMMARY)
+
+Files Modified: 7
+  - Build config: 2 (vite.config.js, package.json)
+  - Components: 4 (icon fixes)
+  - Documentation: 1 (README.md)
+
+Total Lines: 1,400+ (documentation + config)
+
+Status: ✅ COMPLETE AND READY FOR DEPLOYMENT
+Risk Level: LOW (no breaking changes)
+Estimated Time: 10 minutes
+
+================================================================================
+
+Ready to deploy! Run: ./deploy-staging.sh
+
+================================================================================
