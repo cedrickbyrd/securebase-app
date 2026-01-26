@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for integration tests
+  postgres:
+    image: postgres:15
+    container_name: securebase-test-db
+    environment:
+      POSTGRES_DB: securebase_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d securebase_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # LocalStack for AWS service mocking
+  localstack:
+    image: localstack/localstack:latest
+    container_name: securebase-test-localstack
+    environment:
+      SERVICES: dynamodb,sqs,sns,ses,lambda,s3,secretsmanager,kms
+      DEBUG: 1
+      DATA_DIR: /tmp/localstack/data
+      LAMBDA_EXECUTOR: docker-reuse
+      DOCKER_HOST: unix:///var/run/docker.sock
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    ports:
+      - "4566:4566"
+      - "4571:4571"  # Elasticsearch (if needed)
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal s3 ls || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: securebase-test-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - test-network
+
+  # Mock SMTP server for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: securebase-test-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - test-network
+
+volumes:
+  postgres_test_data:
+  localstack_data:
+  redis_test_data:
+
+networks:
+  test-network:
+    driver: bridge
