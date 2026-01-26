@@ -13,3 +13,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "ses_from_email" {
+  description = "Email address to send notifications from"
+  type        = string
+  default     = "notifications@securebase.io"
+}
