@@ -97,7 +97,7 @@ terraform apply tfplan
 echo "  ✅ Infrastructure Deployed!"
 echo ""
 
-# Step 7: Show outputs
+# Show infrastructure deployment outputs
 echo "======================================"
 echo "Phase 1 & Phase 2 Infrastructure Deployed!"
 echo "======================================"
@@ -106,7 +106,7 @@ echo "Your outputs:"
 terraform output
 echo ""
 
-# Step 8: Initialize Phase 2 Database
+# Step 7: Initialize Phase 2 Database
 echo "======================================"
 echo "Step 7: Initializing Phase 2 Database"
 echo "======================================"
@@ -157,7 +157,7 @@ else
 fi
 echo ""
 
-# Step 9: Package Lambda Functions
+# Step 8: Package Lambda Functions
 echo "======================================"
 echo "Step 8: Packaging Lambda Functions"
 echo "======================================"
@@ -192,7 +192,7 @@ else
 fi
 echo ""
 
-# Step 10: Deploy Lambda Functions
+# Step 9: Deploy Lambda Functions
 echo "======================================"
 echo "Step 9: Deploying Lambda Functions"
 echo "======================================"
