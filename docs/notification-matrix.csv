@@ -1,0 +1,21 @@
+role,resource,action,description
+NotificationAdmin,notifications,create,Create new notifications for any user or system event
+NotificationAdmin,notifications,read,Read all notifications across all customers and users
+NotificationAdmin,notifications,update,Update notification content and delivery status
+NotificationAdmin,notifications,delete,Delete notifications and purge notification history
+NotificationAdmin,subscriptions,create,Create subscription preferences for any user
+NotificationAdmin,subscriptions,read,Read all subscription preferences across customers
+NotificationAdmin,subscriptions,update,Update any user's notification preferences
+NotificationAdmin,subscriptions,delete,Delete subscription preferences and opt-out users
+NotificationAdmin,templates,create,Create new notification templates for event types
+NotificationAdmin,templates,read,Read all notification templates across tiers
+NotificationAdmin,templates,update,Update notification template content and variables
+NotificationAdmin,templates,delete,Delete notification templates
+NotificationPublisher,notifications,create,Create notifications for automated system events (e.g., billing, security alerts)
+NotificationPublisher,notifications,read,Read notifications created by the publisher (audit trail)
+NotificationPublisher,templates,read,Read notification templates for rendering
+NotificationSubscriber,notifications,read,Read own notifications (filtered by user_id)
+NotificationSubscriber,notifications,update,Mark own notifications as read or unread
+NotificationSubscriber,subscriptions,read,Read own subscription preferences
+NotificationSubscriber,subscriptions,update,Update own notification preferences (opt-in/opt-out)
+NotificationViewer,notifications,read,Read own notifications (filtered by user_id)
