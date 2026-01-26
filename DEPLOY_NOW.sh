@@ -127,6 +127,7 @@ else
   echo ""
   
   # Navigate to database directory
+  # Note: We're currently in landing-zone/environments/dev, so go up 3 levels to repo root
   cd ../../../phase2-backend/database || {
     echo "⚠️  Warning: Could not find phase2-backend/database directory"
     echo "   Skip database initialization"
@@ -163,6 +164,8 @@ echo "Step 8: Packaging Lambda Functions"
 echo "======================================"
 echo ""
 
+# Navigate to functions directory
+# Note: We're currently in landing-zone/environments/dev, so go up 3 levels to repo root
 cd ../../../phase2-backend/functions || {
   echo "⚠️  Warning: Could not find phase2-backend/functions directory"
   cd "$(dirname "$0")/landing-zone/environments/dev"
@@ -202,6 +205,7 @@ echo "  (This ensures Lambda code is uploaded after packaging)"
 echo ""
 
 # Run terraform apply again to update Lambda functions with packaged code
+# Note: Targets the lambda_functions module defined in main.tf
 if terraform apply -auto-approve -target=module.lambda_functions 2>&1 | tee /tmp/lambda_deploy.log; then
   echo "  ✅ Lambda functions deployed!"
 else
