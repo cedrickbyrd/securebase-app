@@ -12,7 +12,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  TicketOpen,
+  Ticket,
   CreditCard,
   Shield,
   AlertTriangle,
@@ -79,7 +79,7 @@ export const NotificationCenter = () => {
   };
 
   const getNotificationIcon = (type) => {
-    if (type === 'ticket') return <TicketOpen className="w-5 h-5 text-blue-600" />;
+    if (type === 'ticket') return <Ticket className="w-5 h-5 text-blue-600" />;
     if (type === 'billing') return <CreditCard className="w-5 h-5 text-green-600" />;
     if (type === 'compliance') return <Shield className="w-5 h-5 text-purple-600" />;
     if (type === 'alert') return <AlertTriangle className="w-5 h-5 text-red-600" />;
@@ -453,7 +453,7 @@ const getNotificationColor = (type) => {
 };
 
 const getNotificationIcon = (type) => {
-  if (type === 'ticket') return <TicketOpen className="w-5 h-5 text-blue-600" />;
+  if (type === 'ticket') return <Ticket className="w-5 h-5 text-blue-600" />;
   if (type === 'billing') return <CreditCard className="w-5 h-5 text-green-600" />;
   if (type === 'compliance') return <Shield className="w-5 h-5 text-purple-600" />;
   if (type === 'alert') return <AlertTriangle className="w-5 h-5 text-red-600" />;

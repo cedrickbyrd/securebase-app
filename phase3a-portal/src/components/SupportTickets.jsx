@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  TicketOpen,
+  Ticket,
   Plus,
   ChevronDown,
   ChevronUp,
@@ -548,7 +548,7 @@ export const SupportTickets = () => {
           ) : (
             <div className="flex items-center justify-center h-64 bg-white rounded-lg">
               <div className="text-center">
-                <TicketOpen className="w-12 h-12 text-gray-400 mx-auto mb-4 opacity-20" />
+                <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4 opacity-20" />
                 <p className="text-gray-600 font-medium">No tickets found</p>
                 <p className="text-gray-500 text-sm mt-1">
                   {searchTerm
