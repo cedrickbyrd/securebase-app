@@ -46,7 +46,7 @@ echo ""
 
 # Step 4: Update Terraform with Layer ARN
 echo "📝 Step 4/5: Configuring Terraform..."
-cd "$REPO_ROOT/landing-zone"
+cd "$REPO_ROOT/landing-zone/environments/dev"
 
 # Check if terraform.tfvars exists, create if not
 if [ ! -f terraform.tfvars ]; then

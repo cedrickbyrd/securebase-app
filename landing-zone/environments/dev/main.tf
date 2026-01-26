@@ -18,3 +18,12 @@ module "securebase" {
   clients        = var.clients
   tags           = var.tags
 }
+
+# Phase 4: Advanced Analytics & Reporting Module
+module "analytics" {
+  source = "../../modules/analytics"
+  
+  environment          = var.environment
+  reporting_layer_arn  = var.reporting_layer_arn
+  tags                 = var.tags
+}
