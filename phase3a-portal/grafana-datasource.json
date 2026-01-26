@@ -9,8 +9,13 @@
     "assumeRoleArn": "arn:aws:iam::ACCOUNT_ID:role/GrafanaCloudWatchRole"
   },
   "secureJsonData": {
-    "accessKey": "YOUR_AWS_ACCESS_KEY",
-    "secretKey": "YOUR_AWS_SECRET_KEY"
+    "accessKey": "USE_ENVIRONMENT_VARIABLE_OR_SECRETS_MANAGER",
+    "secretKey": "USE_ENVIRONMENT_VARIABLE_OR_SECRETS_MANAGER"
   },
-  "readOnly": false
+  "readOnly": false,
+  "_comments": {
+    "security": "⚠️ SECURITY WARNING: Never commit real AWS credentials to version control!",
+    "setup": "Replace placeholder values with environment variables or use AWS IAM roles for Grafana",
+    "recommended": "Use Grafana Cloud's AWS CloudWatch integration with IAM role assumption instead of access keys"
+  }
 }
