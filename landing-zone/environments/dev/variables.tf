@@ -68,3 +68,10 @@ variable "clients" {
   }
 }
 
+# Phase 4: Analytics Module Variables
+variable "reporting_layer_arn" {
+  description = "ARN of Lambda layer containing ReportLab and openpyxl for Phase 4 Analytics"
+  type        = string
+  default     = null
+}
+

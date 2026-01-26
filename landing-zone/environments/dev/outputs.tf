@@ -42,3 +42,34 @@ output "central_log_bucket" {
   description = "Central logging S3 bucket name"
   value       = module.securebase.central_log_bucket
 }
+
+# Phase 4: Analytics Module Outputs
+output "analytics_reports_table" {
+  description = "DynamoDB reports table name"
+  value       = try(module.analytics.reports_table_name, null)
+}
+
+output "analytics_schedules_table" {
+  description = "DynamoDB schedules table name"
+  value       = try(module.analytics.schedules_table_name, null)
+}
+
+output "analytics_cache_table" {
+  description = "DynamoDB cache table name"
+  value       = try(module.analytics.cache_table_name, null)
+}
+
+output "analytics_metrics_table" {
+  description = "DynamoDB metrics table name"
+  value       = try(module.analytics.metrics_table_name, null)
+}
+
+output "analytics_reports_bucket" {
+  description = "S3 bucket for report exports"
+  value       = try(module.analytics.reports_bucket_name, null)
+}
+
+output "analytics_lambda_function" {
+  description = "Report engine Lambda function name"
+  value       = try(module.analytics.report_engine_function_name, null)
+}
