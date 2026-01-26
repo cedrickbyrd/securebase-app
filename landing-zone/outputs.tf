@@ -86,3 +86,25 @@ output "compliance_summary" {
     deployed_at = timestamp()
   }
 }
+
+# --- Phase 4: Analytics Outputs ---
+
+output "analytics_report_engine_arn" {
+  description = "ARN of the report engine Lambda function"
+  value       = try(module.analytics.report_engine_function_arn, null)
+}
+
+output "analytics_dynamodb_tables" {
+  description = "Map of Analytics DynamoDB table names"
+  value = try({
+    reports   = module.analytics.reports_table_name
+    schedules = module.analytics.schedules_table_name
+    cache     = module.analytics.cache_table_name
+    metrics   = module.analytics.metrics_table_name
+  }, {})
+}
+
+output "analytics_s3_bucket" {
+  description = "S3 bucket name for report exports"
+  value       = try(module.analytics.reports_bucket_name, null)
+}
