@@ -465,6 +465,9 @@ main() {
       --tier) TIER="$2"; shift 2 ;;
       --framework) FRAMEWORK="$2"; shift 2 ;;
       --email) EMAIL="$2"; shift 2 ;;
+      --customer-id) CUSTOMER_ID="$2"; shift 2 ;;
+      --api-triggered) API_TRIGGERED=true; shift ;;
+      --skip-terraform) SKIP_TERRAFORM=true; shift ;;
       --plan-only) PLAN_ONLY=true; shift ;;
       --dry-run) DRY_RUN=true; shift ;;
       *) print_error "Unknown option: $1" ;;
@@ -474,33 +477,45 @@ main() {
   # Validate
   validate_inputs
   
-  # Generate customer ID
-  CUSTOMER_ID=$(generate_customer_id)
+  # Generate customer ID if not provided
+  if [[ -z "$CUSTOMER_ID" ]]; then
+    CUSTOMER_ID=$(generate_customer_id)
+  fi
   echo "Customer ID: ${CUSTOMER_ID}"
   
   # Assign VPC CIDR based on customer count
   VPC_CIDR="10.0.0.0/16"  # Would be dynamic in production
   
-  # Check prerequisites
-  check_prerequisites
+  # Check prerequisites (skip for API-triggered mode)
+  if [[ "$API_TRIGGERED" != "true" ]]; then
+    check_prerequisites
+  fi
   
-  # Update Terraform
-  print_header "Phase 1: Infrastructure Provisioning"
-  update_terraform_config
-  
-  # Plan
-  plan_infrastructure
-  
-  # Ask for confirmation before applying
-  if [[ "$PLAN_ONLY" != "true" ]]; then
-    echo ""
-    read -p "Apply infrastructure? (yes/no): " APPLY_CONFIRM
+  # Infrastructure provisioning (can be skipped for API-triggered)
+  if [[ "$SKIP_TERRAFORM" != "true" ]]; then
+    print_header "Phase 1: Infrastructure Provisioning"
+    update_terraform_config
     
-    if [[ "$APPLY_CONFIRM" == "yes" ]]; then
-      apply_infrastructure
-    else
-      print_error "Onboarding cancelled"
+    # Plan
+    plan_infrastructure
+    
+    # Ask for confirmation before applying (auto-approve for API-triggered)
+    if [[ "$PLAN_ONLY" != "true" ]]; then
+      if [[ "$API_TRIGGERED" == "true" ]]; then
+        apply_infrastructure
+      else
+        echo ""
+        read -p "Apply infrastructure? (yes/no): " APPLY_CONFIRM
+        
+        if [[ "$APPLY_CONFIRM" == "yes" ]]; then
+          apply_infrastructure
+        else
+          print_error "Onboarding cancelled"
+        fi
+      fi
     fi
+  else
+    print_step "Skipping Terraform provisioning (database record only)"
   fi
   
   # Phase 2: Database & API Setup
