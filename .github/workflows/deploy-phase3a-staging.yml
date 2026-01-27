@@ -54,7 +54,7 @@ jobs:
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STAGING_STRIPE_PUBLIC_KEY || 'pk_test_YOUR_TEST_KEY_HERE' }}
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: phase3a-staging-build
           path: phase3a-portal/dist/
@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.1.8
         with:
           name: phase3a-staging-build
           path: dist/
