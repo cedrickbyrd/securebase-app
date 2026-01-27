@@ -334,6 +334,9 @@ def log_signup_attempt(email, tier, client_ip, status):
         
     except Exception as e:
         print(f"Failed to log signup attempt: {e}")
+
+
+if __name__ == "__main__":
     # Local testing
     test_event = {
         'body': json.dumps({
@@ -341,7 +344,12 @@ def log_signup_attempt(email, tier, client_ip, status):
             'email': 'test@example.com',
             'name': 'Test Hospital',
             'use_pilot_coupon': True
-        })
+        }),
+        'requestContext': {
+            'identity': {
+                'sourceIp': '192.0.2.1'
+            }
+        }
     }
     
     response = lambda_handler(test_event, {})

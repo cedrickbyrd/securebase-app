@@ -9,6 +9,9 @@ import unittest
 from unittest.mock import Mock, patch
 import json
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../phase2-backend/functions'))
+
 
 class TestPilotSignupE2E(unittest.TestCase):
     """
@@ -53,7 +56,6 @@ class TestPilotSignupE2E(unittest.TestCase):
     @patch('create_checkout_session.check_rate_limit')
     def test_step1_create_checkout_session(self, mock_rate_limit, mock_db, mock_stripe):
         """Step 1: Customer creates checkout session"""
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../phase2-backend/functions'))
         from create_checkout_session import lambda_handler
         
         # Mock rate limit check
@@ -95,7 +97,6 @@ class TestPilotSignupE2E(unittest.TestCase):
     @patch('stripe_webhook.sns')
     def test_step2_webhook_checkout_completed(self, mock_sns, mock_lambda, mock_db, mock_stripe):
         """Step 2: Stripe webhook processes checkout completion"""
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../phase2-backend/functions'))
         from stripe_webhook import lambda_handler
         
         # Mock webhook signature verification
@@ -152,7 +153,6 @@ class TestPilotSignupE2E(unittest.TestCase):
     @patch('trigger_onboarding.bcrypt')
     def test_step3_onboarding_automation(self, mock_bcrypt, mock_uuid, mock_sns, mock_ses, mock_db):
         """Step 3: Onboarding automation executes"""
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../phase2-backend/functions'))
         from trigger_onboarding import lambda_handler
         
         # Mock UUID generation
