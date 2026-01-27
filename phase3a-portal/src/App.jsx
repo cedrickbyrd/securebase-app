@@ -79,7 +79,7 @@ const Navigation = ({ isOpen, setIsOpen }) => {
           <button
             onClick={() => {
               localStorage.removeItem('sessionToken');
-              window.location.href = '/login';
+              window.location.href = `${import.meta.env.BASE_URL}login`;
             }}
             className="w-full flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"
           >
@@ -123,7 +123,7 @@ const Navigation = ({ isOpen, setIsOpen }) => {
           <button
             onClick={() => {
               localStorage.removeItem('sessionToken');
-              window.location.href = '/login';
+              window.location.href = `${import.meta.env.BASE_URL}login`;
             }}
             className="w-full mt-4 flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 transition"
           >
@@ -156,7 +156,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/securebase-app' : '/'}>
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar Navigation */}
         <Navigation isOpen={navOpen} setIsOpen={setNavOpen} />
