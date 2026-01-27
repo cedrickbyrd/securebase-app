@@ -220,8 +220,8 @@ echo ""
 
 # Output for GitHub Actions
 if [ "$CI" = "true" ]; then
-  echo "::set-output name=staging_url::$STAGING_URL"
-  echo "::set-output name=deployment_status::success"
+  echo "staging_url=$STAGING_URL" >> $GITHUB_OUTPUT
+  echo "deployment_status=success" >> $GITHUB_OUTPUT
 fi
 
 echo -e "${BLUE}Next Steps:${NC}"
