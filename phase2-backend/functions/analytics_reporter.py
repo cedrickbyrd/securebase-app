@@ -308,12 +308,51 @@ def generate_csv(report_data: Dict) -> str:
 
 
 def generate_pdf(report_data: Dict) -> bytes:
-    """Generate PDF format report (requires ReportLab layer)"""
-    # This requires the ReportLab Lambda layer
-    # For now, return a simple placeholder
-    # In production, this would use ReportLab to generate formatted PDFs
+    """
+    Generate PDF format report (requires ReportLab layer)
     
-    text_content = f"""
+    NOTE: This is a simplified implementation for MVP.
+    Production version would use ReportLab for rich PDF formatting.
+    """
+    # TODO: Implement full PDF generation with ReportLab
+    # For now, return text-based content that can be displayed
+    # The Lambda layer with ReportLab should be attached for full functionality
+    
+    try:
+        # Try to import ReportLab if available in Lambda layer
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from io import BytesIO
+        
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title = Paragraph(f"<b>Analytics Report</b>", styles['Title'])
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Content
+        content = f"""
+        Customer ID: {report_data['customer_id']}<br/>
+        Period: {report_data['period']}<br/>
+        Generated: {report_data['generated_at']}<br/><br/>
+        
+        <b>Summary:</b><br/>
+        {json.dumps(report_data.get('summary', {}), indent=2, cls=DecimalEncoder)}
+        """
+        story.append(Paragraph(content.replace('\n', '<br/>'), styles['Normal']))
+        
+        doc.build(story)
+        return buffer.getvalue()
+        
+    except ImportError:
+        # ReportLab not available - return plain text as fallback
+        logger.warning("ReportLab not available, generating text-based PDF")
+        text_content = f"""
 Analytics Report
 ================
 
@@ -328,17 +367,67 @@ Summary:
 Metrics:
 --------
 {json.dumps(report_data.get('metrics', {}), indent=2, cls=DecimalEncoder)}
+
+NOTE: Install ReportLab Lambda layer for rich PDF formatting.
 """
-    return text_content.encode('utf-8')
+        return text_content.encode('utf-8')
 
 
 def generate_excel(report_data: Dict) -> bytes:
-    """Generate Excel format report (requires openpyxl layer)"""
-    # This requires the openpyxl Lambda layer
-    # For now, return a simple placeholder
-    # In production, this would use openpyxl to generate formatted Excel files
+    """
+    Generate Excel format report (requires openpyxl layer)
     
-    return generate_csv(report_data).encode('utf-8')
+    NOTE: This is a simplified implementation for MVP.
+    Production version would use openpyxl for rich Excel formatting.
+    """
+    try:
+        # Try to import openpyxl if available in Lambda layer
+        from openpyxl import Workbook
+        from io import BytesIO
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics Report"
+        
+        # Header
+        ws['A1'] = "Analytics Report"
+        ws['A2'] = f"Customer ID: {report_data['customer_id']}"
+        ws['A3'] = f"Period: {report_data['period']}"
+        ws['A4'] = f"Generated: {report_data['generated_at']}"
+        
+        # Summary section
+        row = 6
+        ws[f'A{row}'] = "Summary"
+        row += 1
+        for key, value in report_data.get('summary', {}).items():
+            ws[f'A{row}'] = key.replace('_', ' ').title()
+            ws[f'B{row}'] = value
+            row += 1
+        
+        # Metrics section
+        row += 2
+        ws[f'A{row}'] = "Detailed Metrics"
+        row += 1
+        ws[f'A{row}'] = "Metric"
+        ws[f'B{row}'] = "Value"
+        ws[f'C{row}'] = "Unit"
+        row += 1
+        
+        for metric_name, metric_data in report_data.get('metrics', {}).items():
+            ws[f'A{row}'] = metric_name.replace('_', ' ').title()
+            ws[f'B{row}'] = float(metric_data.get('value', 0))
+            ws[f'C{row}'] = metric_data.get('unit', '')
+            row += 1
+        
+        # Save to bytes
+        buffer = BytesIO()
+        wb.save(buffer)
+        return buffer.getvalue()
+        
+    except ImportError:
+        # openpyxl not available - return CSV as fallback
+        logger.warning("openpyxl not available, generating CSV instead of Excel")
+        return generate_csv(report_data).encode('utf-8')
 
 
 def aggregate_metrics(metrics: List[Dict]) -> Dict[str, Any]:

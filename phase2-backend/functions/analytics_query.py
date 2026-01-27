@@ -424,10 +424,16 @@ def get_from_cache(cache_key: str) -> Optional[Dict]:
             return None
         
         # Check if expired
-        expires_at = item.get('expires_at')
-        if expires_at and datetime.fromisoformat(expires_at) < datetime.utcnow():
-            logger.info(f"Cache expired for {cache_key}")
-            return None
+        expires_at_str = item.get('expires_at')
+        if expires_at_str:
+            try:
+                expires_at = datetime.fromisoformat(expires_at_str)
+                if expires_at < datetime.utcnow():
+                    logger.info(f"Cache expired for {cache_key}")
+                    return None
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid expires_at format for cache key {cache_key}: {e}")
+                return None
         
         return item.get('data')
         
