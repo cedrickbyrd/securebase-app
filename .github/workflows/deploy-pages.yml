@@ -36,7 +36,7 @@ jobs:
       - name: Build
         run: |
           cd phase3a-portal
-          npm run build
+          npm run build -- --mode production
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
