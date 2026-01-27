@@ -7,7 +7,7 @@ import json
 import os
 import boto3
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from db_utils import (
     get_db_connection,
     execute_query,
@@ -255,7 +255,7 @@ def send_welcome_email(customer_id, email, name, tier, api_key):
                         <h2>📊 Your Account Details</h2>
                         <ul>
                             <li><strong>Tier:</strong> {tier.title()}</li>
-                            <li><strong>Trial Period:</strong> 30 days (ends {(datetime.now()).strftime('%B %d, %Y')})</li>
+                            <li><strong>Trial Period:</strong> 30 days (ends {(datetime.now() + timedelta(days=30)).strftime('%B %d, %Y')})</li>
                             <li><strong>Portal:</strong> <a href="{portal_url}">{portal_url}</a></li>
                             <li><strong>Documentation:</strong> <a href="https://docs.securebase.io">docs.securebase.io</a></li>
                         </ul>
