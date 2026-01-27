@@ -8,7 +8,23 @@
 
 ## 🎯 Deployment Overview
 
-Phase 3A Customer Portal is fully configured and ready for staging deployment. All configuration files, deployment scripts, and documentation have been prepared.
+Phase 3A Customer Portal is fully configured and ready for staging deployment. All configuration files, deployment scripts, and documentation have been prepared. **Automated deployment via GitHub Actions is now available.**
+
+### Automated Deployment
+
+Phase 3a now deploys automatically via GitHub Actions:
+
+- **Workflow:** `.github/workflows/deploy-phase3a-staging.yml`
+- **Trigger:** Push to `staging` branch or manual dispatch
+- **Duration:** ~3-5 minutes
+- **Jobs:** Build → Deploy → Validate → Notify
+- **Staging URL:** Auto-generated and displayed in workflow output
+
+### Manual Deployment Options
+
+You can also deploy manually using:
+1. GitHub Actions UI (recommended)
+2. Local deployment script (`./deploy-staging.sh`)
 
 ### What's Been Done
 
@@ -84,7 +100,35 @@ feature/branch → PR → main → staging → production
 
 ## 🚀 Deployment Instructions
 
-### Quick Deploy (After Staging Branch Exists)
+### Automated Deployment via GitHub Actions (Recommended)
+
+#### Option 1: Manual Trigger
+```bash
+# 1. Navigate to GitHub repository
+# 2. Go to Actions tab
+# 3. Select "Deploy Phase 3a to Staging"
+# 4. Click "Run workflow"
+# 5. Select branch: staging
+# 6. Click "Run workflow" to start
+```
+
+#### Option 2: Automatic on Push
+```bash
+# Any push to staging branch triggers deployment
+git checkout staging
+git merge main
+git push origin staging
+# Deployment starts automatically
+```
+
+#### Option 3: Pull Request (Build Only)
+```bash
+# Create PR to staging branch
+# Workflow builds and validates but does NOT deploy
+# Useful for testing changes before deployment
+```
+
+### Quick Deploy (Local Script)
 
 ```bash
 cd phase3a-portal
@@ -124,8 +168,9 @@ curl -I http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
 - [x] Environment variables configured
 
 ### Infrastructure Readiness
-- [ ] AWS credentials configured
-- [ ] S3 bucket created (or script will create)
+- [ ] AWS credentials configured (GitHub Secrets)
+- [ ] GitHub Secrets set (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+- [ ] S3 bucket name configured (or use default: securebase-phase3a-staging)
 - [ ] CloudFront distribution (optional)
 - [ ] Custom domain configured (optional)
 - [ ] SSL certificate (if using CloudFront)
@@ -141,6 +186,8 @@ curl -I http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
 - [x] Environment variables documented
 - [x] Troubleshooting guide provided
 - [x] Post-deployment validation checklist
+- [x] GitHub Actions workflow created
+- [x] Workflow documentation added
 
 ---
 
@@ -234,6 +281,7 @@ Deployment is successful when:
 
 ### Documentation
 - [STAGING_DEPLOYMENT.md](phase3a-portal/STAGING_DEPLOYMENT.md) - Deployment guide
+- [.github/workflows/README.md](.github/workflows/README.md) - GitHub Actions documentation
 - [PHASE3A_DEPLOYMENT_GUIDE.md](PHASE3A_DEPLOYMENT_GUIDE.md) - Full guide
 - [PHASE3A_STATUS.md](PHASE3A_STATUS.md) - Feature status
 - [PHASE3A_QUICK_REFERENCE.md](PHASE3A_QUICK_REFERENCE.md) - Quick reference

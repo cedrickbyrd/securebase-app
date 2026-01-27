@@ -17,6 +17,16 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# CI Mode Detection
+AUTO_APPROVE=false
+QUIET_MODE=false
+
+if [ "$CI" = "true" ] || [ "$1" = "--ci" ]; then
+  AUTO_APPROVE=true
+  QUIET_MODE=true
+  echo "Running in CI mode (non-interactive)"
+fi
+
 # Configuration
 ENVIRONMENT="staging"
 S3_BUCKET="securebase-phase3a-staging"
@@ -193,18 +203,27 @@ echo ""
 # ============================================================================
 # Deployment Summary
 # ============================================================================
+STAGING_URL="http://$S3_BUCKET.s3-website-$AWS_REGION.amazonaws.com"
+
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  ✓ Deployment Successful!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${BLUE}Staging Environment:${NC}"
 echo -e "  S3 Bucket:       s3://$S3_BUCKET"
-echo -e "  S3 Website URL:  http://$S3_BUCKET.s3-website-$AWS_REGION.amazonaws.com"
+echo -e "  S3 Website URL:  $STAGING_URL"
 echo -e "  Region:          $AWS_REGION"
 if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
     echo -e "  CloudFront:      https://staging-portal.securebase.com"
 fi
 echo ""
+
+# Output for GitHub Actions
+if [ "$CI" = "true" ]; then
+  echo "::set-output name=staging_url::$STAGING_URL"
+  echo "::set-output name=deployment_status::success"
+fi
+
 echo -e "${BLUE}Next Steps:${NC}"
 echo -e "  1. Test the staging deployment at the URL above"
 echo -e "  2. Run integration tests"
