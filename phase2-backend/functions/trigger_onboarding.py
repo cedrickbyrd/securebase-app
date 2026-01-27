@@ -11,8 +11,7 @@ from datetime import datetime, timedelta
 from db_utils import (
     get_db_connection,
     execute_query,
-    execute_update,
-    set_rls_context
+    execute_update
 )
 
 # Initialize AWS clients
