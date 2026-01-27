@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS customers (
   status customer_status DEFAULT 'active',
   
   -- AWS Organization details
-  aws_org_id TEXT NOT NULL UNIQUE,
-  aws_management_account_id TEXT NOT NULL,
+  aws_org_id TEXT UNIQUE,
+  aws_management_account_id TEXT,
   
   -- Contact info
   email TEXT NOT NULL UNIQUE,
@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS customers (
   -- Payment
   payment_method payment_method_type DEFAULT 'aws_marketplace',
   stripe_customer_id TEXT UNIQUE,
+  stripe_subscription_id TEXT UNIQUE,
+  subscription_status TEXT DEFAULT 'inactive',
+  trial_end_date TIMESTAMP,
   
   -- Metadata
   tags JSONB DEFAULT '{}',
@@ -202,6 +205,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   
   payment_method payment_method_type,
   payment_id TEXT,
+  stripe_invoice_id TEXT UNIQUE,
+  stripe_payment_intent_id TEXT,
   
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
