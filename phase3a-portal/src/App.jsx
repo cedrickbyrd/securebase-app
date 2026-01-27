@@ -156,7 +156,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/securebase-app">
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar Navigation */}
         <Navigation isOpen={navOpen} setIsOpen={setNavOpen} />
