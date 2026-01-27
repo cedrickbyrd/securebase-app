@@ -60,6 +60,28 @@ class ApiService {
   }
 
   /**
+   * Signup & Onboarding
+   */
+
+  async createCheckoutSession(signupData) {
+    try {
+      const response = await this.client.post('/checkout', signupData);
+      return response;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async verifySignup(sessionId) {
+    try {
+      const response = await this.client.get(`/signup/verify?session_id=${sessionId}`);
+      return response;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
    * Metrics & Usage
    */
 

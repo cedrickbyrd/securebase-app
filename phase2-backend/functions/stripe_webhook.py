@@ -112,7 +112,7 @@ def lambda_handler(event, context):
 def handle_checkout_completed(session):
     """
     New customer signup completed
-    Update customer record with Stripe IDs
+    Create customer record and trigger onboarding
     """
     conn = get_db_connection()
     
@@ -121,37 +121,78 @@ def handle_checkout_completed(session):
         stripe_customer_id = session['customer']
         stripe_subscription_id = session['subscription']
         
-        # Get tier from metadata
+        # Get tier and name from metadata
         tier = session['metadata'].get('tier', 'standard')
+        customer_name = session['metadata'].get('customer_name', customer_email.split('@')[0])
         
-        # Update customer record
-        sql = """
-            UPDATE customers 
-            SET 
-                stripe_customer_id = %s,
-                stripe_subscription_id = %s,
-                tier = %s,
-                subscription_status = 'active',
-                trial_end_date = NOW() + INTERVAL '30 days',
-                updated_at = NOW()
-            WHERE email = %s
-            RETURNING id, name
-        """
+        # Check if customer already exists
+        sql_check = "SELECT id, name FROM customers WHERE email = %s"
+        existing = execute_query(conn, sql_check, (customer_email,))
         
-        result = execute_update(
-            conn,
-            sql,
-            (stripe_customer_id, stripe_subscription_id, tier, customer_email)
-        )
+        if existing:
+            # Customer exists - just update Stripe IDs
+            customer_id, name = existing[0]
+            sql_update = """
+                UPDATE customers 
+                SET 
+                    stripe_customer_id = %s,
+                    stripe_subscription_id = %s,
+                    tier = %s,
+                    subscription_status = 'trialing',
+                    trial_end_date = NOW() + INTERVAL '30 days',
+                    updated_at = NOW()
+                WHERE email = %s
+                RETURNING id, name
+            """
+            
+            result = execute_update(
+                conn,
+                sql_update,
+                (stripe_customer_id, stripe_subscription_id, tier, customer_email)
+            )
+        else:
+            # Create new customer record
+            import uuid
+            customer_id = str(uuid.uuid4())
+            
+            sql_insert = """
+                INSERT INTO customers (
+                    id, name, email, billing_email,
+                    tier, framework, status,
+                    stripe_customer_id, stripe_subscription_id,
+                    subscription_status, trial_end_date,
+                    payment_method, mfa_enforced
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '30 days', %s, %s)
+                RETURNING id, name
+            """
+            
+            # Map tier to framework
+            framework_map = {
+                'standard': 'cis',
+                'fintech': 'soc2',
+                'healthcare': 'hipaa',
+                'government': 'fedramp'
+            }
+            framework = framework_map.get(tier, 'cis')
+            
+            result = execute_update(
+                conn,
+                sql_insert,
+                (customer_id, customer_name, customer_email, customer_email,
+                 tier, framework, 'trial',
+                 stripe_customer_id, stripe_subscription_id,
+                 'trialing', 'stripe', True)
+            )
         
         if result:
             customer_id, customer_name = result[0]
             print(f"Customer activated: {customer_name} ({customer_email})")
             
-            # Send welcome email notification
+            # Send notification
             send_notification(
                 subject=f"New Customer: {customer_name}",
-                message=f"Customer {customer_name} ({customer_email}) signed up for {tier} tier."
+                message=f"Customer {customer_name} ({customer_email}) signed up for {tier} tier.\nCustomer ID: {customer_id}"
             )
             
             # Trigger onboarding workflow
@@ -372,9 +413,42 @@ def trigger_onboarding(customer_id, tier):
     - Create initial AWS account
     - Generate API key
     """
-    # TODO: Implement onboarding automation
-    print(f"Triggering onboarding for customer {customer_id} (tier: {tier})")
-    pass
+    try:
+        # Get customer details
+        conn = get_db_connection()
+        sql = "SELECT email, name FROM customers WHERE id = %s"
+        result = execute_query(conn, sql, (customer_id,))
+        conn.close()
+        
+        if not result:
+            print(f"Customer not found: {customer_id}")
+            return
+        
+        email, name = result[0]
+        
+        # Invoke trigger_onboarding Lambda
+        lambda_client = boto3.client('lambda')
+        function_name = os.environ.get('ONBOARDING_FUNCTION_NAME', 'securebase-trigger-onboarding')
+        
+        payload = {
+            'customer_id': customer_id,
+            'tier': tier,
+            'email': email,
+            'name': name
+        }
+        
+        response = lambda_client.invoke(
+            FunctionName=function_name,
+            InvocationType='Event',  # Async invocation
+            Payload=json.dumps(payload)
+        )
+        
+        print(f"Onboarding triggered for {name} ({email})")
+        
+    except Exception as e:
+        print(f"Error triggering onboarding: {e}")
+        # Don't fail webhook if onboarding trigger fails
+        pass
 
 
 if __name__ == "__main__":
