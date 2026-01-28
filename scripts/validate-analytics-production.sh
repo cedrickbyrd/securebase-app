@@ -38,10 +38,19 @@ fi
 # Check if requests library is installed
 if ! python3 -c "import requests" 2>/dev/null; then
     echo "Installing required Python dependencies..."
-    pip3 install requests || {
-        echo "Error: Failed to install requests library"
-        exit 1
-    }
+    REQUIREMENTS_FILE="$PROJECT_ROOT/tests/production/requirements.txt"
+    if [[ -f "$REQUIREMENTS_FILE" ]]; then
+        pip3 install -r "$REQUIREMENTS_FILE" || {
+            echo "Error: Failed to install dependencies from requirements.txt"
+            exit 1
+        }
+    else
+        # Fallback to direct install with version constraint
+        pip3 install "requests>=2.28.0,<3.0.0" || {
+            echo "Error: Failed to install requests library"
+            exit 1
+        }
+    fi
 fi
 
 # Set output file
