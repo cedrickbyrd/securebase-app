@@ -2,10 +2,10 @@
 # Tables for reports, schedules, and cached results
 
 resource "aws_dynamodb_table" "reports" {
-  name           = "securebase-${var.environment}-reports"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "customer_id"
-  range_key      = "id"
+  name         = "securebase-${var.environment}-reports"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "customer_id"
+  range_key    = "id"
 
   attribute {
     name = "customer_id"
@@ -43,17 +43,17 @@ resource "aws_dynamodb_table" "reports" {
   }
 
   tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-reports"
-    Component   = "Analytics"
-    Phase       = "4"
+    Name      = "securebase-${var.environment}-reports"
+    Component = "Analytics"
+    Phase     = "4"
   })
 }
 
 resource "aws_dynamodb_table" "report_schedules" {
-  name           = "securebase-${var.environment}-report-schedules"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "customer_id"
-  range_key      = "schedule_id"
+  name         = "securebase-${var.environment}-report-schedules"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "customer_id"
+  range_key    = "schedule_id"
 
   attribute {
     name = "customer_id"
@@ -91,16 +91,16 @@ resource "aws_dynamodb_table" "report_schedules" {
   }
 
   tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-report-schedules"
-    Component   = "Analytics"
-    Phase       = "4"
+    Name      = "securebase-${var.environment}-report-schedules"
+    Component = "Analytics"
+    Phase     = "4"
   })
 }
 
 resource "aws_dynamodb_table" "report_cache" {
-  name           = "securebase-${var.environment}-report-cache"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "cache_key"
+  name         = "securebase-${var.environment}-report-cache"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "cache_key"
 
   attribute {
     name = "cache_key"
@@ -117,18 +117,18 @@ resource "aws_dynamodb_table" "report_cache" {
   }
 
   tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-report-cache"
-    Component   = "Analytics"
-    Phase       = "4"
+    Name      = "securebase-${var.environment}-report-cache"
+    Component = "Analytics"
+    Phase     = "4"
   })
 }
 
 # Metrics table for analytics queries
 resource "aws_dynamodb_table" "metrics" {
-  name           = "securebase-${var.environment}-metrics"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "customer_id"
-  range_key      = "timestamp"
+  name         = "securebase-${var.environment}-metrics"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "customer_id"
+  range_key    = "timestamp"
 
   attribute {
     name = "customer_id"
@@ -178,9 +178,9 @@ resource "aws_dynamodb_table" "metrics" {
   }
 
   tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-metrics"
-    Component   = "Analytics"
-    Phase       = "4"
+    Name      = "securebase-${var.environment}-metrics"
+    Component = "Analytics"
+    Phase     = "4"
   })
 }
 
@@ -189,9 +189,9 @@ resource "aws_s3_bucket" "reports" {
   bucket = "securebase-${var.environment}-reports-${data.aws_caller_identity.current.account_id}"
 
   tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-reports"
-    Component   = "Analytics"
-    Phase       = "4"
+    Name      = "securebase-${var.environment}-reports"
+    Component = "Analytics"
+    Phase     = "4"
   })
 }
 
