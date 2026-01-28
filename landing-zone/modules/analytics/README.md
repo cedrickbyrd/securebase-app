@@ -109,12 +109,47 @@ terraform plan
 
 ## Monitoring
 
-- CloudWatch Log Group: `/aws/lambda/securebase-{env}-report-engine`
-- Recommended metrics to monitor:
-  - Lambda invocations and errors
-  - DynamoDB read/write capacity
-  - S3 bucket size
-  - Report generation duration
+### Quick Monitoring
+
+Use the monitoring script to check logs and metrics:
+
+```bash
+# Monitor all analytics functions
+./scripts/monitor-analytics.sh dev all
+
+# View only logs
+./scripts/monitor-analytics.sh dev logs
+
+# View only metrics
+./scripts/monitor-analytics.sh dev metrics
+
+# Check alarm status
+./scripts/monitor-analytics.sh dev alarms
+```
+
+### CloudWatch Resources
+
+- **Log Groups**: 
+  - `/aws/lambda/securebase-{env}-analytics-aggregator`
+  - `/aws/lambda/securebase-{env}-analytics-reporter`
+  - `/aws/lambda/securebase-{env}-analytics-query`
+  - `/aws/lambda/securebase-{env}-report-engine`
+
+- **Dashboard**: `securebase-{env}-analytics`
+  - Lambda metrics (invocations, errors, throttles, duration)
+  - DynamoDB metrics (capacity, errors)
+  - API Gateway metrics (requests, errors, latency)
+  - S3 metrics (object count, size)
+
+- **Alarms**: Automated alerts for:
+  - Lambda errors (> 5/hour)
+  - High latency (> 1s)
+  - Throttling events
+  - Failed report generations
+
+For detailed monitoring instructions, see:
+- `docs/ANALYTICS_MONITORING_GUIDE.md` - Comprehensive monitoring guide
+- CloudWatch dashboard in AWS Console
 
 ## License
 
