@@ -57,6 +57,8 @@ Then: [Troubleshooting Guides](#troubleshooting), [Common Issues](#faq)
 | [docs/REPORT_TEMPLATE_GUIDE.md](docs/REPORT_TEMPLATE_GUIDE.md) | Pre-built templates, custom reports | 15 min | Analysts |
 | [docs/DATA_WAREHOUSE_INTEGRATION.md](docs/DATA_WAREHOUSE_INTEGRATION.md) | Redshift/Snowflake integration | 20 min | Data engineers |
 | [docs/PERFORMANCE_MONITORING.md](docs/PERFORMANCE_MONITORING.md) | Monitoring, alerting, optimization | 15 min | DevOps |
+| [docs/ANALYTICS_MONITORING_GUIDE.md](docs/ANALYTICS_MONITORING_GUIDE.md) | CloudWatch logs & metrics monitoring | 25 min | DevOps/SRE |
+| [docs/ANALYTICS_MONITORING_QUICK_REFERENCE.md](docs/ANALYTICS_MONITORING_QUICK_REFERENCE.md) | Quick monitoring commands | 5 min | DevOps/SRE |
 
 **Coverage:** Complete ✅  
 **Last Updated:** January 23, 2026
