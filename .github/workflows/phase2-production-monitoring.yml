@@ -16,6 +16,10 @@ env:
   AWS_REGION: us-east-1
   ENVIRONMENT: production
 
+permissions:
+  contents: read  # Read repository contents
+  actions: read   # Read workflow run data
+
 jobs:
   # Job 1: Monitor Aurora Database
   monitor-aurora:
@@ -469,7 +473,7 @@ jobs:
       - name: Upload report as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: phase2-monitoring-report-$(date +%Y%m%d)
+          name: phase2-monitoring-report-${{ github.run_number }}
           path: monitoring-reports/
           retention-days: 30
       

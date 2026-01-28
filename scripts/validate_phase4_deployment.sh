@@ -113,7 +113,7 @@ for FUNCTION in "${LAMBDA_FUNCTIONS[@]}"; do
 done
 
 # Check Lambda layer
-run_test "Lambda layer exists" "aws lambda list-layers --region '$AWS_REGION' | grep -q 'securebase-${ENVIRONMENT}-reporting'"
+run_test "Lambda layer exists" "aws lambda list-layers --region '$AWS_REGION' | grep -q \"securebase-${ENVIRONMENT}-reporting\""
 
 # Check EventBridge rule
 run_test "EventBridge rule exists" "aws events describe-rule --name 'securebase-${ENVIRONMENT}-analytics-aggregator-schedule' --region '$AWS_REGION'"
@@ -127,7 +127,7 @@ LOG_GROUPS=(
 )
 
 for LOG_GROUP in "${LOG_GROUPS[@]}"; do
-    run_test "CloudWatch log group $LOG_GROUP exists" "aws logs describe-log-groups --log-group-name-prefix '$LOG_GROUP' --region '$AWS_REGION' | grep -q '$LOG_GROUP'"
+    run_test "CloudWatch log group $LOG_GROUP exists" "aws logs describe-log-groups --log-group-name-prefix '$LOG_GROUP' --region '$AWS_REGION' | grep -q \"$LOG_GROUP\""
 done
 
 echo ""
@@ -175,7 +175,7 @@ if [ -n "$API_ID" ]; then
     )
     
     for ROUTE in "${ROUTES[@]}"; do
-        run_test "API route '$ROUTE' exists" "aws apigatewayv2 get-routes --api-id '$API_ID' --region '$AWS_REGION' | jq -r '.Items[].RouteKey' | grep -q '$ROUTE'"
+        run_test "API route '$ROUTE' exists" "aws apigatewayv2 get-routes --api-id '$API_ID' --region '$AWS_REGION' | jq -r '.Items[].RouteKey' | grep -q \"$ROUTE\""
     done
 else
     echo -e "${YELLOW}ℹ API Gateway not found or not configured yet${NC}"
