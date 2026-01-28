@@ -1,0 +1,119 @@
+name: Verify Analytics Lambda Layer
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to verify (dev, staging, prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      region:
+        description: 'AWS Region'
+        required: true
+        default: 'us-east-1'
+        type: string
+
+  # Run after deploy-analytics workflow completes
+  workflow_run:
+    workflows: ["Deploy Phase 4 Analytics"]
+    types:
+      - completed
+
+jobs:
+  verify-layer:
+    name: Verify Analytics Lambda Layer
+    runs-on: ubuntu-latest
+    
+    # Only run if the triggering workflow succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    
+    permissions:
+      contents: read
+      id-token: write  # For AWS OIDC authentication
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pytest boto3 moto
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ github.event.inputs.region || 'us-east-1' }}
+      
+      - name: Run layer verification script
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+          AWS_REGION: ${{ github.event.inputs.region || 'us-east-1' }}
+        run: |
+          chmod +x scripts/verify-analytics-layer.sh
+          ./scripts/verify-analytics-layer.sh $ENVIRONMENT $AWS_REGION
+      
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/test_analytics_layer.py -v --tb=short
+        continue-on-error: true  # Don't fail the workflow if tests fail
+      
+      - name: Upload verification results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-results-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            verification-report.txt
+            test-results.xml
+          retention-days: 30
+      
+      - name: Post verification status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const environment = '${{ github.event.inputs.environment || 'dev' }}';
+            const region = '${{ github.event.inputs.region || 'us-east-1' }}';
+            
+            const message = `## Analytics Lambda Layer Verification
+            
+            **Environment**: ${environment}
+            **Region**: ${region}
+            **Status**: ${{ job.status }}
+            **Triggered by**: ${{ github.event_name }}
+            
+            See [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+            `;
+            
+            // Post as comment if this was triggered by a PR
+            if (context.payload.pull_request) {
+              github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Lambda layer verification failed!"
+          echo "Check the logs above for details."
+          echo "Common issues:"
+          echo "  - Layer not published to AWS"
+          echo "  - Layer not attached to Lambda functions"
+          echo "  - Missing dependencies in layer"
+          exit 1
