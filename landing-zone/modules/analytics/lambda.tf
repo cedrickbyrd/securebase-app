@@ -3,22 +3,22 @@
 
 # Analytics Aggregator Lambda (metrics collection)
 resource "aws_lambda_function" "analytics_aggregator" {
-  filename         = "${path.root}/../phase2-backend/deploy/analytics_aggregator.zip"
-  function_name    = "securebase-${var.environment}-analytics-aggregator"
-  role            = aws_iam_role.analytics_functions.arn
-  handler         = "analytics_aggregator.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 60
-  memory_size     = 512
+  filename      = "${path.root}/../phase2-backend/deploy/analytics_aggregator.zip"
+  function_name = "securebase-${var.environment}-analytics-aggregator"
+  role          = aws_iam_role.analytics_functions.arn
+  handler       = "analytics_aggregator.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 60
+  memory_size   = 512
 
   source_code_hash = fileexists("${path.root}/../phase2-backend/deploy/analytics_aggregator.zip") ? filebase64sha256("${path.root}/../phase2-backend/deploy/analytics_aggregator.zip") : null
 
   environment {
     variables = {
-      METRICS_TABLE    = aws_dynamodb_table.metrics.name
-      CUSTOMERS_TABLE  = var.customers_table_name
-      ENVIRONMENT      = var.environment
-      LOG_LEVEL        = "INFO"
+      METRICS_TABLE   = aws_dynamodb_table.metrics.name
+      CUSTOMERS_TABLE = var.customers_table_name
+      ENVIRONMENT     = var.environment
+      LOG_LEVEL       = "INFO"
     }
   }
 
@@ -31,13 +31,13 @@ resource "aws_lambda_function" "analytics_aggregator" {
 
 # Analytics Reporter Lambda (report generation)
 resource "aws_lambda_function" "analytics_reporter" {
-  filename         = "${path.root}/../phase2-backend/deploy/analytics_reporter.zip"
-  function_name    = "securebase-${var.environment}-analytics-reporter"
-  role            = aws_iam_role.analytics_functions.arn
-  handler         = "analytics_reporter.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 512
+  filename      = "${path.root}/../phase2-backend/deploy/analytics_reporter.zip"
+  function_name = "securebase-${var.environment}-analytics-reporter"
+  role          = aws_iam_role.analytics_functions.arn
+  handler       = "analytics_reporter.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 30
+  memory_size   = 512
 
   source_code_hash = fileexists("${path.root}/../phase2-backend/deploy/analytics_reporter.zip") ? filebase64sha256("${path.root}/../phase2-backend/deploy/analytics_reporter.zip") : null
 
@@ -46,12 +46,12 @@ resource "aws_lambda_function" "analytics_reporter" {
 
   environment {
     variables = {
-      METRICS_TABLE   = aws_dynamodb_table.metrics.name
-      REPORTS_TABLE   = aws_dynamodb_table.reports.name
-      S3_BUCKET       = aws_s3_bucket.reports.bucket
-      SNS_TOPIC       = var.sns_topic_arn
-      ENVIRONMENT     = var.environment
-      LOG_LEVEL       = "INFO"
+      METRICS_TABLE = aws_dynamodb_table.metrics.name
+      REPORTS_TABLE = aws_dynamodb_table.reports.name
+      S3_BUCKET     = aws_s3_bucket.reports.bucket
+      SNS_TOPIC     = var.sns_topic_arn
+      ENVIRONMENT   = var.environment
+      LOG_LEVEL     = "INFO"
     }
   }
 
@@ -64,23 +64,23 @@ resource "aws_lambda_function" "analytics_reporter" {
 
 # Analytics Query Lambda (API endpoints)
 resource "aws_lambda_function" "analytics_query" {
-  filename         = "${path.root}/../phase2-backend/deploy/analytics_query.zip"
-  function_name    = "securebase-${var.environment}-analytics-query"
-  role            = aws_iam_role.analytics_functions.arn
-  handler         = "analytics_query.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 10
-  memory_size     = 256
+  filename      = "${path.root}/../phase2-backend/deploy/analytics_query.zip"
+  function_name = "securebase-${var.environment}-analytics-query"
+  role          = aws_iam_role.analytics_functions.arn
+  handler       = "analytics_query.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 10
+  memory_size   = 256
 
   source_code_hash = fileexists("${path.root}/../phase2-backend/deploy/analytics_query.zip") ? filebase64sha256("${path.root}/../phase2-backend/deploy/analytics_query.zip") : null
 
   environment {
     variables = {
-      METRICS_TABLE      = aws_dynamodb_table.metrics.name
-      CACHE_TABLE        = aws_dynamodb_table.report_cache.name
-      CACHE_TTL_SECONDS  = "3600"
-      ENVIRONMENT        = var.environment
-      LOG_LEVEL          = "INFO"
+      METRICS_TABLE     = aws_dynamodb_table.metrics.name
+      CACHE_TABLE       = aws_dynamodb_table.report_cache.name
+      CACHE_TTL_SECONDS = "3600"
+      ENVIRONMENT       = var.environment
+      LOG_LEVEL         = "INFO"
     }
   }
 
@@ -93,13 +93,13 @@ resource "aws_lambda_function" "analytics_query" {
 
 # Legacy Report Engine Lambda (kept for backwards compatibility)
 resource "aws_lambda_function" "report_engine" {
-  filename         = "${path.root}/../phase2-backend/deploy/report_engine.zip"
-  function_name    = "securebase-${var.environment}-report-engine"
-  role            = aws_iam_role.analytics_functions.arn
-  handler         = "report_engine.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 512
+  filename      = "${path.root}/../phase2-backend/deploy/report_engine.zip"
+  function_name = "securebase-${var.environment}-report-engine"
+  role          = aws_iam_role.analytics_functions.arn
+  handler       = "report_engine.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 30
+  memory_size   = 512
 
   source_code_hash = fileexists("${path.root}/../phase2-backend/deploy/report_engine.zip") ? filebase64sha256("${path.root}/../phase2-backend/deploy/report_engine.zip") : null
 
@@ -108,13 +108,13 @@ resource "aws_lambda_function" "report_engine" {
 
   environment {
     variables = {
-      REPORTS_TABLE    = aws_dynamodb_table.reports.name
-      SCHEDULES_TABLE  = aws_dynamodb_table.report_schedules.name
-      CACHE_TABLE      = aws_dynamodb_table.report_cache.name
-      METRICS_TABLE    = aws_dynamodb_table.metrics.name
-      S3_BUCKET        = aws_s3_bucket.reports.bucket
-      ENVIRONMENT      = var.environment
-      LOG_LEVEL        = "INFO"
+      REPORTS_TABLE   = aws_dynamodb_table.reports.name
+      SCHEDULES_TABLE = aws_dynamodb_table.report_schedules.name
+      CACHE_TABLE     = aws_dynamodb_table.report_cache.name
+      METRICS_TABLE   = aws_dynamodb_table.metrics.name
+      S3_BUCKET       = aws_s3_bucket.reports.bucket
+      ENVIRONMENT     = var.environment
+      LOG_LEVEL       = "INFO"
     }
   }
 

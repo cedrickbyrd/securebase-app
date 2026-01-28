@@ -13,12 +13,12 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
-  
+
   # Mock provider for testing - use real credentials for integration tests
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
-  
+
   default_tags {
     tags = {
       Environment = "test"
@@ -33,7 +33,7 @@ module "analytics_test" {
   source = "../"
 
   environment = "test"
-  
+
   tags = {
     Environment = "test"
     Purpose     = "module-validation"
