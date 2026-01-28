@@ -110,7 +110,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   evaluation_periods  = 1
   metric_name         = "Errors"
   namespace           = "AWS/Lambda"
-  period              = 3600  # 1 hour
+  period              = 3600 # 1 hour
   statistic           = "Sum"
   threshold           = 5
   alarm_description   = "Analytics Lambda function error rate exceeded 5/hour"
@@ -134,9 +134,9 @@ resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
   evaluation_periods  = 2
   metric_name         = "Duration"
   namespace           = "AWS/Lambda"
-  period              = 300  # 5 minutes
+  period              = 300 # 5 minutes
   statistic           = "Average"
-  threshold           = 1000  # 1 second in milliseconds
+  threshold           = 1000 # 1 second in milliseconds
   alarm_description   = "Analytics query latency exceeded 1 second"
   alarm_actions       = [aws_sns_topic.analytics_alerts.arn]
 
@@ -234,7 +234,7 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
   namespace           = "AWS/ApiGateway"
   period              = 300
   statistic           = "Average"
-  threshold           = 500  # 500ms requirement
+  threshold           = 500 # 500ms requirement
   alarm_description   = "Analytics API latency exceeded 500ms"
   alarm_actions       = [aws_sns_topic.analytics_alerts.arn]
 
@@ -311,15 +311,4 @@ resource "aws_cloudwatch_query_definition" "analytics_performance" {
     | filter @type = "REPORT"
     | stats avg(@duration), max(@duration), min(@duration) by bin(5m)
   QUERY
-}
-
-# Outputs for SNS topic ARN
-output "sns_topic_arn" {
-  description = "SNS topic ARN for analytics alerts"
-  value       = aws_sns_topic.analytics_alerts.arn
-}
-
-output "dashboard_name" {
-  description = "CloudWatch dashboard name"
-  value       = aws_cloudwatch_dashboard.analytics.dashboard_name
 }
