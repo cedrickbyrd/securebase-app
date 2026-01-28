@@ -46,8 +46,11 @@ check_dir() {
 }
 
 echo "=== 1. Lambda Artifacts ==="
-check_file "phase2-backend/deploy/report_engine.zip" "Lambda function package"
-check_file "phase2-backend/layers/reporting/reporting-layer.zip" "Lambda layer package"
+check_file "phase2-backend/deploy/report_engine.zip" "Lambda function package - report_engine"
+check_file "phase2-backend/deploy/analytics_aggregator.zip" "Lambda function package - analytics_aggregator"
+check_file "phase2-backend/deploy/analytics_reporter.zip" "Lambda function package - analytics_reporter"
+check_file "phase2-backend/deploy/analytics_query.zip" "Lambda function package - analytics_query"
+check_file "phase2-backend/layers/reporting/reporting-layer.zip" "Lambda layer package (ReportLab + openpyxl)"
 
 echo "=== 2. Terraform Configuration ==="
 check_file "landing-zone/environments/dev/main.tf" "Dev environment main.tf"
@@ -96,7 +99,36 @@ else
 fi
 echo ""
 
-echo "=== 8. Python Syntax Check ==="
+echo "=== 8. Lambda Layer Content Validation ==="
+CHECKS=$((CHECKS + 1))
+if [ -f "phase2-backend/layers/reporting/reporting-layer.zip" ]; then
+    if unzip -l phase2-backend/layers/reporting/reporting-layer.zip 2>/dev/null | grep -q "reportlab"; then
+        echo "✅ reporting-layer.zip contains ReportLab"
+    else
+        echo "❌ reporting-layer.zip missing ReportLab"
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo "⚠️  reporting-layer.zip not found (skipping content check)"
+    WARNINGS=$((WARNINGS + 1))
+fi
+echo ""
+
+CHECKS=$((CHECKS + 1))
+if [ -f "phase2-backend/layers/reporting/reporting-layer.zip" ]; then
+    if unzip -l phase2-backend/layers/reporting/reporting-layer.zip 2>/dev/null | grep -q "openpyxl"; then
+        echo "✅ reporting-layer.zip contains openpyxl"
+    else
+        echo "❌ reporting-layer.zip missing openpyxl"
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo "⚠️  reporting-layer.zip not found (skipping content check)"
+    WARNINGS=$((WARNINGS + 1))
+fi
+echo ""
+
+echo "=== 9. Python Syntax Check ==="
 CHECKS=$((CHECKS + 1))
 if python3 -m py_compile phase2-backend/functions/report_engine.py 2>/dev/null; then
     echo "✅ report_engine.py syntax valid"
@@ -104,9 +136,17 @@ else
     echo "❌ report_engine.py syntax error"
     ERRORS=$((ERRORS + 1))
 fi
+
+CHECKS=$((CHECKS + 1))
+if python3 -m py_compile phase2-backend/functions/analytics_reporter.py 2>/dev/null; then
+    echo "✅ analytics_reporter.py syntax valid"
+else
+    echo "❌ analytics_reporter.py syntax error"
+    ERRORS=$((ERRORS + 1))
+fi
 echo ""
 
-echo "=== 9. JSON Validation ==="
+echo "=== 10. JSON Validation ==="
 for json_file in phase2-backend/functions/test-events/*.json; do
     CHECKS=$((CHECKS + 1))
     if python3 -m json.tool "$json_file" > /dev/null 2>&1; then
@@ -118,7 +158,7 @@ for json_file in phase2-backend/functions/test-events/*.json; do
 done
 echo ""
 
-echo "=== 10. Terraform Syntax Check ==="
+echo "=== 11. Terraform Syntax Check ==="
 CHECKS=$((CHECKS + 1))
 cd landing-zone/modules/analytics
 if terraform validate > /dev/null 2>&1; then

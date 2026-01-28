@@ -1,0 +1,24 @@
+{
+  "comment": "Test event for verifying analytics-reporter Lambda layer functionality",
+  "description": "Generates an Excel report to test openpyxl dependency from Lambda layer",
+  "httpMethod": "POST",
+  "body": "{\"type\": \"monthly\", \"format\": \"excel\", \"period\": \"30d\"}",
+  "requestContext": {
+    "authorizer": {
+      "customerId": "test-customer-123",
+      "claims": {
+        "sub": "test-user-456",
+        "email": "test@example.com"
+      }
+    },
+    "requestId": "test-request-002",
+    "apiId": "test-api",
+    "stage": "dev"
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "X-API-Key": "test-api-key-123"
+  },
+  "queryStringParameters": null,
+  "pathParameters": null
+}
