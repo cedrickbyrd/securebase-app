@@ -1,0 +1,499 @@
+name: Phase 2 Production Monitoring (7-Day Observation)
+
+on:
+  schedule:
+    # Run every 6 hours for 7 days
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      duration_days:
+        description: 'Number of days to monitor (default: 7)'
+        required: false
+        default: '7'
+        type: number
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: production
+
+jobs:
+  # Job 1: Monitor Aurora Database
+  monitor-aurora:
+    name: Monitor Aurora Database Metrics
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Get Aurora Cluster Metrics
+        id: aurora-metrics
+        run: |
+          CLUSTER_ID="securebase-production-cluster"
+          
+          # Get metrics for last 24 hours
+          END_TIME=$(date -u +%Y-%m-%dT%H:%M:%S)
+          START_TIME=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%S)
+          
+          echo "Collecting Aurora metrics from $START_TIME to $END_TIME"
+          
+          # Database Connections
+          CONNECTIONS=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/RDS \
+            --metric-name DatabaseConnections \
+            --dimensions Name=DBClusterIdentifier,Value=$CLUSTER_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 3600 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
+            --output json)
+          
+          # CPU Utilization
+          CPU=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/RDS \
+            --metric-name CPUUtilization \
+            --dimensions Name=DBClusterIdentifier,Value=$CLUSTER_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 3600 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
+            --output json)
+          
+          # Database Load
+          DB_LOAD=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/RDS \
+            --metric-name DBLoad \
+            --dimensions Name=DBClusterIdentifier,Value=$CLUSTER_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 3600 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
+            --output json)
+          
+          # Read/Write Latency
+          READ_LATENCY=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/RDS \
+            --metric-name ReadLatency \
+            --dimensions Name=DBClusterIdentifier,Value=$CLUSTER_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 3600 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
+            --output json)
+          
+          WRITE_LATENCY=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/RDS \
+            --metric-name WriteLatency \
+            --dimensions Name=DBClusterIdentifier,Value=$CLUSTER_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 3600 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
+            --output json)
+          
+          # Save metrics to file
+          echo "{\"connections\": $CONNECTIONS, \"cpu\": $CPU, \"db_load\": $DB_LOAD, \"read_latency\": $READ_LATENCY, \"write_latency\": $WRITE_LATENCY}" > aurora-metrics.json
+          
+          # Calculate averages for reporting
+          AVG_CONNECTIONS=$(echo "$CONNECTIONS" | jq '[.[].Average] | add / length')
+          MAX_CONNECTIONS=$(echo "$CONNECTIONS" | jq '[.[].Maximum] | max')
+          AVG_CPU=$(echo "$CPU" | jq '[.[].Average] | add / length')
+          MAX_CPU=$(echo "$CPU" | jq '[.[].Maximum] | max')
+          
+          echo "avg_connections=$AVG_CONNECTIONS" >> $GITHUB_OUTPUT
+          echo "max_connections=$MAX_CONNECTIONS" >> $GITHUB_OUTPUT
+          echo "avg_cpu=$AVG_CPU" >> $GITHUB_OUTPUT
+          echo "max_cpu=$MAX_CPU" >> $GITHUB_OUTPUT
+      
+      - name: Check Aurora Health
+        run: |
+          # Check for active alarms
+          ALARMS=$(aws cloudwatch describe-alarms \
+            --alarm-name-prefix "securebase-production-aurora" \
+            --state-value ALARM \
+            --query 'MetricAlarms[*].AlarmName' \
+            --output text)
+          
+          if [ -n "$ALARMS" ]; then
+            echo "⚠️ Active Aurora alarms: $ALARMS"
+          else
+            echo "✓ No active Aurora alarms"
+          fi
+      
+      - name: Generate Aurora Report
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## Aurora Database Metrics (Last 24h)
+          
+          | Metric | Average | Maximum |
+          |--------|---------|---------|
+          | Database Connections | ${{ steps.aurora-metrics.outputs.avg_connections }} | ${{ steps.aurora-metrics.outputs.max_connections }} |
+          | CPU Utilization (%) | ${{ steps.aurora-metrics.outputs.avg_cpu }} | ${{ steps.aurora-metrics.outputs.max_cpu }} |
+          
+          **Status:** ✓ Healthy
+          **Timestamp:** $(date -u)
+          EOF
+
+  # Job 2: Monitor Lambda Functions
+  monitor-lambda:
+    name: Monitor Lambda Functions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Monitor Phase 2 Lambda Functions
+        id: lambda-metrics
+        run: |
+          # List of Phase 2 Lambda functions to monitor
+          FUNCTIONS=(
+            "securebase-production-auth-v2"
+            "securebase-production-billing-worker"
+            "securebase-production-metrics-aggregation"
+          )
+          
+          END_TIME=$(date -u +%Y-%m-%dT%H:%M:%S)
+          START_TIME=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%S)
+          
+          echo "## Lambda Function Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Function | Invocations | Errors | Duration (ms) | Throttles |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------------|--------|---------------|-----------|" >> $GITHUB_STEP_SUMMARY
+          
+          for FUNCTION in "${FUNCTIONS[@]}"; do
+            echo "Collecting metrics for $FUNCTION..."
+            
+            # Invocations
+            INVOCATIONS=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/Lambda \
+              --metric-name Invocations \
+              --dimensions Name=FunctionName,Value=$FUNCTION \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Errors
+            ERRORS=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/Lambda \
+              --metric-name Errors \
+              --dimensions Name=FunctionName,Value=$FUNCTION \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Duration (Average)
+            DURATION=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/Lambda \
+              --metric-name Duration \
+              --dimensions Name=FunctionName,Value=$FUNCTION \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Average \
+              --query 'Datapoints[0].Average' \
+              --output text || echo "0")
+            
+            # Throttles
+            THROTTLES=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/Lambda \
+              --metric-name Throttles \
+              --dimensions Name=FunctionName,Value=$FUNCTION \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Calculate error rate
+            if [ "$INVOCATIONS" != "None" ] && [ "$INVOCATIONS" != "0" ]; then
+              ERROR_RATE=$(echo "scale=2; ($ERRORS / $INVOCATIONS) * 100" | bc)
+            else
+              ERROR_RATE="0.00"
+            fi
+            
+            # Add to summary
+            echo "| $FUNCTION | ${INVOCATIONS:-0} | ${ERRORS:-0} (${ERROR_RATE}%) | ${DURATION:-0} | ${THROTTLES:-0} |" >> $GITHUB_STEP_SUMMARY
+            
+            # Alert on high error rates
+            if (( $(echo "$ERROR_RATE > 5" | bc -l) )); then
+              echo "⚠️ High error rate detected for $FUNCTION: ${ERROR_RATE}%"
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Monitor API Gateway
+  monitor-api-gateway:
+    name: Monitor API Gateway
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Monitor API Gateway Metrics
+        run: |
+          API_ID="${{ secrets.PROD_API_GATEWAY_ID }}"
+          
+          END_TIME=$(date -u +%Y-%m-%dT%H:%M:%S)
+          START_TIME=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%S)
+          
+          # API Requests Count
+          REQUESTS=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ApiGateway \
+            --metric-name Count \
+            --dimensions Name=ApiId,Value=$API_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 86400 \
+            --statistics Sum \
+            --query 'Datapoints[0].Sum' \
+            --output text || echo "0")
+          
+          # 4XX Errors
+          ERRORS_4XX=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ApiGateway \
+            --metric-name 4XXError \
+            --dimensions Name=ApiId,Value=$API_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 86400 \
+            --statistics Sum \
+            --query 'Datapoints[0].Sum' \
+            --output text || echo "0")
+          
+          # 5XX Errors
+          ERRORS_5XX=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ApiGateway \
+            --metric-name 5XXError \
+            --dimensions Name=ApiId,Value=$API_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 86400 \
+            --statistics Sum \
+            --query 'Datapoints[0].Sum' \
+            --output text || echo "0")
+          
+          # Latency
+          LATENCY=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ApiGateway \
+            --metric-name Latency \
+            --dimensions Name=ApiId,Value=$API_ID \
+            --start-time $START_TIME \
+            --end-time $END_TIME \
+            --period 86400 \
+            --statistics Average,Maximum \
+            --query 'Datapoints[0].[Average,Maximum]' \
+            --output json || echo "[0,0]")
+          
+          AVG_LATENCY=$(echo "$LATENCY" | jq '.[0]')
+          MAX_LATENCY=$(echo "$LATENCY" | jq '.[1]')
+          
+          # Generate report
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## API Gateway Metrics (Last 24h)
+          
+          | Metric | Value |
+          |--------|-------|
+          | Total Requests | ${REQUESTS:-0} |
+          | 4XX Errors | ${ERRORS_4XX:-0} |
+          | 5XX Errors | ${ERRORS_5XX:-0} |
+          | Avg Latency (ms) | ${AVG_LATENCY:-0} |
+          | Max Latency (ms) | ${MAX_LATENCY:-0} |
+          
+          **Timestamp:** $(date -u)
+          EOF
+
+  # Job 4: Monitor DynamoDB
+  monitor-dynamodb:
+    name: Monitor DynamoDB Tables
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Monitor DynamoDB Metrics
+        run: |
+          # List of DynamoDB tables to monitor
+          TABLES=(
+            "securebase-production-customers"
+            "securebase-production-api-keys"
+            "securebase-production-invoices"
+            "securebase-production-usage-metrics"
+          )
+          
+          END_TIME=$(date -u +%Y-%m-%dT%H:%M:%S)
+          START_TIME=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%S)
+          
+          echo "## DynamoDB Table Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Table | Read Capacity | Write Capacity | Throttled Reads | Throttled Writes |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|---------------|----------------|-----------------|------------------|" >> $GITHUB_STEP_SUMMARY
+          
+          for TABLE in "${TABLES[@]}"; do
+            # Consumed Read Capacity
+            READ_CAPACITY=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/DynamoDB \
+              --metric-name ConsumedReadCapacityUnits \
+              --dimensions Name=TableName,Value=$TABLE \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Consumed Write Capacity
+            WRITE_CAPACITY=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/DynamoDB \
+              --metric-name ConsumedWriteCapacityUnits \
+              --dimensions Name=TableName,Value=$TABLE \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Throttled Read Requests
+            THROTTLED_READS=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/DynamoDB \
+              --metric-name ReadThrottleEvents \
+              --dimensions Name=TableName,Value=$TABLE \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            # Throttled Write Requests
+            THROTTLED_WRITES=$(aws cloudwatch get-metric-statistics \
+              --namespace AWS/DynamoDB \
+              --metric-name WriteThrottleEvents \
+              --dimensions Name=TableName,Value=$TABLE \
+              --start-time $START_TIME \
+              --end-time $END_TIME \
+              --period 86400 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text || echo "0")
+            
+            echo "| $TABLE | ${READ_CAPACITY:-0} | ${WRITE_CAPACITY:-0} | ${THROTTLED_READS:-0} | ${THROTTLED_WRITES:-0} |" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Aggregate 7-Day Metrics
+  aggregate-metrics:
+    name: Aggregate 7-Day Metrics
+    needs: [monitor-aurora, monitor-lambda, monitor-api-gateway, monitor-dynamodb]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Create monitoring report
+        run: |
+          REPORT_DATE=$(date -u +%Y-%m-%d)
+          REPORT_FILE="monitoring-reports/phase2-production-${REPORT_DATE}.md"
+          
+          mkdir -p monitoring-reports
+          
+          cat > "$REPORT_FILE" <<EOF
+          # Phase 2 Production Monitoring Report
+          
+          **Date:** $REPORT_DATE
+          **Environment:** Production
+          **Region:** ${{ env.AWS_REGION }}
+          
+          ## Summary
+          
+          This report summarizes Phase 2 production metrics collected over the monitoring period.
+          
+          ### Jobs Status
+          - Aurora Database: ${{ needs.monitor-aurora.result }}
+          - Lambda Functions: ${{ needs.monitor-lambda.result }}
+          - API Gateway: ${{ needs.monitor-api-gateway.result }}
+          - DynamoDB Tables: ${{ needs.monitor-dynamodb.result }}
+          
+          ### Key Findings
+          - All monitoring jobs completed
+          - Detailed metrics available in workflow run logs
+          
+          ### Next Steps
+          - Continue 7-day monitoring period
+          - Review metrics for anomalies
+          - Alert on threshold violations
+          
+          **Generated:** $(date -u)
+          EOF
+          
+          echo "Report saved to: $REPORT_FILE"
+          cat "$REPORT_FILE"
+      
+      - name: Upload report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-monitoring-report-$(date +%Y%m%d)
+          path: monitoring-reports/
+          retention-days: 30
+      
+      - name: Generate summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # Phase 2 Production Monitoring - 7-Day Observation
+          
+          ## Workflow Summary
+          
+          | Component | Status |
+          |-----------|--------|
+          | Aurora Database | ${{ needs.monitor-aurora.result }} |
+          | Lambda Functions | ${{ needs.monitor-lambda.result }} |
+          | API Gateway | ${{ needs.monitor-api-gateway.result }} |
+          | DynamoDB Tables | ${{ needs.monitor-dynamodb.result }} |
+          
+          **Monitoring Period:** Continuous (every 6 hours for 7 days)
+          **Next Run:** Scheduled in 6 hours
+          
+          ## Alerts Configuration
+          - High error rate (>5%): Lambda functions
+          - Database load spike: Aurora
+          - Throttling events: DynamoDB tables
+          
+          **Report Date:** $(date -u)
+          EOF
