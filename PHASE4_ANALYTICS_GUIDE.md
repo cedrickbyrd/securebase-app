@@ -294,8 +294,55 @@ pandas     # Data processing
 - Report template guide
 - Performance tuning guide
 - Troubleshooting common issues
+- **[Lambda Layer Verification Guide](docs/ANALYTICS_LAYER_VERIFICATION.md)**
 
 ---
 
-**Last Updated:** January 19, 2026  
-**Next Update:** January 20, 2026 (Daily standup)
+## Verification & Testing
+
+### Lambda Layer Verification
+
+The Analytics system uses a Lambda layer containing ReportLab and openpyxl for PDF and Excel report generation. Use the verification script to ensure the layer is properly attached and functional:
+
+```bash
+# Verify layer in dev environment
+./scripts/verify-analytics-layer.sh dev us-east-1
+
+# Verify layer in production
+./scripts/verify-analytics-layer.sh prod us-west-2
+```
+
+The script performs comprehensive checks:
+- ✅ Lambda layer exists in AWS
+- ✅ Layer is attached to analytics-reporter and report-engine functions
+- ✅ Layer dependencies (ReportLab, openpyxl) are available
+- ✅ PDF generation functional test
+- ✅ Excel generation functional test
+- ✅ Terraform configuration alignment
+
+For detailed verification instructions, see: [Analytics Layer Verification Guide](docs/ANALYTICS_LAYER_VERIFICATION.md)
+
+### Integration Tests
+
+Run layer-specific tests:
+
+```bash
+# Test layer dependencies
+pytest tests/integration/test_analytics_layer.py -v
+
+# Test layer performance
+pytest tests/integration/test_analytics_layer.py::TestLayerPerformance -v
+```
+
+### Manual Verification in AWS Console
+
+1. Navigate to Lambda → Layers
+2. Verify `securebase-{env}-reporting` exists
+3. Open `securebase-{env}-analytics-reporter` function
+4. Check that the reporting layer is attached
+5. Test with a PDF generation event
+
+---
+
+**Last Updated:** January 28, 2026 (Added Lambda Layer Verification)  
+**Next Update:** January 29, 2026
