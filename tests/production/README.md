@@ -92,6 +92,12 @@ The following Analytics API endpoints are validated:
 #### Error Handling
 - `GET /analytics/invalid-endpoint` - 404 error handling
 
+#### Security & Performance
+- `OPTIONS /analytics` - CORS configuration (warning only)
+- Performance: P95 latency measurement (warning if > 500ms)
+
+**Note**: CORS validation and performance checks generate warnings, not failures, to allow flexibility in different deployment environments.
+
 ### Test Results
 
 The script provides three result statuses:
@@ -121,7 +127,7 @@ The script provides three result statuses:
       --json-output validation-results.json
 
 - name: Upload Results
-  uses: actions/upload-artifact@v3
+  uses: actions/upload-artifact@v4
   with:
     name: validation-results
     path: validation-results.json
@@ -129,9 +135,11 @@ The script provides three result statuses:
 
 #### Exit Codes
 
-- `0`: All tests passed
+- `0`: All tests passed (warnings are acceptable)
 - `1`: One or more tests failed
 - `130`: User interrupted (Ctrl+C)
+
+**Note**: Warnings (e.g., performance below SLA, endpoints not deployed yet) do not cause a failure exit code. Only critical failures (unreachable endpoints, unexpected errors) result in exit code 1.
 
 ### JSON Output Format
 
