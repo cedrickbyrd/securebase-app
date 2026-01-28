@@ -88,13 +88,28 @@ aws logs tail /aws/lambda/securebase-dev-analytics-query --since 1h --filter-pat
 
 ### Lambda Metrics
 
+**Platform Note:** The `date` command examples below use GNU date syntax (Linux). 
+On macOS/BSD systems, replace `-d '1 hour ago'` with `-v-1H`. 
+The monitoring script (`monitor-analytics.sh`) handles both platforms automatically.
+
 ```bash
-# Invocation count (last hour)
+# Invocation count (last hour) - Linux
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Lambda \
   --metric-name Invocations \
   --dimensions Name=FunctionName,Value=securebase-dev-analytics-query \
   --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 3600 \
+  --statistics Sum \
+  --query 'Datapoints[0].Sum'
+
+# Invocation count (last hour) - macOS/BSD
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Invocations \
+  --dimensions Name=FunctionName,Value=securebase-dev-analytics-query \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%S) \
   --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
   --period 3600 \
   --statistics Sum \
