@@ -299,7 +299,14 @@ echo "Running initial CloudWatch monitoring check (last 5 minutes)..."
 echo ""
 
 if [ -f "$SCRIPT_DIR/check-analytics-cloudwatch.sh" ]; then
-    ENVIRONMENT=$ENVIRONMENT AWS_REGION=$AWS_REGION TIME_WINDOW=300 "$SCRIPT_DIR/check-analytics-cloudwatch.sh" || true
+    # Run monitoring check with proper error handling
+    if ! "$SCRIPT_DIR/check-analytics-cloudwatch.sh" -e "$ENVIRONMENT" -r "$AWS_REGION" -t 300; then
+        echo ""
+        echo -e "${YELLOW}⚠ CloudWatch monitoring check encountered issues${NC}"
+        echo "  This is expected immediately after deployment if functions haven't been invoked yet."
+        echo "  The deployment was successful. Please run monitoring again in 5-10 minutes:"
+        echo "    ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT -t 600"
+    fi
     echo ""
     echo -e "${BLUE}💡 Tip:${NC} Run detailed monitoring after 1 hour:"
     echo "   ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT -t 3600 -v"

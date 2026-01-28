@@ -78,13 +78,13 @@ aws lambda update-function-configuration \
   --function-name securebase-dev-analytics-query \
   --memory-size 512
 
-# Check cold start metrics
+# Check cold start metrics (dynamic dates)
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Lambda \
   --metric-name Duration \
   --dimensions Name=FunctionName,Value=securebase-dev-analytics-query \
-  --start-time 2026-01-28T00:00:00Z \
-  --end-time 2026-01-28T23:59:59Z \
+  --start-time $(date -u -d '1 day ago' '+%Y-%m-%dT%H:%M:%SZ') \
+  --end-time $(date -u '+%Y-%m-%dT%H:%M:%SZ') \
   --period 3600 \
   --statistics Average,Maximum
 ```

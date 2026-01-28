@@ -20,6 +20,12 @@ REGION="${AWS_REGION:-us-east-1}"
 TIME_WINDOW="${TIME_WINDOW:-3600}" # Default: last hour (in seconds)
 VERBOSE="${VERBOSE:-false}"
 
+# Performance thresholds (in milliseconds)
+DURATION_THRESHOLD_WARN=500
+DURATION_THRESHOLD_SLOW=1000
+LATENCY_THRESHOLD_WARN=200
+LATENCY_THRESHOLD_SLOW=500
+
 # Lambda function names
 ANALYTICS_QUERY="securebase-${ENVIRONMENT}-analytics-query"
 ANALYTICS_AGGREGATOR="securebase-${ENVIRONMENT}-analytics-aggregator"
@@ -95,7 +101,8 @@ echo -e "${BLUE}Timestamp:${NC} $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 echo "=========================================="
 echo ""
 
-# Calculate start time (in milliseconds)
+# Calculate start time (Unix timestamp in seconds, then convert to milliseconds for CloudWatch)
+# TIME_WINDOW is expected to be in seconds
 START_TIME=$(($(date +%s) - TIME_WINDOW))000
 END_TIME=$(date +%s)000
 
@@ -135,7 +142,20 @@ get_error_logs() {
     
     # Check if log group exists
     if ! aws logs describe-log-groups --log-group-name-prefix "$log_group" --region "$REGION" --query "logGroups[?logGroupName=='$log_group']" --output text >/dev/null 2>&1; then
-        echo "  No log group found"
+        echo "  No log group found (Lambda not invoked yet)"
+        return
+    fi
+    
+    # Check if log group has any streams
+    local stream_count=$(aws logs describe-log-streams \
+        --log-group-name "$log_group" \
+        --region "$REGION" \
+        --max-items 1 \
+        --query 'length(logStreams)' \
+        --output text 2>/dev/null || echo "0")
+    
+    if [ "$stream_count" == "0" ] || [ -z "$stream_count" ]; then
+        echo "  No log streams found (Lambda not invoked yet)"
         return
     fi
     
@@ -205,12 +225,14 @@ check_lambda_function() {
         echo -e "  ${GREEN}✓ Throttles: $throttles${NC}"
     fi
     
-    # Duration in ms
+    # Duration in ms - use configurable thresholds
     if (( $(echo "$duration > 0" | bc -l 2>/dev/null || echo 0) )); then
         # Convert to integer for comparison
         duration_int=$(printf "%.0f" "$duration" 2>/dev/null || echo 0)
-        if [ "$duration_int" -gt 1000 ]; then
+        if [ "$duration_int" -gt "$DURATION_THRESHOLD_SLOW" ]; then
             echo -e "  ${YELLOW}⚠ Avg Duration: ${duration_int}ms (slow)${NC}"
+        elif [ "$duration_int" -gt "$DURATION_THRESHOLD_WARN" ]; then
+            echo -e "  ${YELLOW}⚠ Avg Duration: ${duration_int}ms${NC}"
         else
             echo -e "  ${GREEN}✓ Avg Duration: ${duration_int}ms${NC}"
         fi
@@ -301,6 +323,25 @@ check_dynamodb_metrics() {
     echo ""
 }
 
+# Helper function for API Gateway metrics (defined before use)
+get_api_metric() {
+    local api_name=$1
+    local metric_name=$2
+    local stat=$3
+    
+    aws cloudwatch get-metric-statistics \
+        --namespace AWS/ApiGateway \
+        --metric-name "$metric_name" \
+        --dimensions Name=ApiName,Value="$api_name" \
+        --start-time "$(date -u -d @$((START_TIME / 1000)) '+%Y-%m-%dT%H:%M:%S')" \
+        --end-time "$(date -u -d @$((END_TIME / 1000)) '+%Y-%m-%dT%H:%M:%S')" \
+        --period "$TIME_WINDOW" \
+        --statistics "$stat" \
+        --region "$REGION" \
+        --query "Datapoints[0].$stat" \
+        --output text 2>/dev/null || echo "0"
+}
+
 # Function to get API Gateway metrics
 check_api_gateway() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -321,7 +362,7 @@ check_api_gateway() {
         return
     fi
     
-    # Get API Gateway metrics
+    # Get API Gateway metrics (uses get_api_metric helper defined above)
     local count=$(get_api_metric "$api_name" "Count" "Sum")
     local errors_4xx=$(get_api_metric "$api_name" "4XXError" "Sum")
     local errors_5xx=$(get_api_metric "$api_name" "5XXError" "Sum")
@@ -343,8 +384,10 @@ check_api_gateway() {
     
     if (( $(echo "$latency > 0" | bc -l 2>/dev/null || echo 0) )); then
         latency_int=$(printf "%.0f" "$latency" 2>/dev/null || echo 0)
-        if [ "$latency_int" -gt 500 ]; then
+        if [ "$latency_int" -gt "$LATENCY_THRESHOLD_SLOW" ]; then
             echo -e "  ${YELLOW}⚠ Avg Latency: ${latency_int}ms (slow)${NC}"
+        elif [ "$latency_int" -gt "$LATENCY_THRESHOLD_WARN" ]; then
+            echo -e "  ${YELLOW}⚠ Avg Latency: ${latency_int}ms${NC}"
         else
             echo -e "  ${GREEN}✓ Avg Latency: ${latency_int}ms${NC}"
         fi
@@ -353,25 +396,6 @@ check_api_gateway() {
     fi
     
     echo ""
-}
-
-# Helper function for API Gateway metrics
-get_api_metric() {
-    local api_name=$1
-    local metric_name=$2
-    local stat=$3
-    
-    aws cloudwatch get-metric-statistics \
-        --namespace AWS/ApiGateway \
-        --metric-name "$metric_name" \
-        --dimensions Name=ApiName,Value="$api_name" \
-        --start-time "$(date -u -d @$((START_TIME / 1000)) '+%Y-%m-%dT%H:%M:%S')" \
-        --end-time "$(date -u -d @$((END_TIME / 1000)) '+%Y-%m-%dT%H:%M:%S')" \
-        --period "$TIME_WINDOW" \
-        --statistics "$stat" \
-        --region "$REGION" \
-        --query "Datapoints[0].$stat" \
-        --output text 2>/dev/null || echo "0"
 }
 
 # Function to display summary
@@ -408,11 +432,13 @@ display_summary() {
 
 # Main execution
 main() {
-    # Check AWS CLI is installed
-    if ! command -v aws &> /dev/null; then
-        echo -e "${RED}Error: AWS CLI is not installed${NC}"
-        exit 1
-    fi
+    # Check required tools
+    for cmd in aws bc; do
+        if ! command -v "$cmd" &> /dev/null; then
+            echo -e "${RED}Error: Required tool not found: $cmd${NC}"
+            exit 1
+        fi
+    done
     
     # Check AWS credentials
     if ! aws sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
