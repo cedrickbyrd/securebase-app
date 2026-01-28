@@ -443,7 +443,7 @@ for period in "7d" "30d" "90d"; do
     
     if [ "$status_code" = "200" ] || [ "$status_code" = "000" ]; then
         period_resp=$(json_value "$response_body" "period")
-        if [ "$period_resp" = "$period" ] || [ -n "$response_body" ]; then
+        if [ "$period_resp" = "$period" ] && [ -n "$response_body" ]; then
             record_test "Period parameter validation ($period)" "PASS" \
                 "Endpoint accepts $period time period"
         else
