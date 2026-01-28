@@ -1,0 +1,17 @@
+Analytics E2E Test Summary
+==========================
+Date: Wed Jan 28 13:57:18 UTC 2026
+Environment: test
+
+Test Results
+------------
+Total Tests: 4
+Passed: 4
+Failed: 0
+Success Rate: 100%
+
+Test Logs
+---------
+All test logs saved to: /home/runner/work/securebase-app/securebase-app/test-results
+
+-rw-rw-r-- 1 runner runner 209 Jan 28 13:57 /home/runner/work/securebase-app/securebase-app/test-results/unit_tests_20260128_135711.log

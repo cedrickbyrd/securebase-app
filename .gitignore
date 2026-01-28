@@ -49,6 +49,13 @@ htmlcov/
 .pytest_cache/
 coverage.json
 
+# Python layer artifacts (Lambda layers)
+phase2-backend/layers/**/python/lib/**/__pycache__/
+phase2-backend/layers/**/python/lib/**/*.pyc
+
+# Test results (keep summaries, ignore detailed logs)
+test-results/*.log
+
 # Frontend test artifacts
 coverage/
 .vitest/
