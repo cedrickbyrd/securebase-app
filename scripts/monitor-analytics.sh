@@ -35,6 +35,50 @@ LOG_GROUP_REPORTER="/aws/lambda/${ANALYTICS_REPORTER}"
 LOG_GROUP_QUERY="/aws/lambda/${ANALYTICS_QUERY}"
 LOG_GROUP_ENGINE="/aws/lambda/${REPORT_ENGINE}"
 
+#######################################
+# Helper: Compare numbers (portable, no bc dependency)
+# Arguments:
+#   $1 - First number
+#   $2 - Operator (gt, lt, eq)
+#   $3 - Second number
+# Returns:
+#   0 if comparison is true, 1 otherwise
+#######################################
+compare_numbers() {
+    local num1=$1
+    local op=$2
+    local num2=$3
+    
+    # Use awk for floating point comparison (more portable than bc)
+    awk -v n1="$num1" -v n2="$num2" -v op="$op" 'BEGIN {
+        if (op == "gt") exit !(n1 > n2)
+        else if (op == "lt") exit !(n1 < n2)
+        else if (op == "eq") exit !(n1 == n2)
+        else if (op == "ge") exit !(n1 >= n2)
+        else if (op == "le") exit !(n1 <= n2)
+        exit 1
+    }'
+}
+
+#######################################
+# Helper: Calculate percentage
+# Arguments:
+#   $1 - Numerator
+#   $2 - Denominator
+# Returns:
+#   Percentage as string
+#######################################
+calc_percentage() {
+    local num=$1
+    local denom=$2
+    
+    if [ "$denom" = "0" ] || [ -z "$denom" ]; then
+        echo "0.00"
+    else
+        awk -v n="$num" -v d="$denom" 'BEGIN { printf "%.2f", (n/d)*100 }'
+    fi
+}
+
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   Analytics Lambda - CloudWatch Monitoring            ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
@@ -151,7 +195,12 @@ get_lambda_metrics() {
     
     # Calculate time range (last hour)
     END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S")
-    START_TIME=$(date -u -d '1 hour ago' +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -v-1H +"%Y-%m-%dT%H:%M:%S")
+    # Try GNU date, then BSD date for compatibility
+    if START_TIME=$(date -u -d '1 hour ago' +"%Y-%m-%dT%H:%M:%S" 2>/dev/null); then
+        : # GNU date worked
+    else
+        START_TIME=$(date -u -v-1H +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || echo "")
+    fi
     
     # Get invocation count
     INVOCATIONS=$(aws cloudwatch get-metric-statistics \
@@ -217,13 +266,13 @@ get_lambda_metrics() {
     echo -e "${BLUE}Time range:${NC} Last 1 hour"
     echo -e "${BLUE}Invocations:${NC} ${INVOCATIONS}"
     
-    if [ "$(echo "$ERRORS > 0" | bc 2>/dev/null || [ "$ERRORS" -gt 0 ] && echo 1 || echo 0)" = "1" ]; then
+    if compare_numbers "$ERRORS" gt 0; then
         echo -e "${RED}Errors:${NC} ${ERRORS}"
     else
         echo -e "${GREEN}Errors:${NC} ${ERRORS}"
     fi
     
-    if [ "$(echo "$THROTTLES > 0" | bc 2>/dev/null || [ "$THROTTLES" -gt 0 ] && echo 1 || echo 0)" = "1" ]; then
+    if compare_numbers "$THROTTLES" gt 0; then
         echo -e "${RED}Throttles:${NC} ${THROTTLES}"
     else
         echo -e "${GREEN}Throttles:${NC} ${THROTTLES}"
@@ -232,13 +281,13 @@ get_lambda_metrics() {
     echo -e "${BLUE}Avg Duration:${NC} ${DURATION} ms"
     
     # Health assessment
-    if [ "$(echo "$INVOCATIONS > 0" | bc 2>/dev/null || [ "$INVOCATIONS" -gt 0 ] && echo 1 || echo 0)" = "1" ]; then
-        ERROR_RATE=$(echo "scale=2; ($ERRORS / $INVOCATIONS) * 100" | bc 2>/dev/null || echo "0")
+    if compare_numbers "$INVOCATIONS" gt 0; then
+        ERROR_RATE=$(calc_percentage "$ERRORS" "$INVOCATIONS")
         echo -e "${BLUE}Error Rate:${NC} ${ERROR_RATE}%"
         
-        if [ "$(echo "$ERROR_RATE > 5" | bc 2>/dev/null || echo 0)" = "1" ]; then
+        if compare_numbers "$ERROR_RATE" gt 5; then
             echo -e "${RED}⚠ Health: DEGRADED (High error rate)${NC}"
-        elif [ "$(echo "$THROTTLES > 0" | bc 2>/dev/null || [ "$THROTTLES" -gt 0 ] && echo 1 || echo 0)" = "1" ]; then
+        elif compare_numbers "$THROTTLES" gt 0; then
             echo -e "${YELLOW}⚠ Health: WARNING (Throttling detected)${NC}"
         else
             echo -e "${GREEN}✓ Health: HEALTHY${NC}"

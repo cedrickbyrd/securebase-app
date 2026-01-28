@@ -215,13 +215,27 @@ aws logs start-query \
 
 ### Get Specific Metrics
 
+**Note:** The date command examples below use GNU date syntax (Linux). On macOS/BSD systems, 
+replace `-d '1 hour ago'` with `-v-1H`. The monitoring script handles this automatically.
+
 ```bash
 # Invocation count (last hour)
+# Linux:
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Lambda \
   --metric-name Invocations \
   --dimensions Name=FunctionName,Value=securebase-dev-analytics-query \
   --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 3600 \
+  --statistics Sum
+
+# macOS/BSD:
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Invocations \
+  --dimensions Name=FunctionName,Value=securebase-dev-analytics-query \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%S) \
   --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
   --period 3600 \
   --statistics Sum
