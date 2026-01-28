@@ -3,8 +3,16 @@
 # Validates analytics endpoints, authentication, and data responses
 # Author: AI Coding Agent
 # Date: 2026-01-28
+# Requirements: Linux/macOS, curl, jq, bash 4.0+
+# Note: Performance timing requires Linux (uses date +%s%N); macOS will use second precision
 
 set -e
+
+# Cleanup temporary files on exit
+cleanup() {
+    rm -f /tmp/validate_analytics_*.tmp 2>/dev/null || true
+}
+trap cleanup EXIT
 
 # Colors for output
 RED='\033[0;31m'
@@ -123,22 +131,39 @@ make_api_call() {
     local expected_status="${5:-200}"
     
     local url="${API_BASE_URL}${endpoint}"
-    local response_file=$(mktemp)
+    local response_file=$(mktemp /tmp/validate_analytics_XXXXXX.tmp)
     local status_code
     
-    if [ -n "$body" ]; then
-        status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
-            -X "$method" \
-            -H "Content-Type: application/json" \
-            -H "$auth_header" \
-            -d "$body" \
-            "$url")
+    # Only add auth header if non-empty
+    if [ -n "$auth_header" ]; then
+        if [ -n "$body" ]; then
+            status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
+                -X "$method" \
+                -H "Content-Type: application/json" \
+                -H "$auth_header" \
+                -d "$body" \
+                "$url" 2>/dev/null || echo "000")
+        else
+            status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
+                -X "$method" \
+                -H "Content-Type: application/json" \
+                -H "$auth_header" \
+                "$url" 2>/dev/null || echo "000")
+        fi
     else
-        status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
-            -X "$method" \
-            -H "Content-Type: application/json" \
-            -H "$auth_header" \
-            "$url")
+        # Test missing authentication - don't send auth header
+        if [ -n "$body" ]; then
+            status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
+                -X "$method" \
+                -H "Content-Type: application/json" \
+                -d "$body" \
+                "$url" 2>/dev/null || echo "000")
+        else
+            status_code=$(curl -s -w "%{http_code}" -o "$response_file" \
+                -X "$method" \
+                -H "Content-Type: application/json" \
+                "$url" 2>/dev/null || echo "000")
+        fi
     fi
     
     local response_body=$(cat "$response_file")
@@ -432,10 +457,28 @@ for period in "7d" "30d" "90d"; do
 done
 
 # Test 4.3: Validate response times (performance)
-start_time=$(date +%s%N)
-result=$(make_api_call "GET" "/analytics/usage?customer_id=$CUSTOMER_ID&period=30d" "$AUTH_HEADER" "" "200")
-end_time=$(date +%s%N)
-elapsed_ms=$(( (end_time - start_time) / 1000000 ))
+# Check if running on macOS or Linux for nanosecond precision
+if date +%N &>/dev/null && [ "$(date +%N)" != "%N" ]; then
+    # Linux - nanosecond precision available
+    start_time=$(date +%s%N)
+    result=$(make_api_call "GET" "/analytics/usage?customer_id=$CUSTOMER_ID&period=30d" "$AUTH_HEADER" "" "200")
+    end_time=$(date +%s%N)
+    elapsed_ms=$(( (end_time - start_time) / 1000000 ))
+else
+    # macOS/BSD - use millisecond precision via python or second precision
+    if command -v python3 &> /dev/null; then
+        start_time=$(python3 -c 'import time; print(int(time.time() * 1000))')
+        result=$(make_api_call "GET" "/analytics/usage?customer_id=$CUSTOMER_ID&period=30d" "$AUTH_HEADER" "" "200")
+        end_time=$(python3 -c 'import time; print(int(time.time() * 1000))')
+        elapsed_ms=$((end_time - start_time))
+    else
+        # Fallback to second precision
+        start_time=$(date +%s)
+        result=$(make_api_call "GET" "/analytics/usage?customer_id=$CUSTOMER_ID&period=30d" "$AUTH_HEADER" "" "200")
+        end_time=$(date +%s)
+        elapsed_ms=$(( (end_time - start_time) * 1000 ))
+    fi
+fi
 
 if [ $elapsed_ms -lt 5000 ]; then
     record_test "Response time < 5s (performance)" "PASS" \
@@ -582,9 +625,13 @@ echo -e "${YELLOW}Warnings:${NC}      $WARNINGS"
 echo ""
 
 # Calculate pass rate
+pass_rate=0
 if [ $TOTAL_TESTS -gt 0 ]; then
     pass_rate=$(( (PASSED_TESTS * 100) / TOTAL_TESTS ))
     echo -e "${CYAN}Pass Rate:${NC}     ${pass_rate}%"
+    echo ""
+else
+    echo -e "${YELLOW}Pass Rate:${NC}     N/A (no tests run)"
     echo ""
 fi
 
