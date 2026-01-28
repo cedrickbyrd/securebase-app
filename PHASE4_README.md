@@ -344,6 +344,90 @@ reports_table_name = "securebase-dev-reports"
 
 ## 📊 Monitoring & Observability
 
+### CloudWatch Monitoring
+
+All Analytics Lambda functions are monitored via CloudWatch with:
+- **Log Groups**: Centralized logging with 30-day retention
+- **Dashboard**: Real-time metrics visualization
+- **Alarms**: Automated alerts for errors, throttles, and high latency
+- **Insights Queries**: Pre-built queries for debugging and performance analysis
+
+### Monitoring Script
+
+Use the provided monitoring script to check health status:
+
+```bash
+# Quick health check (all functions, metrics, alarms)
+./scripts/monitor-analytics.sh dev all
+
+# View CloudWatch logs
+./scripts/monitor-analytics.sh dev logs
+
+# View metrics only
+./scripts/monitor-analytics.sh dev metrics
+
+# Check alarm status
+./scripts/monitor-analytics.sh dev alarms
+
+# Get dashboard URL
+./scripts/monitor-analytics.sh dev dashboard
+
+# Monitor production environment
+./scripts/monitor-analytics.sh prod all
+```
+
+**Example Output:**
+```
+═══════════════════════════════════════════════════
+         LAMBDA FUNCTION METRICS (Last Hour)
+═══════════════════════════════════════════════════
+
+━━━ Metrics: securebase-dev-analytics-query ━━━
+Time range: Last 1 hour
+Invocations: 45
+Errors: 0
+Throttles: 0
+Avg Duration: 234.5 ms
+Error Rate: 0.00%
+✓ Health: HEALTHY
+```
+
+### Key Metrics
+
+| Metric | Target | Alarm Threshold |
+|--------|--------|-----------------|
+| Query execution time | < 5s (p95) | > 1s average |
+| Error rate | < 1% | > 5 errors/hour |
+| API latency | < 500ms | > 500ms average |
+| Throttles | 0 | > 0 events |
+| Report generation | < 10s | > 3 failures/hour |
+
+### CloudWatch Dashboard
+
+Access via AWS Console or direct link:
+```
+https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=securebase-{env}-analytics
+```
+
+**Dashboard Widgets:**
+1. Lambda Function Health (invocations, errors, throttles, duration)
+2. DynamoDB Usage (read/write capacity, throttling)
+3. API Gateway Analytics (requests, client errors, server errors, latency)
+4. S3 Report Storage (object count, bucket size)
+
+### Comprehensive Guide
+
+For detailed monitoring instructions, troubleshooting, and best practices:
+- **[Analytics Monitoring Guide](docs/ANALYTICS_MONITORING_GUIDE.md)** - Complete monitoring documentation
+
+Topics covered:
+- Manual monitoring via AWS CLI
+- CloudWatch Insights queries
+- Troubleshooting common issues
+- Alert configuration
+- Performance optimization
+- Custom metrics
+
 ### CloudWatch Dashboards
 
 1. **Analytics Performance** - Query times, export durations
