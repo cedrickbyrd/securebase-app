@@ -249,6 +249,61 @@ filters: JSON (optional)
 
 ---
 
+## Monitoring & Operations
+
+### CloudWatch Monitoring
+
+**Post-Deployment Monitoring:**
+
+A comprehensive CloudWatch monitoring script is available to check Analytics Lambda functions for errors and invocation issues:
+
+```bash
+# Check current status (dev environment)
+./scripts/check-analytics-cloudwatch.sh
+
+# Check specific environment
+./scripts/check-analytics-cloudwatch.sh -e staging -t 3600
+
+# Verbose output with detailed logs
+./scripts/check-analytics-cloudwatch.sh -e prod -t 86400 -v
+```
+
+**What It Monitors:**
+- Lambda function invocations, errors, throttles, duration
+- CloudWatch error logs with timestamps
+- DynamoDB table throttling events
+- API Gateway request counts and latency
+- CloudWatch alarm status
+
+**Quick References:**
+- 📖 Full Guide: `docs/CLOUDWATCH_MONITORING_GUIDE.md`
+- ⚡ Quick Ref: `CLOUDWATCH_ANALYTICS_QUICK_REF.md`
+- 🔧 Troubleshooting: Includes common issues and fixes
+
+**Monitoring Schedule:**
+- Immediately after deployment
+- After 1 hour (EventBridge trigger)
+- Daily during first week
+- As needed for troubleshooting
+
+**CloudWatch Dashboard:**
+Access the pre-configured dashboard at:
+```
+https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=securebase-{env}-analytics
+```
+
+### CloudWatch Alarms Configured
+
+1. **Lambda Errors**: >5 errors/hour
+2. **Lambda Duration**: Average >1 second
+3. **Lambda Throttles**: Any throttling events
+4. **DynamoDB Throttles**: >5 throttling events
+5. **API Gateway 5XX**: >10 server errors
+6. **API Gateway Latency**: Average >500ms
+7. **Failed Report Generations**: >3 failures/hour
+
+---
+
 ## Performance Targets
 
 - [ ] Query execution <5s (p95) for 90-day period

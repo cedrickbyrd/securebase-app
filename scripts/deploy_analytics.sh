@@ -282,11 +282,36 @@ echo ""
 echo -e "${BLUE}📚 Next Steps:${NC}"
 echo "  1. Run integration tests: pytest tests/integration/test_analytics_integration.py"
 echo "  2. Run E2E tests: RUN_E2E_TESTS=1 pytest tests/e2e/test_analytics_e2e.py"
-echo "  3. Monitor CloudWatch dashboard for 48 hours"
-echo "  4. Update PHASE4_STATUS.md to mark Component 1 as deployed"
+echo "  3. Check CloudWatch for errors: ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT"
+echo "  4. Monitor CloudWatch dashboard for 48 hours"
+echo "  5. Update PHASE4_STATUS.md to mark Component 1 as deployed"
 echo ""
 echo -e "${YELLOW}⚠  Important:${NC}"
 echo "  - SNS subscription confirmation emails sent to alert recipients"
 echo "  - Lambda layer ARN saved in terraform.tfvars"
 echo "  - CloudWatch alarms configured for errors, latency, and throttling"
+echo "  - Run CloudWatch monitoring check after 1 hour: ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT -t 3600"
+echo ""
+
+# Step 10: Post-deployment CloudWatch Check
+echo -e "${YELLOW}━━━ Step 10: Post-deployment CloudWatch Check ━━━${NC}"
+echo "Running initial CloudWatch monitoring check (last 5 minutes)..."
+echo ""
+
+if [ -f "$SCRIPT_DIR/check-analytics-cloudwatch.sh" ]; then
+    # Run monitoring check with proper error handling
+    if ! "$SCRIPT_DIR/check-analytics-cloudwatch.sh" -e "$ENVIRONMENT" -r "$AWS_REGION" -t 300; then
+        echo ""
+        echo -e "${YELLOW}⚠ CloudWatch monitoring check encountered issues${NC}"
+        echo "  This is expected immediately after deployment if functions haven't been invoked yet."
+        echo "  The deployment was successful. Please run monitoring again in 5-10 minutes:"
+        echo "    ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT -t 600"
+    fi
+    echo ""
+    echo -e "${BLUE}💡 Tip:${NC} Run detailed monitoring after 1 hour:"
+    echo "   ./scripts/check-analytics-cloudwatch.sh -e $ENVIRONMENT -t 3600 -v"
+else
+    echo -e "${YELLOW}⚠ CloudWatch monitoring script not found${NC}"
+    echo "  Manual check: aws logs tail /aws/lambda/securebase-$ENVIRONMENT-analytics-query --follow"
+fi
 echo ""
