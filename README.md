@@ -59,6 +59,7 @@ SecureBase transforms AWS Organizations into a managed service with:
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Deployment guide |
 | [landing-zone/environments/dev/README.md](landing-zone/environments/dev/README.md) | How to deploy (START HERE) |
 | [docs/PAAS_ARCHITECTURE.md](docs/PAAS_ARCHITECTURE.md) | Full PaaS spec & roadmap |
+| [ANALYTICS_LAYER_QUICK_REFERENCE.md](ANALYTICS_LAYER_QUICK_REFERENCE.md) | Analytics Lambda layer verification |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues |
 | [INDEX.md](INDEX.md) | Complete reference |
 
