@@ -422,7 +422,9 @@ if validate_json "$response_body"; then
     has_storage=$(json_value "$response_body" "metrics.storage_gb")
     has_compute=$(json_value "$response_body" "metrics.compute_hours")
     
-    if [ -n "$has_api_calls" ] && [ "$has_api_calls" != "null" ]; then
+    if [ -n "$has_api_calls" ] && [ "$has_api_calls" != "null" ] && \
+       [ -n "$has_storage" ] && [ "$has_storage" != "null" ] && \
+       [ -n "$has_compute" ] && [ "$has_compute" != "null" ]; then
         record_test "Usage metrics contain required fields" "PASS" \
             "api_calls, storage_gb, compute_hours present"
     else
