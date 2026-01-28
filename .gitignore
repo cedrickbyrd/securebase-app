@@ -49,6 +49,9 @@ htmlcov/
 .pytest_cache/
 coverage.json
 
+# Test results (keep summaries, ignore detailed logs)
+test-results/*.log
+
 # Frontend test artifacts
 coverage/
 .vitest/
