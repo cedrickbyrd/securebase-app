@@ -14,7 +14,7 @@
 terraform {
   backend "s3" {
     # TODO: Replace with your bootstrap S3 bucket name
-    bucket = "REPLACE_WITH_YOUR_BUCKET_NAME"
+    bucket = "securebase-terraform-state-dev"
     
     # State file key - change per workspace/environment
     key = "securebase-workspace/terraform.tfstate"
@@ -23,7 +23,7 @@ terraform {
     region = "us-east-1"
     
     # TODO: Replace with your DynamoDB table name for state locking
-    dynamodb_table = "REPLACE_WITH_YOUR_DYNAMODB_TABLE"
+    dynamodb_table = "securebase-terraform-locks"
     
     # Enable encryption at rest
     encrypt = true
