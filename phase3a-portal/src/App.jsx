@@ -40,6 +40,8 @@ const Navigation = ({ isOpen, setIsOpen }) => {
   }
 
   // Check if user has admin role (from localStorage or token)
+  // NOTE: This is for UI visibility only. Server-side authorization via JWT/API key
+  // is the actual security boundary. Backend API must verify admin/executive roles.
   const userRole = localStorage.getItem('userRole') || 'customer';
   const isAdmin = userRole === 'admin' || userRole === 'executive';
 
