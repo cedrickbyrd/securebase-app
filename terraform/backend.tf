@@ -22,7 +22,7 @@ terraform {
     # TODO: Replace with your AWS region
     region = "us-east-1"
     
-    # TODO: Replace with your DynamoDB table name for state locking
+    # DynamoDB table used for state locking (must already exist)
     dynamodb_table = "securebase-terraform-locks"
     
     # Enable encryption at rest
