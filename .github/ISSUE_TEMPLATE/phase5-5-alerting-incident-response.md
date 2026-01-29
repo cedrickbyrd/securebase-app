@@ -2,7 +2,7 @@
 name: "🚨 Phase 5.5: Alerting & Incident Response"
 about: Track Alerting & Incident Response implementation (Week 3)
 title: "[PHASE 5.5] Alerting & Incident Response Implementation"
-labels: ["phase-5", "alerting", "incident-response", "pagerduty", "week-3"]
+labels: ["phase-5", "alerting", "incident-response", "observability", "week-3"]
 assignees: []
 ---
 
