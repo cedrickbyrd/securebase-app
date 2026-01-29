@@ -12,14 +12,11 @@ describe('SystemHealth Component', () => {
     vi.clearAllMocks();
   });
 
-  it('should render SystemHealth component', () => {
+  it('should render SystemHealth component with all main sections', () => {
     render(<SystemHealth timeRange="24h" loading={false} />);
     expect(screen.getByText(/service status/i)).toBeInTheDocument();
-  });
-
-  it('should display service status section', () => {
-    render(<SystemHealth timeRange="24h" loading={false} />);
-    expect(screen.getByText(/service status/i)).toBeInTheDocument();
+    expect(screen.getByText(/regional health/i)).toBeInTheDocument();
+    expect(screen.getByText(/overall system health/i)).toBeInTheDocument();
   });
 
   it('should display regional health section', () => {
