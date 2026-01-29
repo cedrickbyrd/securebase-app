@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Bell,
+  Activity,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Invoices from './components/Invoices';
@@ -27,6 +28,7 @@ import { Forecasting } from './components/Forecasting';
 import Webhooks from './components/Webhooks';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
 const Navigation = ({ isOpen, setIsOpen }) => {
@@ -37,6 +39,12 @@ const Navigation = ({ isOpen, setIsOpen }) => {
     return null;
   }
 
+  // Check if user has admin role (from localStorage or token)
+  // NOTE: This is for UI visibility only. Server-side authorization via JWT/API key
+  // is the actual security boundary. Backend API must verify admin/executive roles.
+  const userRole = localStorage.getItem('userRole') || 'customer';
+  const isAdmin = userRole === 'admin' || userRole === 'executive';
+
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/invoices', label: 'Invoices', icon: CreditCard },
@@ -46,6 +54,11 @@ const Navigation = ({ isOpen, setIsOpen }) => {
     { path: '/webhooks', label: 'Webhooks', icon: Webhook },
     { path: '/support', label: 'Support', icon: Ticket },
   ];
+
+  // Add admin-only navigation items
+  if (isAdmin) {
+    navItems.push({ path: '/admin', label: 'Admin Dashboard', icon: Activity });
+  }
 
   const isActive = (path) => location.pathname === path;
 
@@ -238,6 +251,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SupportTickets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
