@@ -1,10 +1,9 @@
-# Terraform Backend Configuration Template
+# Terraform Backend Configuration
 # This file configures remote state storage in S3 with DynamoDB locking
 # 
 # SETUP INSTRUCTIONS:
-# 1. Replace placeholder values with your actual S3 bucket and DynamoDB table
-# 2. Ensure the S3 bucket and DynamoDB table are created (see bootstrap-backend.sh)
-# 3. Set AWS_REGION secret in GitHub repository settings
+# 1. Ensure the S3 bucket and DynamoDB table are created (see bootstrap-backend.sh)
+# 2. Set AWS_REGION secret in GitHub repository settings
 #
 # Required GitHub Secrets:
 # - AWS_ACCESS_KEY_ID
