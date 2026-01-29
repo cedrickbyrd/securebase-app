@@ -13,13 +13,13 @@
 
 terraform {
   backend "s3" {
-    # TODO: Replace with your bootstrap S3 bucket name
+    # S3 bucket for remote state storage (created by bootstrap-backend.sh)
     bucket = "securebase-terraform-state-dev"
     
     # State file key - change per workspace/environment
     key = "securebase-workspace/terraform.tfstate"
     
-    # TODO: Replace with your AWS region
+    # AWS region for backend resources
     region = "us-east-1"
     
     # DynamoDB table used for state locking (must already exist)
