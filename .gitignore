@@ -55,3 +55,4 @@ coverage/
 
 # Terraform installer artifacts
 terraform_*.zip
+actionlint
