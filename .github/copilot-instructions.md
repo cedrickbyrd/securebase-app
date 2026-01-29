@@ -224,7 +224,7 @@ resource "aws_organizations_policy" "restrict_root_user" {
 
 ### External Services
 - **AWS Services**: Organizations, IAM Identity Center, CloudTrail, Config, GuardDuty, Security Hub, Aurora Serverless v2, Lambda, API Gateway, Secrets Manager, EventBridge
-- **Terraform Provider**: `hashicorp/aws ~> 5.0` (pinned in `landing-zone/versions.tf`)
+- **Terraform Provider**: `hashicorp/aws ~> 5.0` (pinned in `landing-zone/main.tf`)
 - **Database**: PostgreSQL 15.4 (Aurora Serverless v2) with `uuid-ossp`, `pgcrypto`, `pg_stat_statements` extensions
 - **Python Runtime**: Lambda Python 3.11; dependencies in `phase2-backend/functions/requirements.txt` (psycopg2-binary, boto3, requests)
 - **React Build**: Vite 7.2.5 (via rolldown-vite override); Tailwind CSS 4.1.18
