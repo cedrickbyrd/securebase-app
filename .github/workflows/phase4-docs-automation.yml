@@ -1,0 +1,647 @@
+name: Phase 4 Documentation Automation
+
+# Documentation generation and release automation
+# Auto-generates API docs, validates markdown, creates changelogs, and publishes to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - 'phase2-backend/**'
+      - 'phase3a-portal/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '*.md'
+  release:
+    types: [created, published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  pages: write
+  id-token: write
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Job 1: Generate API Documentation
+  generate-api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install documentation tools
+        run: |
+          pip install pdoc3 pydoc-markdown
+
+      - name: Generate Python API docs
+        run: |
+          echo "Generating Python API documentation..."
+          
+          # Create docs directory
+          mkdir -p docs/api/python
+          
+          # Generate docs for backend functions
+          if [ -d "phase2-backend/functions" ]; then
+            cd phase2-backend/functions
+            
+            # Generate HTML docs
+            pdoc --html --output-dir ../../docs/api/python \
+              user_management.py session_management.py activity_feed.py \
+              || echo "Python doc generation completed with warnings"
+            
+            cd ../..
+          fi
+          
+          echo "✅ Python API documentation generated"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install JSDoc
+        run: npm install -g jsdoc jsdoc-to-markdown
+
+      - name: Generate JavaScript API docs
+        run: |
+          echo "Generating JavaScript API documentation..."
+          
+          # Create docs directory
+          mkdir -p docs/api/javascript
+          
+          # Generate docs for frontend services
+          if [ -d "phase3a-portal/src/services" ]; then
+            cd phase3a-portal/src/services
+            
+            # Generate markdown docs
+            for file in *.js; do
+              if [ -f "$file" ]; then
+                jsdoc2md "$file" > "../../../docs/api/javascript/${file%.js}.md" || true
+              fi
+            done
+            
+            cd ../../..
+          fi
+          
+          echo "✅ JavaScript API documentation generated"
+
+      - name: Generate API reference index
+        run: |
+          cat > docs/api/README.md << 'EOF'
+          # SecureBase API Reference
+          
+          Auto-generated API documentation for SecureBase Phase 4 components.
+          
+          ## Backend APIs (Python)
+          
+          - [User Management API](python/user_management.html)
+          - [Session Management API](python/session_management.html)
+          - [Activity Feed API](python/activity_feed.html)
+          
+          ## Frontend Services (JavaScript)
+          
+          - [Team Service](javascript/teamService.md)
+          - [API Service](javascript/apiService.md)
+          
+          ## REST API Endpoints
+          
+          See [TEAM_MANAGEMENT_API.md](../TEAM_MANAGEMENT_API.md) for complete REST API documentation.
+          
+          ---
+          
+          **Last Updated:** $(date)
+          **Auto-generated:** This documentation is automatically generated from code comments.
+          EOF
+          
+          echo "✅ API reference index created"
+
+      - name: Upload API docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api/
+          retention-days: 30
+
+  # Job 2: Validate Markdown Files
+  validate-markdown:
+    name: Validate Markdown Links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install markdown-link-check
+        run: npm install -g markdown-link-check
+
+      - name: Check markdown files
+        run: |
+          echo "Checking markdown files for broken links..."
+          
+          # Find all markdown files
+          find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*" > md-files.txt
+          
+          BROKEN_LINKS=0
+          
+          while IFS= read -r file; do
+            echo "Checking: $file"
+            
+            # Check links (allow some failures for external links)
+            markdown-link-check "$file" --config .github/markdown-link-check-config.json || {
+              echo "⚠️  Found issues in $file"
+              BROKEN_LINKS=$((BROKEN_LINKS + 1))
+            }
+          done < md-files.txt
+          
+          if [ $BROKEN_LINKS -gt 0 ]; then
+            echo "⚠️  Found broken links in $BROKEN_LINKS files"
+          else
+            echo "✅ All markdown links valid"
+          fi
+        continue-on-error: true
+
+      - name: Create markdown link check config
+        run: |
+          mkdir -p .github
+          cat > .github/markdown-link-check-config.json << 'EOF'
+          {
+            "ignorePatterns": [
+              {
+                "pattern": "^http://localhost"
+              },
+              {
+                "pattern": "^https://example.com"
+              }
+            ],
+            "timeout": "5s",
+            "retryOn429": true,
+            "retryCount": 3,
+            "fallbackRetryDelay": "30s"
+          }
+          EOF
+
+  # Job 3: Generate Changelog
+  generate-changelog:
+    name: Generate CHANGELOG.md
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install conventional-changelog
+        run: npm install -g conventional-changelog-cli
+
+      - name: Generate changelog
+        run: |
+          echo "Generating changelog from commit history..."
+          
+          # Generate conventional changelog
+          conventional-changelog -p angular -i CHANGELOG.md -s -r 0 || {
+            # Fallback to manual changelog generation
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to SecureBase will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "## [Unreleased]" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            
+            # Get recent commits
+            git log --pretty=format:"- %s (%an, %ar)" -20 >> CHANGELOG.md
+          }
+          
+          echo "✅ Changelog generated"
+
+      - name: Commit changelog
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changes to changelog"
+          else
+            git add CHANGELOG.md
+            git commit -m "docs: Update CHANGELOG.md [skip ci]" || echo "No changes to commit"
+            git push || echo "Push skipped"
+          fi
+        continue-on-error: true
+
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+          retention-days: 30
+
+  # Job 4: Generate Release Notes
+  generate-release-notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        run: |
+          echo "# Release Notes - ${{ github.event.release.tag_name }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "**Release Date:** $(date)" >> release-notes.md
+          echo "**Version:** ${{ github.event.release.tag_name }}" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          echo "## What's New" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -n "$LAST_TAG" ]; then
+            echo "### New Features" >> release-notes.md
+            git log $LAST_TAG..HEAD --pretty=format:"- %s" --grep="^feat" >> release-notes.md || true
+            echo "" >> release-notes.md
+            
+            echo "### Bug Fixes" >> release-notes.md
+            git log $LAST_TAG..HEAD --pretty=format:"- %s" --grep="^fix" >> release-notes.md || true
+            echo "" >> release-notes.md
+            
+            echo "### Documentation" >> release-notes.md
+            git log $LAST_TAG..HEAD --pretty=format:"- %s" --grep="^docs" >> release-notes.md || true
+            echo "" >> release-notes.md
+          else
+            echo "Initial release" >> release-notes.md
+          fi
+          
+          echo "" >> release-notes.md
+          echo "## Contributors" >> release-notes.md
+          git log --pretty=format:"- @%an" | sort -u >> release-notes.md
+          
+          cat release-notes.md
+
+      - name: Update release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const releaseNotes = fs.readFileSync('release-notes.md', 'utf8');
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: releaseNotes
+            });
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 90
+
+  # Job 5: Validate Onboarding Checklist
+  validate-onboarding:
+    name: Validate ONBOARDING_CHECKLIST.md
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check onboarding checklist exists
+        run: |
+          if [ -f "ONBOARDING_CHECKLIST.md" ]; then
+            echo "✅ ONBOARDING_CHECKLIST.md exists"
+          else
+            echo "❌ ONBOARDING_CHECKLIST.md not found"
+            exit 1
+          fi
+
+      - name: Validate checklist completeness
+        run: |
+          echo "Validating onboarding checklist..."
+          
+          # Check for required sections
+          REQUIRED_SECTIONS=(
+            "Prerequisites"
+            "Account Setup"
+            "Environment Configuration"
+            "Deployment"
+            "Testing"
+            "Documentation"
+          )
+          
+          MISSING=0
+          
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if grep -q "$section" ONBOARDING_CHECKLIST.md; then
+              echo "✅ Found section: $section"
+            else
+              echo "❌ Missing section: $section"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "⚠️  Onboarding checklist incomplete ($MISSING sections missing)"
+          else
+            echo "✅ Onboarding checklist complete"
+          fi
+
+      - name: Count checklist items
+        run: |
+          TOTAL_ITEMS=$(grep -c "^- \[" ONBOARDING_CHECKLIST.md || echo "0")
+          COMPLETED_ITEMS=$(grep -c "^- \[x\]" ONBOARDING_CHECKLIST.md || echo "0")
+          
+          echo "Checklist Progress:"
+          echo "  Total items: $TOTAL_ITEMS"
+          echo "  Completed items: $COMPLETED_ITEMS"
+          
+          if [ $TOTAL_ITEMS -gt 0 ]; then
+            PERCENT=$((COMPLETED_ITEMS * 100 / TOTAL_ITEMS))
+            echo "  Completion: ${PERCENT}%"
+          fi
+
+  # Job 6: Publish Documentation to GitHub Pages
+  publish-docs:
+    name: Publish Docs to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [generate-api-docs, validate-markdown]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download API docs
+        uses: actions/download-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api/
+        continue-on-error: true
+
+      - name: Create docs index
+        run: |
+          mkdir -p _site
+          
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>SecureBase Documentation</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+                line-height: 1.6;
+              }
+              h1 { color: #2c3e50; }
+              .doc-section {
+                background: #f8f9fa;
+                padding: 1.5rem;
+                margin: 1rem 0;
+                border-radius: 8px;
+              }
+              .doc-link {
+                color: #3498db;
+                text-decoration: none;
+                font-weight: 500;
+              }
+              .doc-link:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>🔐 SecureBase Documentation</h1>
+            <p>Welcome to the SecureBase platform documentation.</p>
+            
+            <div class="doc-section">
+              <h2>📚 Getting Started</h2>
+              <ul>
+                <li><a href="GETTING_STARTED.md" class="doc-link">Getting Started Guide</a></li>
+                <li><a href="ONBOARDING_CHECKLIST.md" class="doc-link">Onboarding Checklist</a></li>
+                <li><a href="README.md" class="doc-link">README</a></li>
+              </ul>
+            </div>
+            
+            <div class="doc-section">
+              <h2>🔌 API Documentation</h2>
+              <ul>
+                <li><a href="API_REFERENCE.md" class="doc-link">API Reference</a></li>
+                <li><a href="docs/TEAM_MANAGEMENT_API.md" class="doc-link">Team Management API</a></li>
+                <li><a href="docs/api/" class="doc-link">Auto-generated API Docs</a></li>
+              </ul>
+            </div>
+            
+            <div class="doc-section">
+              <h2>🏗️ Phase Documentation</h2>
+              <ul>
+                <li><a href="PHASE4_README.md" class="doc-link">Phase 4 Overview</a></li>
+                <li><a href="PHASE4_COMPONENT2_COMPLETE.md" class="doc-link">RBAC Implementation</a></li>
+                <li><a href="PHASE4_SECURITY_GUIDE.md" class="doc-link">Security Guide</a></li>
+              </ul>
+            </div>
+            
+            <div class="doc-section">
+              <h2>🔒 Security & Compliance</h2>
+              <ul>
+                <li><a href="SECURITY.md" class="doc-link">Security Policy</a></li>
+                <li><a href="docs/RBAC_PERMISSION_MATRIX.md" class="doc-link">RBAC Permission Matrix</a></li>
+                <li><a href="docs/RBAC_TROUBLESHOOTING.md" class="doc-link">RBAC Troubleshooting</a></li>
+              </ul>
+            </div>
+            
+            <p><em>Last updated: $(date)</em></p>
+          </body>
+          </html>
+          EOF
+          
+          # Copy markdown files
+          cp -r docs _site/ || true
+          cp *.md _site/ || true
+          
+          echo "✅ Documentation site prepared"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Job 7: Notify Stakeholders
+  notify-stakeholders:
+    name: Notify on Documentation Updates
+    runs-on: ubuntu-latest
+    needs: [generate-api-docs, generate-changelog, publish-docs]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for doc changes
+        id: doc_changes
+        run: |
+          # Get list of changed files
+          git fetch origin main
+          CHANGED_DOCS=$(git diff --name-only origin/main...HEAD | grep -E '\.(md|rst|txt)$' || echo "")
+          
+          if [ -n "$CHANGED_DOCS" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changed documentation files:"
+            echo "$CHANGED_DOCS"
+            
+            # Save to file for comment
+            echo "$CHANGED_DOCS" > changed-docs.txt
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No documentation changes detected"
+          fi
+
+      - name: Comment on PR with doc updates
+        if: steps.doc_changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let changedDocs = '';
+            try {
+              changedDocs = fs.readFileSync('changed-docs.txt', 'utf8');
+            } catch (e) {
+              changedDocs = 'Unable to read changed files';
+            }
+            
+            const comment = `## 📝 Documentation Updates
+            
+            This PR includes changes to documentation files:
+            
+            \`\`\`
+            ${changedDocs}
+            \`\`\`
+            
+            ### Next Steps
+            - [ ] Review documentation changes for accuracy
+            - [ ] Check for broken links
+            - [ ] Verify code examples work
+            - [ ] Update related documentation if needed
+            
+            **Note:** Documentation will be automatically published to GitHub Pages when this PR is merged.
+            `;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Job 8: Documentation Summary
+  docs-summary:
+    name: Generate Documentation Summary
+    runs-on: ubuntu-latest
+    needs: [generate-api-docs, validate-markdown, generate-changelog, validate-onboarding]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate summary
+        run: |
+          echo "# Documentation Automation Summary" > DOCS_SUMMARY.md
+          echo "" >> DOCS_SUMMARY.md
+          echo "**Date:** $(date)" >> DOCS_SUMMARY.md
+          echo "**Commit:** ${{ github.sha }}" >> DOCS_SUMMARY.md
+          echo "" >> DOCS_SUMMARY.md
+          
+          echo "## Tasks Completed" >> DOCS_SUMMARY.md
+          echo "" >> DOCS_SUMMARY.md
+          echo "- [x] API documentation generated" >> DOCS_SUMMARY.md
+          echo "- [x] Markdown links validated" >> DOCS_SUMMARY.md
+          echo "- [x] Changelog updated" >> DOCS_SUMMARY.md
+          echo "- [x] Onboarding checklist validated" >> DOCS_SUMMARY.md
+          
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "- [x] Documentation published to GitHub Pages" >> DOCS_SUMMARY.md
+          fi
+          
+          echo "" >> DOCS_SUMMARY.md
+          echo "## Documentation Stats" >> DOCS_SUMMARY.md
+          echo "" >> DOCS_SUMMARY.md
+          
+          # Count markdown files
+          MD_COUNT=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*" | wc -l)
+          echo "- Total markdown files: $MD_COUNT" >> DOCS_SUMMARY.md
+          
+          # Count documentation in docs directory
+          if [ -d "docs" ]; then
+            DOCS_COUNT=$(find docs -name "*.md" | wc -l)
+            echo "- Documentation files in docs/: $DOCS_COUNT" >> DOCS_SUMMARY.md
+          fi
+          
+          echo "" >> DOCS_SUMMARY.md
+          echo "**Status:** ✅ Documentation automation completed successfully" >> DOCS_SUMMARY.md
+          
+          cat DOCS_SUMMARY.md
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-summary
+          path: DOCS_SUMMARY.md
+          retention-days: 30

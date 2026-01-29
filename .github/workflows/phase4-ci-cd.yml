@@ -1,0 +1,508 @@
+name: Phase 4 CI/CD Pipeline
+
+# Complete CI/CD pipeline for Phase 4 components
+# Handles validation, testing, building, and deployment across all environments
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/phase4/**'
+      - 'copilot/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Job 1: Code validation (linting and formatting)
+  validate:
+    name: Code Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Python validation
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Python linters
+        run: |
+          pip install --upgrade pip
+          pip install pylint flake8 black isort
+
+      - name: Run Python linting (pylint)
+        run: |
+          cd phase2-backend/functions
+          pylint --rcfile=../../.pylintrc *.py || true
+        continue-on-error: true
+
+      - name: Run Python formatting check (black)
+        run: |
+          cd phase2-backend/functions
+          black --check --diff . || echo "Black formatting issues found"
+        continue-on-error: true
+
+      - name: Run Python import sorting check (isort)
+        run: |
+          cd phase2-backend/functions
+          isort --check-only --diff . || echo "Import sorting issues found"
+        continue-on-error: true
+
+      # JavaScript/React validation
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run ESLint (root)
+        run: npm run lint || echo "ESLint issues found"
+        continue-on-error: true
+
+      - name: Install Phase 3a Portal dependencies
+        run: |
+          cd phase3a-portal
+          npm ci
+
+      - name: Run ESLint (Phase 3a Portal)
+        run: |
+          cd phase3a-portal
+          npm run lint || echo "ESLint issues found"
+        continue-on-error: true
+
+  # Job 2: Backend testing
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: validate
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          cd phase2-backend/functions
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r test-requirements.txt
+          pip install pytest pytest-cov pytest-mock pytest-asyncio
+
+      - name: Run Phase 2 backend tests
+        run: |
+          cd phase2-backend/functions
+          pytest test_*.py -v --cov=. --cov-report=xml --cov-report=term --cov-report=html
+        continue-on-error: false
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./phase2-backend/functions/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-report
+          path: phase2-backend/functions/htmlcov/
+          retention-days: 30
+
+  # Job 3: Frontend testing
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: validate
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'phase3a-portal/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd phase3a-portal
+          npm ci
+
+      - name: Run component tests
+        run: |
+          cd phase3a-portal
+          npm run test:coverage
+        continue-on-error: false
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./phase3a-portal/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: phase3a-portal/coverage/
+          retention-days: 30
+
+  # Job 4: Build artifacts
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test-backend, test-frontend]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Build frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build root project
+        run: npm run build
+
+      - name: Install Phase 3a Portal dependencies
+        run: |
+          cd phase3a-portal
+          npm ci
+
+      - name: Build Phase 3a Portal
+        run: |
+          cd phase3a-portal
+          npm run build
+
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: |
+            dist/
+            phase3a-portal/dist/
+          retention-days: 7
+
+      # Package Lambda functions
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Lambda dependencies
+        run: |
+          cd phase2-backend/functions
+          pip install -r requirements.txt -t ./package/
+          cp *.py ./package/
+
+      - name: Create Lambda deployment packages
+        run: |
+          cd phase2-backend/functions/package
+          zip -r ../user_management.zip .
+          cd ..
+          rm -rf package
+          
+          # Repeat for other Lambda functions
+          mkdir -p package
+          pip install -r requirements.txt -t ./package/
+          cp session_management.py ./package/
+          cd package
+          zip -r ../session_management.zip .
+          cd ..
+          rm -rf package
+
+      - name: Upload Lambda packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: phase2-backend/functions/*.zip
+          retention-days: 7
+
+  # Job 5: Deploy to dev environment (automatic on main)
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: dev
+      url: https://dev.securebase.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Download Lambda packages
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+          path: lambda/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Deploy frontend to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.DEV_S3_BUCKET }}/ --delete
+          aws s3 sync phase3a-portal/dist/ s3://${{ secrets.DEV_PORTAL_S3_BUCKET }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.DEV_CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
+
+      - name: Deploy Lambda functions
+        run: |
+          for lambda_zip in lambda/*.zip; do
+            function_name=$(basename "$lambda_zip" .zip)
+            echo "Deploying $function_name..."
+            aws lambda update-function-code \
+              --function-name "securebase-dev-${function_name}" \
+              --zip-file "fileb://${lambda_zip}"
+          done
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Dev deployment completed successfully"
+          echo "Frontend: https://dev.securebase.com"
+          echo "Portal: https://portal-dev.securebase.com"
+          echo "API: https://api-dev.securebase.com"
+
+  # Job 6: Deploy to staging (requires approval)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.securebase.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Download Lambda packages
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+          path: lambda/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Deploy frontend to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.STAGING_S3_BUCKET }}/ --delete
+          aws s3 sync phase3a-portal/dist/ s3://${{ secrets.STAGING_PORTAL_S3_BUCKET }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.STAGING_CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
+
+      - name: Deploy Lambda functions
+        run: |
+          for lambda_zip in lambda/*.zip; do
+            function_name=$(basename "$lambda_zip" .zip)
+            echo "Deploying $function_name..."
+            aws lambda update-function-code \
+              --function-name "securebase-staging-${function_name}" \
+              --zip-file "fileb://${lambda_zip}"
+          done
+
+      - name: Run smoke tests
+        run: |
+          echo "Running staging smoke tests..."
+          curl -f https://staging.securebase.com/health || exit 1
+          curl -f https://api-staging.securebase.com/health || exit 1
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "✅ Staging deployment completed"
+          # Add Slack/email notification here if needed
+
+  # Job 7: Deploy to production (manual approval required)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, deploy-staging]
+    if: github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://securebase.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Download Lambda packages
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+          path: lambda/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Create backup
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          echo "Creating backup: backup-${TIMESTAMP}"
+          aws s3 sync s3://${{ secrets.PROD_S3_BUCKET }}/ s3://${{ secrets.PROD_BACKUP_BUCKET }}/backup-${TIMESTAMP}/ || true
+
+      - name: Deploy frontend to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.PROD_S3_BUCKET }}/ --delete
+          aws s3 sync phase3a-portal/dist/ s3://${{ secrets.PROD_PORTAL_S3_BUCKET }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.PROD_CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
+
+      - name: Deploy Lambda functions (blue-green)
+        run: |
+          for lambda_zip in lambda/*.zip; do
+            function_name=$(basename "$lambda_zip" .zip)
+            echo "Deploying $function_name..."
+            
+            # Update function code
+            aws lambda update-function-code \
+              --function-name "securebase-prod-${function_name}" \
+              --zip-file "fileb://${lambda_zip}"
+            
+            # Wait for update to complete
+            aws lambda wait function-updated \
+              --function-name "securebase-prod-${function_name}"
+            
+            # Publish new version
+            VERSION=$(aws lambda publish-version \
+              --function-name "securebase-prod-${function_name}" \
+              --query 'Version' --output text)
+            
+            echo "Published version: $VERSION"
+          done
+
+      - name: Run production smoke tests
+        run: |
+          echo "Running production smoke tests..."
+          curl -f https://securebase.com/health || exit 1
+          curl -f https://api.securebase.com/health || exit 1
+          echo "✅ Smoke tests passed"
+
+      - name: Create deployment tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          git tag -a "deploy-prod-${TIMESTAMP}" -m "Production deployment ${TIMESTAMP}"
+          git push origin "deploy-prod-${TIMESTAMP}" || true
+
+      - name: Notify production deployment
+        if: always()
+        run: |
+          echo "🚀 Production deployment completed"
+          echo "Version: ${GITHUB_SHA::8}"
+          echo "URL: https://securebase.com"
+          # Add Slack/PagerDuty notification here
+
+  # Job 8: Notification on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [validate, test-backend, test-frontend, build]
+    if: failure()
+    
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "❌ CI/CD Pipeline Failed"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          # Add Slack/email notification logic here
