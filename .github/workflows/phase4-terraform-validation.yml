@@ -112,12 +112,30 @@ jobs:
             fi
           done
 
-  # Job 3: Terraform Plan
+  # Job 3: Check AWS Credentials
+  check-credentials:
+    name: Check AWS Credentials
+    runs-on: ubuntu-latest
+    outputs:
+      has-credentials: ${{ steps.check.outputs.available }}
+    steps:
+      - id: check
+        env:
+          AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          if [ -n "$AWS_KEY" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 4: Terraform Plan
   terraform-plan:
     name: Generate Terraform Plan
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: terraform-validate
+    needs: [terraform-validate, check-credentials]
+    if: needs.check-credentials.outputs.has-credentials == 'true'
     
     steps:
       - name: Checkout code
@@ -129,7 +147,6 @@ jobs:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
       - name: Configure AWS credentials
-        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
@@ -188,7 +205,7 @@ jobs:
             ${{ env.WORKING_DIR }}/plan-summary.md
           retention-days: 30
 
-  # Job 4: Cost Estimation (Infracost)
+  # Job 5: Cost Estimation (Infracost)
   cost-estimate:
     name: Infrastructure Cost Estimation
     runs-on: ubuntu-latest
@@ -218,8 +235,14 @@ jobs:
         continue-on-error: true
 
       - name: Generate Infracost estimate
-        if: ${{ secrets.INFRACOST_API_KEY != '' }}
+        env:
+          INFRACOST_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
+          if [ -z "$INFRACOST_KEY" ]; then
+            echo "Infracost API key not available, skipping cost estimation"
+            exit 0
+          fi
+          
           cd ${{ env.WORKING_DIR }}
           
           # Initialize if needed
@@ -276,7 +299,7 @@ jobs:
             cost-summary.md
           retention-days: 30
 
-  # Job 5: Security Scanning (tfsec)
+  # Job 6: Security Scanning (tfsec)
   tfsec-scan:
     name: Terraform Security Scan
     runs-on: ubuntu-latest
@@ -334,7 +357,7 @@ jobs:
             tfsec-summary.md
           retention-days: 30
 
-  # Job 6: Test Terraform Modules
+  # Job 7: Test Terraform Modules
   test-modules:
     name: Test Terraform Modules
     runs-on: ubuntu-latest
@@ -377,7 +400,7 @@ jobs:
             echo "No infrastructure test script found"
           fi
 
-  # Job 7: Post Plan Summary to PR
+  # Job 8: Post Plan Summary to PR
   pr-comment:
     name: Comment PR with Plan Summary
     runs-on: ubuntu-latest
@@ -456,7 +479,7 @@ jobs:
               body: comment
             });
 
-  # Job 8: Validation Summary
+  # Job 9: Validation Summary
   validation-summary:
     name: Generate Validation Summary
     runs-on: ubuntu-latest
