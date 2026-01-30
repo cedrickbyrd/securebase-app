@@ -43,6 +43,11 @@ output "central_log_bucket" {
   value       = module.securebase.central_log_bucket
 }
 
+output "api_gateway_endpoint" {
+  description = "API Gateway base URL"
+  value       = try(module.securebase.api_gateway_endpoint, "Not deployed yet")
+}
+
 # Phase 4: Analytics Module Outputs
 output "analytics_reports_table" {
   description = "DynamoDB reports table name"
