@@ -2,7 +2,7 @@
 
 **Stop spending 6-12 weeks on AWS setup.** SecureBase deploys production-ready, SOC 2/HIPAA-compliant infrastructure in under 10 minutes.
 
-[🚀 Start Free Trial](https://portal.securebase.io/signup) | [📞 Book Demo](https://calendly.com/securebase/demo) | [💰 View Pricing](./PRICING.md)
+<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a>💰 View Pricing</a>
 
 ---
 
@@ -55,7 +55,7 @@
 
 **🎁 Pilot Program:** 50% off for 6 months + 30-day free trial (no credit card required)
 
-[📄 View Full Pricing & Features](./PRICING.md) | [🧮 Calculate Your ROI](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR-LINK)
+<a>📄 View Full Pricing & Features</a> | <a href="https://docs.google.com/spreadsheets/d/ROI-CALCULATOR-LINK">🧮 Calculate Your ROI</a>
 
 ---
 
@@ -64,20 +64,20 @@
 **Product Demo** (3 minutes)  
 *[Demo video placeholder - Recording scheduled for Feb 3]*
 
-🖥️ **[Try Live Demo](https://demo.securebase.io)** - Pre-populated environment, no signup required
+🖥️ **<a href="https://demo.securebase.io">Try Live Demo</a>** - Pre-populated environment, no signup required
 
 ---
 
 ## 🚀 Get Started in 3 Ways
 
 ### Option 1: Self-Service (Fastest ⚡)
-1. [Sign up for free trial](https://portal.securebase.io/signup)
+1. <a href="https://portal.securebase.io/signup">Sign up for free trial</a>
 2. Select your compliance tier
 3. Deploy infrastructure (7-10 minutes)
 4. Start building ✅
 
 ### Option 2: Guided Demo (Recommended for Enterprise 👔)
-- [Book 30-minute demo](https://calendly.com/securebase/demo)
+- <a href="https://calendly.com/securebase/demo">Book 30-minute demo</a>
 - See live deployment
 - Ask questions about your use case
 - Get custom pricing
@@ -116,7 +116,7 @@
 📋 **3 Dashboards** - Admin, Tenant, SRE views  
 📋 **Distributed Tracing** - Full request visibility with AWS X-Ray  
 
-[See Complete Feature List](./docs/FEATURES.md)
+<a>See Complete Feature List</a>
 
 ---
 
@@ -133,7 +133,7 @@
 
 **Key Differentiator:** SecureBase is the **ONLY** platform purpose-built for **multi-tenant SaaS** with compliance automation AND customer billing in one solution.
 
-[See Detailed Comparison](./COMPARISON.md)
+<a>See Detailed Comparison</a>
 
 ---
 
@@ -157,7 +157,7 @@
 📋 **99.95% Uptime** - Coming with multi-region DR (Phase 5, June 2026)  
 ✅ **<100ms API Latency** - P95 performance (validated)  
 
-[📥 Download Security Whitepaper](./docs/sales/SecureBase-Security-Whitepaper.pdf) *(Available Feb 12)*
+<a>📥 Download Security Whitepaper</a> *(Available Feb 12)*
 
 ---
 
@@ -193,30 +193,30 @@ A: Your infrastructure is deployed to YOUR AWS account. You own it. Export Terra
 **Q: Do you support [specific compliance framework]?**  
 A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available for enterprise customers. Contact sales@securebase.io.
 
-[See All 50+ FAQs](./FAQ.md) *(Available Jan 30)*
+<a>See All 50+ FAQs</a> *(Available Jan 30)*
 
 ---
 
 ## 🛠️ Technical Documentation
 
 **For Developers:**
-- [Complete Documentation](./docs/)
-- [API Reference](./API_REFERENCE.md)
-- [Terraform Modules](./landing-zone/modules/)
-- [GitHub Actions Workflows](./.github/workflows/)
-- [Database Schema](./phase2-backend/database/)
+- <a>Complete Documentation</a>
+- <a>API Reference</a>
+- <a>Terraform Modules</a>
+- <a>GitHub Actions Workflows</a>
+- <a>Database Schema</a>
 
 **For Business:**
-- [Pricing Details](./PRICING.md) *(Available Jan 30)*
-- [ROI Calculator](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR) *(Available Feb 11)*
-- [Customer Case Studies](./docs/CASE_STUDIES.md) *(Coming March 2026)*
-- [Comparison Matrix](./COMPARISON.md) *(Available Feb 4)*
+- <a>Pricing Details</a> *(Available Jan 30)*
+- <a href="https://docs.google.com/spreadsheets/d/ROI-CALCULATOR">ROI Calculator</a> *(Available Feb 11)*
+- <a>Customer Case Studies</a> *(Coming March 2026)*
+- <a>Comparison Matrix</a> *(Available Feb 4)*
 
 **For Compliance:**
-- [HIPAA Compliance Guide](./docs/compliance/HIPAA-Compliance-Guide.pdf) *(Available Feb 13)*
-- [SOC 2 Controls Mapping](./docs/compliance/SOC2-Compliance-Guide.pdf) *(Available Feb 13)*
-- [FedRAMP Alignment Doc](./docs/compliance/FedRAMP-Alignment.pdf) *(Available Feb 13)*
-- [Security Whitepaper](./docs/sales/SecureBase-Security-Whitepaper.pdf) *(Available Feb 12)*
+- <a>HIPAA Compliance Guide</a> *(Available Feb 13)*
+- <a>SOC 2 Controls Mapping</a> *(Available Feb 13)*
+- <a>FedRAMP Alignment Doc</a> *(Available Feb 13)*
+- <a>Security Whitepaper</a> *(Available Feb 12)*
 
 ---
 
@@ -247,7 +247,7 @@ A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available 
 **Sales Inquiries**  
 📧 sales@securebase.io  
 📞 [Phone number TBD]  
-📅 [Book Demo](https://calendly.com/securebase/demo)
+📅 <a href="https://calendly.com/securebase/demo">Book Demo</a>
 
 **Support**  
 📧 support@securebase.io  
@@ -255,7 +255,7 @@ A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available 
 
 **Security**  
 📧 security@securebase.io  
-🔒 [Responsible Disclosure Policy](./SECURITY.md)
+🔒 <a>Responsible Disclosure Policy</a>
 
 **Office Hours**  
 Monday - Friday, 9 AM - 5 PM ET
@@ -284,7 +284,7 @@ Monday - Friday, 9 AM - 5 PM ET
 - team@fendrick.ai *(AI)*
 - [Your company?]
 
-[🎯 Apply for Pilot Program](https://portal.securebase.io/pilot)
+<a href="https://portal.securebase.io/pilot">🎯 Apply for Pilot Program</a>
 
 ---
 
@@ -292,24 +292,24 @@ Monday - Friday, 9 AM - 5 PM ET
 
 **Choose your path:**
 
-[🚀 Start Free Trial](https://portal.securebase.io/signup) | [📞 Book Demo](https://calendly.com/securebase/demo) | [💬 Email Sales](mailto:sales@securebase.io)
+<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a>💬 Email Sales</a>
 
 ---
 
 ## 📈 Project Status
 
-![Phase 1](https://img.shields.io/badge/Phase%201-Complete-brightgreen)
-![Phase 2](https://img.shields.io/badge/Phase%202-Production-brightgreen)
-![Phase 3a](https://img.shields.io/badge/Phase%203a-Ready-green)
-![Phase 4](https://img.shields.io/badge/Phase%204-60%25-yellow)
-![Test Coverage](https://img.shields.io/badge/Coverage-89%25-green)
-![Uptime](https://img.shields.io/badge/Uptime-99.8%25-brightgreen)
+<img src="https://img.shields.io/badge/Phase%201-Complete-brightgreen">
+<img src="https://img.shields.io/badge/Phase%202-Production-brightgreen">
+<img src="https://img.shields.io/badge/Phase%203a-Ready-green">
+<img src="https://img.shields.io/badge/Phase%204-60%25-yellow">
+<img src="https://img.shields.io/badge/Coverage-89%25-green">
+<img src="https://img.shields.io/badge/Uptime-99.8%25-brightgreen">
 
 **Current Phase:** Phase 4 - Enterprise Features (Week 2 of 9)  
 **Next Milestone:** Phase 4 Production Release (March 21, 2026)  
 **Production Status:** Phase 2 backend live since January 26, 2026
 
-[📊 View Detailed Status](./PHASE4_STATUS.md)
+<a>📊 View Detailed Status</a>
 
 ---
 
@@ -317,13 +317,13 @@ Monday - Friday, 9 AM - 5 PM ET
 
 If SecureBase helps you deploy compliant infrastructure faster, please star this repository!
 
-[![GitHub stars](https://img.shields.io/github/stars/cedrickbyrd/securebase-app.svg?style=social&label=Star)](https://github.com/cedrickbyrd/securebase-app)
+<a href="https://github.com/cedrickbyrd/securebase-app"><img src="https://img.shields.io/github/stars/cedrickbyrd/securebase-app.svg?style=social&label=Star"></a>
 
 ---
 
 ## 📄 Legal
 
-[Privacy Policy](./PRIVACY.md) | [Terms of Service](./TERMS.md) | [Security Policy](./SECURITY.md) | [DPA](./DPA.md)
+<a>Privacy Policy</a> | <a>Terms of Service</a> | <a>Security Policy</a> | <a>DPA</a>
 
 ---
 
