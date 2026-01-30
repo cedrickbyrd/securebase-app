@@ -162,7 +162,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const [navOpen, setNavOpen] = useState(false);
-  const [demoData, setDemoData] = useState(null);
+  const [, setDemoData] = useState(null);
   const isAuthenticated = !!localStorage.getItem('sessionToken');
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
