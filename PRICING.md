@@ -53,8 +53,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **SOC 2 Type II controls** - 200+ automated compliance checks  
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
-✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns  
-✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer)  
+🚀 **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying February 2026)*  
+🚀 **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) *(Available Q1 2026)*  
 ✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
@@ -91,8 +91,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **VPC isolation and lockdown** - Network-level security controls  
 ✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
 ✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
-✅ **White-label customization** - Custom domain, branding, logo  
-✅ **Team collaboration** - 100 users, unlimited RBAC roles  
+🚀 **White-label customization** - Custom domain, branding, logo *(Available Q1 2026)*  
+🚀 **Team collaboration** - 100 users, unlimited RBAC roles *(Available Q1 2026)*  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
 ✅ **Up to 100 customer environments** - Enterprise-scale deployment
@@ -128,11 +128,11 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Dedicated infrastructure options** - Isolated compute and storage  
 ✅ **FIPS 140-2 validated encryption** - Government-grade cryptography  
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
-✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace  
-✅ **IP whitelisting and geo-restrictions** - Network access controls  
+🚀 **SSO/SAML integration** - Okta, Azure AD, Google Workspace *(Available Q1 2026)*  
+🚀 **IP whitelisting and geo-restrictions** - Network access controls *(Available Q1 2026)*  
 ✅ **Unlimited users** - No per-user charges  
 ✅ **24/7 phone support** - 1-hour critical issue response  
-✅ **99.95% uptime SLA** - Maximum availability (with Phase 5)  
+🚀 **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
 ✅ **Unlimited customer environments** - No scaling limits
 
 #### Compliance Coverage:
@@ -172,15 +172,15 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **AWS Config** | ✅ | ✅ | ✅ | ✅ |
 | **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
 | **Security Hub** | ❌ | ✅ | ✅ | ✅ |
-| **Advanced Analytics** | ❌ | ✅ | ✅ | ✅ |
-| **Team Collaboration (RBAC)** | ❌ | 25 users | 100 users | Unlimited |
+| **Advanced Analytics** | ❌ | 🚀 Feb 2026 | 🚀 Feb 2026 | 🚀 Feb 2026 |
+| **Team Collaboration (RBAC)** | ❌ | 🚀 Q1 2026 (25 users) | 🚀 Q1 2026 (100 users) | 🚀 Q1 2026 (Unlimited) |
 | **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
 | **Custom Reports** | ❌ | ✅ | ✅ | ✅ |
 | **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
-| **White-Label Branding** | ❌ | Add-on ($2K/mo) | ✅ | ✅ |
-| **Custom Domain** | ❌ | Add-on ($2K/mo) | ✅ | ✅ |
-| **SSO/SAML Integration** | ❌ | ❌ | ❌ | ✅ (Okta, Azure AD, Google) |
-| **IP Whitelisting** | ❌ | ❌ | ❌ | ✅ |
+| **White-Label Branding** | ❌ | 🚀 Q1 2026 (Add-on) | 🚀 Q1 2026 | 🚀 Q1 2026 |
+| **Custom Domain** | ❌ | 🚀 Q1 2026 (Add-on) | 🚀 Q1 2026 | 🚀 Q1 2026 |
+| **SSO/SAML Integration** | ❌ | ❌ | ❌ | 🚀 Q1 2026 |
+| **IP Whitelisting** | ❌ | ❌ | ❌ | 🚀 Q1 2026 |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
 | **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
 | **Uptime SLA** | 99.5% | 99.8% | 99.9% | 99.95% |
@@ -297,14 +297,14 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-Team collaboration beyond included users:
+Team collaboration beyond included users *(Available Q1 2026)*:
 
 | Tier | Included Users | Per Additional User |
 |------|----------------|---------------------|
 | **Standard** | N/A | Upgrade to Fintech required |
-| **Fintech** | 25 users | $50/user/month |
-| **Healthcare** | 100 users | $40/user/month |
-| **Government** | Unlimited | Included |
+| **Fintech** | 25 users *(Q1 2026)* | $50/user/month |
+| **Healthcare** | 100 users *(Q1 2026)* | $40/user/month |
+| **Government** | Unlimited *(Q1 2026)* | Included |
 
 ### Additional API Calls
 
@@ -318,14 +318,14 @@ Portal and API usage beyond base limits:
 
 ### White-Label Branding
 
-Custom branding and domains:
+Custom branding and domains *(Available Q1 2026)*:
 
 | Tier | White-Label Status |
 |------|-------------------|
 | **Standard** | Not available |
-| **Fintech** | **Add-on: $2,000/month** |
-| **Healthcare** | Included |
-| **Government** | Included |
+| **Fintech** | **Add-on: $2,000/month** *(Q1 2026)* |
+| **Healthcare** | Included *(Q1 2026)* |
+| **Government** | Included *(Q1 2026)* |
 
 **White-label includes:** Custom domain, logo, color scheme, favicon, email templates
 
@@ -492,7 +492,7 @@ Need a custom solution? We work with enterprises requiring:
 - **[Feature Comparison](./README.md)** - SecureBase vs DIY vs Competitors
 - **[FAQ](./FAQ.md)** - 42 common questions answered
 - **[ROI Calculator](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR)** - Calculate your savings
-- **[Security Whitepaper](./SECURITY.md)** - Security architecture deep dive
+- **[Security Policy](./SECURITY.md)** - Security practices and vulnerability disclosure
 - **[Compliance Guides](./docs/)** - HIPAA, SOC 2, FedRAMP implementation details
 
 ---
