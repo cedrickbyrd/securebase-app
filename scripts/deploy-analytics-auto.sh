@@ -109,7 +109,19 @@ for f in "$LPACK_DIR"/*.zip; do
   [ -f "$f" ] || continue
   key="phase4/$(basename "$f")"
   echo " Uploading $(basename "$f") -> s3://$ARTIFACT_BUCKET/$key"
-  aws --region "$AWS_REGION" s3 cp "$f" "s3://$ARTIFACT_BUCKET/$key"
+  if ! aws --region "$AWS_REGION" s3 cp "$f" "s3://$ARTIFACT_BUCKET/$key" 2>&1; then
+    echo "ERROR: Failed to upload $(basename "$f") to S3."
+    echo "  Destination: s3://$ARTIFACT_BUCKET/$key"
+    echo "  AWS Region: $AWS_REGION"
+    echo ""
+    echo "Troubleshooting tips:"
+    echo "  1. Verify AWS credentials are configured: aws sts get-caller-identity"
+    echo "  2. Verify bucket exists: aws s3 ls s3://$ARTIFACT_BUCKET --region $AWS_REGION"
+    echo "  3. Verify bucket permissions: ensure your IAM user/role has s3:PutObject on $ARTIFACT_BUCKET"
+    echo "  4. Verify the bucket is in the correct region: $AWS_REGION"
+    echo "  5. Check network connectivity to AWS S3"
+    exit 1
+  fi
 done
 
 echo "All artifacts uploaded."
