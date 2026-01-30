@@ -362,7 +362,7 @@ export DB_PASSWORD=test-password
 
 # Portal Testing
 export VITE_API_BASE_URL=https://api.securebase.dev
-export VITE_ENVIRONMENT=test
+export VITE_ENV=development
 ```
 
 ### CI/CD Integration
