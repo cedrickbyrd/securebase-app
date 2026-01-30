@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: mode === 'production' ? '/securebase-app/' : '/',  // GitHub Pages base path for production only
+  base: mode === 'production' ? '/securebase-app/' : '/',  // GitHub Pages base path for production only, staging uses root
   server: {
     port: 3000,
     open: true,
@@ -49,5 +49,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'process.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1'),
+    'process.env.VITE_WS_URL': JSON.stringify(process.env.VITE_WS_URL || 'wss://ws.securebase.com'),
+    'process.env.VITE_ENV': JSON.stringify(process.env.VITE_ENV || 'development'),
   },
 }));

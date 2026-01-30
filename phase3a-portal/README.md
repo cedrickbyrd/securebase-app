@@ -70,11 +70,25 @@ phase3a-portal/
 
 ## Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `VITE_API_BASE_URL` | API Gateway endpoint | `https://api.securebase.com/v1` |
-| `VITE_WS_URL` | WebSocket endpoint | `wss://ws.securebase.com` |
-| `VITE_ENV` | Environment | `development` or `production` |
+| Variable | Description | Example | Required |
+|----------|-------------|---------|----------|
+| `VITE_API_BASE_URL` | API Gateway endpoint | `https://api.securebase.com/v1` | Yes |
+| `VITE_WS_URL` | WebSocket endpoint | `wss://ws.securebase.com` | Yes |
+| `VITE_ENV` | Environment identifier | `development`, `staging`, or `production` | Yes |
+| `VITE_STRIPE_PUBLIC_KEY` | Stripe publishable key | `pk_test_...` or `pk_live_...` | Yes |
+| `VITE_PILOT_PROGRAM_ENABLED` | Enable pilot program features | `true` or `false` | No |
+| `VITE_ANALYTICS_ENABLED` | Enable analytics tracking | `true` or `false` | No |
+| `VITE_HEALTHCARE_PRICE_ID` | Healthcare tier price ID | `price_...` | Yes |
+| `VITE_FINTECH_PRICE_ID` | Fintech tier price ID | `price_...` | Yes |
+| `VITE_GOVERNMENT_PRICE_ID` | Government tier price ID | `price_...` | Yes |
+| `VITE_STANDARD_PRICE_ID` | Standard tier price ID | `price_...` | Yes |
+
+### Environment Files
+
+- `.env.example` - Template with all available variables
+- `.env.staging` - Staging environment configuration (tracked in Git)
+- `.env.production` - Production environment configuration (tracked in Git)
+- `.env` - Local environment (gitignored, created from .env.staging or .env.production)
 
 ## Deployment
 
