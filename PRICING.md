@@ -366,7 +366,7 @@ Deploying multiple customer environments? Save with volume pricing:
 - Maintenance: 1 FTE × $150,000/year = **$150,000/year**
 - Compliance audits and updates: **$20,000/year**
 
-**Total DIY Year 1 Cost: $252,000-$374,000**
+**Total DIY Year 1 Cost: $272,000-$394,000**
 
 ---
 
@@ -387,7 +387,7 @@ Deploying multiple customer environments? Save with volume pricing:
 
 ### Your Savings:
 
-💰 **Year 1 Savings: $156,000-$278,000**
+💰 **Year 1 Savings: $176,000-$298,000**
 
 ⏱️ **Time Savings:**
 - DIY: 6-12 weeks of engineering time
