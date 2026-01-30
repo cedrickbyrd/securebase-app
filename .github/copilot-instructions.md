@@ -291,6 +291,106 @@ User → Portal (Phase 3a) → API Gateway (Phase 2) → Lambda → Aurora (RLS)
 
 ---
 
+## Testing Guidelines
+
+### Test Infrastructure
+**Location**: `tests/` directory contains comprehensive test suites:
+- `tests/integration/` — API, database, and service integration tests
+- `tests/e2e/` — End-to-end user workflow tests
+- `tests/performance/` — Load testing and performance benchmarks
+- `tests/security/` — Security and penetration tests
+- `tests/accessibility/` — WCAG AA compliance tests
+
+### Running Tests
+
+**Frontend Tests (React Portal)**:
+```bash
+cd phase3a-portal
+npm test                  # Run all tests
+npm run test:coverage     # Generate coverage report
+npm run test:ui           # Interactive test UI
+```
+
+**Backend Tests (Python Lambda)**:
+```bash
+cd phase2-backend/functions
+python -m pytest test_*.py -v
+python -m pytest --cov=. --cov-report=html  # With coverage
+```
+
+**Integration Tests**:
+```bash
+cd tests/integration
+export API_BASE_URL=https://api.securebase.dev
+export TEST_API_KEY=your-test-key
+python -m unittest discover -v
+```
+
+**Linting**:
+```bash
+# Root React app
+npm run lint
+
+# Phase 3a Portal
+cd phase3a-portal && npm run lint
+
+# Python backend
+cd phase2-backend/functions
+pylint *.py
+```
+
+### Test Coverage Requirements
+- **Unit Tests**: >90% code coverage
+- **Integration Tests**: All API endpoints must be tested
+- **E2E Tests**: All critical user workflows
+- **Performance**: <2s page load, <200ms API response
+- **Security**: OWASP Top 10 compliance
+- **Accessibility**: WCAG AA compliance
+
+### Required Environment Variables for Testing
+```bash
+# API Testing
+export API_BASE_URL=https://api.securebase.dev
+export TEST_API_KEY=sk_test_...
+export TEST_CUSTOMER_ID=customer-test-123
+
+# Database Testing
+export DB_HOST=securebase-dev.cluster-xxx.us-east-1.rds.amazonaws.com
+export DB_NAME=securebase
+export DB_USER=test_user
+export DB_PASSWORD=test-password
+
+# Portal Testing
+export VITE_API_BASE_URL=https://api.securebase.dev
+export VITE_ENVIRONMENT=test
+```
+
+### CI/CD Integration
+Tests run automatically on:
+- Every pull request
+- Before staging deployment
+- Before production deployment
+
+**Pre-deployment validation**:
+```bash
+# Run full test suite before deployment
+./run_all_tests.sh
+
+# Specific test suites
+./test-frontend.sh        # Frontend tests
+./test-phase4-staging.sh  # Phase 4 staging tests
+./validate-paas.sh        # Full PaaS validation
+```
+
+### Test-Driven Development (TDD) Workflow
+1. Write unit tests first for new features
+2. Add integration tests for API changes
+3. Update E2E tests for UI changes
+4. Run full test suite before committing
+5. Ensure coverage doesn't decrease
+
+---
+
 ## Deployment Cheat Sheet
 
 ```bash
