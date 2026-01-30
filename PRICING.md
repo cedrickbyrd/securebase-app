@@ -53,8 +53,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **SOC 2 Type II controls** - 200+ automated compliance checks  
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
-✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying February 2026)*  
-✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) *(Available February-March 2026)*  
+✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying mid-February 2026)*  
+✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) *(Available late February 2026)*  
 ✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
@@ -92,7 +92,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
 ✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
 ✅ **White-label customization** - Custom domain, branding, logo *(Available March 2026)*  
-✅ **Team collaboration** - 100 users, unlimited RBAC roles *(Available February-March 2026)*  
+✅ **Team collaboration** - 100 users, unlimited RBAC roles *(Available late February 2026)*  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
 ✅ **Up to 100 customer environments** - Enterprise-scale deployment
@@ -130,7 +130,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
 ✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace *(Available March 2026)*  
 ✅ **IP whitelisting and geo-restrictions** - Network access controls *(Available March 2026)*  
-✅ **Unlimited users** - No per-user charges *(Available February-March 2026)*  
+✅ **Unlimited users** - No per-user charges *(Available late February 2026)*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
 ✅ **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
 ✅ **Unlimited customer environments** - No scaling limits
@@ -172,18 +172,18 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **AWS Config** | ✅ | ✅ | ✅ | ✅ |
 | **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
 | **Security Hub** | ❌ | ✅ | ✅ | ✅ |
-| **Advanced Analytics** | ❌ | ✅* | ✅* | ✅* |
-| **Team Collaboration (RBAC)** | ❌ | 25 users* | 100 users* | Unlimited* |
+| **Advanced Analytics** | ❌ | ✅† | ✅† | ✅† |
+| **Team Collaboration (RBAC)** | ❌ | 25 users‡ | 100 users‡ | Unlimited‡ |
 | **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
 | **Custom Reports** | ❌ | ✅ | ✅ | ✅ |
 | **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
 | **White-Label Branding** | ❌ | Add-on ($2K/mo)* | ✅* | ✅* |
 | **Custom Domain** | ❌ | Add-on ($2K/mo)* | ✅* | ✅* |
-| **SSO/SAML Integration** | ❌ | ❌ | ❌ | ✅*† |
-| **IP Whitelisting** | ❌ | ❌ | ❌ | ✅*† |
+| **SSO/SAML Integration** | ❌ | ❌ | ❌ | ✅* |
+| **IP Whitelisting** | ❌ | ❌ | ❌ | ✅* |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
 | **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
-| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 99.95% |
+| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 99.95%** |
 | **Support Response Time** | 24 hours | 4 hours | 2 hours | 1 hour (critical) |
 | **Support Channels** | Email | Email, Slack | Phone, Email, Slack | 24/7 Phone, Email, Slack |
 | **Account Manager** | ❌ | ❌ | ✅ | ✅ (TAM) |
@@ -191,9 +191,10 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
 
 **Feature Availability Notes:**
-- **\*** = Deploying February 2026 (Advanced Analytics) or February-March 2026 (Team Collaboration) or March 2026 (White-Label Branding)
-- **†** = Available March 2026 (SSO/SAML, IP Whitelisting)
-- **99.95% uptime SLA** = Available Q2 2026 with Phase 5 (Observability & Multi-Region DR)
+- **\*** = Available March 2026 (White-Label Branding, SSO/SAML, IP Whitelisting)
+- **†** = Deploying mid-February 2026 (Advanced Analytics)
+- **‡** = Available late February 2026 (Team Collaboration/RBAC)
+- **\*\*** = Available Q2 2026 with Phase 5 (Observability & Multi-Region DR)
 
 ---
 
@@ -302,7 +303,7 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-Team collaboration beyond included users *(Available February-March 2026)*:
+Team collaboration beyond included users *(Available late February 2026)*:
 
 | Tier | Included Users | Per Additional User |
 |------|----------------|---------------------|
