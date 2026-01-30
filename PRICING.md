@@ -54,7 +54,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
 ✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns  
-✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer)  
+🔜 **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) - *Available Q1 2026*  
 ✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
@@ -92,7 +92,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
 ✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
 ✅ **White-label customization** - Custom domain, branding, logo  
-✅ **Team collaboration** - 100 users, unlimited RBAC roles  
+🔜 **Team collaboration** - 100 users, unlimited RBAC roles - *Available Q1 2026*  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
 ✅ **Up to 100 customer environments** - Enterprise-scale deployment
@@ -173,7 +173,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
 | **Security Hub** | ❌ | ✅ | ✅ | ✅ |
 | **Advanced Analytics** | ❌ | ✅ | ✅ | ✅ |
-| **Team Collaboration (RBAC)** | ❌ | 25 users | 100 users | Unlimited |
+| **Team Collaboration (RBAC)** | ❌ | 25 users* | 100 users* | Unlimited* |
 | **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
 | **Custom Reports** | ❌ | ✅ | ✅ | ✅ |
 | **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
@@ -189,6 +189,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **Account Manager** | ❌ | ❌ | ✅ | ✅ (TAM) |
 | **Onboarding Hours** | 2 hours | 4 hours | 8 hours | 16 hours |
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
+
+**\* Team Collaboration & RBAC features are currently in development and will be available in Q1 2026 (target: February 28, 2026). Early adopters will receive complimentary onboarding and training when the feature launches.**
 
 ---
 
@@ -297,7 +299,7 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-Team collaboration beyond included users:
+**Available Q1 2026** - Team collaboration beyond included users:
 
 | Tier | Included Users | Per Additional User |
 |------|----------------|---------------------|
@@ -305,6 +307,8 @@ Team collaboration beyond included users:
 | **Fintech** | 25 users | $50/user/month |
 | **Healthcare** | 100 users | $40/user/month |
 | **Government** | Unlimited | Included |
+
+*Note: RBAC and team collaboration features are currently in development (5% complete) with planned launch on February 28, 2026. Pricing and user limits are subject to change based on beta feedback.*
 
 ### Additional API Calls
 
