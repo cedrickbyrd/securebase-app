@@ -282,7 +282,7 @@ Need more than your tier's included environments?
 | **Standard** | 10 | $100/mo per environment |
 | **Fintech** | 50 | $80/mo per environment |
 | **Healthcare** | 100 | $60/mo per environment |
-| **Government** | Unlimited | $40/mo per environment |
+| **Government** | Unlimited | N/A (unlimited included) |
 
 ### Additional Storage
 
