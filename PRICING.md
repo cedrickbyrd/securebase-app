@@ -297,7 +297,7 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-> **⏱️ Available Q1 2026** — Team collaboration and role-based access control features are currently in development (scheduled completion: February 28, 2026).
+> **⏱️ Available March 2026** — Team collaboration and role-based access control features are currently in development (scheduled completion: February 28, 2026).
 
 Team collaboration beyond included users:
 
