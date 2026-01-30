@@ -44,7 +44,10 @@ fi
 
 mkdir -p "$LPACK_DIR"
 cd "$LAYER_DIR"
-zip -r -q "$LPACK_DIR/lambda-layer.zip" python || true
+if ! zip -r -q "$LPACK_DIR/lambda-layer.zip" python; then
+  echo "ERROR: Failed to create lambda layer zip file"
+  exit 1
+fi
 cd "$ROOT"
 echo "Layer packaged: $LPACK_DIR/lambda-layer.zip"
 
@@ -52,12 +55,15 @@ echo "Layer packaged: $LPACK_DIR/lambda-layer.zip"
 echo "==> Copying function packages into $LPACK_DIR (so Terraform sees them)"
 mkdir -p "$LPACK_DIR"
 if compgen -G "$DEPLOY_DIR/*.zip" > /dev/null; then
-  cp -v "$DEPLOY_DIR"/*.zip "$LPACK_DIR/" || true
+  if ! cp -v "$DEPLOY_DIR"/*.zip "$LPACK_DIR/"; then
+    echo "ERROR: Failed to copy Lambda function packages to $LPACK_DIR"
+    exit 1
+  fi
 else
   echo "Warning: no zip packages found in $DEPLOY_DIR. Ensure package step succeeded."
 fi
 
-ls -lh "$LPACK_DIR" || true
+ls -lh "$LPACK_DIR"
 
 # 4) Upload artifacts to S3 for archival / remote reference
 echo "==> Uploading artifacts to s3://$ARTIFACT_BUCKET/phase4/"
