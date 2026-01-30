@@ -98,13 +98,13 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** SecureBase uses tier-based pricing: Standard ($2K/mo), Fintech ($8K/mo), Healthcare ($15K/mo), Government ($25K/mo). Each tier includes a base number of customer environments, users, and features. Usage-based add-ons apply for additional environments, storage, users, and API calls. See our [Pricing Page](./PRICING.md) for full details.
 
 ### 26. **Q: What's included in each tier?**
-**A:** All tiers include multi-tenant AWS Organization, dedicated customer accounts, IAM Identity Center (SSO), centralized logging, compliance controls, customer portal, and email support. Higher tiers add advanced features: SOC 2 controls, advanced analytics (deploying February 2026), team collaboration (available February-March 2026), white-label branding (available March 2026), enhanced support, and more stringent compliance frameworks. See the [Feature Comparison Table](./PRICING.md#-feature-comparison-table).
+**A:** All tiers include multi-tenant AWS Organization, dedicated customer accounts, IAM Identity Center (SSO), centralized logging, compliance controls, customer portal, and email support. Higher tiers add advanced features: SOC 2 controls, advanced analytics (deploying mid-February 2026), team collaboration (available late February 2026), white-label branding (available March 2026), enhanced support, and more stringent compliance frameworks. See the [Feature Comparison Table](./PRICING.md#-feature-comparison-table).
 
 ### 27. **Q: Are there setup fees?**
 **A:** No. SecureBase has zero setup fees, ever. Your monthly or annual subscription includes everything: deployment, onboarding, training, and ongoing support. We make money when you succeed, not from upfront charges.
 
 ### 28. **Q: Can I change tiers?**
-**A:** Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades take effect at the start of your next billing cycle. Contact support to initiate a tier change. Note: Downgrading may require adjustments to upcoming features (white-label branding available March 2026, team collaboration available February-March 2026) to meet lower tier limits.
+**A:** Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades take effect at the start of your next billing cycle. Contact support to initiate a tier change. Note: Downgrading may require adjustments to upcoming features (white-label branding available March 2026, team collaboration available late February 2026) to meet lower tier limits.
 
 ### 29. **Q: What payment methods do you accept?**
 **A:** We accept credit cards (Visa, Mastercard, Amex), ACH direct debit (US only), and wire transfers (international). Annual contracts qualify for Net 30 invoice terms. All payments are processed securely via Stripe.
