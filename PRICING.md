@@ -130,7 +130,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
 ✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace  
 ✅ **IP whitelisting and geo-restrictions** - Network access controls  
-✅ **Unlimited users** - No per-user charges  
+🔜 **Unlimited users** - No per-user charges - *Available Q1 2026*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
 ✅ **99.95% uptime SLA** - Maximum availability (with Phase 5)  
 ✅ **Unlimited customer environments** - No scaling limits
@@ -190,7 +190,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **Onboarding Hours** | 2 hours | 4 hours | 8 hours | 16 hours |
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
 
-**\* Team Collaboration & RBAC features are currently in development and will be available in Q1 2026 (target: February 28, 2026). Early adopters will receive complimentary onboarding and training when the feature launches.**
+* Team Collaboration & RBAC features are currently in development and will be available in Q1 2026 (target: February 28, 2026). Early adopters will receive complimentary onboarding and training when the feature launches.
 
 ---
 
