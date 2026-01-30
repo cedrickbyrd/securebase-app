@@ -14,6 +14,20 @@ LPACK_DIR="$ROOT/landing-zone/lambda-packages"
 LAYER_DIR="$ROOT/lambda-layer"
 ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
+TFPLAN_FILE="$ENV_DIR/tfplan-auto"
+
+# Cleanup function to remove temporary terraform plan file on exit
+cleanup() {
+  local EXIT_CODE=$?
+  if [ -f "$TFPLAN_FILE" ]; then
+    echo "Cleaning up temporary terraform plan file..."
+    rm -f "$TFPLAN_FILE"
+  fi
+  exit $EXIT_CODE
+}
+
+# Set trap to ensure cleanup happens on script exit (success or failure)
+trap cleanup EXIT
 
 # Pre-flight checks
 if [ -z "$ARTIFACT_BUCKET" ]; then
