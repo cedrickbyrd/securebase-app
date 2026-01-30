@@ -53,8 +53,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **SOC 2 Type II controls** - 200+ automated compliance checks  
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
-✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Available February 2026)*  
-✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) *(Available Q1 2026)*  
+✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying February 2026)*  
+✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer) *(Available February-March 2026)*  
 ✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
@@ -92,7 +92,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
 ✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
 ✅ **White-label customization** - Custom domain, branding, logo *(Available March 2026)*  
-✅ **Team collaboration** - 100 users, unlimited RBAC roles *(Available Q1 2026)*  
+✅ **Team collaboration** - 100 users, unlimited RBAC roles *(Available February-March 2026)*  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
 ✅ **Up to 100 customer environments** - Enterprise-scale deployment
@@ -128,9 +128,9 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Dedicated infrastructure options** - Isolated compute and storage  
 ✅ **FIPS 140-2 validated encryption** - Government-grade cryptography  
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
-✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace *(Available Q1 2026)*  
-✅ **IP whitelisting and geo-restrictions** - Network access controls *(Available Q1 2026)*  
-✅ **Unlimited users** - No per-user charges *(Available Q1 2026)*  
+✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace *(Available March 2026)*  
+✅ **IP whitelisting and geo-restrictions** - Network access controls *(Available March 2026)*  
+✅ **Unlimited users** - No per-user charges *(Available February-March 2026)*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
 ✅ **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
 ✅ **Unlimited customer environments** - No scaling limits
@@ -191,8 +191,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
 
 **Feature Availability Notes:**
-- **\*** = Available February 2026 (Advanced Analytics) or Q1 2026 (Team Collaboration, White-Label Branding)
-- **†** = Available Q1 2026 (SSO/SAML, IP Whitelisting)
+- **\*** = Deploying February 2026 (Advanced Analytics) or February-March 2026 (Team Collaboration) or March 2026 (White-Label Branding)
+- **†** = Available March 2026 (SSO/SAML, IP Whitelisting)
 - **99.95% uptime SLA** = Available Q2 2026 with Phase 5 (Observability & Multi-Region DR)
 
 ---
@@ -302,7 +302,7 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-Team collaboration beyond included users *(Available Q1 2026)*:
+Team collaboration beyond included users *(Available February-March 2026)*:
 
 | Tier | Included Users | Per Additional User |
 |------|----------------|---------------------|
