@@ -155,7 +155,7 @@ export const ReadOnlyInput = ({
   const isReadOnly = readOnly || import.meta.env.VITE_READ_ONLY_MODE === 'true';
   
   const handleFocus = (e) => {
-    if (isReadOnly && props.type !== 'text' && props.type !== 'search') {
+    if (isReadOnly) {
       showReadOnlyToast('This is a demo - editing is disabled');
     }
     
