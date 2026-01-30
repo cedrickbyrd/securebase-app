@@ -490,7 +490,7 @@ Need a custom solution? We work with enterprises requiring:
 ## 📚 Additional Resources
 
 - **[Feature Comparison](./README.md)** - SecureBase vs DIY vs Competitors
-- **[FAQ](./FAQ.md)** - 50+ common questions answered
+- **[FAQ](./FAQ.md)** - 42 common questions answered
 - **[ROI Calculator](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR)** - Calculate your savings
 - **[Security Whitepaper](./SECURITY.md)** - Security architecture deep dive
 - **[Compliance Guides](./docs/)** - HIPAA, SOC 2, FedRAMP implementation details
