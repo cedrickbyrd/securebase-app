@@ -298,7 +298,7 @@ Audit logs and compliance data storage:
 ### Additional Users (RBAC)
 
 Team collaboration beyond included users:  
-*(Available Q1 2026)*
+*(Coming February 2026)*
 
 | Tier | Included Users | Per Additional User |
 |------|----------------|---------------------|
