@@ -677,7 +677,7 @@ export function validateEnvVars() {
 ---
 
 **Assessment Completed By:** GitHub Copilot Agent  
-**Next Review Date:** Post-demo deployment feedback  
+**Next Review Date:** March 2026 (2 weeks after initial demo deployment) or when deployment approach changes  
 **Related Documents:**  
 - [Getting Started Guide](./GETTING_STARTED.md)  
 - [Project Index](./PROJECT_INDEX.md)  
