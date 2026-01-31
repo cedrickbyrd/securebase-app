@@ -349,6 +349,42 @@ CREATE INDEX idx_notifications_status ON notifications(status);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 
 -- ============================================
+-- EVIDENCE RECORDS TABLE (Demo/Sales Enablement)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS evidence_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  
+  -- Control metadata
+  control_id TEXT,
+  framework TEXT,  -- e.g., 'SOC2', 'HIPAA', 'FedRAMP', 'CIS'
+  category TEXT,   -- e.g., 'Access Control', 'Encryption', 'Logging'
+  
+  -- Evidence collection
+  source_system TEXT,      -- e.g., 'AWS Config', 'CloudTrail', 'Security Hub'
+  collection_method TEXT,  -- e.g., 'automated', 'manual', 'continuous'
+  artifact_ref TEXT,       -- Reference to evidence artifact (S3 path, report ID, etc.)
+  
+  -- Timestamps and validity
+  last_collected TIMESTAMP,
+  valid_until TIMESTAMP,
+  
+  -- Status and metadata
+  status TEXT,  -- e.g., 'pass', 'fail', 'pending', 'error'
+  metadata JSONB DEFAULT '{}',
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_evidence_customer ON evidence_records(customer_id);
+CREATE INDEX idx_evidence_framework ON evidence_records(framework);
+CREATE INDEX idx_evidence_status ON evidence_records(status);
+CREATE INDEX idx_evidence_last_collected ON evidence_records(last_collected DESC);
+CREATE INDEX idx_evidence_control_id ON evidence_records(control_id);
+
+-- ============================================
 -- ROW-LEVEL SECURITY (RLS) SETUP
 -- ============================================
 
@@ -360,6 +396,7 @@ ALTER TABLE audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE evidence_records ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- RLS POLICIES: Customer Isolation
@@ -415,6 +452,12 @@ CREATE POLICY customer_isolation_support
 -- Notifications: Only own notifications
 CREATE POLICY customer_isolation_notifications 
   ON notifications 
+  FOR ALL 
+  USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
+
+-- Evidence records: Only own evidence
+CREATE POLICY customer_isolation_evidence 
+  ON evidence_records 
   FOR ALL 
   USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
 
