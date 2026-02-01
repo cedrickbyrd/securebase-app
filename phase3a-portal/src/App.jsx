@@ -29,6 +29,7 @@ import Webhooks from './components/Webhooks';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import AdminDashboard from './components/AdminDashboard';
+import DemoBanner from './components/DemoBanner';
 import './App.css';
 
 const Navigation = ({ isOpen, setIsOpen }) => {
@@ -161,15 +162,37 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const [navOpen, setNavOpen] = useState(false);
+  const [, setDemoData] = useState(null);
   const isAuthenticated = !!localStorage.getItem('sessionToken');
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
   useEffect(() => {
     // Close mobile nav on route change
     setNavOpen(false);
-  }, []);
+    
+    // Load demo data if in demo mode
+    if (isDemoMode) {
+      fetch('/demo-data.json')
+        .then(res => res.json())
+        .then(data => {
+          setDemoData(data);
+          // Store demo data globally for components to use
+          window.demoData = data;
+          // Auto-login for demo mode
+          if (!localStorage.getItem('sessionToken')) {
+            localStorage.setItem('sessionToken', 'demo-token-12345');
+            localStorage.setItem('userRole', 'customer');
+          }
+        })
+        .catch(err => console.error('Failed to load demo data:', err));
+    }
+  }, [isDemoMode]);
 
   return (
     <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/securebase-app' : '/'}>
+      {/* Demo Banner (appears above everything) */}
+      <DemoBanner />
+      
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar Navigation */}
         <Navigation isOpen={navOpen} setIsOpen={setNavOpen} />
