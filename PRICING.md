@@ -136,7 +136,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **IP whitelisting and geo-restrictions** - Network access controls  
 🔜 **Unlimited users** - No per-user charges - *Available Q1 2026*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
-✅ **99.95% uptime SLA** - Maximum availability (with Phase 5)  
+🚀 **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
 ✅ **Unlimited customer environments** - No scaling limits
 
 #### Compliance Coverage:
@@ -187,7 +187,7 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **IP Whitelisting** | ❌ | ❌ | ❌ | ✅ |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
 | **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
-| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 99.95% |
+| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 🚀 Q2 2026 (99.95%) |
 | **Support Response Time** | 24 hours | 4 hours | 2 hours | 1 hour (critical) |
 | **Support Channels** | Email | Email, Slack | Phone, Email, Slack | 24/7 Phone, Email, Slack |
 | **Account Manager** | ❌ | ❌ | ✅ | ✅ (TAM) |
@@ -310,9 +310,9 @@ Planned pricing for team collaboration beyond included users:
 | Tier | Planned Included Users | Planned Per Additional User |
 |------|----------------|---------------------|
 | **Standard** | N/A | Upgrade to Fintech required |
-| **Fintech** | 25 users | $50/user/month |
-| **Healthcare** | 100 users | $40/user/month |
-| **Government** | Unlimited | Included |
+| **Fintech** | 25 users *(Q1 2026)* | $50/user/month |
+| **Healthcare** | 100 users *(Q1 2026)* | $40/user/month |
+| **Government** | Unlimited *(Q1 2026)* | Included |
 
 *Note: RBAC and team collaboration features are currently in development (5% complete) with planned launch on February 28, 2026. Pricing and user limits are subject to change based on beta feedback.*
 
@@ -335,9 +335,9 @@ Planned custom branding and domains:
 | Tier | Planned White-Label Status |
 |------|-------------------|
 | **Standard** | Not available |
-| **Fintech** | **Add-on: $2,000/month** |
-| **Healthcare** | Included |
-| **Government** | Included |
+| **Fintech** | **Add-on: $2,000/month** *(Q1 2026)* |
+| **Healthcare** | Included *(Q1 2026)* |
+| **Government** | Included *(Q1 2026)* |
 
 **Planned white-label features:** Custom domain, logo, color scheme, favicon, email templates
 
