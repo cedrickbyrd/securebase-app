@@ -317,7 +317,7 @@ Monday - Friday, 9 AM - 5 PM ET
 
 If SecureBase helps you deploy compliant infrastructure faster, please star this repository!
 
-<a href="https://github.com/cedrickbyrd/securebase-app"><img src="https://img.shields.io/github/stars/cedrickbyrd/securebase-app.svg?style=social&label=Star"></a>
+<a href="https://github.com/cedrickbyrd/securebase-app"><img src="https://img.shields.io/github/stars/cedrickbyrd/securebase-app.svg?style=social&label=Star" alt="GitHub stars"></a>
 
 ---
 
