@@ -62,3 +62,6 @@ lambda-layer/
 landing-zone/lambda-packages/
 phase2-backend/deploy/
 tfplan-auto
+
+# Demo snapshot exports
+exports/
