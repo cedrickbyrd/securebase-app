@@ -179,7 +179,7 @@ We're here to help! Our team typically responds within 2 hours during business h
 
 - **[Pricing & Plans](./PRICING.md)** - Detailed pricing, features, ROI calculator
 - **[Product Overview](./README.md)** - What SecureBase does, who it's for
-- **[Security Whitepaper](./SECURITY.md)** - Security architecture and controls
+- **[Security Policy](./SECURITY.md)** - Security practices and vulnerability disclosure
 - **[Getting Started](./GETTING_STARTED.md)** - Quick start deployment guide
 - **[API Documentation](./API_REFERENCE.md)** - API reference for developers
 - **[Pilot Program](https://portal.securebase.io/pilot)** - 50% off, 8 spots remaining
