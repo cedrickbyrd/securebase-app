@@ -4,15 +4,14 @@
 
 set -e
 
+# Determine ROOT directory (same logic as deploy-analytics-auto.sh)
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 echo "📦 Packaging Lambda Functions..."
 echo ""
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FUNCTIONS_DIR="$ROOT/phase2-backend/functions"
-DEPLOY_DIR="$ROOT/phase2-backend/deploy"
-
-cd "$FUNCTIONS_DIR"
-mkdir -p "$DEPLOY_DIR"
+cd "$ROOT/phase2-backend/functions"
+mkdir -p ../deploy
 
 # Package each function
 echo "→ auth_v2.zip"
