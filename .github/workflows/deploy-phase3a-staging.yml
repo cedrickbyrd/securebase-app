@@ -3,12 +3,12 @@ name: Deploy Phase 3a to Staging
 on:
   push:
     branches:
-      - staging
+      - main
     paths:
       - 'phase3a-portal/**'
   pull_request:
     branches:
-      - staging
+      - main
     paths:
       - 'phase3a-portal/**'
   workflow_dispatch:
