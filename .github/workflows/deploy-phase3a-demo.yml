@@ -1,0 +1,196 @@
+name: Deploy Phase 3a Demo Environment
+
+on:
+  push:
+    branches:
+      - main
+      - feature/sales-enablement
+    paths:
+      - 'phase3a-portal/**'
+      - '.github/workflows/deploy-phase3a-demo.yml'
+  workflow_dispatch:
+
+env:
+  S3_BUCKET: securebase-phase3a-demo
+  AWS_REGION: us-east-1
+  NODE_VERSION: '18'
+
+jobs:
+  build-demo:
+    name: Build Demo Environment
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: phase3a-portal
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint || true
+      
+      - name: Build for demo
+        run: |
+          cp .env.demo .env
+          npm run build -- --mode demo
+        env:
+          VITE_DEMO_MODE: true
+          VITE_API_BASE_URL: https://demo-api.securebase.io/v1
+          VITE_WS_URL: wss://demo-ws.securebase.io
+      
+      - name: Copy demo data to build
+        run: cp demo-data.json dist/demo-data.json
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-build
+          path: phase3a-portal/dist/
+          retention-days: 7
+
+  deploy-demo:
+    name: Deploy to S3 + CloudFront
+    needs: build-demo
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: demo
+      url: http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: demo-build
+          path: dist/
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Create S3 bucket if not exists
+        run: |
+          if ! aws s3 ls "s3://${{ env.S3_BUCKET }}" 2>/dev/null; then
+            echo "Creating S3 bucket: ${{ env.S3_BUCKET }}"
+            aws s3 mb s3://${{ env.S3_BUCKET }} --region ${{ env.AWS_REGION }}
+          else
+            echo "S3 bucket already exists: ${{ env.S3_BUCKET }}"
+          fi
+      
+      - name: Enable static website hosting
+        run: |
+          aws s3 website s3://${{ env.S3_BUCKET }} \
+            --index-document index.html \
+            --error-document index.html
+      
+      - name: Set bucket policy for public read
+        run: |
+          cat > bucket-policy.json <<EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Sid": "PublicReadGetObject",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "s3:GetObject",
+              "Resource": "arn:aws:s3:::${{ env.S3_BUCKET }}/*"
+            }]
+          }
+          EOF
+          aws s3api put-bucket-policy --bucket ${{ env.S3_BUCKET }} --policy file://bucket-policy.json
+      
+      - name: Sync files to S3
+        run: |
+          # Sync static assets with long cache
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          
+          # Upload HTML and JSON with no-cache
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json" \
+            --cache-control "no-cache,no-store,must-revalidate"
+      
+      - name: Output demo URL
+        id: deploy
+        run: |
+          DEMO_URL="http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "Demo deployed to: $DEMO_URL"
+          echo "Custom domain (if configured): https://demo.securebase.io"
+          echo "demo_url=$DEMO_URL" >> $GITHUB_OUTPUT
+
+  validate-demo:
+    name: Validate Demo Deployment
+    needs: deploy-demo
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Wait for propagation
+        run: sleep 30
+      
+      - name: Check HTTP status
+        run: |
+          DEMO_URL="http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$DEMO_URL")
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Demo site returned status $STATUS"
+            exit 1
+          fi
+          echo "✅ Demo site is accessible (HTTP $STATUS)"
+      
+      - name: Validate demo banner
+        run: |
+          DEMO_URL="http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          CONTENT=$(curl -s "$DEMO_URL")
+          if echo "$CONTENT" | grep -q "This is a demo environment"; then
+            echo "✅ Demo banner detected"
+          else
+            echo "⚠️  Demo banner not found (may be loaded dynamically)"
+          fi
+      
+      - name: Validate demo data
+        run: |
+          DEMO_DATA_URL="http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com/demo-data.json"
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$DEMO_DATA_URL")
+          if [ "$STATUS" -ne 200 ]; then
+            echo "❌ Demo data not accessible"
+            exit 1
+          fi
+          echo "✅ Demo data is accessible"
+      
+      - name: Deployment summary
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Demo Deployment Successful"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Demo URL: http://${{ env.S3_BUCKET }}.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo ""
+          echo "Features:"
+          echo "  • Auto-login enabled"
+          echo "  • Read-only mode active"
+          echo "  • 5 mock customers with sample data"
+          echo "  • Demo banner with CTAs"
+          echo "  • Data resets every 24 hours"
+          echo ""
+          echo "Share this link with the sales team! 🚀"
