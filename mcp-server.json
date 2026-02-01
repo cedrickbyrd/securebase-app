@@ -1,0 +1,411 @@
+{
+  "name": "securebase-infrastructure-server",
+  "version": "1.0.0",
+  "description": "MCP server for managing SecureBase multi-tenant AWS infrastructure deployments",
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  },
+  "tools": [
+    {
+      "name": "deploy_terraform",
+      "description": "Deploy Terraform infrastructure for SecureBase environments (dev/staging/prod)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Target environment for deployment"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["plan", "apply", "destroy"],
+            "description": "Terraform action to perform"
+          },
+          "autoApprove": {
+            "type": "boolean",
+            "default": false,
+            "description": "Skip interactive approval (use with caution)"
+          }
+        },
+        "required": ["environment", "action"]
+      }
+    },
+    {
+      "name": "validate_customer_config",
+      "description": "Validate customer configuration in client.auto.tfvars before deployment",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Environment to validate"
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Name of the customer to validate"
+          }
+        },
+        "required": ["environment"]
+      }
+    },
+    {
+      "name": "init_phase2_database",
+      "description": "Initialize Phase 2 Aurora database schema and seed data",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Target environment"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force reinitialization (drops existing schema)"
+          }
+        },
+        "required": ["environment"]
+      }
+    },
+    {
+      "name": "deploy_lambda_functions",
+      "description": "Package and deploy Lambda functions for Phase 2 backend",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Target environment"
+          },
+          "functions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["auth_v2", "billing_worker", "metrics", "report_engine", "all"]
+            },
+            "description": "Specific functions to deploy, or 'all' for all functions"
+          }
+        },
+        "required": ["environment", "functions"]
+      }
+    },
+    {
+      "name": "deploy_portal",
+      "description": "Build and deploy Phase 3a customer portal",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Target environment"
+          },
+          "buildOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Only build without deploying"
+          }
+        },
+        "required": ["environment"]
+      }
+    },
+    {
+      "name": "check_compliance_status",
+      "description": "Check compliance status for a customer (HIPAA, SOC2, FedRAMP)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerName": {
+            "type": "string",
+            "description": "Customer name to check"
+          },
+          "framework": {
+            "type": "string",
+            "enum": ["hipaa", "soc2", "fedramp", "cis"],
+            "description": "Compliance framework to validate"
+          }
+        },
+        "required": ["customerName"]
+      }
+    },
+    {
+      "name": "get_deployment_status",
+      "description": "Get current deployment status for all phases and environments",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod", "all"],
+            "description": "Environment to check, or 'all' for all environments"
+          },
+          "phase": {
+            "type": "string",
+            "enum": ["1", "2", "3a", "3b", "4", "all"],
+            "description": "Phase to check, or 'all' for all phases"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "run_tests",
+      "description": "Run tests for SecureBase components",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "testSuite": {
+            "type": "string",
+            "enum": ["frontend", "backend", "integration", "e2e", "security", "performance", "all"],
+            "description": "Test suite to run"
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Environment to test against"
+          }
+        },
+        "required": ["testSuite"]
+      }
+    },
+    {
+      "name": "manage_customer",
+      "description": "Add, update, or remove customer configuration",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["add", "update", "remove", "list"],
+            "description": "Action to perform"
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["dev", "staging", "prod"],
+            "description": "Target environment"
+          },
+          "customerConfig": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Customer name (lowercase, hyphenated)"
+              },
+              "tier": {
+                "type": "string",
+                "enum": ["healthcare", "fintech", "government", "standard"],
+                "description": "Customer tier for compliance framework"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Admin email (must be unique)"
+              },
+              "framework": {
+                "type": "string",
+                "enum": ["hipaa", "soc2", "fedramp", "cis"],
+                "description": "Compliance framework"
+              }
+            }
+          }
+        },
+        "required": ["action", "environment"]
+      }
+    },
+    {
+      "name": "get_cost_metrics",
+      "description": "Retrieve cost metrics and forecasting for customers",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerName": {
+            "type": "string",
+            "description": "Customer name (optional, returns all if omitted)"
+          },
+          "period": {
+            "type": "string",
+            "enum": ["daily", "weekly", "monthly", "quarterly"],
+            "default": "monthly",
+            "description": "Reporting period"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date for metrics (YYYY-MM-DD)"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "End date for metrics (YYYY-MM-DD)"
+          }
+        },
+        "required": []
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "securebase://documentation/getting-started",
+      "name": "Getting Started Guide",
+      "description": "Quick start guide for SecureBase deployment",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "securebase://documentation/terraform-deployment",
+      "name": "Terraform Deployment Guide",
+      "description": "Comprehensive guide for Terraform deployment workflows",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "securebase://documentation/phase2-backend",
+      "name": "Phase 2 Backend Documentation",
+      "description": "Aurora database, Lambda functions, and API Gateway setup",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "securebase://documentation/compliance",
+      "name": "Compliance Frameworks",
+      "description": "HIPAA, SOC2, FedRAMP, and CIS compliance documentation",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "securebase://config/environments",
+      "name": "Environment Configurations",
+      "description": "Current configuration for dev, staging, and prod environments",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "securebase://config/customers",
+      "name": "Customer Configurations",
+      "description": "Current customer tenant definitions",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "securebase://status/deployment",
+      "name": "Deployment Status",
+      "description": "Current deployment status across all phases and environments",
+      "mimeType": "application/json"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "deploy_new_customer",
+      "description": "Guide for deploying a new customer tenant",
+      "arguments": [
+        {
+          "name": "customerName",
+          "description": "Name of the new customer",
+          "required": true
+        },
+        {
+          "name": "tier",
+          "description": "Customer tier (healthcare, fintech, government, standard)",
+          "required": true
+        },
+        {
+          "name": "environment",
+          "description": "Target environment (dev, staging, prod)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "troubleshoot_deployment",
+      "description": "Step-by-step troubleshooting for deployment failures",
+      "arguments": [
+        {
+          "name": "phase",
+          "description": "Phase number (1, 2, 3a, 3b, 4)",
+          "required": true
+        },
+        {
+          "name": "errorMessage",
+          "description": "Error message or description of the issue",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "setup_compliance",
+      "description": "Configure compliance framework for a customer",
+      "arguments": [
+        {
+          "name": "framework",
+          "description": "Compliance framework (hipaa, soc2, fedramp, cis)",
+          "required": true
+        },
+        {
+          "name": "customerName",
+          "description": "Customer name",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "phase2_quickstart",
+      "description": "Quick start guide for deploying Phase 2 backend",
+      "arguments": [
+        {
+          "name": "environment",
+          "description": "Target environment",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "defaultEnvironment": "dev",
+    "autoValidate": true,
+    "requireApproval": {
+      "dev": false,
+      "staging": true,
+      "prod": true
+    },
+    "notifications": {
+      "deploymentSuccess": true,
+      "deploymentFailure": true,
+      "complianceAlerts": true
+    },
+    "paths": {
+      "landingZone": "landing-zone/environments",
+      "phase2Backend": "phase2-backend",
+      "phase3aPortal": "phase3a-portal",
+      "documentation": "docs"
+    }
+  },
+  "metadata": {
+    "author": "SecureBase Team",
+    "license": "Proprietary",
+    "repository": "https://github.com/cedrickbyrd/securebase-app",
+    "supportedPhases": ["1", "2", "3a", "3b", "4"],
+    "awsServices": [
+      "Organizations",
+      "IAM Identity Center",
+      "CloudTrail",
+      "Config",
+      "GuardDuty",
+      "Security Hub",
+      "Aurora Serverless v2",
+      "Lambda",
+      "API Gateway",
+      "Secrets Manager",
+      "S3",
+      "KMS"
+    ],
+    "complianceFrameworks": ["HIPAA", "SOC2", "FedRAMP", "CIS"],
+    "tags": [
+      "terraform",
+      "aws",
+      "multi-tenant",
+      "compliance",
+      "paas",
+      "infrastructure-as-code"
+    ]
+  }
+}
