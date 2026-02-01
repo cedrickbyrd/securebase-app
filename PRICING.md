@@ -54,11 +54,13 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
 ✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns  
-✅ **Team collaboration** - 25 users, 4 RBAC roles (Admin, Manager, Analyst, Viewer)  
 ✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
 ✅ **Up to 50 customer environments** - Scale to hundreds of customers
+
+#### Upcoming Q1 2026:
+🔜 **Team collaboration (RBAC)** - Target completion: Feb 28, 2026
 
 #### Compliance Coverage:
 - SOC 2 all 5 Trust Service Criteria (TSCs)
@@ -91,11 +93,13 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **VPC isolation and lockdown** - Network-level security controls  
 ✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
 ✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
-✅ **White-label customization** - Custom domain, branding, logo  
-✅ **Team collaboration** - 100 users, unlimited RBAC roles  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
 ✅ **Up to 100 customer environments** - Enterprise-scale deployment
+
+#### Upcoming Q1 2026:
+🔜 **Team collaboration (RBAC)** - Target completion: Feb 28, 2026  
+🔜 **White-label branding** - Target completion: Mar 7, 2026
 
 #### Compliance Coverage:
 - HIPAA Security Rule
@@ -173,12 +177,12 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
 | **Security Hub** | ❌ | ✅ | ✅ | ✅ |
 | **Advanced Analytics** | ❌ | ✅ | ✅ | ✅ |
-| **Team Collaboration (RBAC)** | ❌ | 25 users | 100 users | Unlimited |
+| **Team Collaboration (RBAC)** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
 | **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
 | **Custom Reports** | ❌ | ✅ | ✅ | ✅ |
 | **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
-| **White-Label Branding** | ❌ | Add-on ($2K/mo) | ✅ | ✅ |
-| **Custom Domain** | ❌ | Add-on ($2K/mo) | ✅ | ✅ |
+| **White-Label Branding** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
+| **Custom Domain** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
 | **SSO/SAML Integration** | ❌ | ❌ | ❌ | ✅ (Okta, Azure AD, Google) |
 | **IP Whitelisting** | ❌ | ❌ | ❌ | ✅ |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
@@ -282,7 +286,7 @@ Need more than your tier's included environments?
 | **Standard** | 10 | $100/mo per environment |
 | **Fintech** | 50 | $80/mo per environment |
 | **Healthcare** | 100 | $60/mo per environment |
-| **Government** | Unlimited | $40/mo per environment |
+| **Government** | Unlimited | N/A (unlimited included) |
 
 ### Additional Storage
 
@@ -297,9 +301,11 @@ Audit logs and compliance data storage:
 
 ### Additional Users (RBAC)
 
-Team collaboration beyond included users:
+**Coming Q1 2026** - Team collaboration feature (target completion: Feb 28, 2026)
 
-| Tier | Included Users | Per Additional User |
+Planned pricing for team collaboration beyond included users:
+
+| Tier | Planned Included Users | Planned Per Additional User |
 |------|----------------|---------------------|
 | **Standard** | N/A | Upgrade to Fintech required |
 | **Fintech** | 25 users | $50/user/month |
@@ -318,16 +324,18 @@ Portal and API usage beyond base limits:
 
 ### White-Label Branding
 
-Custom branding and domains:
+**Coming Q1 2026** - White-label branding feature (target completion: Mar 7, 2026)
 
-| Tier | White-Label Status |
+Planned custom branding and domains:
+
+| Tier | Planned White-Label Status |
 |------|-------------------|
 | **Standard** | Not available |
 | **Fintech** | **Add-on: $2,000/month** |
 | **Healthcare** | Included |
 | **Government** | Included |
 
-**White-label includes:** Custom domain, logo, color scheme, favicon, email templates
+**Planned white-label features:** Custom domain, logo, color scheme, favicon, email templates
 
 ---
 
@@ -492,7 +500,6 @@ Need a custom solution? We work with enterprises requiring:
 - **[Feature Comparison](./README.md)** - SecureBase vs DIY vs Competitors
 - **[FAQ](./FAQ.md)** - 42 common questions answered
 - **[ROI Calculator](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR)** - Calculate your savings
-- **[Security Whitepaper](./SECURITY.md)** - Security architecture deep dive
 - **[Compliance Guides](./docs/)** - HIPAA, SOC 2, FedRAMP implementation details
 
 ---
