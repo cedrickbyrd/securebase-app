@@ -98,7 +98,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** SecureBase uses tier-based pricing: Standard ($2K/mo), Fintech ($8K/mo), Healthcare ($15K/mo), Government ($25K/mo). Each tier includes a base number of customer environments, users, and features. Usage-based add-ons apply for additional environments, storage, users, and API calls. See our [Pricing Page](./PRICING.md) for full details.
 
 ### 26. **Q: What's included in each tier?**
-**A:** All tiers include multi-tenant AWS Organization, dedicated customer accounts, IAM Identity Center (SSO), centralized logging, compliance controls, customer portal, and email support. Higher tiers add advanced features: SOC 2 controls, enhanced support, and more stringent compliance frameworks. Upcoming Q1 2026 features include team collaboration (RBAC) and white-label branding. See the [Feature Comparison Table](./PRICING.md#-feature-comparison-table).
+**A:** All tiers include multi-tenant AWS Organization, dedicated customer accounts, IAM Identity Center (SSO), centralized logging, compliance controls, customer portal, and email support. Higher tiers add advanced features: SOC 2 controls, enhanced support, and more stringent compliance frameworks. Upcoming Q1 2026 features include team collaboration (RBAC, target completion: Feb 28, 2026) and white-label branding (target completion: Mar 7, 2026). See the [Feature Comparison Table](./PRICING.md#-feature-comparison-table).
 
 ### 27. **Q: Are there setup fees?**
 **A:** No. SecureBase has zero setup fees, ever. Your monthly or annual subscription includes everything: deployment, onboarding, training, and ongoing support. We make money when you succeed, not from upfront charges.
@@ -179,7 +179,7 @@ We're here to help! Our team typically responds within 2 hours during business h
 
 - **[Pricing & Plans](./PRICING.md)** - Detailed pricing, features, ROI calculator
 - **[Product Overview](./README.md)** - What SecureBase does, who it's for
-- **[Security Whitepaper](./SECURITY.md)** - Security architecture and controls
+- **[Security Policy](./SECURITY.md)** - Security practices and vulnerability disclosure
 - **[Getting Started](./GETTING_STARTED.md)** - Quick start deployment guide
 - **[API Documentation](./API_REFERENCE.md)** - API reference for developers
 - **[Pilot Program](https://portal.securebase.io/pilot)** - 50% off, 8 spots remaining
