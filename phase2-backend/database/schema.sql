@@ -349,6 +349,66 @@ CREATE INDEX idx_notifications_status ON notifications(status);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 
 -- ============================================
+-- EVIDENCE RECORDS TABLE (Compliance Evidence)
+-- ============================================
+
+CREATE TYPE evidence_status AS ENUM ('pass', 'fail', 'missing', 'pending', 'expired');
+CREATE TYPE evidence_type AS ENUM ('policy', 'system', 'log', 'attestation', 'screenshot', 'report', 'configuration');
+CREATE TYPE collection_method AS ENUM ('automated', 'manual', 'semi_automated');
+CREATE TYPE evidence_category AS ENUM ('CC', 'AC', 'AU', 'PI', 'CM', 'IA', 'SC', 'SI', 'RA', 'CA', 'CP');
+
+CREATE TABLE IF NOT EXISTS evidence_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  
+  -- Control identification
+  control_id VARCHAR(50) NOT NULL,
+  control_name TEXT NOT NULL,
+  framework compliance_framework NOT NULL,
+  category evidence_category NOT NULL,
+  
+  -- Evidence details
+  evidence_type evidence_type NOT NULL,
+  source_system VARCHAR(100) NOT NULL,  -- Okta, AWS, GitHub, Stripe, etc.
+  owner TEXT NOT NULL,  -- Email of responsible party
+  collection_method collection_method NOT NULL,
+  
+  -- Status and validity
+  status evidence_status DEFAULT 'pending',
+  last_collected TIMESTAMP,
+  valid_until TIMESTAMP,
+  next_collection TIMESTAMP,
+  
+  -- Artifact reference
+  artifact_ref TEXT,  -- S3 URI, file path, or URL to evidence
+  artifact_hash TEXT,  -- SHA-256 hash for integrity
+  artifact_size_bytes BIGINT,
+  
+  -- Metadata
+  description TEXT,
+  remediation_notes TEXT,
+  tags JSONB DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  
+  -- Audit trail
+  collected_by TEXT,  -- Email of collector (for manual evidence)
+  reviewed_by TEXT,
+  reviewed_at TIMESTAMP,
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT unique_customer_control UNIQUE(customer_id, control_id, framework)
+);
+
+CREATE INDEX idx_evidence_customer_framework ON evidence_records(customer_id, framework);
+CREATE INDEX idx_evidence_status ON evidence_records(status);
+CREATE INDEX idx_evidence_control_id ON evidence_records(control_id);
+CREATE INDEX idx_evidence_valid_until ON evidence_records(valid_until);
+CREATE INDEX idx_evidence_last_collected ON evidence_records(last_collected DESC);
+CREATE INDEX idx_evidence_source_system ON evidence_records(source_system);
+
+-- ============================================
 -- ROW-LEVEL SECURITY (RLS) SETUP
 -- ============================================
 
@@ -360,6 +420,7 @@ ALTER TABLE audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE evidence_records ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- RLS POLICIES: Customer Isolation
@@ -417,6 +478,18 @@ CREATE POLICY customer_isolation_notifications
   ON notifications 
   FOR ALL 
   USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
+
+-- Evidence records: Only own evidence
+CREATE POLICY customer_isolation_evidence 
+  ON evidence_records 
+  FOR ALL 
+  USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
+
+-- Evidence records: System can insert evidence
+CREATE POLICY evidence_insert_allowed 
+  ON evidence_records 
+  FOR INSERT 
+  WITH CHECK (current_setting('app.role') IN ('admin', 'system'));
 
 -- ============================================
 -- ADMIN ROLE (Bypass RLS)
