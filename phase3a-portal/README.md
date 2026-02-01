@@ -88,7 +88,8 @@ phase3a-portal/
 - `.env.example` - Template with all available variables
 - `.env.staging` - Staging environment configuration (tracked in Git)
 - `.env.production` - Production environment configuration (tracked in Git)
-- `.env` - Local environment (gitignored, created from .env.staging or .env.production)
+- `.env.demo` - Demo environment configuration (tracked in Git)
+- `.env` - Local environment (gitignored, created from .env.staging, .env.production, or .env.demo)
 
 ## Deployment
 
@@ -230,6 +231,61 @@ For detailed staging deployment instructions, see [STAGING_DEPLOYMENT.md](STAGIN
 
 ---
 
-**Last Updated:** January 26, 2026  
+## 🖥️ Demo Environment
+
+### Quick Deploy to Demo
+
+```bash
+# Automated deployment script
+./deploy-demo.sh
+```
+
+### Build for Demo
+
+```bash
+# Build with demo environment variables
+npm run build:demo
+
+# Output will be in dist/ directory with demo-data.json
+```
+
+### Manual Demo Deployment
+
+```bash
+# 1. Build
+npm run build:demo
+
+# 2. Copy demo data
+cp demo-data.json dist/demo-data.json
+
+# 3. Create S3 bucket (if not exists)
+aws s3 mb s3://securebase-phase3a-demo --region us-east-1
+
+# 4. Enable static website hosting
+aws s3 website s3://securebase-phase3a-demo \
+  --index-document index.html \
+  --error-document index.html
+
+# 5. Upload files
+aws s3 sync dist/ s3://securebase-phase3a-demo/ --delete
+
+# 6. Access demo site
+# http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+```
+
+### Demo Environment Features
+
+- **URL:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+- **Auto-Login:** No signup required
+- **Read-Only:** All write operations disabled
+- **Sample Data:** 5 mock customers, 30+ invoices
+- **Demo Banner:** Visible with CTAs
+- **Auto-Reset:** Data resets every 24 hours
+
+For detailed demo environment documentation, see [DEMO_ENVIRONMENT.md](DEMO_ENVIRONMENT.md).
+
+---
+
+**Last Updated:** January 30, 2026  
 **Version:** 1.0.0  
-**Status:** ✅ Production Ready with Staging Support
+**Status:** ✅ Production Ready with Staging & Demo Support
