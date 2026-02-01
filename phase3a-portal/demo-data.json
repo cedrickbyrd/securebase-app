@@ -1,0 +1,621 @@
+{
+  "customers": [
+    {
+      "id": "cust_demo_001",
+      "name": "HealthCorp Medical Systems",
+      "tier": "Healthcare",
+      "pricing": "$15,000/month",
+      "complianceFramework": "HIPAA",
+      "accountsManaged": 45,
+      "status": "active",
+      "onboardedDate": "2025-11-15",
+      "nextInvoiceDate": "2026-02-15"
+    },
+    {
+      "id": "cust_demo_002",
+      "name": "FinTechAI Analytics",
+      "tier": "Fintech",
+      "pricing": "$8,000/month",
+      "complianceFramework": "SOC 2 Type II",
+      "accountsManaged": 28,
+      "status": "active",
+      "onboardedDate": "2025-12-01",
+      "nextInvoiceDate": "2026-02-01"
+    },
+    {
+      "id": "cust_demo_003",
+      "name": "StartupMVP Inc",
+      "tier": "Standard",
+      "pricing": "$2,000/month",
+      "complianceFramework": "CIS Foundations",
+      "accountsManaged": 5,
+      "status": "active",
+      "onboardedDate": "2026-01-10",
+      "nextInvoiceDate": "2026-02-10"
+    },
+    {
+      "id": "cust_demo_004",
+      "name": "GovContractor Defense Solutions",
+      "tier": "Government",
+      "pricing": "$25,000/month",
+      "complianceFramework": "FedRAMP Low",
+      "accountsManaged": 120,
+      "status": "active",
+      "onboardedDate": "2025-10-01",
+      "nextInvoiceDate": "2026-02-01"
+    },
+    {
+      "id": "cust_demo_005",
+      "name": "SaaSPlatform Cloud Services",
+      "tier": "Fintech",
+      "pricing": "$8,000/month",
+      "complianceFramework": "SOC 2 Type II",
+      "accountsManaged": 35,
+      "status": "active",
+      "onboardedDate": "2025-11-20",
+      "nextInvoiceDate": "2026-02-20"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv_demo_001",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2026-01-15",
+      "paidDate": "2026-01-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_002",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8240.00,
+      "status": "paid",
+      "dueDate": "2026-01-01",
+      "paidDate": "2025-12-30",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00},
+        {"description": "Additional Environments (3 × $80)", "amount": 240.00}
+      ]
+    },
+    {
+      "id": "inv_demo_003",
+      "customerId": "cust_demo_003",
+      "customerName": "StartupMVP Inc",
+      "amount": 2000.00,
+      "status": "issued",
+      "dueDate": "2026-02-10",
+      "paidDate": null,
+      "tier": "Standard",
+      "lineItems": [
+        {"description": "Standard Tier - Base", "amount": 2000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_004",
+      "customerId": "cust_demo_004",
+      "customerName": "GovContractor Defense Solutions",
+      "amount": 25000.00,
+      "status": "paid",
+      "dueDate": "2026-01-01",
+      "paidDate": "2025-12-28",
+      "tier": "Government",
+      "lineItems": [
+        {"description": "Government Tier - Base", "amount": 25000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_005",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15300.00,
+      "status": "overdue",
+      "dueDate": "2025-12-15",
+      "paidDate": null,
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00},
+        {"description": "Additional Users (5 × $60)", "amount": 300.00}
+      ]
+    },
+    {
+      "id": "inv_demo_006",
+      "customerId": "cust_demo_005",
+      "customerName": "SaaSPlatform Cloud Services",
+      "amount": 8000.00,
+      "status": "paid",
+      "dueDate": "2025-12-20",
+      "paidDate": "2025-12-18",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_007",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8080.00,
+      "status": "paid",
+      "dueDate": "2025-12-01",
+      "paidDate": "2025-11-29",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00},
+        {"description": "Additional Environments (1 × $80)", "amount": 80.00}
+      ]
+    },
+    {
+      "id": "inv_demo_008",
+      "customerId": "cust_demo_004",
+      "customerName": "GovContractor Defense Solutions",
+      "amount": 25000.00,
+      "status": "paid",
+      "dueDate": "2025-12-01",
+      "paidDate": "2025-11-27",
+      "tier": "Government",
+      "lineItems": [
+        {"description": "Government Tier - Base", "amount": 25000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_009",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2025-11-15",
+      "paidDate": "2025-11-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_010",
+      "customerId": "cust_demo_005",
+      "customerName": "SaaSPlatform Cloud Services",
+      "amount": 8160.00,
+      "status": "paid",
+      "dueDate": "2025-11-20",
+      "paidDate": "2025-11-19",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00},
+        {"description": "Additional Environments (2 × $80)", "amount": 160.00}
+      ]
+    },
+    {
+      "id": "inv_demo_011",
+      "customerId": "cust_demo_004",
+      "customerName": "GovContractor Defense Solutions",
+      "amount": 25500.00,
+      "status": "paid",
+      "dueDate": "2025-11-01",
+      "paidDate": "2025-10-30",
+      "tier": "Government",
+      "lineItems": [
+        {"description": "Government Tier - Base", "amount": 25000.00},
+        {"description": "Dedicated Support Hours (10 × $50)", "amount": 500.00}
+      ]
+    },
+    {
+      "id": "inv_demo_012",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8000.00,
+      "status": "paid",
+      "dueDate": "2025-11-01",
+      "paidDate": "2025-10-31",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_013",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15600.00,
+      "status": "paid",
+      "dueDate": "2025-10-15",
+      "paidDate": "2025-10-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00},
+        {"description": "Additional Users (10 × $60)", "amount": 600.00}
+      ]
+    },
+    {
+      "id": "inv_demo_014",
+      "customerId": "cust_demo_004",
+      "customerName": "GovContractor Defense Solutions",
+      "amount": 25000.00,
+      "status": "paid",
+      "dueDate": "2025-10-01",
+      "paidDate": "2025-09-28",
+      "tier": "Government",
+      "lineItems": [
+        {"description": "Government Tier - Base (Onboarding)", "amount": 25000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_015",
+      "customerId": "cust_demo_005",
+      "customerName": "SaaSPlatform Cloud Services",
+      "amount": 4000.00,
+      "status": "paid",
+      "dueDate": "2025-10-20",
+      "paidDate": "2025-10-19",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base (Prorated)", "amount": 4000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_016",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8000.00,
+      "status": "paid",
+      "dueDate": "2025-10-01",
+      "paidDate": "2025-09-30",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_017",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2025-09-15",
+      "paidDate": "2025-09-13",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_018",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8000.00,
+      "status": "paid",
+      "dueDate": "2025-09-01",
+      "paidDate": "2025-08-31",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_019",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2025-08-15",
+      "paidDate": "2025-08-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_020",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 4000.00,
+      "status": "paid",
+      "dueDate": "2025-08-01",
+      "paidDate": "2025-07-31",
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base (Prorated)", "amount": 4000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_021",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2025-07-15",
+      "paidDate": "2025-07-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_022",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "paid",
+      "dueDate": "2025-06-15",
+      "paidDate": "2025-06-13",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_023",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 7500.00,
+      "status": "paid",
+      "dueDate": "2025-05-15",
+      "paidDate": "2025-05-14",
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base (Onboarding)", "amount": 7500.00}
+      ]
+    },
+    {
+      "id": "inv_demo_024",
+      "customerId": "cust_demo_003",
+      "customerName": "StartupMVP Inc",
+      "amount": 2000.00,
+      "status": "paid",
+      "dueDate": "2025-12-10",
+      "paidDate": "2025-12-09",
+      "tier": "Standard",
+      "lineItems": [
+        {"description": "Standard Tier - Base (Onboarding)", "amount": 2000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_025",
+      "customerId": "cust_demo_005",
+      "customerName": "SaaSPlatform Cloud Services",
+      "amount": 8000.00,
+      "status": "issued",
+      "dueDate": "2026-01-20",
+      "paidDate": null,
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_026",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "amount": 8000.00,
+      "status": "issued",
+      "dueDate": "2026-02-01",
+      "paidDate": null,
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_027",
+      "customerId": "cust_demo_004",
+      "customerName": "GovContractor Defense Solutions",
+      "amount": 25000.00,
+      "status": "issued",
+      "dueDate": "2026-02-01",
+      "paidDate": null,
+      "tier": "Government",
+      "lineItems": [
+        {"description": "Government Tier - Base", "amount": 25000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_028",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "amount": 15000.00,
+      "status": "issued",
+      "dueDate": "2026-02-15",
+      "paidDate": null,
+      "tier": "Healthcare",
+      "lineItems": [
+        {"description": "Healthcare Tier - Base", "amount": 15000.00}
+      ]
+    },
+    {
+      "id": "inv_demo_029",
+      "customerId": "cust_demo_005",
+      "customerName": "SaaSPlatform Cloud Services",
+      "amount": 8080.00,
+      "status": "issued",
+      "dueDate": "2026-02-20",
+      "paidDate": null,
+      "tier": "Fintech",
+      "lineItems": [
+        {"description": "Fintech Tier - Base", "amount": 8000.00},
+        {"description": "Additional Environments (1 × $80)", "amount": 80.00}
+      ]
+    },
+    {
+      "id": "inv_demo_030",
+      "customerId": "cust_demo_003",
+      "customerName": "StartupMVP Inc",
+      "amount": 2000.00,
+      "status": "draft",
+      "dueDate": "2026-03-10",
+      "paidDate": null,
+      "tier": "Standard",
+      "lineItems": [
+        {"description": "Standard Tier - Base", "amount": 2000.00}
+      ]
+    }
+  ],
+  "complianceMetrics": {
+    "overall": {
+      "score": 92,
+      "trend": "up",
+      "lastUpdated": "2026-01-29T18:00:00Z"
+    },
+    "byFramework": [
+      {"framework": "HIPAA", "score": 95, "findings": 2, "status": "compliant"},
+      {"framework": "SOC 2 Type II", "score": 91, "findings": 5, "status": "compliant"},
+      {"framework": "CIS Foundations", "score": 88, "findings": 8, "status": "compliant"},
+      {"framework": "FedRAMP Low", "score": 94, "findings": 3, "status": "compliant"}
+    ],
+    "findings": [
+      {
+        "id": "finding_001",
+        "severity": "low",
+        "title": "S3 Bucket Versioning Not Enabled",
+        "description": "3 S3 buckets do not have versioning enabled",
+        "framework": "CIS Foundations",
+        "status": "open",
+        "affectedResources": 3,
+        "remediation": "Enable versioning on all S3 buckets"
+      },
+      {
+        "id": "finding_002",
+        "severity": "medium",
+        "title": "CloudTrail Log File Validation",
+        "description": "CloudTrail log file validation should be enabled",
+        "framework": "SOC 2 Type II",
+        "status": "open",
+        "affectedResources": 1,
+        "remediation": "Enable log file validation in CloudTrail settings"
+      },
+      {
+        "id": "finding_003",
+        "severity": "low",
+        "title": "IAM Password Policy - Lowercase",
+        "description": "Password policy does not require lowercase characters",
+        "framework": "HIPAA",
+        "status": "open",
+        "affectedResources": 1,
+        "remediation": "Update IAM password policy to require lowercase"
+      }
+    ]
+  },
+  "apiKeys": [
+    {
+      "id": "key_demo_001",
+      "name": "Production API Key",
+      "key": "sk_demo_prod_abc123...hidden",
+      "status": "active",
+      "created": "2025-12-01",
+      "lastUsed": "2026-01-29",
+      "scope": "read:all,write:environments"
+    },
+    {
+      "id": "key_demo_002",
+      "name": "Staging API Key",
+      "key": "sk_demo_staging_xyz789...hidden",
+      "status": "active",
+      "created": "2025-12-10",
+      "lastUsed": "2026-01-28",
+      "scope": "read:all"
+    },
+    {
+      "id": "key_demo_003",
+      "name": "Expired Key (Old)",
+      "key": "sk_demo_old_expired...hidden",
+      "status": "expired",
+      "created": "2025-10-01",
+      "lastUsed": "2025-12-15",
+      "scope": "read:invoices"
+    }
+  ],
+  "dashboardMetrics": {
+    "totalCustomers": 5,
+    "monthlyRevenue": 58240.00,
+    "complianceScore": 92,
+    "activeAlerts": 3,
+    "apiRequestsThisMonth": 3452000,
+    "uptimePercentage": 99.87,
+    "costTrend": [
+      {"month": "Aug 2025", "cost": 45000},
+      {"month": "Sep 2025", "cost": 48500},
+      {"month": "Oct 2025", "cost": 51000},
+      {"month": "Nov 2025", "cost": 53200},
+      {"month": "Dec 2025", "cost": 55800},
+      {"month": "Jan 2026", "cost": 58240}
+    ]
+  },
+  "supportTickets": [
+    {
+      "id": "ticket_001",
+      "customerId": "cust_demo_001",
+      "customerName": "HealthCorp Medical Systems",
+      "subject": "Question about HIPAA audit logs",
+      "status": "open",
+      "priority": "medium",
+      "created": "2026-01-28",
+      "lastUpdated": "2026-01-29"
+    },
+    {
+      "id": "ticket_002",
+      "customerId": "cust_demo_002",
+      "customerName": "FinTechAI Analytics",
+      "subject": "Request for additional AWS region",
+      "status": "in_progress",
+      "priority": "high",
+      "created": "2026-01-25",
+      "lastUpdated": "2026-01-28"
+    },
+    {
+      "id": "ticket_003",
+      "customerId": "cust_demo_003",
+      "customerName": "StartupMVP Inc",
+      "subject": "Help with API integration",
+      "status": "resolved",
+      "priority": "low",
+      "created": "2026-01-20",
+      "lastUpdated": "2026-01-22"
+    }
+  ],
+  "webhooks": [
+    {
+      "id": "webhook_001",
+      "name": "Billing Notifications",
+      "url": "https://example.com/webhooks/billing",
+      "events": ["invoice.created", "invoice.paid", "invoice.overdue"],
+      "status": "active",
+      "created": "2025-12-01",
+      "lastTriggered": "2026-01-29"
+    },
+    {
+      "id": "webhook_002",
+      "name": "Compliance Alerts",
+      "url": "https://example.com/webhooks/compliance",
+      "events": ["compliance.finding.created", "compliance.finding.resolved"],
+      "status": "active",
+      "created": "2025-12-15",
+      "lastTriggered": "2026-01-28"
+    },
+    {
+      "id": "webhook_003",
+      "name": "Security Notifications (Disabled)",
+      "url": "https://old-endpoint.example.com/security",
+      "events": ["security.alert"],
+      "status": "disabled",
+      "created": "2025-11-01",
+      "lastTriggered": "2025-12-10"
+    }
+  ],
+  "costForecast": {
+    "currentMonth": {
+      "month": "Feb 2026",
+      "projected": 60500,
+      "confidence": "high"
+    },
+    "nextMonths": [
+      {"month": "Mar 2026", "projected": 62000, "confidence": "medium"},
+      {"month": "Apr 2026", "projected": 63800, "confidence": "medium"},
+      {"month": "May 2026", "projected": 65200, "confidence": "low"}
+    ]
+  }
+}
