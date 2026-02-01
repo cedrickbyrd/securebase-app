@@ -132,11 +132,11 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Dedicated infrastructure options** - Isolated compute and storage  
 ✅ **FIPS 140-2 validated encryption** - Government-grade cryptography  
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
-✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace *(Available March 2026)*  
-✅ **IP whitelisting and geo-restrictions** - Network access controls *(Available March 2026)*  
-✅ **Unlimited users** - No per-user charges *(Available late February 2026)*  
+✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace  
+✅ **IP whitelisting and geo-restrictions** - Network access controls  
+🔜 **Unlimited users** - No per-user charges - *Available Q1 2026*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
-✅ **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
+🚀 **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
 ✅ **Unlimited customer environments** - No scaling limits
 
 #### Compliance Coverage:
@@ -187,18 +187,14 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **IP Whitelisting** | ❌ | ❌ | ❌ | ✅ |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
 | **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
-| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 99.95%** |
+| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 🚀 Q2 2026 (99.95%) |
 | **Support Response Time** | 24 hours | 4 hours | 2 hours | 1 hour (critical) |
 | **Support Channels** | Email | Email, Slack | Phone, Email, Slack | 24/7 Phone, Email, Slack |
 | **Account Manager** | ❌ | ❌ | ✅ | ✅ (TAM) |
 | **Onboarding Hours** | 2 hours | 4 hours | 8 hours | 16 hours |
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
 
-**Feature Availability Notes:**
-- **\*** = Available March 2026 (White-Label Branding, SSO/SAML, IP Whitelisting)
-- **†** = Deploying mid-February 2026 (Advanced Analytics)
-- **‡** = Available late February 2026 (Team Collaboration/RBAC)
-- **\*\*** = Available Q2 2026 with Phase 5 (Observability & Multi-Region DR)
+* Team Collaboration & RBAC features are currently in development and will be available in Q1 2026 (target: February 28, 2026). Early adopters will receive complimentary onboarding and training when the feature launches.
 
 ---
 
@@ -314,9 +310,11 @@ Planned pricing for team collaboration beyond included users:
 | Tier | Planned Included Users | Planned Per Additional User |
 |------|----------------|---------------------|
 | **Standard** | N/A | Upgrade to Fintech required |
-| **Fintech** | 25 users | $50/user/month |
-| **Healthcare** | 100 users | $40/user/month |
-| **Government** | Unlimited | Included |
+| **Fintech** | 25 users *(Q1 2026)* | $50/user/month |
+| **Healthcare** | 100 users *(Q1 2026)* | $40/user/month |
+| **Government** | Unlimited *(Q1 2026)* | Included |
+
+*Note: RBAC and team collaboration features are currently in development (5% complete) with planned launch on February 28, 2026. Pricing and user limits are subject to change based on beta feedback.*
 
 ### Additional API Calls
 
@@ -337,9 +335,9 @@ Planned custom branding and domains:
 | Tier | Planned White-Label Status |
 |------|-------------------|
 | **Standard** | Not available |
-| **Fintech** | **Add-on: $2,000/month** |
-| **Healthcare** | Included |
-| **Government** | Included |
+| **Fintech** | **Add-on: $2,000/month** *(Q1 2026)* |
+| **Healthcare** | Included *(Q1 2026)* |
+| **Government** | Included *(Q1 2026)* |
 
 **Planned white-label features:** Custom domain, logo, color scheme, favicon, email templates
 
