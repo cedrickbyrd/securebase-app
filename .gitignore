@@ -56,3 +56,9 @@ coverage/
 # Terraform installer artifacts
 terraform_*.zip
 actionlint
+
+# Lambda deployment artifacts
+lambda-layer/
+landing-zone/lambda-packages/
+phase2-backend/deploy/
+tfplan-auto

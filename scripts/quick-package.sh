@@ -4,10 +4,13 @@
 
 set -e
 
+# Determine ROOT directory (same logic as deploy-analytics-auto.sh)
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 echo "📦 Packaging Lambda Functions..."
 echo ""
 
-cd /workspaces/securebase-app/phase2-backend/functions
+cd "$ROOT/phase2-backend/functions"
 mkdir -p ../deploy
 
 # Package each function
