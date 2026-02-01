@@ -2,7 +2,7 @@
 
 **Stop spending 6-12 weeks on AWS setup.** SecureBase deploys production-ready, SOC 2/HIPAA-compliant infrastructure in under 10 minutes.
 
-<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a>💰 View Pricing</a>
+<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a href="https://securebase.io/pricing">💰 View Pricing</a>
 
 ---
 
@@ -55,7 +55,7 @@
 
 **🎁 Pilot Program:** 50% off for 6 months + 30-day free trial (no credit card required)
 
-<a>📄 View Full Pricing & Features</a> | <a href="https://docs.google.com/spreadsheets/d/ROI-CALCULATOR-LINK">🧮 Calculate Your ROI</a>
+<a href="https://securebase.io/pricing">📄 View Full Pricing & Features</a> | <a href="https://docs.google.com/spreadsheets/d/ROI-CALCULATOR-LINK">🧮 Calculate Your ROI</a>
 
 ---
 
@@ -116,7 +116,7 @@
 📋 **3 Dashboards** - Admin, Tenant, SRE views  
 📋 **Distributed Tracing** - Full request visibility with AWS X-Ray  
 
-<a>See Complete Feature List</a>
+<a href="https://securebase.io/features">See Complete Feature List</a>
 
 ---
 
@@ -133,7 +133,7 @@
 
 **Key Differentiator:** SecureBase is the **ONLY** platform purpose-built for **multi-tenant SaaS** with compliance automation AND customer billing in one solution.
 
-<a>See Detailed Comparison</a>
+<a href="https://securebase.io/comparison">See Detailed Comparison</a>
 
 ---
 
@@ -157,7 +157,7 @@
 📋 **99.95% Uptime** - Coming with multi-region DR (Phase 5, June 2026)  
 ✅ **<100ms API Latency** - P95 performance (validated)  
 
-<a>📥 Download Security Whitepaper</a> *(Available Feb 12)*
+<a href="https://securebase.io/whitepaper">📥 Download Security Whitepaper</a> *(Available Feb 12)*
 
 ---
 
@@ -193,30 +193,30 @@ A: Your infrastructure is deployed to YOUR AWS account. You own it. Export Terra
 **Q: Do you support [specific compliance framework]?**  
 A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available for enterprise customers. Contact sales@securebase.io.
 
-<a>See All 50+ FAQs</a> *(Available Jan 30)*
+<a href="https://securebase.io/faq">See All 50+ FAQs</a> *(Available Jan 30)*
 
 ---
 
 ## 🛠️ Technical Documentation
 
 **For Developers:**
-- <a>Complete Documentation</a>
-- <a>API Reference</a>
-- <a>Terraform Modules</a>
-- <a>GitHub Actions Workflows</a>
-- <a>Database Schema</a>
+- <a href="https://docs.securebase.io">Complete Documentation</a>
+- <a href="https://docs.securebase.io/api">API Reference</a>
+- <a href="https://github.com/cedrickbyrd/securebase-terraform">Terraform Modules</a>
+- <a href="https://github.com/cedrickbyrd/securebase-app/tree/main/.github/workflows">GitHub Actions Workflows</a>
+- <a href="https://docs.securebase.io/database-schema">Database Schema</a>
 
 **For Business:**
-- <a>Pricing Details</a> *(Available Jan 30)*
+- <a href="https://securebase.io/pricing">Pricing Details</a> *(Available Jan 30)*
 - <a href="https://docs.google.com/spreadsheets/d/ROI-CALCULATOR">ROI Calculator</a> *(Available Feb 11)*
-- <a>Customer Case Studies</a> *(Coming March 2026)*
-- <a>Comparison Matrix</a> *(Available Feb 4)*
+- <a href="https://securebase.io/case-studies">Customer Case Studies</a> *(Coming March 2026)*
+- <a href="https://securebase.io/comparison">Comparison Matrix</a> *(Available Feb 4)*
 
 **For Compliance:**
-- <a>HIPAA Compliance Guide</a> *(Available Feb 13)*
-- <a>SOC 2 Controls Mapping</a> *(Available Feb 13)*
-- <a>FedRAMP Alignment Doc</a> *(Available Feb 13)*
-- <a>Security Whitepaper</a> *(Available Feb 12)*
+- <a href="https://securebase.io/hipaa-guide">HIPAA Compliance Guide</a> *(Available Feb 13)*
+- <a href="https://securebase.io/soc2-mapping">SOC 2 Controls Mapping</a> *(Available Feb 13)*
+- <a href="https://securebase.io/fedramp-alignment">FedRAMP Alignment Doc</a> *(Available Feb 13)*
+- <a href="https://securebase.io/whitepaper">Security Whitepaper</a> *(Available Feb 12)*
 
 ---
 
@@ -255,7 +255,7 @@ A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available 
 
 **Security**  
 📧 security@securebase.io  
-🔒 <a>Responsible Disclosure Policy</a>
+🔒 <a href="https://securebase.io/security/responsible-disclosure">Responsible Disclosure Policy</a>
 
 **Office Hours**  
 Monday - Friday, 9 AM - 5 PM ET
@@ -292,7 +292,7 @@ Monday - Friday, 9 AM - 5 PM ET
 
 **Choose your path:**
 
-<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a>💬 Email Sales</a>
+<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a href="mailto:sales@securebase.io">💬 Email Sales</a>
 
 ---
 
@@ -309,7 +309,7 @@ Monday - Friday, 9 AM - 5 PM ET
 **Next Milestone:** Phase 4 Production Release (March 21, 2026)  
 **Production Status:** Phase 2 backend live since January 26, 2026
 
-<a>📊 View Detailed Status</a>
+<a href="https://securebase.io/status">📊 View Detailed Status</a>
 
 ---
 
@@ -323,7 +323,7 @@ If SecureBase helps you deploy compliant infrastructure faster, please star this
 
 ## 📄 Legal
 
-<a>Privacy Policy</a> | <a>Terms of Service</a> | <a>Security Policy</a> | <a>DPA</a>
+<a href="https://securebase.io/privacy">Privacy Policy</a> | <a href="https://securebase.io/terms">Terms of Service</a> | <a href="https://securebase.io/security">Security Policy</a> | <a href="https://securebase.io/dpa">DPA</a>
 
 ---
 
