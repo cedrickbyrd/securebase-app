@@ -32,7 +32,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** Yes! We offer a 30-day free trial with full access to all features in your selected tier. No credit card required to start. You can deploy infrastructure, test compliance controls, and explore the customer portal completely free for 30 days.
 
 ### 8. **Q: How long does deployment take?**
-**A:** Typically 7-10 minutes from signup to fully deployed infrastructure. This includes AWS Organization setup, dedicated customer accounts, IAM Identity Center (SSO) configuration, centralized logging (CloudTrail, Config, GuardDuty), and customer portal access. Complex configurations with white-label branding may take up to 1 hour.
+**A:** Typically 7-10 minutes from signup to fully deployed infrastructure. This includes AWS Organization setup, dedicated customer accounts, IAM Identity Center (SSO) configuration, centralized logging (CloudTrail, Config, GuardDuty), and customer portal access. Standard deployments are fully automated and complete in under 10 minutes.
 
 ---
 
@@ -51,7 +51,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** Each customer gets a dedicated AWS account within your Organization, providing account-level isolation (strongest AWS boundary). We use Service Control Policies (SCPs) to enforce guardrails, VPC isolation for network segmentation, and IAM roles with least-privilege access. Customer data in our portal uses row-level security (RLS) in PostgreSQL to ensure complete data isolation.
 
 ### 13. **Q: Can I customize the infrastructure?**
-**A:** Yes. All SecureBase infrastructure is deployed as Terraform code, which you can export and customize. Changes can be requested through our support team, or you can extend the infrastructure yourself. For advanced customization, we recommend the Healthcare or Government tiers, which include white-label capabilities and dedicated support.
+**A:** Yes. All SecureBase infrastructure is deployed as Terraform code, which you can export and customize. Changes can be requested through our support team, or you can extend the infrastructure yourself. For advanced customization, we recommend the Healthcare or Government tiers, which include upcoming white-label capabilities (Q1 2026) and dedicated support.
 
 ### 14. **Q: What if I outgrow SecureBase?**
 **A:** You can export your complete Terraform configuration at any time and run the infrastructure independently. We provide 30 days of transition support to ensure a smooth handoff. Many customers choose to stay with SecureBase long-term because we continuously update the infrastructure, maintain compliance, and handle all operational overhead.
@@ -104,7 +104,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** No. SecureBase has zero setup fees, ever. Your monthly or annual subscription includes everything: deployment, onboarding, training, and ongoing support. We make money when you succeed, not from upfront charges.
 
 ### 28. **Q: Can I change tiers?**
-**A:** Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades take effect at the start of your next billing cycle. Contact support to initiate a tier change. Note: Downgrading may require removing features (e.g., white-label branding, extra users) to meet lower tier limits.
+**A:** Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades take effect at the start of your next billing cycle. Contact support to initiate a tier change. Note: Downgrading may require adjusting configuration to meet lower tier limits (e.g., reducing customer environments, storage usage).
 
 ### 29. **Q: What payment methods do you accept?**
 **A:** We accept credit cards (Visa, Mastercard, Amex), ACH direct debit (US only), and wire transfers (international). Annual contracts qualify for Net 30 invoice terms. All payments are processed securely via Stripe.
