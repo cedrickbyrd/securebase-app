@@ -64,7 +64,20 @@
 **Product Demo** (3 minutes)  
 *[Demo video placeholder - Recording scheduled for Feb 3]*
 
-🖥️ **[Try Live Demo](https://demo.securebase.io)** - Pre-populated environment, no signup required
+### 🖥️ Try Live Demo
+
+**Experience SecureBase without signing up:**
+
+[🚀 Launch Live Demo](http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com)
+
+**What's included:**
+- ✅ Pre-populated with 5 sample customers
+- ✅ Full portal functionality (read-only)
+- ✅ Explore invoices, compliance, API keys, and more
+- ✅ No credit card required
+- ✅ Data resets every 24 hours
+
+**Ready to deploy your own?** [Start Free Trial](https://portal.securebase.io/signup)
 
 ---
 
