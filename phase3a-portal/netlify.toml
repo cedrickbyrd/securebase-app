@@ -1,0 +1,17 @@
+[build]
+  base = "phase3a-portal"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  VITE_USE_MOCK_API = "true"
+  VITE_ENV = "demo"
+  VITE_ANALYTICS_ENABLED = "false"

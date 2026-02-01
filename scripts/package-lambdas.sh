@@ -9,8 +9,9 @@ echo "================================"
 
 # Variables
 REGION="us-east-1"
-FUNCTIONS_DIR="/workspaces/securebase-app/phase2-backend/functions"
-DEPLOY_DIR="/workspaces/securebase-app/phase2-backend/deploy"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FUNCTIONS_DIR="$ROOT/phase2-backend/functions"
+DEPLOY_DIR="$ROOT/phase2-backend/deploy"
 
 # Create deployment directory
 mkdir -p "$DEPLOY_DIR"
