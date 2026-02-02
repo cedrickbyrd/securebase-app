@@ -90,7 +90,7 @@ jobs:
       - name: Install Phase 3a Portal dependencies
         run: |
           cd phase3a-portal
-          npm ci
+          npm install
 
       - name: Run ESLint (Phase 3a Portal)
         run: |
@@ -162,12 +162,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'phase3a-portal/package-lock.json'
 
       - name: Install dependencies
         run: |
           cd phase3a-portal
-          npm ci
+          npm install
 
       - name: Run component tests
         run: |
@@ -219,7 +218,7 @@ jobs:
       - name: Install Phase 3a Portal dependencies
         run: |
           cd phase3a-portal
-          npm ci
+          npm install
 
       - name: Build Phase 3a Portal
         run: |

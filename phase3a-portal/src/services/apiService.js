@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.securebase.dev';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.dev';
 const TIMEOUT = 30000;
 
 class ApiService {
@@ -172,28 +172,6 @@ class ApiService {
   }
 
   /**
-   * Support Tickets
-   */
-
-  async getSupportTickets(params = {}) {
-    return this.client.get('/support/tickets', { params });
-  }
-
-  async createSupportTicket(data) {
-    return this.client.post('/support/tickets/create', data);
-  }
-
-  async updateSupportTicket(ticketId, data) {
-    return this.client.patch(`/support/tickets/${ticketId}`, data);
-  }
-
-  async addTicketComment(ticketId, comment) {
-    return this.client.post(`/support/tickets/${ticketId}/comments`, {
-      comment,
-    });
-  }
-
-  /**
    * Customer Profile
    */
 
@@ -203,20 +181,6 @@ class ApiService {
 
   async updateCustomerProfile(data) {
     return this.client.patch('/customer/profile', data);
-  }
-
-  /**
-   * Notifications
-   */
-
-  async getNotifications(params = {}) {
-    return this.client.get('/notifications', { params });
-  }
-
-  async markNotificationAsRead(notificationId) {
-    return this.client.patch(`/notifications/${notificationId}`, {
-      read: true,
-    });
   }
 
   /**

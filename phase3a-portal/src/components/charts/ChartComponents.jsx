@@ -112,7 +112,7 @@ export const CostBreakdownChart = ({ data, dataKey = 'cost', categoryKey = 'name
  * Service Distribution Pie Chart
  * Show percentage breakdown of costs, usage, etc.
  */
-export const DistributionPieChart = ({ data, dataKey = 'value', nameKey = 'name', title, height = 300 }) => {
+export const DistributionPieChart = ({ data, dataKey = 'value', title, height = 300 }) => {
   return (
     <div>
       {title && <h4 className="text-lg font-semibold mb-4">{title}</h4>}
@@ -182,7 +182,7 @@ export const UsageTrendsChart = ({ data, dataKeys, title, height = 300 }) => {
  * Compliance Score Gauge
  * Radial bar chart showing compliance percentage
  */
-export const ComplianceGauge = ({ score, title, height = 200 }) => {
+export const ComplianceGauge = ({ score, title }) => {
   const data = [{ name: 'Score', value: score, fill: score >= 90 ? COLORS.success : score >= 70 ? COLORS.warning : COLORS.error }];
   
   return (
