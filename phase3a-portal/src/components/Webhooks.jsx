@@ -27,7 +27,6 @@ const Webhooks = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeliveriesModal, setShowDeliveriesModal] = useState(false);
-  const [selectedWebhook, setSelectedWebhook] = useState(null);
   const [newWebhook, setNewWebhook] = useState({
     url: '',
     description: '',

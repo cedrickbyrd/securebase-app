@@ -290,7 +290,7 @@ export function handleSummary(data) {
 }
 
 function generateTextSummary(data, options) {
-  const { indent = '', enableColors = false } = options;
+  const { indent = '' } = options;
   
   let summary = '\n';
   summary += `${indent}=== Load Test Summary ===\n`;

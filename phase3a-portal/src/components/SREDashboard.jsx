@@ -62,9 +62,7 @@ ChartJS.register(
 const SREDashboard = () => {
   const [timeRange, setTimeRange] = useState('1h');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [selectedService, setSelectedService] = useState('all');
 
   // Infrastructure health state
   const [infrastructureMetrics, setInfrastructureMetrics] = useState({
@@ -322,19 +320,6 @@ const SREDashboard = () => {
     if (trend === 'up') return <TrendingUp className="w-4 h-4 text-red-500" />;
     if (trend === 'down') return <TrendingDown className="w-4 h-4 text-green-500" />;
     return <Activity className="w-4 h-4 text-gray-500" />;
-  };
-
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const formatDuration = (ms) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(2)}s`;
   };
 
   /**

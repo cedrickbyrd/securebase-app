@@ -25,7 +25,6 @@ import { analyticsService } from '../services/analyticsService';
 export const ReportBuilder = ({ onSave, initialReport = null }) => {
   const [reportName, setReportName] = useState(initialReport?.name || '');
   const [description, setDescription] = useState(initialReport?.description || '');
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [selectedFields, setSelectedFields] = useState(initialReport?.fields || []);
   const [selectedFilters, setSelectedFilters] = useState(initialReport?.filters || {});
@@ -136,7 +135,7 @@ export const ReportBuilder = ({ onSave, initialReport = null }) => {
   };
 
   const handleRemoveFilter = (filterId) => {
-    const { [filterId]: removed, ...remaining } = selectedFilters;
+    const { [filterId]: _removed, ...remaining } = selectedFilters;
     setSelectedFilters(remaining);
   };
 

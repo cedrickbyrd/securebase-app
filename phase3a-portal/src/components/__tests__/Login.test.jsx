@@ -76,6 +76,7 @@ describe('Login Component', () => {
   });
 
   it('should display error message on login failure', async () => {
+    // eslint-disable-next-line no-unused-vars
     const { login } = await import('../../services/apiService');
     
     renderWithRouter(<Login />);
