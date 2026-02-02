@@ -53,8 +53,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **SOC 2 Type II controls** - 200+ automated compliance checks  
 ✅ **Advanced security monitoring** - Security Hub with real-time alerts  
 ✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
-✅ **Advanced analytics dashboard** - Usage metrics, cost breakdowns  
-✅ **Custom reports** - CSV, PDF, Excel, JSON export formats  
+🚀 **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying Feb 2026)*  
+🚀 **Custom reports** - CSV, PDF, Excel, JSON export formats *(Deploying Feb 2026)*  
 ✅ **Priority Slack support** - 4-hour response time  
 ✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
 ✅ **Up to 50 customer environments** - Scale to hundreds of customers
@@ -132,8 +132,8 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 ✅ **Dedicated infrastructure options** - Isolated compute and storage  
 ✅ **FIPS 140-2 validated encryption** - Government-grade cryptography  
 ✅ **Weekly compliance reports** - Real-time security posture monitoring  
-✅ **SSO/SAML integration** - Okta, Azure AD, Google Workspace  
-✅ **IP whitelisting and geo-restrictions** - Network access controls  
+🔜 **SSO/SAML integration** - Okta, Azure AD, Google Workspace - *Available Q1 2026 (Mar 10)*  
+🔜 **IP whitelisting and geo-restrictions** - Network access controls - *Available Q1 2026 (Mar 10)*  
 🔜 **Unlimited users** - No per-user charges - *Available Q1 2026*  
 ✅ **24/7 phone support** - 1-hour critical issue response  
 🚀 **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
@@ -176,15 +176,15 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **AWS Config** | ✅ | ✅ | ✅ | ✅ |
 | **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
 | **Security Hub** | ❌ | ✅ | ✅ | ✅ |
-| **Advanced Analytics** | ❌ | ✅ | ✅ | ✅ |
+| **Advanced Analytics** | ❌ | 🚀 Feb 2026 | 🚀 Feb 2026 | 🚀 Feb 2026 |
 | **Team Collaboration (RBAC)** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
 | **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
-| **Custom Reports** | ❌ | ✅ | ✅ | ✅ |
+| **Custom Reports** | ❌ | 🚀 Feb 2026 | 🚀 Feb 2026 | 🚀 Feb 2026 |
 | **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
 | **White-Label Branding** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
 | **Custom Domain** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
-| **SSO/SAML Integration** | ❌ | ❌ | ❌ | ✅ (Okta, Azure AD, Google) |
-| **IP Whitelisting** | ❌ | ❌ | ❌ | ✅ |
+| **SSO/SAML Integration** | ❌ | ❌ | ❌ | 🔜 Q1 2026 (Okta, Azure AD, Google) |
+| **IP Whitelisting** | ❌ | ❌ | ❌ | 🔜 Q1 2026 |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
 | **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
 | **Uptime SLA** | 99.5% | 99.8% | 99.9% | 🚀 Q2 2026 (99.95%) |
@@ -194,7 +194,9 @@ Choose your tier based on your compliance needs. All tiers include multi-tenant 
 | **Onboarding Hours** | 2 hours | 4 hours | 8 hours | 16 hours |
 | **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
 
-* Team Collaboration & RBAC features are currently in development and will be available in Q1 2026 (target: February 28, 2026). Early adopters will receive complimentary onboarding and training when the feature launches.
+* **Advanced Analytics & Custom Reports**: Code complete and deployment-ready. Production deployment scheduled for February 2026. Early adopters will receive complimentary onboarding when the feature launches.
+* **Team Collaboration & RBAC**: Currently in development (5% complete) with planned launch on February 28, 2026. Includes user management, role-based access control, and audit logging. Early adopters will receive complimentary onboarding and training when the feature launches.
+* **99.95% Uptime SLA**: Requires Phase 5 multi-region deployment (May-June 2026). Current SLA is 99.9% with multi-AZ infrastructure in us-east-1.
 
 ---
 
