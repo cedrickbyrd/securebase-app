@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Stripe integration for payment (loaded dynamically when needed)
+// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const TIERS = {
   standard: {

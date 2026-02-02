@@ -89,7 +89,7 @@ const SSOConfiguration = () => {
       await api.delete(`/auth/sso/providers/${providerId}`);
       setSuccess('SSO provider disabled');
       loadProviders();
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to disable SSO provider');
     }
   };

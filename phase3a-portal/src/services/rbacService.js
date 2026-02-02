@@ -24,18 +24,18 @@ const getAuthToken = () => {
  * Make authenticated API request
  * @private
  */
-const apiRequest = async (endpoint, options = {}) => {
+const apiRequest = async (_endpoint, _options = {}) => {
   // TODO: Implement API request wrapper with auth headers
   const token = getAuthToken();
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...options.headers,
+    ..._options.headers,
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
+    const response = await fetch(`${API_BASE_URL}${_endpoint}`, {
+      ..._options,
       headers,
     });
 
@@ -61,7 +61,7 @@ const apiRequest = async (endpoint, options = {}) => {
  * 
  * TODO: Implement user listing with filters
  */
-export const getUsers = async (filters = {}) => {
+export const getUsers = async (_filters = {}) => {
   // TODO: Build query string from filters
   // const queryString = new URLSearchParams(filters).toString();
   // return apiRequest(`/users?${queryString}`);
@@ -76,7 +76,7 @@ export const getUsers = async (filters = {}) => {
  * 
  * TODO: Implement single user fetch
  */
-export const getUser = async (userId) => {
+export const getUser = async (_userId) => {
   // return apiRequest(`/users/${userId}`);
   
   throw new Error('TODO: Implement getUser()');
@@ -89,7 +89,7 @@ export const getUser = async (userId) => {
  * 
  * TODO: Implement user creation
  */
-export const createUser = async (userData) => {
+export const createUser = async (_userData) => {
   // return apiRequest('/users', {
   //   method: 'POST',
   //   body: JSON.stringify(userData),
@@ -106,7 +106,7 @@ export const createUser = async (userData) => {
  * 
  * TODO: Implement user update
  */
-export const updateUser = async (userId, updates) => {
+export const updateUser = async (_userId, _updates) => {
   // return apiRequest(`/users/${userId}`, {
   //   method: 'PUT',
   //   body: JSON.stringify(updates),
@@ -123,7 +123,7 @@ export const updateUser = async (userId, updates) => {
  * 
  * TODO: Implement role update
  */
-export const updateUserRole = async (userId, newRole) => {
+export const updateUserRole = async (_userId, _newRole) => {
   // return apiRequest(`/users/${userId}/role`, {
   //   method: 'PUT',
   //   body: JSON.stringify({ role: newRole }),
@@ -139,7 +139,7 @@ export const updateUserRole = async (userId, newRole) => {
  * 
  * TODO: Implement user deletion
  */
-export const deleteUser = async (userId) => {
+export const deleteUser = async (_userId) => {
   // return apiRequest(`/users/${userId}`, {
   //   method: 'DELETE',
   // });
@@ -154,7 +154,7 @@ export const deleteUser = async (userId) => {
  * 
  * TODO: Implement password reset
  */
-export const resetUserPassword = async (userId) => {
+export const resetUserPassword = async (_userId) => {
   // return apiRequest(`/users/${userId}/reset-password`, {
   //   method: 'POST',
   // });
@@ -169,7 +169,7 @@ export const resetUserPassword = async (userId) => {
  * 
  * TODO: Implement account unlock
  */
-export const unlockUser = async (userId) => {
+export const unlockUser = async (_userId) => {
   // return apiRequest(`/users/${userId}/unlock`, {
   //   method: 'POST',
   // });
@@ -189,7 +189,7 @@ export const unlockUser = async (userId) => {
  * 
  * TODO: Implement login
  */
-export const login = async (email, password) => {
+export const login = async (_email, _password) => {
   // return apiRequest('/auth/login', {
   //   method: 'POST',
   //   body: JSON.stringify({ email, password }),
@@ -206,7 +206,7 @@ export const login = async (email, password) => {
  * 
  * TODO: Implement MFA verification
  */
-export const verifyMFA = async (sessionId, mfaCode) => {
+export const verifyMFA = async (_sessionId, _mfaCode) => {
   // return apiRequest('/auth/mfa/verify', {
   //   method: 'POST',
   //   body: JSON.stringify({ session_id: sessionId, mfa_code: mfaCode }),
@@ -222,7 +222,7 @@ export const verifyMFA = async (sessionId, mfaCode) => {
  * 
  * TODO: Implement MFA setup
  */
-export const setupMFA = async (userId) => {
+export const setupMFA = async (_userId) => {
   // return apiRequest(`/users/${userId}/mfa/setup`, {
   //   method: 'POST',
   // });
@@ -274,7 +274,7 @@ export const getRoles = async () => {
  * 
  * TODO: Implement permissions fetch
  */
-export const getUserPermissions = async (userId) => {
+export const getUserPermissions = async (_userId) => {
   // return apiRequest(`/users/${userId}/permissions`);
   
   throw new Error('TODO: Implement getUserPermissions()');
@@ -288,7 +288,7 @@ export const getUserPermissions = async (userId) => {
  * 
  * TODO: Implement permission check
  */
-export const hasPermission = (resourceType, action) => {
+export const hasPermission = (_resourceType, _action) => {
   // TODO: Check user permissions from token or cached data
   // const userRole = getCurrentUserRole();
   // return checkRolePermission(userRole, resourceType, action);
@@ -308,7 +308,7 @@ export const hasPermission = (resourceType, action) => {
  * 
  * TODO: Implement audit log fetch
  */
-export const getAuditLogs = async (filters = {}, page = 1) => {
+export const getAuditLogs = async (_filters = {}, _page = 1) => {
   // const queryString = new URLSearchParams({ ...filters, page }).toString();
   // return apiRequest(`/activity?${queryString}`);
   
@@ -323,7 +323,7 @@ export const getAuditLogs = async (filters = {}, page = 1) => {
  * 
  * TODO: Implement audit log export
  */
-export const exportAuditLogs = async (format, filters = {}) => {
+export const exportAuditLogs = async (_format, _filters = {}) => {
   // const queryString = new URLSearchParams({ ...filters, format }).toString();
   // const response = await fetch(`${API_BASE_URL}/activity/export?${queryString}`, {
   //   headers: { 'Authorization': `Bearer ${getAuthToken()}` },
@@ -371,7 +371,7 @@ export const getCurrentUserRole = () => {
  * 
  * TODO: Implement secure token storage
  */
-export const storeAuthToken = (token) => {
+export const storeAuthToken = (_token) => {
   // localStorage.setItem('auth_token', token);
   // TODO: Consider using httpOnly cookies for better security
 };

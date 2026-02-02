@@ -3,7 +3,7 @@
  * Phase 4: Advanced Analytics & Reporting
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Analytics } from '../Analytics';
 
