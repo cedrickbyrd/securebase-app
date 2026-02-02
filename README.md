@@ -321,6 +321,38 @@ If SecureBase helps you deploy compliant infrastructure faster, please star this
 
 ---
 
+## 👨‍💻 For Developers
+
+### Phase 4 Component 2: Team Collaboration & RBAC
+
+Deploy multi-user team collaboration with role-based access control:
+
+```bash
+# Full deployment (first time)
+./deploy-phase4-component2.sh
+
+# Quick redeploy (code updates only)
+./redeploy-phase4-component2.sh
+
+# Validate deployment
+./validate-phase4-component2.sh
+```
+
+**What gets deployed:**
+- 3 DynamoDB tables (user-sessions, user-invites, activity-feed)
+- 3 Lambda functions (user-management, session-management, permission-management)
+- IAM roles and policies
+- CloudWatch log groups
+- JWT secret in Secrets Manager
+
+**Documentation:**
+- 📖 **[Full Deployment Guide](DEPLOY_PHASE4_COMPONENT2.md)** - Complete setup instructions
+- ⚡ **[Quick Reference](PHASE4_COMPONENT2_QUICK_REFERENCE.md)** - Common commands and troubleshooting
+- 📋 **[API Reference](docs/TEAM_MANAGEMENT_API.md)** - API endpoints
+- 🔒 **[Permission Matrix](docs/RBAC_PERMISSION_MATRIX.md)** - Role permissions
+
+---
+
 ## 📄 Legal
 
 <a href="https://securebase.io/privacy">Privacy Policy</a> | <a href="https://securebase.io/terms">Terms of Service</a> | <a href="https://securebase.io/security">Security Policy</a> | <a href="https://securebase.io/dpa">DPA</a>
