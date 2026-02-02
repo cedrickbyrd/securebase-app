@@ -3,7 +3,7 @@
  * Handles real-time connections for notifications and updates
  */
 
-const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || 'wss://ws.securebase.dev';
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'wss://ws.securebase.dev';
 const RECONNECT_INTERVAL = 3000;
 const RECONNECT_MAX_RETRIES = 10;
 
