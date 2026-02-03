@@ -89,6 +89,62 @@ variable "analytics_lambda_invoke_arn" {
   default     = null
 }
 
+# RBAC Lambda Functions (Phase 4 Component 2)
+
+variable "user_management_lambda_arn" {
+  description = "ARN of the user management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "user_management_lambda_name" {
+  description = "Name of the user management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "user_management_lambda_invoke_arn" {
+  description = "Invoke ARN of the user management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "session_management_lambda_arn" {
+  description = "ARN of the session management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "session_management_lambda_name" {
+  description = "Name of the session management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "session_management_lambda_invoke_arn" {
+  description = "Invoke ARN of the session management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "permission_management_lambda_arn" {
+  description = "ARN of the permission management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "permission_management_lambda_name" {
+  description = "Name of the permission management Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "permission_management_lambda_invoke_arn" {
+  description = "Invoke ARN of the permission management Lambda function"
+  type        = string
+  default     = null
+}
+
 # ============================================================================
 # Security and Performance Settings
 # ============================================================================
