@@ -43,6 +43,11 @@ output "rds_admin_secret_arn" {
   value       = aws_secretsmanager_secret.rds_admin_password.arn
 }
 
+output "database_secret_arn" {
+  description = "ARN of database application user secret (for Lambda functions)"
+  value       = aws_secretsmanager_secret.rds_admin_password.arn
+}
+
 output "kms_key_id" {
   description = "KMS key ID for RDS/data encryption"
   value       = aws_kms_key.rds.key_id
