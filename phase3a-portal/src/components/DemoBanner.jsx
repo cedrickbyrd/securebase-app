@@ -2,10 +2,10 @@ import React from 'react';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 
 const DemoBanner = () => {
-  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
-  const showBanner = import.meta.env.VITE_SHOW_DEMO_BANNER === 'true';
+  // Show banner when using mock API (demo mode)
+  const isDemoMode = import.meta.env.VITE_USE_MOCK_API === 'true';
   
-  if (!demoMode || !showBanner) return null;
+  if (!isDemoMode) return null;
 
   const trialUrl = import.meta.env.VITE_DEMO_CTA_TRIAL_URL || 'https://portal.securebase.io/signup';
   const bookDemoUrl = import.meta.env.VITE_DEMO_CTA_BOOK_DEMO_URL || 'https://calendly.com/securebase/demo';

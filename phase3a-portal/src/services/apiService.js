@@ -1,14 +1,17 @@
 /**
  * API Service Layer
  * Handles all communication with SecureBase Phase 2 backend APIs
+ * Supports demo mode with mock data for public demonstrations
  */
 
 import axios from 'axios';
+import { MockApiService } from '../mocks/MockApiService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.dev';
 const TIMEOUT = 30000;
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
-class ApiService {
+class RealApiService {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
@@ -385,4 +388,8 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService();
+// Export the appropriate service based on environment
+export const apiService = USE_MOCK_API ? new MockApiService() : new RealApiService();
+
+// Also export for testing/debugging
+export { RealApiService, MockApiService };
