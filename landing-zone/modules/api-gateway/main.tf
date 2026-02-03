@@ -441,6 +441,240 @@ resource "aws_lambda_permission" "analytics_api_gateway" {
 }
 
 # ============================================================================
+# RBAC/Team Management API Routes (Phase 4 Component 2)
+# ============================================================================
+
+# /users resource
+resource "aws_api_gateway_resource" "users" {
+  count       = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "users"
+}
+
+# GET /users - List users
+resource "aws_api_gateway_method" "users_get" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.users[0].id
+  http_method   = "GET"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "users_get" {
+  count                   = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.users[0].id
+  http_method             = aws_api_gateway_method.users_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.user_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.user_management_lambda_arn}/invocations" : ""
+}
+
+# POST /users - Create user
+resource "aws_api_gateway_method" "users_post" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.users[0].id
+  http_method   = "POST"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "users_post" {
+  count                   = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.users[0].id
+  http_method             = aws_api_gateway_method.users_post[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.user_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.user_management_lambda_arn}/invocations" : ""
+}
+
+# /users/{id} resource
+resource "aws_api_gateway_resource" "user_id" {
+  count       = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.users[0].id
+  path_part   = "{id}"
+}
+
+# GET /users/{id} - Get user details
+resource "aws_api_gateway_method" "user_id_get" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.user_id[0].id
+  http_method   = "GET"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "user_id_get" {
+  count                   = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.user_id[0].id
+  http_method             = aws_api_gateway_method.user_id_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.user_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.user_management_lambda_arn}/invocations" : ""
+}
+
+# PUT /users/{id} - Update user
+resource "aws_api_gateway_method" "user_id_put" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.user_id[0].id
+  http_method   = "PUT"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "user_id_put" {
+  count                   = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.user_id[0].id
+  http_method             = aws_api_gateway_method.user_id_put[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.user_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.user_management_lambda_arn}/invocations" : ""
+}
+
+# DELETE /users/{id} - Delete user
+resource "aws_api_gateway_method" "user_id_delete" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.user_id[0].id
+  http_method   = "DELETE"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "user_id_delete" {
+  count                   = var.user_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.user_id[0].id
+  http_method             = aws_api_gateway_method.user_id_delete[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.user_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.user_management_lambda_arn}/invocations" : ""
+}
+
+# Lambda permission for user management API
+resource "aws_lambda_permission" "user_management_api_gateway" {
+  count         = var.user_management_lambda_name != null ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = var.user_management_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+
+# /auth/login resource for session management
+resource "aws_api_gateway_resource" "auth_login" {
+  count       = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "login"
+}
+
+# POST /auth/login - User login
+resource "aws_api_gateway_method" "auth_login_post" {
+  count         = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.auth_login[0].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "auth_login_post" {
+  count                   = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.auth_login[0].id
+  http_method             = aws_api_gateway_method.auth_login_post[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.session_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.session_management_lambda_arn}/invocations" : ""
+}
+
+# /auth/mfa resource
+resource "aws_api_gateway_resource" "auth_mfa" {
+  count       = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "mfa"
+}
+
+# POST /auth/mfa - MFA verification
+resource "aws_api_gateway_method" "auth_mfa_post" {
+  count         = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.auth_mfa[0].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "auth_mfa_post" {
+  count                   = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.auth_mfa[0].id
+  http_method             = aws_api_gateway_method.auth_mfa_post[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.session_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.session_management_lambda_arn}/invocations" : ""
+}
+
+# Lambda permission for session management API
+resource "aws_lambda_permission" "session_management_api_gateway" {
+  count         = var.session_management_lambda_name != null ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = var.session_management_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+
+# /activity resource for activity feed
+# Note: Uses permission_management Lambda which handles both permission checks
+# and activity feed queries (activity_feed.py deployment artifact)
+resource "aws_api_gateway_resource" "activity" {
+  count       = var.permission_management_lambda_name != null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "activity"
+}
+
+# GET /activity - Get activity feed
+resource "aws_api_gateway_method" "activity_get" {
+  count         = var.permission_management_lambda_name != null ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.activity[0].id
+  http_method   = "GET"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
+}
+
+resource "aws_api_gateway_integration" "activity_get" {
+  count                   = var.permission_management_lambda_name != null ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.activity[0].id
+  http_method             = aws_api_gateway_method.activity_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.permission_management_lambda_invoke_arn != null ? "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.permission_management_lambda_arn}/invocations" : ""
+}
+
+# Lambda permission for activity feed API
+resource "aws_lambda_permission" "permission_management_api_gateway" {
+  count         = var.permission_management_lambda_name != null ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = var.permission_management_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+
+# ============================================================================
 # CORS Configuration
 # ============================================================================
 
@@ -477,6 +711,31 @@ module "cors_forecasting" {
 
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.forecasting.id
+}
+
+# CORS for RBAC endpoints
+module "cors_users" {
+  count  = var.user_management_lambda_name != null ? 1 : 0
+  source = "./cors"
+
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.users[0].id
+}
+
+module "cors_auth_login" {
+  count  = var.session_management_lambda_name != null ? 1 : 0
+  source = "./cors"
+
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.auth_login[0].id
+}
+
+module "cors_activity" {
+  count  = var.permission_management_lambda_name != null ? 1 : 0
+  source = "./cors"
+
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.activity[0].id
 }
 
 # ============================================================================
