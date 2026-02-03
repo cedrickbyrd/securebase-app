@@ -21,7 +21,7 @@ import {
   Send,
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
-import { formatDate, formatRelativeTime } from '../utils/formatters';
+import { formatRelativeTime } from '../utils/formatters';
 
 export const SupportTickets = () => {
   const [tickets, setTickets] = useState([]);

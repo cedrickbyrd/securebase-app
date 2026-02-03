@@ -74,21 +74,22 @@ securebase-app/
 
 ### 2.2 Platform-Specific Configurations
 
-#### ❌ **MISSING: Vercel/Netlify/Heroku Configs**
+#### ✅ **AVAILABLE: Vercel/Netlify Configs**
 
-**Not Found:**
-- `vercel.json` - Vercel configuration
-- `netlify.toml` - Netlify configuration  
-- `Procfile` - Heroku configuration
-- `app.json` - Heroku app manifest
-- `Dockerfile` - Container deployment
-- `docker-compose.yml` - Local/container orchestration
-
-**Available:**
+**Available Deployment Configurations:**
+- ✅ `vercel.json` - Vercel configuration (root marketing site)
+- ✅ `netlify.toml` - Netlify configuration (root marketing site)
+- ✅ `phase3a-portal/netlify.toml` - Netlify configuration (customer portal)
 - ✅ `package.json` (root) - npm scripts defined
 - ✅ `package.json` (phase3a-portal) - build scripts ready
 - ✅ `vite.config.js` (both) - Vite build configs
 - ✅ `.github/workflows/` - GitHub Actions CI/CD
+
+**Not Available (Not Needed):**
+- `Procfile` - Heroku configuration (not recommended)
+- `app.json` - Heroku app manifest (not recommended)
+- `Dockerfile` - Container deployment (AWS-based backend)
+- `docker-compose.yml` - Local/container orchestration
 
 ---
 

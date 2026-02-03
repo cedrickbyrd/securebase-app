@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Invoices } from '../Invoices';
 
 // Mock the API service
@@ -68,6 +68,7 @@ describe('Invoices Component', () => {
   });
 
   it('should download invoice when download button is clicked', async () => {
+    // eslint-disable-next-line no-unused-vars
     const { downloadInvoice } = await import('../../services/apiService');
     
     render(<Invoices />);
