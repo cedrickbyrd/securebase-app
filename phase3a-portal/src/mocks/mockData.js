@@ -145,7 +145,7 @@ export const mockApiKeys = [
     status: "active",
     masked_key: "sk_demo_***...***abc123",
     key_prefix: "sk_demo_prod",
-    permissions: ["read", "write"],
+    scopes: ["read", "write"],
     usage_count: 45678,
     environment: "production"
   },
@@ -158,7 +158,7 @@ export const mockApiKeys = [
     status: "active",
     masked_key: "sk_demo_***...***xyz789",
     key_prefix: "sk_demo_test",
-    permissions: ["read"],
+    scopes: ["read"],
     usage_count: 12345,
     environment: "testing"
   }
