@@ -279,7 +279,7 @@ MFA verification timing:
 }
 ```
 
-### Relaxed configuration (minimum compliance):
+### Relaxed configuration (development/testing only):
 
 ```json
 {
@@ -287,10 +287,13 @@ MFA verification timing:
     "admin_required": true,
     "manager_required": false,
     "analyst_required": false,
-    "viewer_required": false
+    "viewer_required": false,
+    "grace_period_hours": 168  // 7 days for development
   }
 }
 ```
+
+**Note:** Relaxed configuration is only for development environments. Production should use standard or high-security configuration.
 
 ## API Endpoints
 

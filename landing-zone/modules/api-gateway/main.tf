@@ -635,6 +635,8 @@ resource "aws_lambda_permission" "session_management_api_gateway" {
 }
 
 # /activity resource for activity feed
+# Note: Uses permission_management Lambda which handles both permission checks
+# and activity feed queries (activity_feed.py deployment artifact)
 resource "aws_api_gateway_resource" "activity" {
   count       = var.permission_management_lambda_name != null ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
