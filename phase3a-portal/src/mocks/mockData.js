@@ -163,7 +163,32 @@ export const mockApiKeys = [
 
 export const mockCompliance = {
   score: 98,
-  framework: "HIPAA",
+  frameworks: [
+    {
+      id: "framework_hipaa",
+      name: "HIPAA",
+      description: "Health Insurance Portability and Accountability Act",
+      status: "passing",
+      passing_controls: 45,
+      total_controls: 45
+    },
+    {
+      id: "framework_cis",
+      name: "CIS AWS Foundations",
+      description: "Center for Internet Security AWS Foundations Benchmark",
+      status: "passing",
+      passing_controls: 38,
+      total_controls: 39
+    },
+    {
+      id: "framework_pci",
+      name: "PCI-DSS",
+      description: "Payment Card Industry Data Security Standard",
+      status: "warning",
+      passing_controls: 32,
+      total_controls: 35
+    }
+  ],
   last_scan: "2026-02-03T10:30:00Z",
   next_scan: "2026-02-04T10:30:00Z",
   findings: {
