@@ -3,7 +3,7 @@
  * Real-time notification center with WebSocket support
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bell,
   X,

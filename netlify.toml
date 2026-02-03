@@ -1,20 +1,19 @@
+# Netlify Configuration for SecureBase Marketing Site
+# This deploys the root marketing site to demo.securebase.io
+
 [build]
-  base = "phase3a-portal"
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_ENV = "demo"
 
+# SPA redirect - all routes serve index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[context.production.environment]
-  VITE_USE_MOCK_API = "true"
-  VITE_ENV = "demo"
-  VITE_ANALYTICS_ENABLED = "false"
 
 # Security Headers - Applied to all routes
 [[headers]]
@@ -23,12 +22,11 @@
     # Content Security Policy - Prevent XSS attacks
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com data:;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://*.securebase.io https://*.securebase.com wss://*.securebase.io;
-      frame-src 'self' https://js.stripe.com;
+      connect-src 'self' https://*.securebase.io https://*.securebase.com;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
@@ -66,10 +64,9 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-    # Keep security headers for static assets too
     X-Content-Type-Options = "nosniff"
 
-# No caching for service worker or index
+# No caching for index.html
 [[headers]]
   for = "/index.html"
   [headers.values]
