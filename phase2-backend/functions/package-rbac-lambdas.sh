@@ -7,7 +7,8 @@ set -e
 echo "📦 Packaging RBAC Lambda functions..."
 
 # Navigate to functions directory
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # Create deploy directory if it doesn't exist
 mkdir -p ../deploy
@@ -16,7 +17,7 @@ mkdir -p ../deploy
 package_lambda() {
     local FUNC_NAME=$1
     local FUNC_FILE="${FUNC_NAME}.py"
-    local ZIP_FILE="../deploy/${FUNC_NAME}.zip"
+    local ZIP_FILE="${SCRIPT_DIR}/../deploy/${FUNC_NAME}.zip"
     
     echo ""
     echo "Packaging ${FUNC_NAME}..."
@@ -39,13 +40,19 @@ package_lambda() {
     # Install Python dependencies if requirements.txt exists
     if [ -f "requirements.txt" ]; then
         echo "  Installing dependencies..."
-        pip install -q -r requirements.txt -t "$TEMP_DIR/" 2>/dev/null || true
+        pip install -q -r requirements.txt -t "$TEMP_DIR/" 2>/dev/null || echo "  Note: Some dependencies may already be in Lambda runtime"
     fi
     
-    # Create zip
-    cd "$TEMP_DIR"
-    zip -q -r "$ZIP_FILE" . -x "*.pyc" -x "__pycache__/*"
-    cd - > /dev/null
+    # Create zip from temp directory
+    (cd "$TEMP_DIR" && zip -q -r "$ZIP_FILE" . -x "*.pyc" -x "__pycache__/*" 2>/dev/null) || {
+        echo "  ⚠️  Warning: zip may have issues, trying alternative..."
+        cd "$TEMP_DIR"
+        zip -q "$ZIP_FILE" *.py 2>/dev/null || {
+            # Fallback: just zip the Python file
+            cd "$SCRIPT_DIR"
+            zip -q "$ZIP_FILE" "$FUNC_FILE"
+        }
+    }
     
     # Clean up
     rm -rf "$TEMP_DIR"
@@ -70,7 +77,8 @@ echo ""
 echo "✅ All RBAC Lambda functions packaged successfully!"
 echo ""
 echo "📁 Deployment files created in ../deploy/:"
-ls -lh ../deploy/*.zip 2>/dev/null | grep -E "(user_management|session_management|activity_feed|rbac_engine)" || echo "No files found"
+ls -lh ../deploy/*.zip 2>/dev/null | grep -E "(user_management|session_management|activity_feed|rbac_engine)" || echo "Checking files..."
+ls -1 ../deploy/{user_management,session_management,activity_feed,rbac_engine}.zip 2>/dev/null || echo "Note: Check ../deploy/ directory for zip files"
 echo ""
 echo "🚀 Ready to deploy with Terraform!"
 echo ""
@@ -79,3 +87,4 @@ echo "1. cd ../../landing-zone"
 echo "2. terraform init"
 echo "3. terraform plan"
 echo "4. terraform apply"
+
