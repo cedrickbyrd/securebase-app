@@ -103,7 +103,12 @@ export class MockApiService {
    */
   async getInvoices(params = {}) {
     return this.simulateCall({
-      data: mockInvoices
+      data: mockInvoices,
+      meta: {
+        total: mockInvoices.length,
+        page: params.page || 1,
+        limit: params.limit || 10
+      }
     });
   }
 
