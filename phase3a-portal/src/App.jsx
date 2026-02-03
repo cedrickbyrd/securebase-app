@@ -18,6 +18,7 @@ import {
   X,
   Bell,
   Activity,
+  Users,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Invoices from './components/Invoices';
@@ -26,6 +27,7 @@ import Compliance from './components/Compliance';
 import SupportTickets from './components/SupportTickets';
 import { Forecasting } from './components/Forecasting';
 import Webhooks from './components/Webhooks';
+import TeamManagement from './components/TeamManagement';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import AdminDashboard from './components/AdminDashboard';
@@ -45,6 +47,7 @@ const Navigation = ({ isOpen, setIsOpen }) => {
   // is the actual security boundary. Backend API must verify admin/executive roles.
   const userRole = localStorage.getItem('userRole') || 'customer';
   const isAdmin = userRole === 'admin' || userRole === 'executive';
+  const canManageTeam = isAdmin || userRole === 'manager';
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -55,6 +58,11 @@ const Navigation = ({ isOpen, setIsOpen }) => {
     { path: '/webhooks', label: 'Webhooks', icon: Webhook },
     { path: '/support', label: 'Support', icon: Ticket },
   ];
+
+  // Add team management for admin/manager roles
+  if (canManageTeam) {
+    navItems.push({ path: '/team', label: 'Team', icon: Users });
+  }
 
   // Add admin-only navigation items
   if (isAdmin) {
@@ -274,6 +282,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SupportTickets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team"
+              element={
+                <ProtectedRoute>
+                  <TeamManagement />
                 </ProtectedRoute>
               }
             />
