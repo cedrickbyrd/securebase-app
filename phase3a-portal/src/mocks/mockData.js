@@ -89,24 +89,30 @@ const generateInvoices = () => {
   ];
   
   const months = [
-    { year: 2026, month: 2, name: "February" },
-    { year: 2026, month: 1, name: "January" },
-    { year: 2025, month: 12, name: "December" },
-    { year: 2025, month: 11, name: "November" },
-    { year: 2025, month: 10, name: "October" },
-    { year: 2025, month: 9, name: "September" }
+    { year: 2026, month: 2, name: "February", days: 28 },
+    { year: 2026, month: 1, name: "January", days: 31 },
+    { year: 2025, month: 12, name: "December", days: 31 },
+    { year: 2025, month: 11, name: "November", days: 30 },
+    { year: 2025, month: 10, name: "October", days: 31 },
+    { year: 2025, month: 9, name: "September", days: 30 }
   ];
   
   const statuses = ["paid", "paid", "paid", "paid", "issued", "overdue", "draft"];
   
+  // Small dollar variance added to each invoice to make amounts more realistic
+  const INVOICE_VARIANCE = 10;
+  
   let invoiceCounter = 1;
   
-  months.forEach(({ year, month, name: monthName }) => {
+  months.forEach(({ year, month, name: monthName, days }) => {
     customers.forEach((customer, custIdx) => {
       const status = statuses[invoiceCounter % statuses.length];
       const dueDay = 15 + (invoiceCounter % 15);
       const dueMonth = month === 12 ? 1 : month + 1;
       const dueYear = month === 12 ? year + 1 : year;
+      
+      // Calculate paid date ensuring it doesn't exceed days in the month
+      const paidDay = Math.min(28 - (custIdx * 2), days);
       
       invoices.push({
         id: `inv_${year}_${String(month).padStart(2, '0')}_${customer.id}`,
@@ -114,13 +120,13 @@ const generateInvoices = () => {
         customer_id: customer.id,
         customer_name: customer.name,
         month: `${monthName} ${year}`,
-        total_amount: customer.amount + (invoiceCounter * 10),
+        total_amount: customer.amount + (invoiceCounter * INVOICE_VARIANCE),
         status: status,
         due_date: `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`,
-        paid_date: status === "paid" ? `${year}-${String(month).padStart(2, '0')}-${String(28 - (custIdx * 2)).padStart(2, '0')}` : null,
+        paid_date: status === "paid" ? `${year}-${String(month).padStart(2, '0')}-${String(paidDay).padStart(2, '0')}` : null,
         created_at: `${year}-${String(month).padStart(2, '0')}-01T00:00:00Z`,
         billing_period_start: `${year}-${String(month).padStart(2, '0')}-01`,
-        billing_period_end: `${year}-${String(month).padStart(2, '0')}-${month === 2 ? 28 : (month % 2 === 0 ? 30 : 31)}`,
+        billing_period_end: `${year}-${String(month).padStart(2, '0')}-${String(days).padStart(2, '0')}`,
         line_items: [
           { 
             description: "Base Platform Fee", 
