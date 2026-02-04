@@ -27,7 +27,7 @@ export const Dashboard = () => {
     monthlyUsage: {},
     recentInvoices: [],
     apiKeysCount: 0,
-    complianceStatus: [],
+    complianceStatus: '',
     pendingTickets: 0,
   });
 
@@ -52,6 +52,14 @@ export const Dashboard = () => {
         apiService.getSupportTickets({ status: 'open' }),
       ]);
 
+      console.log('📊 Dashboard data received:', {
+        metrics: metrics.data,
+        invoices: invoices.data,
+        apiKeys: apiKeys.data,
+        compliance: compliance.data,
+        tickets: tickets.data,
+      });
+
       setDashboardData({
         monthlyCharge: invoices.data[0]?.total_amount || 0,
         monthlyUsage: metrics.data,
@@ -59,6 +67,14 @@ export const Dashboard = () => {
         apiKeysCount: apiKeys.data.length,
         complianceStatus: compliance.data.status,
         pendingTickets: tickets.data.length,
+      });
+
+      console.log('✅ Dashboard state updated:', {
+        monthlyCharge: invoices.data[0]?.total_amount || 0,
+        apiKeysCount: apiKeys.data.length,
+        complianceStatus: compliance.data.status,
+        pendingTickets: tickets.data.length,
+        recentInvoicesCount: invoices.data.length,
       });
 
       setError(null);
@@ -141,7 +157,7 @@ export const Dashboard = () => {
                 <p className="text-sm text-gray-600">Compliance Status</p>
                 <div className="flex items-center mt-2">
                   <CheckCircle2 className="w-6 h-6 text-green-600 mr-2" />
-                  <p className="text-xl font-semibold text-green-600">Passing</p>
+                  <p className="text-xl font-semibold text-green-600">{dashboardData.complianceStatus}</p>
                 </div>
               </div>
               <Shield className="w-10 h-10 text-green-600 opacity-20" />

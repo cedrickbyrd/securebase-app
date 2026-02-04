@@ -201,8 +201,15 @@ export class MockApiService {
    * Support Tickets (Phase 3b)
    */
   async getSupportTickets(params = {}) {
+    let filteredTickets = mockSupportTickets;
+
+    // Filter by status if provided
+    if (params.status) {
+      filteredTickets = filteredTickets.filter(ticket => ticket.status === params.status);
+    }
+
     return this.simulateCall({
-      data: mockSupportTickets
+      data: filteredTickets
     });
   }
 
