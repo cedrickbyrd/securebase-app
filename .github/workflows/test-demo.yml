@@ -25,6 +25,9 @@ jobs:
   smoke-tests:
     name: Run Smoke Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -50,6 +53,9 @@ jobs:
   e2e-tests:
     name: Run E2E Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
 
     strategy:
       fail-fast: false
@@ -103,6 +109,8 @@ jobs:
     name: Validate Demo Deployment
     runs-on: ubuntu-latest
     needs: [smoke-tests]
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -133,6 +141,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [smoke-tests, e2e-tests, validate-deployment]
     if: always()
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Download all artifacts
