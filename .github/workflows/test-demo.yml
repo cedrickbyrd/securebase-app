@@ -1,0 +1,191 @@
+name: Test Live Demo
+
+on:
+  # Run after demo deployment
+  workflow_run:
+    workflows: ["Deploy Phase 3A Demo"]
+    types:
+      - completed
+    branches:
+      - main
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      demo_url:
+        description: 'Demo URL to test'
+        required: false
+        default: 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com'
+  
+  # Run on schedule (daily)
+  schedule:
+    - cron: '0 8 * * *'  # 8 AM UTC daily
+
+jobs:
+  smoke-tests:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run smoke test script
+        working-directory: phase3a-portal
+        env:
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+        run: |
+          chmod +x test-demo-live.sh
+          ./test-demo-live.sh
+      
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: phase3a-portal/smoke-test-*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package.json
+      
+      - name: Install dependencies
+        working-directory: phase3a-portal
+        run: npm ci || npm install
+      
+      - name: Install Playwright browsers
+        working-directory: phase3a-portal
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Run Playwright E2E tests
+        working-directory: phase3a-portal
+        env:
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+        run: npx playwright test --project=${{ matrix.browser }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.browser }}
+          path: |
+            phase3a-portal/test-results/
+            phase3a-portal/playwright-report/
+          retention-days: 7
+      
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: phase3a-portal/playwright-report/
+          retention-days: 7
+
+  validate-deployment:
+    name: Validate Demo Deployment
+    runs-on: ubuntu-latest
+    needs: [smoke-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run validation script
+        working-directory: phase3a-portal
+        run: |
+          chmod +x test-validation.sh
+          ./test-validation.sh
+      
+      - name: Check demo environment
+        env:
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+        run: |
+          echo "Validating demo environment..."
+          
+          # Check if demo is using HTTPS (preferred) or HTTP
+          if curl -s -I "$DEMO_URL" | grep -q "HTTP/"; then
+            echo "✅ Demo is accessible"
+          else
+            echo "❌ Demo is not accessible"
+            exit 1
+          fi
+
+  report-results:
+    name: Report Test Results
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, e2e-tests, validate-deployment]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts
+      
+      - name: Generate summary
+        run: |
+          echo "# Live Demo Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Demo URL:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.smoke-tests.result }}" == "success" ]; then
+            echo "✅ Smoke Tests: **PASSED**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Smoke Tests: **FAILED**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            echo "✅ E2E Tests: **PASSED**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ E2E Tests: **FAILED**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.validate-deployment.result }}" == "success" ]; then
+            echo "✅ Deployment Validation: **PASSED**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment Validation: **FAILED**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Smoke test results" >> $GITHUB_STEP_SUMMARY
+          echo "- Playwright test results" >> $GITHUB_STEP_SUMMARY
+          echo "- Screenshots and videos (on failure)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Notify on failure
+        if: needs.smoke-tests.result == 'failure' || needs.e2e-tests.result == 'failure'
+        run: |
+          echo "::error::Live demo tests failed. Please review the test results."
+
+  # Optional: Post results to Slack, Discord, etc.
+  # notify-slack:
+  #   name: Notify Team
+  #   runs-on: ubuntu-latest
+  #   needs: [report-results]
+  #   if: always()
+  #   steps:
+  #     - name: Send Slack notification
+  #       uses: 8398a7/action-slack@v3
+  #       with:
+  #         status: ${{ job.status }}
+  #         text: 'Live demo test results available'
+  #         webhook_url: ${{ secrets.SLACK_WEBHOOK }}
