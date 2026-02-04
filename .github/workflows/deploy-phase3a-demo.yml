@@ -1,4 +1,13 @@
-name: Deploy Phase 3A Demo
+- name: Cache dependencies
+  uses: actions/cache@v3
+  with:
+    path: |
+      node_modules
+      ~/.npm
+    key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-build-
+      name: Deploy Phase 3A Demo
 
 on:
   push:
