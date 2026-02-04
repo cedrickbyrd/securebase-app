@@ -112,6 +112,12 @@ describe('MockApiService - Demo Data Validation', () => {
   });
 
   it('should reject invalid API keys in demo mode', async () => {
-    await expect(mockApi.authenticate('invalid-key')).rejects.toThrow();
+    try {
+      await mockApi.authenticate('invalid-key');
+      // If we get here, the test should fail
+      expect.fail('Expected authentication to throw an error');
+    } catch (error) {
+      expect(error.message).toBe('Invalid API key');
+    }
   });
 });

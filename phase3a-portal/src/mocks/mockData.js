@@ -112,6 +112,7 @@ const generateInvoices = () => {
       const dueYear = month === 12 ? year + 1 : year;
       
       // Calculate paid date ensuring it doesn't exceed days in the month
+      // Start from day 28 and stagger by customer index to spread paid dates across the month
       const paidDay = Math.min(28 - (custIdx * 2), days);
       
       invoices.push({
