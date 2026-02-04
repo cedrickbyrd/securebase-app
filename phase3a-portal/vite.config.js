@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  publicDir: 'public',  // Explicitly set public directory
   base: mode === 'production' ? '/securebase-app/' : '/',  // GitHub Pages base path for production only, staging uses root
   server: {
     port: 3000,
@@ -10,6 +11,8 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
+    copyPublicDir: true,  // Force copy public folder to dist
     sourcemap: true,
     // Performance optimizations
     target: 'es2015',
