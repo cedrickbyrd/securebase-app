@@ -42,12 +42,23 @@ echo ""
 # ============================================================================
 # Step 1: Pre-deployment Checks
 # ============================================================================
-echo -e "${YELLOW}[1/8] Running pre-deployment checks...${NC}"
+echo -e "${YELLOW}[1/9] Running pre-deployment checks...${NC}"
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
     echo -e "${RED}Error: package.json not found. Please run from phase3a-portal directory.${NC}"
     exit 1
+fi
+
+# Run validation script
+if [ -f "validate-demo-files.sh" ]; then
+    echo -e "${YELLOW}Running file validation...${NC}"
+    if ! ./validate-demo-files.sh; then
+        echo -e "${RED}Error: Pre-deployment validation failed.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}Warning: validate-demo-files.sh not found. Skipping validation.${NC}"
 fi
 
 # Check if .env.demo exists
@@ -84,7 +95,7 @@ echo ""
 # ============================================================================
 # Step 2: Install Dependencies
 # ============================================================================
-echo -e "${YELLOW}[2/8] Installing dependencies...${NC}"
+echo -e "${YELLOW}[2/9] Installing dependencies...${NC}"
 
 if [ ! -d "node_modules" ]; then
     npm install
@@ -96,7 +107,7 @@ echo ""
 # ============================================================================
 # Step 3: Run Linting
 # ============================================================================
-echo -e "${YELLOW}[3/8] Running linter...${NC}"
+echo -e "${YELLOW}[3/9] Running linter...${NC}"
 
 npm run lint || {
     echo -e "${YELLOW}Warning: Linting found issues. Continuing anyway...${NC}"
@@ -106,7 +117,7 @@ echo ""
 # ============================================================================
 # Step 4: Build Production Bundle
 # ============================================================================
-echo -e "${YELLOW}[4/8] Building production bundle for demo...${NC}"
+echo -e "${YELLOW}[4/9] Building production bundle for demo...${NC}"
 
 # Copy demo env to .env for build
 cp .env.demo .env
@@ -124,9 +135,52 @@ echo -e "${GREEN}✓ Build completed successfully${NC}"
 echo ""
 
 # ============================================================================
-# Step 5: Copy demo data to build directory
+# Step 5: Validate Build Output
 # ============================================================================
-echo -e "${YELLOW}[5/8] Copying demo data to build directory...${NC}"
+echo -e "${YELLOW}[5/9] Validating build output...${NC}"
+
+# Check critical files exist
+if [ ! -f "$BUILD_DIR/index.html" ]; then
+    echo -e "${RED}Error: dist/index.html not created during build.${NC}"
+    exit 1
+fi
+
+if [ ! -f "$BUILD_DIR/mock-api.js" ]; then
+    echo -e "${YELLOW}Warning: dist/mock-api.js not found. Copying manually...${NC}"
+    if [ -f "public/mock-api.js" ]; then
+        cp public/mock-api.js "$BUILD_DIR/mock-api.js"
+        echo -e "${GREEN}✓ Manually copied mock-api.js to dist/${NC}"
+    else
+        echo -e "${RED}Error: public/mock-api.js source file not found.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ mock-api.js exists in dist/${NC}"
+fi
+
+# Verify DOCTYPE in dist/index.html
+if grep -q "<!DOCTYPE html>" "$BUILD_DIR/index.html"; then
+    echo -e "${GREEN}✓ dist/index.html has proper DOCTYPE${NC}"
+else
+    echo -e "${RED}Error: dist/index.html missing DOCTYPE.${NC}"
+    exit 1
+fi
+
+# Verify mock-api.js reference in dist/index.html
+if grep -q "mock-api.js" "$BUILD_DIR/index.html"; then
+    echo -e "${GREEN}✓ dist/index.html references mock-api.js${NC}"
+else
+    echo -e "${RED}Error: dist/index.html does not reference mock-api.js.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Build validation passed${NC}"
+echo ""
+
+# ============================================================================
+# Step 6: Copy demo data to build directory
+# ============================================================================
+echo -e "${YELLOW}[6/9] Copying demo data to build directory...${NC}"
 
 cp demo-data.json "$BUILD_DIR/demo-data.json"
 
@@ -134,9 +188,9 @@ echo -e "${GREEN}✓ Demo data copied${NC}"
 echo ""
 
 # ============================================================================
-# Step 6: Create S3 Bucket (if it doesn't exist)
+# Step 7: Create S3 Bucket (if it doesn't exist)
 # ============================================================================
-echo -e "${YELLOW}[6/8] Checking S3 bucket...${NC}"
+echo -e "${YELLOW}[7/9] Checking S3 bucket...${NC}"
 
 if aws s3 ls "s3://$S3_BUCKET" 2>&1 | grep -q 'NoSuchBucket'; then
     echo -e "${YELLOW}Creating S3 bucket: $S3_BUCKET${NC}"
@@ -177,9 +231,9 @@ fi
 echo ""
 
 # ============================================================================
-# Step 7: Deploy to S3
+# Step 8: Deploy to S3
 # ============================================================================
-echo -e "${YELLOW}[7/8] Deploying to S3...${NC}"
+echo -e "${YELLOW}[8/9] Deploying to S3...${NC}"
 
 # Sync build directory to S3 with cache control for static assets
 aws s3 sync "$BUILD_DIR/" "s3://$S3_BUCKET/" \
@@ -199,9 +253,9 @@ echo -e "${GREEN}✓ Files uploaded to S3${NC}"
 echo ""
 
 # ============================================================================
-# Step 8: Invalidate CloudFront Cache (if configured)
+# Step 9: Invalidate CloudFront Cache (if configured)
 # ============================================================================
-echo -e "${YELLOW}[8/8] CloudFront cache invalidation...${NC}"
+echo -e "${YELLOW}[9/9] CloudFront cache invalidation...${NC}"
 
 if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
     echo -e "${YELLOW}Invalidating CloudFront cache...${NC}"
