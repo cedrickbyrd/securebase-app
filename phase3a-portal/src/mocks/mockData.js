@@ -1,137 +1,192 @@
 /**
  * Mock Data for Demo Mode
  * Safe to commit - contains only fictional demo data
+ * Aligned with DEMO_ENVIRONMENT.md specifications
  */
 
+// Primary customer for single-customer views
 export const mockCustomer = {
   id: "demo-customer-001",
-  name: "Demo Healthcare Corp",
-  email: "demo@securebase.io",
+  name: "HealthCorp Medical Systems",
+  email: "admin@healthcorp.example.com",
   tier: "healthcare",
   framework: "hipaa",
-  status: "trial",
-  trial_ends: "2026-03-15",
-  created_at: "2026-01-01T00:00:00Z",
+  status: "active",
+  monthly_price: 15000,
+  accounts: 45,
+  created_at: "2025-11-01T00:00:00Z",
   subscription_status: "active"
 };
 
-export const mockInvoices = [
+// All 5 demo customers (for multi-customer admin views)
+export const mockCustomers = [
   {
-    id: "inv_2026_02",
-    invoice_number: "INV-2026-0002",
-    month: "February 2026",
-    total_amount: 15000,
-    status: "paid",
-    due_date: "2026-03-01",
-    paid_date: "2026-02-28",
-    created_at: "2026-02-01T00:00:00Z",
-    billing_period_start: "2026-02-01",
-    billing_period_end: "2026-02-28",
-    line_items: [
-      { 
-        description: "HIPAA Compliance Platform", 
-        amount: 12000, 
-        quantity: 1,
-        unit_price: 12000
-      },
-      { 
-        description: "Priority Support", 
-        amount: 3000, 
-        quantity: 1,
-        unit_price: 3000
-      }
-    ],
-    pdf_url: "#",
-    currency: "USD"
+    id: "demo-customer-001",
+    name: "HealthCorp Medical Systems",
+    email: "admin@healthcorp.example.com",
+    tier: "healthcare",
+    framework: "HIPAA",
+    status: "active",
+    monthly_price: 15000,
+    accounts: 45,
+    created_at: "2025-11-01T00:00:00Z"
   },
   {
-    id: "inv_2026_01",
-    invoice_number: "INV-2026-0001",
-    month: "January 2026",
-    total_amount: 15000,
-    status: "paid",
-    due_date: "2026-02-01",
-    paid_date: "2026-01-30",
-    created_at: "2026-01-01T00:00:00Z",
-    billing_period_start: "2026-01-01",
-    billing_period_end: "2026-01-31",
-    line_items: [
-      { 
-        description: "HIPAA Compliance Platform", 
-        amount: 12000, 
-        quantity: 1,
-        unit_price: 12000
-      },
-      { 
-        description: "Priority Support", 
-        amount: 3000, 
-        quantity: 1,
-        unit_price: 3000
-      }
-    ],
-    pdf_url: "#",
-    currency: "USD"
+    id: "demo-customer-002",
+    name: "FinTechAI Analytics",
+    email: "admin@fintechai.example.com",
+    tier: "fintech",
+    framework: "SOC 2 Type II",
+    status: "active",
+    monthly_price: 8000,
+    accounts: 28,
+    created_at: "2025-12-01T00:00:00Z"
   },
   {
-    id: "inv_2025_12",
-    invoice_number: "INV-2025-0012",
-    month: "December 2025",
-    total_amount: 14892,
-    status: "paid",
-    due_date: "2026-01-01",
-    paid_date: "2025-12-28",
-    created_at: "2025-12-01T00:00:00Z",
-    billing_period_start: "2025-12-01",
-    billing_period_end: "2025-12-31",
-    line_items: [
-      { 
-        description: "HIPAA Compliance Platform", 
-        amount: 12000, 
-        quantity: 1,
-        unit_price: 12000
-      },
-      { 
-        description: "Priority Support", 
-        amount: 2892, 
-        quantity: 1,
-        unit_price: 2892
-      }
-    ],
-    pdf_url: "#",
-    currency: "USD"
+    id: "demo-customer-003",
+    name: "StartupMVP Inc",
+    email: "admin@startupmvp.example.com",
+    tier: "standard",
+    framework: "CIS Foundations",
+    status: "active",
+    monthly_price: 2000,
+    accounts: 5,
+    created_at: "2026-01-01T00:00:00Z"
+  },
+  {
+    id: "demo-customer-004",
+    name: "GovContractor Defense Solutions",
+    email: "admin@govcontractor.example.com",
+    tier: "government",
+    framework: "FedRAMP Low",
+    status: "active",
+    monthly_price: 25000,
+    accounts: 120,
+    created_at: "2025-10-01T00:00:00Z"
+  },
+  {
+    id: "demo-customer-005",
+    name: "SaaSPlatform Cloud Services",
+    email: "admin@saasplatform.example.com",
+    tier: "fintech",
+    framework: "SOC 2 Type II",
+    status: "active",
+    monthly_price: 8000,
+    accounts: 35,
+    created_at: "2025-11-01T00:00:00Z"
   }
 ];
 
+// Generate 30+ invoices across all 5 customers over 6 months
+const generateInvoices = () => {
+  const invoices = [];
+  const customers = [
+    { id: "demo-customer-001", name: "HealthCorp Medical Systems", amount: 15000 },
+    { id: "demo-customer-002", name: "FinTechAI Analytics", amount: 8000 },
+    { id: "demo-customer-003", name: "StartupMVP Inc", amount: 2000 },
+    { id: "demo-customer-004", name: "GovContractor Defense Solutions", amount: 25000 },
+    { id: "demo-customer-005", name: "SaaSPlatform Cloud Services", amount: 8000 }
+  ];
+  
+  const months = [
+    { year: 2026, month: 2, name: "February", days: 28 },
+    { year: 2026, month: 1, name: "January", days: 31 },
+    { year: 2025, month: 12, name: "December", days: 31 },
+    { year: 2025, month: 11, name: "November", days: 30 },
+    { year: 2025, month: 10, name: "October", days: 31 },
+    { year: 2025, month: 9, name: "September", days: 30 }
+  ];
+  
+  const statuses = ["paid", "paid", "paid", "paid", "issued", "overdue", "draft"];
+  
+  // Small dollar variance added to each invoice to make amounts more realistic
+  const INVOICE_VARIANCE = 10;
+  
+  let invoiceCounter = 1;
+  
+  months.forEach(({ year, month, name: monthName, days }) => {
+    customers.forEach((customer, custIdx) => {
+      const status = statuses[invoiceCounter % statuses.length];
+      const dueDay = 15 + (invoiceCounter % 15);
+      const dueMonth = month === 12 ? 1 : month + 1;
+      const dueYear = month === 12 ? year + 1 : year;
+      
+      // Calculate paid date ensuring it doesn't exceed days in the month
+      // Start from day 28 and stagger by customer index to spread paid dates across the month
+      const paidDay = Math.min(28 - (custIdx * 2), days);
+      
+      invoices.push({
+        id: `inv_${year}_${String(month).padStart(2, '0')}_${customer.id}`,
+        invoice_number: `INV-${year}-${String(invoiceCounter).padStart(4, '0')}`,
+        customer_id: customer.id,
+        customer_name: customer.name,
+        month: `${monthName} ${year}`,
+        total_amount: customer.amount + (invoiceCounter * INVOICE_VARIANCE),
+        status: status,
+        due_date: `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`,
+        paid_date: status === "paid" ? `${year}-${String(month).padStart(2, '0')}-${String(paidDay).padStart(2, '0')}` : null,
+        created_at: `${year}-${String(month).padStart(2, '0')}-01T00:00:00Z`,
+        billing_period_start: `${year}-${String(month).padStart(2, '0')}-01`,
+        billing_period_end: `${year}-${String(month).padStart(2, '0')}-${String(days).padStart(2, '0')}`,
+        line_items: [
+          { 
+            description: "Base Platform Fee", 
+            amount: Math.floor(customer.amount * 0.8), 
+            quantity: 1,
+            unit_price: Math.floor(customer.amount * 0.8)
+          },
+          { 
+            description: "Support & Maintenance", 
+            amount: Math.floor(customer.amount * 0.2), 
+            quantity: 1,
+            unit_price: Math.floor(customer.amount * 0.2)
+          }
+        ],
+        pdf_url: "#",
+        currency: "USD"
+      });
+      
+      invoiceCounter++;
+    });
+  });
+  
+  return invoices;
+};
+
+export const mockInvoices = generateInvoices();
+
 export const mockMetrics = {
-  monthly_cost: 15234,
+  // Total across all 5 customers: $15k + $8k + $2k + $25k + $8k = $58k
+  monthly_cost: 58240,
   cost_trend: "+2.3%",
-  cost_change: 342,
-  compliance_score: 98,
+  cost_change: 1312,
+  compliance_score: 92,
   compliance_trend: "+1",
-  active_alerts: 2,
-  alerts_trend: "-3",
-  uptime_percentage: 99.97,
+  active_alerts: 3,
+  alerts_trend: "-2",
+  uptime_percentage: 99.87,
   uptime_trend: "+0.02%",
-  api_calls_month: 1245678,
+  api_calls_month: 3450000,
   api_calls_trend: "+15.2%",
-  api_calls_limit: 5000000,
-  // Dashboard usage metrics
-  account_count: 5,
-  cloudtrail_events: 1245678,
-  log_storage_gb: 156.7,
-  data_transfer_gb: 89.3,
+  api_calls_limit: 10000000,
+  // Dashboard usage metrics - combined across all customers
+  total_customers: 5,
+  account_count: 233,  // 45 + 28 + 5 + 120 + 35
+  cloudtrail_events: 8245678,
+  log_storage_gb: 1256.7,
+  data_transfer_gb: 589.3,
   cost_breakdown: {
-    compliance: 12000,
-    support: 3000,
-    infrastructure: 234
+    compliance: 46400,    // Base platform fees
+    support: 11600,       // Support fees
+    infrastructure: 240   // Pass-through costs
   },
   cost_history: [
-    { month: "Sep", cost: 14234, date: "2025-09-01" },
-    { month: "Oct", cost: 14567, date: "2025-10-01" },
-    { month: "Nov", cost: 14789, date: "2025-11-01" },
-    { month: "Dec", cost: 14892, date: "2025-12-01" },
-    { month: "Jan", cost: 15000, date: "2026-01-01" },
-    { month: "Feb", cost: 15234, date: "2026-02-01" }
+    { month: "Sep", cost: 56980, date: "2025-09-01" },
+    { month: "Oct", cost: 57210, date: "2025-10-01" },
+    { month: "Nov", cost: 57540, date: "2025-11-01" },
+    { month: "Dec", cost: 57820, date: "2025-12-01" },
+    { month: "Jan", cost: 58000, date: "2026-01-01" },
+    { month: "Feb", cost: 58240, date: "2026-02-01" }
   ],
   resource_usage: {
     compute: 67,
@@ -405,5 +460,60 @@ export const mockWebhooks = [
     created_at: "2026-01-15T10:00:00Z",
     last_triggered: "2026-02-01T08:00:00Z",
     success_rate: 99.8
+  }
+];
+
+// Mock team/user data for Team Management (Phase 4)
+export const mockTeamUsers = [
+  {
+    id: "user_001",
+    name: "Demo Admin",
+    email: "admin@healthcorp.example.com",
+    role: "admin",
+    status: "active",
+    created_at: "2025-11-01T00:00:00Z",
+    last_login: "2026-02-04T08:30:00Z",
+    permissions: ["read", "write", "admin"]
+  },
+  {
+    id: "user_002",
+    name: "Demo Manager",
+    email: "manager@healthcorp.example.com",
+    role: "manager",
+    status: "active",
+    created_at: "2025-12-15T00:00:00Z",
+    last_login: "2026-02-03T14:22:00Z",
+    permissions: ["read", "write"]
+  },
+  {
+    id: "user_003",
+    name: "Demo Viewer",
+    email: "viewer@healthcorp.example.com",
+    role: "viewer",
+    status: "active",
+    created_at: "2026-01-10T00:00:00Z",
+    last_login: "2026-02-02T10:15:00Z",
+    permissions: ["read"]
+  }
+];
+
+export const mockRoles = [
+  {
+    id: "role_admin",
+    name: "Administrator",
+    description: "Full access to all features",
+    permissions: ["read", "write", "admin", "delete"]
+  },
+  {
+    id: "role_manager",
+    name: "Manager",
+    description: "Can manage users and view reports",
+    permissions: ["read", "write", "manage_users"]
+  },
+  {
+    id: "role_viewer",
+    name: "Viewer",
+    description: "Read-only access",
+    permissions: ["read"]
   }
 ];
