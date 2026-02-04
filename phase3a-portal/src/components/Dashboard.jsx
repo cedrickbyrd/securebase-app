@@ -157,7 +157,7 @@ export const Dashboard = () => {
                 <p className="text-sm text-gray-600">Compliance Status</p>
                 <div className="flex items-center mt-2">
                   <CheckCircle2 className="w-6 h-6 text-green-600 mr-2" />
-                  <p className="text-xl font-semibold text-green-600">Passing</p>
+                  <p className="text-xl font-semibold text-green-600">{dashboardData.complianceStatus}</p>
                 </div>
               </div>
               <Shield className="w-10 h-10 text-green-600 opacity-20" />
