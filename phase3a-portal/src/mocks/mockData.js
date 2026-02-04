@@ -115,6 +115,11 @@ export const mockMetrics = {
   api_calls_month: 1245678,
   api_calls_trend: "+15.2%",
   api_calls_limit: 5000000,
+  // Dashboard usage metrics
+  account_count: 5,
+  cloudtrail_events: 1245678,
+  log_storage_gb: 156.7,
+  data_transfer_gb: 89.3,
   cost_breakdown: {
     compliance: 12000,
     support: 3000,
@@ -165,6 +170,7 @@ export const mockApiKeys = [
 ];
 
 export const mockCompliance = {
+  status: "passing",
   score: 98,
   frameworks: [
     {
