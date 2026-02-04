@@ -1,46 +1,263 @@
-- name: Cache dependencies
-  uses: actions/cache@v3
-  with:
-    path: |
-      node_modules
-      ~/.npm
-    key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
-    restore-keys: |
-      ${{ runner.os }}-build-
-      name: Deploy Phase 3A Demo
+name: Deploy Phase 3A Demo
 
 on:
   push:
     branches:
       - main
+      - feature/sales-enablement
+    paths:
+      - 'phase3a-portal/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase3a-portal/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'demo'
+        type: choice
+        options:
+          - demo
 
 jobs:
-  deploy:
+  build-demo:
+    name: Build Demo Portal
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    defaults:
+      run:
+        working-directory: phase3a-portal
 
-      - name: Cache Node Modules
-        uses: actions/cache@v2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            phase3a-portal/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-build-${{ hashFiles('phase3a-portal/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-
-            ${{ runner.os }}-
+            ${{ runner.os }}-build-
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Run linter
+        run: npm run lint || true  # Allow warnings
+
+      - name: Build demo bundle
         run: npm run build
+        env:
+          VITE_DEMO_MODE: true
+          VITE_READ_ONLY_MODE: true
+          VITE_SHOW_DEMO_BANNER: true
+          VITE_AUTO_RESET_ENABLED: true
+          VITE_RESET_INTERVAL_HOURS: 24
+          VITE_DEMO_SESSION_DURATION_DAYS: 7
+          VITE_DEMO_CTA_TRIAL_URL: https://portal.securebase.io/signup
+          VITE_DEMO_CTA_BOOK_DEMO_URL: https://calendly.com/securebase/demo
+          VITE_DEMO_CTA_CONTACT_SALES: mailto:sales@securebase.io
+          VITE_API_BASE_URL: ${{ secrets.DEMO_API_URL || 'https://demo-api.securebase.com/v1' }}
 
-      - name: Deploy
-        run: npm run deploy
+      - name: Copy demo data
+        run: |
+          if [ -f demo-data.json ]; then
+            cp demo-data.json dist/demo-data.json
+            echo "✅ Demo data copied to dist/"
+          else
+            echo "⚠️ demo-data.json not found, skipping"
+          fi
 
-      - name: Upload production build
-        uses: actions/upload-artifact@v2
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.4.3
         with:
-          name: build
-          path: build/  
+          name: phase3a-demo-build
+          path: phase3a-portal/dist/
+          retention-days: 7
+
+  deploy-demo:
+    name: Deploy to S3 Demo
+    needs: build-demo
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: demo
+      url: http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: phase3a-demo-build
+          path: dist/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Create S3 bucket
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+
+          if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
+            echo "Creating S3 bucket: $BUCKET_NAME"
+            if [ "$REGION" == "us-east-1" ]; then
+              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION"
+            else
+              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
+            fi
+          else
+            echo "S3 bucket already exists: $BUCKET_NAME"
+          fi
+
+      - name: Configure S3 static website hosting
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          aws s3 website "s3://$BUCKET_NAME" \
+            --index-document index.html \
+            --error-document index.html
+
+      - name: Set S3 bucket policy
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          cat > bucket-policy.json << EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+              }
+            ]
+          }
+          EOF
+          aws s3api put-bucket-policy \
+            --bucket "$BUCKET_NAME" \
+            --policy file://bucket-policy.json
+
+      - name: Sync files to S3
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+
+          # Sync all files except HTML and JSON with long cache
+          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+
+          # Upload HTML and JSON files with no-cache
+          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json" \
+            --cache-control "no-cache,no-store,must-revalidate"
+
+      - name: Output demo URL
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          echo "Demo URL: $DEMO_URL"
+          echo "demo_url=$DEMO_URL" >> $GITHUB_OUTPUT
+        id: deploy
+
+  validate-demo:
+    name: Validate Demo Deployment
+    needs: deploy-demo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 30
+
+      - name: Smoke test - Check HTTP status
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Demo site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Validate index.html
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+
+          if curl -s "$DEMO_URL" | grep -q "SecureBase"; then
+            echo "✅ Index.html contains expected content"
+          else
+            echo "❌ Index.html validation failed"
+            exit 1
+          fi
+
+      - name: Validate demo data
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL/demo-data.json")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo data is accessible (HTTP $STATUS)"
+          else
+            echo "⚠️ Demo data returned HTTP $STATUS (might not exist, continuing)"
+          fi
+
+  notify:
+    name: Send Deployment Notification
+    needs: [deploy-demo, validate-demo]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment notification
+        run: |
+          BUCKET_NAME="securebase-phase3a-demo"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+
+          if [ "${{ needs.validate-demo.result }}" == "success" ]; then
+            echo "✅ Phase 3a demo deployed successfully"
+            echo "Demo URL: $DEMO_URL"
+            echo ""
+            echo "Share with prospects:"
+            echo "- Auto-login enabled (no signup required)"
+            echo "- Pre-populated with sample data"
+            echo "- Read-only mode active"
+            echo "- CTAs for trial signup and demo booking"
+          else
+            echo "❌ Demo deployment or validation failed"
+            exit 1
+          fi  
