@@ -27,7 +27,7 @@ export const Dashboard = () => {
     monthlyUsage: {},
     recentInvoices: [],
     apiKeysCount: 0,
-    complianceStatus: [],
+    complianceStatus: '',
     pendingTickets: 0,
   });
 
