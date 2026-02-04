@@ -36,10 +36,10 @@ test.describe('Live Demo Portal - Authentication', () => {
     const consoleMessages = [];
     page.on('console', msg => consoleMessages.push(msg.text()));
     
-    await page.goto(DEMO_URL);
+    await page.goto(DEMO_URL, { waitUntil: 'networkidle' });
     
-    // Wait a moment for mock API to load
-    await page.waitForTimeout(1000);
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('domcontentloaded');
     
     // Check for mock API load messages
     const mockApiLoaded = consoleMessages.some(msg => msg.includes('MOCK API LOADED'));
@@ -117,7 +117,8 @@ test.describe('Live Demo Portal - Dashboard & Data', () => {
       await page.fill('input[type="text"]', DEMO_USERNAME);
       await page.fill('input[type="password"]', DEMO_PASSWORD);
       await page.click('button:has-text("Sign In"), button:has-text("Login")');
-      await page.waitForTimeout(2000);
+      // Wait for navigation after login
+      await page.waitForLoadState('networkidle');
     }
   });
 
@@ -150,7 +151,7 @@ test.describe('Live Demo Portal - Navigation', () => {
       await page.fill('input[type="text"]', DEMO_USERNAME);
       await page.fill('input[type="password"]', DEMO_PASSWORD);
       await page.click('button:has-text("Sign In"), button:has-text("Login")');
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
     }
   });
 
@@ -158,7 +159,8 @@ test.describe('Live Demo Portal - Navigation', () => {
     const invoiceLink = page.locator('a:has-text("Invoice"), a:has-text("Billing")').first();
     if (await invoiceLink.isVisible().catch(() => false)) {
       await invoiceLink.click();
-      await page.waitForTimeout(1000);
+      // Wait for navigation to complete
+      await page.waitForLoadState('domcontentloaded');
       
       // Verify navigation
       const invoiceContent = await page.locator('text=/invoice|billing|payment/i').first().isVisible().catch(() => false);
@@ -170,7 +172,7 @@ test.describe('Live Demo Portal - Navigation', () => {
     const complianceLink = page.locator('a:has-text("Compliance"), a:has-text("Security")').first();
     if (await complianceLink.isVisible().catch(() => false)) {
       await complianceLink.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('domcontentloaded');
       
       // Verify navigation
       const complianceContent = await page.locator('text=/compliance|framework|score/i').first().isVisible().catch(() => false);
@@ -182,7 +184,7 @@ test.describe('Live Demo Portal - Navigation', () => {
     const apiKeysLink = page.locator('a:has-text("API"), a:has-text("Keys")').first();
     if (await apiKeysLink.isVisible().catch(() => false)) {
       await apiKeysLink.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('domcontentloaded');
       
       // Verify navigation
       const apiContent = await page.locator('text=/api.key|token|credential/i').first().isVisible().catch(() => false);
@@ -201,7 +203,7 @@ test.describe('Live Demo Portal - Read-Only Mode', () => {
       await page.fill('input[type="text"]', DEMO_USERNAME);
       await page.fill('input[type="password"]', DEMO_PASSWORD);
       await page.click('button:has-text("Sign In"), button:has-text("Login")');
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
     }
   });
 
@@ -215,9 +217,8 @@ test.describe('Live Demo Portal - Read-Only Mode', () => {
       page.on('console', msg => consoleMessages.push(msg.text()));
       
       await createButton.click();
-      await page.waitForTimeout(1000);
       
-      // Check for toast notification or read-only message
+      // Wait for either a toast notification to appear or console message
       const readOnlyNotification = await page.locator('text=/read.only|demo mode|cannot.edit/i').first().isVisible({ timeout: 3000 }).catch(() => false);
       const hasReadOnlyMessage = consoleMessages.some(msg => msg.toLowerCase().includes('read') || msg.toLowerCase().includes('demo'));
       
@@ -236,7 +237,7 @@ test.describe('Live Demo Portal - CTAs (Call-to-Actions)', () => {
       await page.fill('input[type="text"]', DEMO_USERNAME);
       await page.fill('input[type="password"]', DEMO_PASSWORD);
       await page.click('button:has-text("Sign In"), button:has-text("Login")');
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
     }
   });
 
@@ -270,8 +271,7 @@ test.describe('Live Demo Portal - Console Errors', () => {
       }
     });
     
-    await page.goto(DEMO_URL);
-    await page.waitForTimeout(3000);
+    await page.goto(DEMO_URL, { waitUntil: 'networkidle' });
     
     // Filter out known acceptable errors
     const criticalErrors = errors.filter(err => 
@@ -291,8 +291,7 @@ test.describe('Live Demo Portal - Console Errors', () => {
       }
     });
     
-    await page.goto(DEMO_URL);
-    await page.waitForTimeout(3000);
+    await page.goto(DEMO_URL, { waitUntil: 'networkidle' });
     
     expect(corsErrors.length).toBe(0);
   });
@@ -302,9 +301,6 @@ test.describe('Live Demo Portal - Mobile Responsive', () => {
   test('should be responsive on mobile viewport', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto(DEMO_URL);
-    
-    // Page should load
     const response = await page.goto(DEMO_URL);
     expect(response?.status()).toBe(200);
     
@@ -350,8 +346,7 @@ test.describe('Live Demo Portal - Performance', () => {
     const consoleMessages = [];
     page.on('console', msg => consoleMessages.push(msg.text()));
     
-    await page.reload();
-    await page.waitForTimeout(1000);
+    await page.reload({ waitUntil: 'networkidle' });
     
     const hasMockApiMessage = consoleMessages.some(msg => 
       msg.includes('MOCK API') || msg.includes('mock-api')
