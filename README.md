@@ -61,10 +61,39 @@
 
 ## 🎥 See It In Action
 
-**Product Demo** (3 minutes)  
-*[Demo video placeholder - Recording scheduled for Feb 3]*
+### 🔴 Live Interactive Demo
 
-🖥️ **<a href="https://demo.securebase.io">Try Live Demo</a>** - Pre-populated environment, no signup required
+**Try the full customer portal with no signup required:**
+
+🖥️ **<a href="https://demo.securebase.io">Try Live Demo</a>** - Pre-populated with realistic customer data
+
+**Features:**
+- ✅ Complete dashboard with metrics and charts
+- ✅ 5 mock customers (Healthcare, Fintech, Government, Standard)
+- ✅ 30+ invoices, compliance reports, API keys
+- ✅ Fully functional UI (read-only mode)
+- ✅ Mobile responsive
+
+### 🚀 Deploy Your Own Demo
+
+**Want to host your own demo instance?** We've made it easy:
+
+```bash
+# One-command deployment to Netlify (5 minutes)
+./deploy-demo-netlify.sh
+
+# Or deploy to GitHub Pages (100% free)
+./deploy-demo-github-pages.sh
+```
+
+📖 **[Full Deployment Guide](./DEPLOY_LIVE_DEMO.md)** - Netlify, Vercel, AWS S3, or GitHub Pages
+
+**What you get:**
+- ✅ Complete mock API (37 endpoints, realistic data)
+- ✅ Production-ready UI
+- ✅ All security headers configured
+- ✅ Zero backend infrastructure needed
+- ✅ $0-1/month hosting cost
 
 ---
 
