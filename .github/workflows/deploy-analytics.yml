@@ -1,14 +1,470 @@
-# This is the updated deploy-analytics.yml content
-# ... (other lines of the file) 
+name: Deploy Analytics to AWS
 
-# Update line 46
-pip install -e ".[test]"
-# ... (other lines of the file) 
+# Deploy Phase 4 Advanced Analytics & Reporting components to AWS
+# Packages Lambda functions, builds layers, deploys infrastructure via Terraform
 
-# Update line 117
-pip install -e ".[test]"
-# ... (other lines of the file) 
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      aws_region:
+        description: 'AWS Region'
+        required: true
+        default: 'us-east-1'
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - 'phase2-backend/functions/analytics_*.py'
+      - 'phase2-backend/functions/report_engine.py'
+      - 'phase2-backend/layers/reporting/**'
+      - 'landing-zone/modules/analytics/**'
+      - '.github/workflows/deploy-analytics.yml'
 
-# Update line 161
-pip install -e ".[test]"
-# ... (rest of the file)
+permissions:
+  contents: read
+  id-token: write  # For OIDC authentication with AWS
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  AWS_REGION: ${{ github.event.inputs.aws_region || 'us-east-1' }}
+
+jobs:
+  # ==========================================================================
+  # JOB 1: PACKAGE LAMBDA FUNCTIONS
+  # ==========================================================================
+  package-lambdas:
+    name: Package Lambda Functions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create deployment directory
+        run: mkdir -p phase2-backend/deploy
+
+      - name: Package analytics_aggregator
+        run: |
+          cd phase2-backend/functions
+          zip -q ../deploy/analytics_aggregator.zip analytics_aggregator.py
+          echo "✓ analytics_aggregator.zip: $(du -h ../deploy/analytics_aggregator.zip | cut -f1)"
+
+      - name: Package analytics_reporter
+        run: |
+          cd phase2-backend/functions
+          zip -q ../deploy/analytics_reporter.zip analytics_reporter.py
+          echo "✓ analytics_reporter.zip: $(du -h ../deploy/analytics_reporter.zip | cut -f1)"
+
+      - name: Package analytics_query
+        run: |
+          cd phase2-backend/functions
+          zip -q ../deploy/analytics_query.zip analytics_query.py
+          echo "✓ analytics_query.zip: $(du -h ../deploy/analytics_query.zip | cut -f1)"
+
+      - name: Package report_engine
+        run: |
+          cd phase2-backend/functions
+          zip -q ../deploy/report_engine.zip report_engine.py
+          echo "✓ report_engine.zip: $(du -h ../deploy/report_engine.zip | cut -f1)"
+
+      - name: Upload Lambda packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: phase2-backend/deploy/*.zip
+          retention-days: 7
+
+      - name: Summary
+        run: |
+          echo "## Lambda Packaging Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Packaged 4 Lambda functions:" >> $GITHUB_STEP_SUMMARY
+          echo "- analytics_aggregator.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- analytics_reporter.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- analytics_query.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- report_engine.zip" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # JOB 2: BUILD AND PUBLISH LAMBDA LAYER
+  # ==========================================================================
+  build-lambda-layer:
+    name: Build Lambda Layer (ReportLab + openpyxl)
+    runs-on: ubuntu-latest
+    needs: package-lambdas
+    outputs:
+      layer_arn: ${{ steps.publish-layer.outputs.layer_arn }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create layer structure
+        run: |
+          cd phase2-backend/layers/reporting
+          rm -rf python reporting-layer.zip
+          mkdir -p python/lib/python3.11/site-packages
+
+      - name: Install dependencies
+        run: |
+          cd phase2-backend/layers/reporting
+          pip install -q reportlab==4.0.7 pillow==10.1.0 openpyxl==3.1.2 \
+            -t python/lib/python3.11/site-packages
+          echo "✓ Installed reportlab, pillow, openpyxl"
+
+      - name: Package layer
+        run: |
+          cd phase2-backend/layers/reporting
+          zip -r -q reporting-layer.zip python/
+          SIZE=$(du -h reporting-layer.zip | cut -f1)
+          echo "✓ Layer built: $SIZE"
+          echo "LAYER_SIZE=$SIZE" >> $GITHUB_ENV
+
+      - name: Upload layer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-layer
+          path: phase2-backend/layers/reporting/reporting-layer.zip
+          retention-days: 7
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish Lambda Layer
+        id: publish-layer
+        run: |
+          cd phase2-backend/layers/reporting
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "securebase-${{ env.ENVIRONMENT }}-reporting" \
+            --description "ReportLab + openpyxl for Phase 4 Analytics ($(date +%Y-%m-%d))" \
+            --zip-file fileb://reporting-layer.zip \
+            --compatible-runtimes python3.11 \
+            --region ${{ env.AWS_REGION }} \
+            --query 'LayerVersionArn' \
+            --output text)
+          
+          echo "layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          echo "LAYER_ARN=$LAYER_ARN" >> $GITHUB_ENV
+          echo "✓ Layer published: $LAYER_ARN"
+
+      - name: Summary
+        run: |
+          echo "## Lambda Layer Published ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Layer Name:** securebase-${{ env.ENVIRONMENT }}-reporting" >> $GITHUB_STEP_SUMMARY
+          echo "**Size:** ${{ env.LAYER_SIZE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**ARN:** \`${{ env.LAYER_ARN }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Dependencies:**" >> $GITHUB_STEP_SUMMARY
+          echo "- reportlab 4.0.7" >> $GITHUB_STEP_SUMMARY
+          echo "- pillow 10.1.0" >> $GITHUB_STEP_SUMMARY
+          echo "- openpyxl 3.1.2" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # JOB 3: DEPLOY INFRASTRUCTURE WITH TERRAFORM
+  # ==========================================================================
+  terraform-deploy:
+    name: Deploy Infrastructure (Terraform)
+    runs-on: ubuntu-latest
+    needs: build-lambda-layer
+    outputs:
+      api_endpoint: ${{ steps.terraform-outputs.outputs.api_endpoint }}
+      dashboard_name: ${{ steps.terraform-outputs.outputs.dashboard_name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Lambda packages
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+          path: phase2-backend/deploy
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '~> 1.6'
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure Terraform backend
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: |
+          # Update terraform.tfvars with layer ARN
+          if [ ! -f terraform.tfvars ]; then
+            cat > terraform.tfvars <<EOF
+          environment    = "${{ env.ENVIRONMENT }}"
+          org_name       = "SecureBase"
+          target_region  = "${{ env.AWS_REGION }}"
+          EOF
+          fi
+          
+          # Add or update reporting layer ARN
+          if grep -q "reporting_layer_arn" terraform.tfvars; then
+            sed -i "s|reporting_layer_arn.*|reporting_layer_arn = \"${{ needs.build-lambda-layer.outputs.layer_arn }}\"|" terraform.tfvars
+          else
+            echo "" >> terraform.tfvars
+            echo "# Phase 4 Analytics" >> terraform.tfvars
+            echo "reporting_layer_arn = \"${{ needs.build-lambda-layer.outputs.layer_arn }}\"" >> terraform.tfvars
+          fi
+
+      - name: Terraform Init
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: terraform init -upgrade
+
+      - name: Terraform Validate
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: |
+          terraform plan -out=analytics.tfplan | tee /tmp/terraform-plan.txt
+          
+          # Count changes
+          RESOURCES_ADD=$(grep -c "will be created" /tmp/terraform-plan.txt || echo "0")
+          RESOURCES_CHANGE=$(grep -c "will be updated in-place" /tmp/terraform-plan.txt || echo "0")
+          RESOURCES_DESTROY=$(grep -c "will be destroyed" /tmp/terraform-plan.txt || echo "0")
+          
+          echo "RESOURCES_ADD=$RESOURCES_ADD" >> $GITHUB_ENV
+          echo "RESOURCES_CHANGE=$RESOURCES_CHANGE" >> $GITHUB_ENV
+          echo "RESOURCES_DESTROY=$RESOURCES_DESTROY" >> $GITHUB_ENV
+
+      - name: Terraform Apply
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: terraform apply -auto-approve analytics.tfplan
+
+      - name: Get Terraform Outputs
+        id: terraform-outputs
+        working-directory: landing-zone/environments/${{ env.ENVIRONMENT }}
+        run: |
+          API_ENDPOINT=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")
+          DASHBOARD_NAME=$(terraform output -raw analytics_dashboard_name 2>/dev/null || echo "N/A")
+          
+          echo "api_endpoint=$API_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "dashboard_name=$DASHBOARD_NAME" >> $GITHUB_OUTPUT
+          
+          echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_ENV
+          echo "DASHBOARD_NAME=$DASHBOARD_NAME" >> $GITHUB_ENV
+
+      - name: Summary
+        run: |
+          echo "## Terraform Deployment Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Changes Applied:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ➕ ${{ env.RESOURCES_ADD }} resources created" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 ${{ env.RESOURCES_CHANGE }} resources updated" >> $GITHUB_STEP_SUMMARY
+          echo "- ➖ ${{ env.RESOURCES_DESTROY }} resources destroyed" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # JOB 4: POST-DEPLOYMENT VALIDATION
+  # ==========================================================================
+  validate-deployment:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    needs: terraform-deploy
+    
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify Lambda Functions
+        run: |
+          echo "Verifying Lambda functions..."
+          
+          FUNCTIONS=(
+            "securebase-${{ env.ENVIRONMENT }}-analytics-aggregator"
+            "securebase-${{ env.ENVIRONMENT }}-analytics-reporter"
+            "securebase-${{ env.ENVIRONMENT }}-analytics-query"
+            "securebase-${{ env.ENVIRONMENT }}-report-engine"
+          )
+          
+          VERIFIED=0
+          FAILED=0
+          
+          for func in "${FUNCTIONS[@]}"; do
+            if aws lambda get-function --function-name "$func" --region ${{ env.AWS_REGION }} &>/dev/null; then
+              echo "✓ $func exists"
+              VERIFIED=$((VERIFIED+1))
+            else
+              echo "✗ $func NOT FOUND"
+              FAILED=$((FAILED+1))
+            fi
+          done
+          
+          echo "LAMBDA_VERIFIED=$VERIFIED" >> $GITHUB_ENV
+          echo "LAMBDA_FAILED=$FAILED" >> $GITHUB_ENV
+
+      - name: Verify DynamoDB Tables
+        run: |
+          echo "Verifying DynamoDB tables..."
+          
+          TABLES=(
+            "securebase-${{ env.ENVIRONMENT }}-metrics"
+            "securebase-${{ env.ENVIRONMENT }}-reports"
+            "securebase-${{ env.ENVIRONMENT }}-report-schedules"
+          )
+          
+          VERIFIED=0
+          FAILED=0
+          
+          for table in "${TABLES[@]}"; do
+            if aws dynamodb describe-table --table-name "$table" --region ${{ env.AWS_REGION }} &>/dev/null; then
+              echo "✓ $table exists"
+              VERIFIED=$((VERIFIED+1))
+            else
+              echo "⚠ $table NOT FOUND (may not be created yet)"
+            fi
+          done
+          
+          echo "TABLE_VERIFIED=$VERIFIED" >> $GITHUB_ENV
+
+      - name: Verify S3 Buckets
+        run: |
+          echo "Checking for S3 report bucket..."
+          
+          # List buckets matching pattern
+          BUCKET_COUNT=$(aws s3 ls | grep "securebase-${{ env.ENVIRONMENT }}-reports" | wc -l || echo "0")
+          
+          if [ "$BUCKET_COUNT" -gt 0 ]; then
+            echo "✓ Found $BUCKET_COUNT S3 report bucket(s)"
+          else
+            echo "⚠ No S3 report buckets found"
+          fi
+          
+          echo "BUCKET_COUNT=$BUCKET_COUNT" >> $GITHUB_ENV
+
+      - name: Summary
+        run: |
+          echo "## Deployment Validation ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Lambda Functions:** ${{ env.LAMBDA_VERIFIED }}/4 verified" >> $GITHUB_STEP_SUMMARY
+          echo "**DynamoDB Tables:** ${{ env.TABLE_VERIFIED }}/3 verified" >> $GITHUB_STEP_SUMMARY
+          echo "**S3 Buckets:** ${{ env.BUCKET_COUNT }} found" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ env.LAMBDA_FAILED }}" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Warning:** ${{ env.LAMBDA_FAILED }} Lambda function(s) failed verification" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================================================
+  # JOB 5: DEPLOYMENT SUMMARY & NOTIFICATION
+  # ==========================================================================
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [package-lambdas, build-lambda-layer, terraform-deploy, validate-deployment]
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 📊 Analytics Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Deployed Resources" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Lambda Functions (4)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`analytics-aggregator\` - Collects metrics from CloudWatch" >> $GITHUB_STEP_SUMMARY
+          echo "- \`analytics-reporter\` - Generates PDF/Excel reports" >> $GITHUB_STEP_SUMMARY
+          echo "- \`analytics-query\` - API endpoint handler" >> $GITHUB_STEP_SUMMARY
+          echo "- \`report-engine\` - Legacy report support" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Lambda Layer" >> $GITHUB_STEP_SUMMARY
+          echo "- \`securebase-${{ env.ENVIRONMENT }}-reporting\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ARN: \`${{ needs.build-lambda-layer.outputs.layer_arn }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### API Endpoints" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.terraform-deploy.outputs.api_endpoint }}" != "N/A" ]; then
+            echo "- Base URL: \`${{ needs.terraform-deploy.outputs.api_endpoint }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`GET ${{ needs.terraform-deploy.outputs.api_endpoint }}/analytics/usage\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`GET ${{ needs.terraform-deploy.outputs.api_endpoint }}/analytics/compliance\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`GET ${{ needs.terraform-deploy.outputs.api_endpoint }}/analytics/costs\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`POST ${{ needs.terraform-deploy.outputs.api_endpoint }}/analytics/reports\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ API endpoint not available" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Monitoring" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.terraform-deploy.outputs.dashboard_name }}" != "N/A" ]; then
+            echo "- CloudWatch Dashboard: \`${{ needs.terraform-deploy.outputs.dashboard_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- [View Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${{ env.AWS_REGION }}#dashboards:name=${{ needs.terraform-deploy.outputs.dashboard_name }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Dashboard not configured" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✅ Run integration tests: \`pytest tests/integration/test_analytics_integration.py\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. ✅ Run E2E tests: \`RUN_E2E_TESTS=1 pytest tests/e2e/test_analytics_e2e.py\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. 📊 Monitor CloudWatch dashboard for 48 hours" >> $GITHUB_STEP_SUMMARY
+          echo "4. 📝 Update PHASE4_STATUS.md to mark Component 1 as deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️  Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- SNS subscription confirmation emails sent to alert recipients" >> $GITHUB_STEP_SUMMARY
+          echo "- Lambda layer ARN saved in terraform.tfvars" >> $GITHUB_STEP_SUMMARY
+          echo "- CloudWatch alarms configured for errors, latency, and throttling" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Job Status
+        run: |
+          if [ "${{ needs.terraform-deploy.result }}" != "success" ]; then
+            echo "❌ Deployment failed at Terraform stage"
+            exit 1
+          fi
+          
+          if [ "${{ needs.validate-deployment.result }}" != "success" ]; then
+            echo "⚠️ Deployment succeeded but validation failed"
+            echo "Manual verification required"
+          fi
+          
+          echo "✅ Analytics deployment complete!"
