@@ -251,10 +251,10 @@ jobs:
         run: |
           terraform plan -out=analytics.tfplan | tee /tmp/terraform-plan.txt
           
-          # Count changes
-          RESOURCES_ADD=$(grep -c "will be created" /tmp/terraform-plan.txt || echo "0")
-          RESOURCES_CHANGE=$(grep -c "will be updated in-place" /tmp/terraform-plan.txt || echo "0")
-          RESOURCES_DESTROY=$(grep -c "will be destroyed" /tmp/terraform-plan.txt || echo "0")
+          # Count changes - using more precise patterns
+          RESOURCES_ADD=$(grep -c "# .* will be created" /tmp/terraform-plan.txt || echo "0")
+          RESOURCES_CHANGE=$(grep -c "# .* will be updated in-place" /tmp/terraform-plan.txt || echo "0")
+          RESOURCES_DESTROY=$(grep -c "# .* will be destroyed" /tmp/terraform-plan.txt || echo "0")
           
           echo "RESOURCES_ADD=$RESOURCES_ADD" >> $GITHUB_ENV
           echo "RESOURCES_CHANGE=$RESOURCES_CHANGE" >> $GITHUB_ENV
@@ -360,8 +360,10 @@ jobs:
         run: |
           echo "Checking for S3 report bucket..."
           
-          # List buckets matching pattern
-          BUCKET_COUNT=$(aws s3 ls | grep "securebase-${{ env.ENVIRONMENT }}-reports" | wc -l || echo "0")
+          # List buckets matching pattern using API query
+          BUCKET_COUNT=$(aws s3api list-buckets \
+            --query "Buckets[?starts_with(Name, 'securebase-${{ env.ENVIRONMENT }}-reports')] | length(@)" \
+            --output text || echo "0")
           
           if [ "$BUCKET_COUNT" -gt 0 ]; then
             echo "✓ Found $BUCKET_COUNT S3 report bucket(s)"
@@ -396,9 +398,16 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
+          # Check overall deployment status
+          if [ "${{ needs.terraform-deploy.result }}" = "success" ] && [ "${{ needs.validate-deployment.result }}" = "success" ]; then
+            DEPLOY_STATUS="✅ SUCCESS"
+          else
+            DEPLOY_STATUS="❌ FAILED"
+          fi
+          
           echo "# 📊 Analytics Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ job.status == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $DEPLOY_STATUS" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
           echo "**Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
