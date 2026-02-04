@@ -52,6 +52,14 @@ export const Dashboard = () => {
         apiService.getSupportTickets({ status: 'open' }),
       ]);
 
+      console.log('📊 Dashboard data received:', {
+        metrics: metrics.data,
+        invoices: invoices.data,
+        apiKeys: apiKeys.data,
+        compliance: compliance.data,
+        tickets: tickets.data,
+      });
+
       setDashboardData({
         monthlyCharge: invoices.data[0]?.total_amount || 0,
         monthlyUsage: metrics.data,
@@ -59,6 +67,14 @@ export const Dashboard = () => {
         apiKeysCount: apiKeys.data.length,
         complianceStatus: compliance.data.status,
         pendingTickets: tickets.data.length,
+      });
+
+      console.log('✅ Dashboard state updated:', {
+        monthlyCharge: invoices.data[0]?.total_amount || 0,
+        apiKeysCount: apiKeys.data.length,
+        complianceStatus: compliance.data.status,
+        pendingTickets: tickets.data.length,
+        recentInvoicesCount: invoices.data.length,
       });
 
       setError(null);
