@@ -178,21 +178,25 @@ function App() {
     // Close mobile nav on route change
     setNavOpen(false);
     
-    // Load demo data if in demo mode
+    // Auto-login for demo mode
     if (isDemoMode) {
+      if (!localStorage.getItem('sessionToken')) {
+        localStorage.setItem('sessionToken', 'demo-token-12345');
+        localStorage.setItem('userRole', 'customer');
+      }
+      
+      // Try to load demo-data.json (optional, for reference only)
+      // The actual demo data is served by MockApiService from mockData.js
       fetch('/demo-data.json')
         .then(res => res.json())
         .then(data => {
           setDemoData(data);
-          // Store demo data globally for components to use
           window.demoData = data;
-          // Auto-login for demo mode
-          if (!localStorage.getItem('sessionToken')) {
-            localStorage.setItem('sessionToken', 'demo-token-12345');
-            localStorage.setItem('userRole', 'customer');
-          }
         })
-        .catch(err => console.error('Failed to load demo data:', err));
+        .catch(err => {
+          // Non-blocking: demo-data.json is optional/reference only
+          console.info('Demo data reference file not loaded (optional):', err.message);
+        });
     }
   }, [isDemoMode]);
 
