@@ -4,8 +4,18 @@
  */
 
 import api from './api';
+import { mockTeamUsers, mockRoles } from '../mocks/mockData';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.aws';
+const IS_DEMO_MODE = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+/**
+ * Demo mode helper - simulates API delay and returns mock data
+ */
+const mockApiCall = async (data, delay = 300) => {
+  await new Promise(resolve => setTimeout(resolve, delay));
+  return { data };
+};
 
 /**
  * User Management APIs
@@ -13,6 +23,9 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.aw
 
 // Create a new user
 export const createUser = async (userData, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot create users. Sign up for a trial to manage your team.');
+  }
   const response = await api.post(`${API_BASE}/users`, userData, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`,
@@ -24,6 +37,9 @@ export const createUser = async (userData, sessionToken) => {
 
 // Get list of users
 export const getUsers = async (filters, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    return mockApiCall(mockTeamUsers);
+  }
   const params = new URLSearchParams(filters).toString();
   const response = await api.get(`${API_BASE}/users?${params}`, {
     headers: {
@@ -35,6 +51,11 @@ export const getUsers = async (filters, sessionToken) => {
 
 // Get user by ID
 export const getUser = async (userId, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    const user = mockTeamUsers.find(u => u.id === userId);
+    if (!user) throw new Error('User not found');
+    return mockApiCall(user);
+  }
   const response = await api.get(`${API_BASE}/users/${userId}`, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`
@@ -45,6 +66,9 @@ export const getUser = async (userId, sessionToken) => {
 
 // Update user profile
 export const updateUser = async (userId, userData, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot update users. This is read-only demo data.');
+  }
   const response = await api.put(`${API_BASE}/users/${userId}`, userData, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`,
@@ -56,6 +80,9 @@ export const updateUser = async (userId, userData, sessionToken) => {
 
 // Update user role
 export const updateUserRole = async (userId, role, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot update user roles. This is read-only demo data.');
+  }
   const response = await api.put(`${API_BASE}/users/${userId}/role`, { role }, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`,
@@ -67,6 +94,9 @@ export const updateUserRole = async (userId, role, sessionToken) => {
 
 // Update user status
 export const updateUserStatus = async (userId, status, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot update user status. This is read-only demo data.');
+  }
   const response = await api.put(`${API_BASE}/users/${userId}/status`, { status }, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`,
@@ -78,6 +108,9 @@ export const updateUserStatus = async (userId, status, sessionToken) => {
 
 // Delete user
 export const deleteUser = async (userId, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot delete users. This is read-only demo data.');
+  }
   const response = await api.delete(`${API_BASE}/users/${userId}`, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`
@@ -88,6 +121,9 @@ export const deleteUser = async (userId, sessionToken) => {
 
 // Reset user password
 export const resetUserPassword = async (userId, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot reset passwords. This is read-only demo data.');
+  }
   const response = await api.post(`${API_BASE}/users/${userId}/reset-password`, {}, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`
@@ -98,6 +134,9 @@ export const resetUserPassword = async (userId, sessionToken) => {
 
 // Unlock user account
 export const unlockUserAccount = async (userId, sessionToken) => {
+  if (IS_DEMO_MODE) {
+    throw new Error('Demo mode: Cannot unlock accounts. This is read-only demo data.');
+  }
   const response = await api.post(`${API_BASE}/users/${userId}/unlock`, {}, {
     headers: {
       'Authorization': `Bearer ${sessionToken}`
