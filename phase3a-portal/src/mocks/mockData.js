@@ -455,3 +455,58 @@ export const mockWebhooks = [
     success_rate: 99.8
   }
 ];
+
+// Mock team/user data for Team Management (Phase 4)
+export const mockTeamUsers = [
+  {
+    id: "user_001",
+    name: "Demo Admin",
+    email: "admin@healthcorp.example.com",
+    role: "admin",
+    status: "active",
+    created_at: "2025-11-01T00:00:00Z",
+    last_login: "2026-02-04T08:30:00Z",
+    permissions: ["read", "write", "admin"]
+  },
+  {
+    id: "user_002",
+    name: "Demo Manager",
+    email: "manager@healthcorp.example.com",
+    role: "manager",
+    status: "active",
+    created_at: "2025-12-15T00:00:00Z",
+    last_login: "2026-02-03T14:22:00Z",
+    permissions: ["read", "write"]
+  },
+  {
+    id: "user_003",
+    name: "Demo Viewer",
+    email: "viewer@healthcorp.example.com",
+    role: "viewer",
+    status: "active",
+    created_at: "2026-01-10T00:00:00Z",
+    last_login: "2026-02-02T10:15:00Z",
+    permissions: ["read"]
+  }
+];
+
+export const mockRoles = [
+  {
+    id: "role_admin",
+    name: "Administrator",
+    description: "Full access to all features",
+    permissions: ["read", "write", "admin", "delete"]
+  },
+  {
+    id: "role_manager",
+    name: "Manager",
+    description: "Can manage users and view reports",
+    permissions: ["read", "write", "manage_users"]
+  },
+  {
+    id: "role_viewer",
+    name: "Viewer",
+    description: "Read-only access",
+    permissions: ["read"]
+  }
+];
