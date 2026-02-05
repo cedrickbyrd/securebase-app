@@ -4,13 +4,25 @@ Phase 4: Testing & Quality Assurance
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 import json
 import sys
 import os
 
+# Mock psycopg2 and boto3 before any imports
+sys.modules['psycopg2'] = MagicMock()
+sys.modules['psycopg2.pool'] = MagicMock()
+sys.modules['psycopg2.extras'] = MagicMock()
+sys.modules['boto3'] = MagicMock()
+sys.modules['botocore'] = MagicMock()
+sys.modules['botocore.exceptions'] = MagicMock()
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
+# Add lambda_layer/python to path for db_utils and other layer modules
+lambda_layer_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lambda_layer', 'python')
+if lambda_layer_path not in sys.path:
+    sys.path.insert(0, lambda_layer_path)
 
 
 class TestAuthV2(unittest.TestCase):
