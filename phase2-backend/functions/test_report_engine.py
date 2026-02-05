@@ -17,14 +17,26 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from decimal import Decimal
 from datetime import datetime, timedelta
 import io
 import base64
 
+# Mock psycopg2 and boto3 before any imports
+sys.modules['psycopg2'] = MagicMock()
+sys.modules['psycopg2.pool'] = MagicMock()
+sys.modules['psycopg2.extras'] = MagicMock()
+sys.modules['boto3'] = MagicMock()
+sys.modules['botocore'] = MagicMock()
+sys.modules['botocore.exceptions'] = MagicMock()
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add lambda_layer/python to path for db_utils and other layer modules
+lambda_layer_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lambda_layer', 'python')
+if lambda_layer_path not in sys.path:
+    sys.path.insert(0, lambda_layer_path)
 
 # Set AWS environment variables before importing
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
