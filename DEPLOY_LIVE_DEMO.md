@@ -399,8 +399,8 @@ Use this for:
 • Technical evaluations
 
 Built-in CTAs:
-• Start Free Trial → portal.securebase.io/signup
-• Book Live Demo → calendly.com/securebase/demo
+• Start Free Trial → securebase.io/signup
+• Book Live Demo → securebase.io/contact
 
 Questions? Reply to this email.
 

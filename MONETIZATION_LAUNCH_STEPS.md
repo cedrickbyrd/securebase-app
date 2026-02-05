@@ -293,7 +293,7 @@ aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 - [ ] Update LinkedIn profile with SecureBase messaging
 - [ ] Create Calendly link for demo bookings
 - [ ] Set up email sequences in your outreach tool
-- [ ] Launch pricing page (portal.securebase.io/signup)
+- [ ] Launch pricing page (securebase.io/signup)
 
 ### Week 1 Goals
 - [ ] Send 100 LinkedIn connection requests to CTOs

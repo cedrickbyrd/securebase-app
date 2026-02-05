@@ -4,7 +4,7 @@
 
 Choose your tier based on your compliance needs. All tiers include multi-tenant AWS Organization, dedicated customer accounts, centralized logging, IAM Identity Center (SSO), and customer portal access.
 
-[🚀 Start Free Trial (30 Days)](https://portal.securebase.io/signup) | [📞 Book Demo](https://calendly.com/securebase/demo) | [💬 Contact Sales](mailto:sales@securebase.io)
+[🚀 Start Free Trial (30 Days)](https://securebase.io/signup) | [📞 Book Demo](https://securebase.io/contact) | [💬 Contact Sales](mailto:sales@securebase.io)
 
 ---
 
@@ -428,7 +428,7 @@ Need a custom solution? We work with enterprises requiring:
 
 ### Contact Enterprise Sales:
 - **Email:** [enterprise@securebase.io](mailto:enterprise@securebase.io)
-- **Schedule Call:** [https://calendly.com/securebase/enterprise](https://calendly.com/securebase/enterprise)
+- **Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
 - **Response Time:** <2 hours (business hours)
 
 ---
@@ -479,13 +479,13 @@ Need a custom solution? We work with enterprises requiring:
 
 <div style="text-align: center; margin: 40px 0;">
 
-**[🚀 Start Free Trial - Standard ($2K)](https://portal.securebase.io/signup?tier=standard)**
+**[🚀 Start Free Trial - Standard ($2K)](https://securebase.io/signup?tier=standard)**
 
-**[🚀 Start Free Trial - Fintech ($8K)](https://portal.securebase.io/signup?tier=fintech)**
+**[🚀 Start Free Trial - Fintech ($8K)](https://securebase.io/signup?tier=fintech)**
 
-**[🚀 Start Free Trial - Healthcare ($15K)](https://portal.securebase.io/signup?tier=healthcare)**
+**[🚀 Start Free Trial - Healthcare ($15K)](https://securebase.io/signup?tier=healthcare)**
 
-**[🚀 Start Free Trial - Government ($25K)](https://portal.securebase.io/signup?tier=government)**
+**[🚀 Start Free Trial - Government ($25K)](https://securebase.io/signup?tier=government)**
 
 </div>
 
@@ -493,7 +493,7 @@ Need a custom solution? We work with enterprises requiring:
 
 ### Or Talk to Our Team:
 
-**[📞 Book a Demo](https://calendly.com/securebase/demo)** - See SecureBase in action (30 minutes)
+**[📞 Book a Demo](https://securebase.io/contact)** - See SecureBase in action (30 minutes)
 
 **[💬 Contact Sales](mailto:sales@securebase.io)** - Get custom pricing and answers
 

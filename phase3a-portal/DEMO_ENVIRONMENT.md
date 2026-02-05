@@ -156,8 +156,8 @@ VITE_RESET_INTERVAL_HOURS=24
 VITE_DEMO_SESSION_DURATION_DAYS=7
 
 # CTAs
-VITE_DEMO_CTA_TRIAL_URL=https://portal.securebase.io/signup
-VITE_DEMO_CTA_BOOK_DEMO_URL=https://calendly.com/securebase/demo
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.io/signup
+VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.io/contact
 VITE_DEMO_CTA_CONTACT_SALES=mailto:sales@securebase.io
 ```
 
