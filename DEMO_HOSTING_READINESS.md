@@ -616,7 +616,7 @@ Update `phase3a-portal/src/App.jsx`:
   <div className="bg-yellow-100 border-b border-yellow-400 px-4 py-2 text-center">
     <p className="text-sm text-yellow-800">
       📊 <strong>Demo Mode:</strong> Displaying sample data. 
-      <a href="https://portal.securebase.io/signup" className="underline ml-2">
+      <a href="https://securebase.io/signup" className="underline ml-2">
         Start Free Trial →
       </a>
     </p>

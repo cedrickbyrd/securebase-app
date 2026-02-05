@@ -2,7 +2,7 @@
 
 **Stop spending 6-12 weeks on AWS setup.** SecureBase deploys production-ready, SOC 2/HIPAA-compliant infrastructure in under 10 minutes.
 
-<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a href="https://securebase.io/pricing">💰 View Pricing</a>
+<a href="https://securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://securebase.io/contact">📞 Book Demo</a> | <a href="https://securebase.io/pricing">💰 View Pricing</a>
 
 ---
 
@@ -65,7 +65,10 @@
 
 **Try the full customer portal with no signup required:**
 
-🖥️ **<a href="https://demo.securebase.io">Try Live Demo</a>** - Pre-populated with realistic customer data
+🖥️ **[Try Live Demo](https://demo.securebase.io)** - Pre-populated with realistic customer data
+
+> **Note:** Demo portal deploys to `demo.securebase.io` via Netlify. 
+> Marketing site is at `securebase.io`.
 
 **Features:**
 - ✅ Complete dashboard with metrics and charts
@@ -100,13 +103,13 @@
 ## 🚀 Get Started in 3 Ways
 
 ### Option 1: Self-Service (Fastest ⚡)
-1. <a href="https://portal.securebase.io/signup">Sign up for free trial</a>
+1. <a href="https://securebase.io/signup">Sign up for free trial</a>
 2. Select your compliance tier
 3. Deploy infrastructure (7-10 minutes)
 4. Start building ✅
 
 ### Option 2: Guided Demo (Recommended for Enterprise 👔)
-- <a href="https://calendly.com/securebase/demo">Book 30-minute demo</a>
+- <a href="https://securebase.io/contact">Book 30-minute demo</a>
 - See live deployment
 - Ask questions about your use case
 - Get custom pricing
@@ -276,7 +279,7 @@ A: We currently support SOC 2, HIPAA, FedRAMP, CIS. Custom frameworks available 
 **Sales Inquiries**  
 📧 sales@securebase.io  
 📞 [Phone number TBD]  
-📅 <a href="https://calendly.com/securebase/demo">Book Demo</a>
+📅 <a href="https://securebase.io/contact">Book Demo</a>
 
 **Support**  
 📧 support@securebase.io  
@@ -321,7 +324,7 @@ Monday - Friday, 9 AM - 5 PM ET
 
 **Choose your path:**
 
-<a href="https://portal.securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://calendly.com/securebase/demo">📞 Book Demo</a> | <a href="mailto:sales@securebase.io">💬 Email Sales</a>
+<a href="https://securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://securebase.io/contact">📞 Book Demo</a> | <a href="mailto:sales@securebase.io">💬 Email Sales</a>
 
 ---
 

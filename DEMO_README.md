@@ -344,7 +344,7 @@ POST /api/auth/logout          # Session cleanup
 
 ### How to Get Started
 
-1. **Sign Up:** [portal.securebase.io/signup](https://portal.securebase.io/signup)
+1. **Sign Up:** [securebase.io/signup](https://securebase.io/signup)
 2. **Choose Tier:**
    - Standard: $2,000/mo (CIS Foundations)
    - Fintech: $8,000/mo (SOC 2 Type II)
@@ -362,7 +362,7 @@ POST /api/auth/logout          # Session cleanup
 ✅ **Dedicated support** - Engineering team assistance  
 ✅ **No commitment** - Cancel anytime
 
-**Book a demo call:** [calendly.com/securebase/demo](https://calendly.com/securebase/demo)
+**Book a demo call:** [securebase.io/contact](https://securebase.io/contact)
 
 ---
 
@@ -370,7 +370,7 @@ POST /api/auth/logout          # Session cleanup
 
 ### Live Environments
 - **Demo:** https://demo.securebase.io
-- **Production Signup:** https://portal.securebase.io/signup
+- **Production Signup:** https://securebase.io/signup
 - **Marketing Site:** https://securebase.io
 - **Documentation:** https://docs.securebase.io
 
