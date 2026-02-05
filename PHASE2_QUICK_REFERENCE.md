@@ -125,6 +125,9 @@ WEEK 3: Production
 
 ## API Endpoints (10+)
 
+### Health Check
+- `GET /health` - API health status (no auth required)
+
 ### Authentication
 - `POST /auth/authenticate` - Get session token
 
