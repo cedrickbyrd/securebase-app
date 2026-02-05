@@ -80,7 +80,7 @@ The following secrets must be configured in GitHub repository settings:
 - ✅ GitHub Actions summary with deployment status
 - ✅ HTTP 200 verification checks
 - ✅ 5-minute timeout per job
-- ✅ Node.js 18 with dependency caching
+- ✅ Node.js 20 with dependency caching
 - ✅ Independent deployments (marketing and portal run in parallel)
 
 ## Manual Deployment
@@ -118,7 +118,8 @@ To manually trigger a deployment:
 
 ### Build Fails: Dependencies Error
 - Check that `package.json` and `package-lock.json` are up to date
-- Verify Node.js version compatibility (workflow uses Node 18)
+- Verify Node.js version compatibility (workflow uses Node 20)
+- Note: The root project uses `rolldown-vite@7.2.5` which requires Node 20.19+ or 22.12+
 
 ### Verification Fails: HTTP 200 Check
 - Check that custom domains are configured in Netlify
