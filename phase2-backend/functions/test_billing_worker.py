@@ -4,7 +4,7 @@ Phase 4: Testing & Quality Assurance
 """
 
 import unittest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 import json
 import sys
 import os

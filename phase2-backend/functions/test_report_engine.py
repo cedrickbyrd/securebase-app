@@ -17,7 +17,7 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from decimal import Decimal
 from datetime import datetime, timedelta
 import io
