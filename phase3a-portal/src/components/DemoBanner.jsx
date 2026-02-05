@@ -7,8 +7,8 @@ const DemoBanner = () => {
   
   if (!isDemoMode) return null;
 
-  const trialUrl = import.meta.env.VITE_DEMO_CTA_TRIAL_URL || 'https://portal.securebase.io/signup';
-  const bookDemoUrl = import.meta.env.VITE_DEMO_CTA_BOOK_DEMO_URL || 'https://calendly.com/securebase/demo';
+  const trialUrl = import.meta.env.VITE_DEMO_CTA_TRIAL_URL || 'https://securebase.io/signup';
+  const bookDemoUrl = import.meta.env.VITE_DEMO_CTA_BOOK_DEMO_URL || 'https://securebase.io/contact';
 
   return (
     <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 shadow-lg sticky top-0 z-50">
