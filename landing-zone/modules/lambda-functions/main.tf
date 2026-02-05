@@ -152,6 +152,35 @@ resource "aws_lambda_function" "auth_v2" {
   })
 }
 
+# Health Check Lambda
+resource "aws_lambda_function" "health_check" {
+  filename         = var.lambda_packages["health_check"]
+  function_name    = "securebase-${var.environment}-health-check"
+  role            = aws_iam_role.lambda_execution.arn
+  handler         = "health_check.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["health_check"])
+  runtime         = "python3.11"
+  timeout         = 10
+  memory_size     = 256
+
+  environment {
+    variables = {
+      ENVIRONMENT        = var.environment
+      RDS_PROXY_ENDPOINT = var.rds_proxy_endpoint
+      LOG_LEVEL          = "INFO"
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.lambda_security_group_id]
+  }
+
+  tags = merge(var.tags, {
+    Name = "securebase-${var.environment}-health-check"
+  })
+}
+
 # Webhook Manager Lambda
 resource "aws_lambda_function" "webhook_manager" {
   filename         = var.lambda_packages["webhook_manager"]
@@ -275,6 +304,12 @@ resource "aws_lambda_function" "cost_forecasting" {
 
 resource "aws_cloudwatch_log_group" "auth_v2" {
   name              = "/aws/lambda/securebase-${var.environment}-auth-v2"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "health_check" {
+  name              = "/aws/lambda/securebase-${var.environment}-health-check"
   retention_in_days = 30
   tags              = var.tags
 }

@@ -42,6 +42,56 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## Endpoints
 
+### Health Check
+
+#### GET /health
+Check API health status and database connectivity.
+
+**Authentication:** None (public endpoint)
+
+**Request:**
+```bash
+curl -X GET https://api.securebase.io/v1/health
+```
+
+**Response (200 - Healthy):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-02-05T14:30:00Z",
+  "version": "2.0.0",
+  "checks": {
+    "database": "healthy"
+  }
+}
+```
+
+**Response (503 - Degraded):**
+```json
+{
+  "status": "degraded",
+  "timestamp": "2026-02-05T14:30:15Z",
+  "version": "2.0.0",
+  "checks": {
+    "database": "unhealthy"
+  },
+  "errors": [
+    {
+      "component": "database",
+      "error": "Connection timeout"
+    }
+  ]
+}
+```
+
+**Use Cases:**
+- Route53 health checks for failover
+- Load balancer health monitoring
+- Uptime monitoring services
+- Infrastructure automation
+
+---
+
 ### Authentication
 
 #### POST /auth/authenticate

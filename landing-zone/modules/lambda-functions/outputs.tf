@@ -10,6 +10,16 @@ output "auth_v2_name" {
   value       = aws_lambda_function.auth_v2.function_name
 }
 
+output "health_check_arn" {
+  description = "ARN of health_check Lambda function"
+  value       = aws_lambda_function.health_check.arn
+}
+
+output "health_check_name" {
+  description = "Name of health_check Lambda function"
+  value       = aws_lambda_function.health_check.function_name
+}
+
 output "webhook_manager_arn" {
   description = "ARN of webhook_manager Lambda function"
   value       = aws_lambda_function.webhook_manager.arn
@@ -59,6 +69,7 @@ output "all_lambda_arns" {
   description = "Map of all Lambda function ARNs"
   value = {
     auth_v2          = aws_lambda_function.auth_v2.arn
+    health_check     = aws_lambda_function.health_check.arn
     webhook_manager  = aws_lambda_function.webhook_manager.arn
     billing_worker   = aws_lambda_function.billing_worker.arn
     support_tickets  = aws_lambda_function.support_tickets.arn
