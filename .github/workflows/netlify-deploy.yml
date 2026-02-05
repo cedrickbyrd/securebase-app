@@ -1,0 +1,187 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-marketing:
+    name: Deploy Marketing Site (securebase.io)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      preview-url: ${{ steps.netlify-deploy.outputs.deploy-url }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build marketing site
+        run: npm run build
+        env:
+          VITE_ENV: demo
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MARKETING_SITE_ID }}
+        timeout-minutes: 5
+
+      - name: Update deployment summary
+        run: |
+          echo "### 🚀 Marketing Site Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  deploy-portal-demo:
+    name: Deploy Demo Portal (demo.securebase.io)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: phase3a-portal
+    outputs:
+      preview-url: ${{ steps.netlify-deploy.outputs.deploy-url }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'phase3a-portal/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build demo portal
+        run: npm run build
+        env:
+          VITE_USE_MOCK_API: true
+          VITE_ENV: demo
+          VITE_ANALYTICS_ENABLED: false
+
+      - name: Copy demo data
+        run: |
+          if [ -f demo-data.json ]; then
+            cp demo-data.json dist/demo-data.json
+            echo "✅ Demo data copied to dist/"
+          else
+            echo "⚠️ demo-data.json not found, skipping"
+          fi
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './phase3a-portal/dist'
+          production-branch: main
+          production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy Portal from GitHub Actions - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DEMO_SITE_ID }}
+        timeout-minutes: 5
+
+      - name: Update deployment summary
+        run: |
+          echo "### 🎯 Demo Portal Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  verify-deployments:
+    name: Verify Deployments
+    needs: [deploy-marketing, deploy-portal-demo]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Wait for DNS propagation
+        run: sleep 10
+
+      - name: Test Marketing Site (securebase.io)
+        run: |
+          echo "🧪 Testing https://securebase.io..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
+          
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Marketing site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Marketing site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Test Demo Portal (demo.securebase.io)
+        run: |
+          echo "🧪 Testing https://demo.securebase.io..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.io)
+          
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo portal is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Demo portal returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Generate final summary
+        if: always()
+        run: |
+          echo "## 📊 Deployment Verification Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Test marketing site
+          MARKETING_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
+          if [ "$MARKETING_STATUS" -eq 200 ]; then
+            echo "- ✅ **Marketing Site**: https://securebase.io (HTTP $MARKETING_STATUS)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Marketing Site**: https://securebase.io (HTTP $MARKETING_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Test demo portal
+          DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.io)
+          if [ "$DEMO_STATUS" -eq 200 ]; then
+            echo "- ✅ **Demo Portal**: https://demo.securebase.io (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Demo Portal**: https://demo.securebase.io (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
