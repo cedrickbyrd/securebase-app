@@ -130,7 +130,7 @@ SecureBase deploys production-ready, {{framework}}-compliant landing zones in 48
 
 50% off for our first 20 customers ({{slots}} spots left).
 
-Worth a 15-minute call? https://calendly.com/securebase/demo
+Worth a 15-minute call? https://securebase.io/contact
 ```
 
 ### LinkedIn Sequence (30% response rate)

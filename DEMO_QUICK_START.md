@@ -380,7 +380,7 @@ function App() {
               </span>
             </div>
             <a 
-              href="https://portal.securebase.io/signup" 
+              href="https://securebase.io/signup" 
               className="text-sm font-semibold text-yellow-900 hover:text-yellow-700 underline"
             >
               Start Free Trial →

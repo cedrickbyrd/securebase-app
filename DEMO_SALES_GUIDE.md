@@ -51,7 +51,7 @@ http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
 • Full portal functionality (read-only)
 • Explore at your own pace
 
-Ready to deploy your own? Start free trial: https://portal.securebase.io/signup
+Ready to deploy your own? Start free trial: https://securebase.io/signup
 ```
 
 ### Email Template
@@ -79,7 +79,7 @@ Questions? Let me know!
 
 [Your name]
 
-P.S. Ready to deploy? Start your free trial: https://portal.securebase.io/signup
+P.S. Ready to deploy? Start your free trial: https://securebase.io/signup
 ```
 
 ### Follow-Up Template
@@ -160,8 +160,8 @@ The demo includes prominent CTAs:
    - "Start Free Trial"
 
 **Where they go:**
-- Start Free Trial → https://portal.securebase.io/signup
-- Book Demo → https://calendly.com/securebase/demo
+- Start Free Trial → https://securebase.io/signup
+- Book Demo → https://securebase.io/contact
 
 ---
 

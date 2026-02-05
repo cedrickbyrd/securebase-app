@@ -4,7 +4,7 @@
 
 Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and we'll get back to you within 2 hours.
 
-[🚀 Start Free Trial](https://portal.securebase.io/signup) | [📞 Book Demo](https://calendly.com/securebase/demo) | [💰 View Pricing](./PRICING.md)
+[🚀 Start Free Trial](https://securebase.io/signup) | [📞 Book Demo](https://securebase.io/contact) | [💰 View Pricing](./PRICING.md)
 
 ---
 
@@ -164,11 +164,11 @@ We're here to help! Our team typically responds within 2 hours during business h
 ### 💰 Sales & Pricing
 **Email:** [sales@securebase.io](mailto:sales@securebase.io)  
 **Phone:** Coming soon  
-**Schedule Call:** [https://calendly.com/securebase/demo](https://calendly.com/securebase/demo)
+**Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
 
 ### 🏢 Enterprise & Custom Solutions
 **Email:** [enterprise@securebase.io](mailto:enterprise@securebase.io)  
-**Schedule Call:** [https://calendly.com/securebase/enterprise](https://calendly.com/securebase/enterprise)
+**Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
 
 ### 🛠️ Technical Support
 **Email:** [support@securebase.io](mailto:support@securebase.io)  
@@ -188,7 +188,7 @@ We're here to help! Our team typically responds within 2 hours during business h
 
 ## 🚀 Ready to Get Started?
 
-**[Start Your Free 30-Day Trial →](https://portal.securebase.io/signup)**
+**[Start Your Free 30-Day Trial →](https://securebase.io/signup)**
 
 No credit card required. Full access to all features. Cancel anytime.
 

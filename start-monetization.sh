@@ -288,7 +288,7 @@ cat > sales-deck.md << 'DECK'
 
 ## Slide 5: Call to Action
 **Start your 30-day free trial today**
-→ portal.securebase.io/signup
+→ securebase.io/signup
 DECK
 
 echo "✓ Sales deck created: sales-deck.md"
@@ -331,7 +331,7 @@ cat > MONETIZATION_TODO.md << 'TODO'
 - [ ] Send 100 LinkedIn connection requests
 - [ ] Send 50 cold emails to healthcare CTOs
 - [ ] Record 15-minute demo video
-- [ ] Set up calendly.com/securebase for demo bookings
+- [ ] Set up securebase.io/contact for demo bookings
 
 ## Day 3-7
 - [ ] LinkedIn outreach: 500 connections

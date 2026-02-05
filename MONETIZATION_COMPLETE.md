@@ -218,7 +218,7 @@ We're offering 50% off to our first 20 customers ({{slots_remaining}} spots left
 
 Worth a 15-minute call to see if we can save you $400K+ in Year 1?
 
-Calendar: https://calendly.com/securebase/demo
+Calendar: https://securebase.io/contact
 
 Best,
 [Your Name]
@@ -239,7 +239,7 @@ Quick question: how much time is your team spending on AWS infrastructure setup 
 
 We just launched a pilot program (50% off) to help {{industry}} companies like {{Company}} deploy HIPAA/SOC2-compliant landing zones in 2 days.
 
-Open to a quick 15-min demo? https://calendly.com/securebase/demo
+Open to a quick 15-min demo? https://securebase.io/contact
 ```
 
 **Day 7:** Value add (if no response)
@@ -281,7 +281,7 @@ Your savings: $404K in Year 1
 
 **Minutes 13-15: Close**
 - "Want to start a 30-day free trial today?"
-- Send signup link: https://portal.securebase.io/signup
+- Send signup link: https://securebase.io/signup
 - Follow up: "I'll check in next week to see how the trial is going"
 
 ---
