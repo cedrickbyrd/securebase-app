@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 
 # Mock psycopg2 and boto3 before any imports
 sys.modules['psycopg2'] = MagicMock()
