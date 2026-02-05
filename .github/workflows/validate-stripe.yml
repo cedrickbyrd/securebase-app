@@ -1,0 +1,162 @@
+name: Stripe Integration Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_environment:
+        description: 'Target environment for validation'
+        required: true
+        type: choice
+        options:
+          - test
+          - production
+
+jobs:
+  stripe_api_validation:
+    name: Stripe API Configuration Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Retrieve repository code
+        uses: actions/checkout@v4
+
+      - name: Configure Python runtime
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Execute API connectivity check
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          python scripts/validate-stripe.py --test-connection
+
+      - name: Execute product inventory check
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          python scripts/validate-stripe.py --check-products
+
+      - name: Execute pricing configuration check
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_HEALTHCARE: ${{ secrets.STRIPE_PRICE_HEALTHCARE }}
+          STRIPE_PRICE_FINTECH: ${{ secrets.STRIPE_PRICE_FINTECH }}
+          STRIPE_PRICE_GOVERNMENT: ${{ secrets.STRIPE_PRICE_GOVERNMENT }}
+          STRIPE_PRICE_STANDARD: ${{ secrets.STRIPE_PRICE_STANDARD }}
+        run: |
+          python scripts/validate-stripe.py --verify-prices
+
+      - name: Execute webhook endpoint check
+        env:
+          WEBHOOK_URL: ${{ secrets.STRIPE_WEBHOOK_URL }}
+        run: |
+          python scripts/validate-stripe.py --test-webhook
+
+  lambda_infrastructure_validation:
+    name: AWS Lambda Deployment Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Retrieve repository code
+        uses: actions/checkout@v4
+
+      - name: Setup AWS authentication
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Verify checkout session Lambda exists
+        run: |
+          echo "Checking create-checkout-session Lambda..."
+          aws lambda get-function \
+            --function-name securebase-create-checkout-session \
+            --query 'Configuration.FunctionName' \
+            --output text
+
+      - name: Verify webhook handler Lambda exists
+        run: |
+          echo "Checking stripe-webhook Lambda..."
+          aws lambda get-function \
+            --function-name securebase-stripe-webhook \
+            --query 'Configuration.FunctionName' \
+            --output text
+
+      - name: Inspect webhook Lambda environment
+        run: |
+          echo "Inspecting environment variables..."
+          aws lambda get-function-configuration \
+            --function-name securebase-stripe-webhook \
+            --query 'Environment.Variables' \
+            --output json | jq 'keys'
+
+      - name: Execute test invocation
+        run: |
+          echo "Testing Lambda invocation..."
+          aws lambda invoke \
+            --function-name securebase-create-checkout-session \
+            --payload '{"body": "{\"test\": true}"}' \
+            --log-type Tail \
+            /tmp/lambda-response.json
+          
+          echo "Response:"
+          cat /tmp/lambda-response.json | jq .
+
+  database_schema_validation:
+    name: PostgreSQL Schema Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Retrieve repository code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Execute connection test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Testing database connectivity..."
+          psql "$DATABASE_URL" -c "SELECT current_database(), version();"
+
+      - name: Inspect customers table structure
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Inspecting customers table..."
+          psql "$DATABASE_URL" -c "\d customers"
+
+      - name: Inspect invoices table structure
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Inspecting invoices table..."
+          psql "$DATABASE_URL" -c "\d invoices"
+
+      - name: Verify Stripe-related columns
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Checking for Stripe columns..."
+          psql "$DATABASE_URL" -c "
+            SELECT 
+              table_name,
+              column_name,
+              data_type,
+              is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name IN ('customers', 'invoices')
+              AND column_name LIKE '%stripe%'
+            ORDER BY table_name, ordinal_position;
+          "
