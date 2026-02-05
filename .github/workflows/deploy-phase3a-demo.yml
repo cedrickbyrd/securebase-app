@@ -87,101 +87,38 @@ jobs:
           retention-days: 7
 
   deploy-demo:
-    name: Deploy to S3 Demo
+    name: Deploy to GitHub Pages
     needs: build-demo
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
-      name: demo
-      url: http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4.1.8
         with:
           name: phase3a-demo-build
           path: dist/
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          path: dist/
 
-      - name: Create S3 bucket
-        run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-
-          if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
-            echo "Creating S3 bucket: $BUCKET_NAME"
-            if [ "$REGION" == "us-east-1" ]; then
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION"
-            else
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
-            fi
-          else
-            echo "S3 bucket already exists: $BUCKET_NAME"
-          fi
-
-      - name: Configure S3 static website hosting
-        run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          aws s3 website "s3://$BUCKET_NAME" \
-            --index-document index.html \
-            --error-document index.html
-
-      - name: Set S3 bucket policy
-        run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          cat > bucket-policy.json << EOF
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Sid": "PublicReadGetObject",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
-              }
-            ]
-          }
-          EOF
-          aws s3api put-bucket-policy \
-            --bucket "$BUCKET_NAME" \
-            --policy file://bucket-policy.json
-
-      - name: Sync files to S3
-        run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-
-          # Sync all files except HTML and JSON with long cache
-          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
-            --delete \
-            --cache-control "public,max-age=31536000,immutable" \
-            --exclude "*.html" \
-            --exclude "*.json"
-
-          # Upload HTML and JSON files with no-cache
-          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
-            --exclude "*" \
-            --include "*.html" \
-            --include "*.json" \
-            --cache-control "no-cache,no-store,must-revalidate"
-
-      - name: Output demo URL
-        run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-          echo "Demo URL: $DEMO_URL"
-          echo "demo_url=$DEMO_URL" >> $GITHUB_OUTPUT
-        id: deploy
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   validate-demo:
     name: Validate Demo Deployment
@@ -194,9 +131,7 @@ jobs:
 
       - name: Smoke test - Check HTTP status
         run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
 
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL")
 
@@ -209,9 +144,7 @@ jobs:
 
       - name: Validate index.html
         run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
 
           if curl -s "$DEMO_URL" | grep -q "SecureBase"; then
             echo "✅ Index.html contains expected content"
@@ -222,9 +155,7 @@ jobs:
 
       - name: Validate demo data
         run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
 
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL/demo-data.json")
 
@@ -243,12 +174,10 @@ jobs:
     steps:
       - name: Deployment notification
         run: |
-          BUCKET_NAME="securebase-phase3a-demo"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          DEMO_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
 
           if [ "${{ needs.validate-demo.result }}" == "success" ]; then
-            echo "✅ Phase 3a demo deployed successfully"
+            echo "✅ Phase 3a demo deployed successfully to GitHub Pages"
             echo "Demo URL: $DEMO_URL"
             echo ""
             echo "Share with prospects:"
@@ -259,4 +188,4 @@ jobs:
           else
             echo "❌ Demo deployment or validation failed"
             exit 1
-          fi  
+          fi
