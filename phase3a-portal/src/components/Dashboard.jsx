@@ -97,6 +97,12 @@ export const Dashboard = () => {
     );
   }
 
+  console.log('🎨 Dashboard rendering with data:', {
+    hasData: !!dashboardData,
+    monthlyCharge: dashboardData.monthlyCharge,
+    loading: false
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
