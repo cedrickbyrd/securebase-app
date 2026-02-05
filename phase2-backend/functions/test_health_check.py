@@ -126,6 +126,8 @@ class TestHealthCheck(unittest.TestCase):
         body = json.loads(response["body"])
         self.assertEqual(body["status"], "error")
         self.assertIn("error", body)
+        self.assertIn("request_id", body)
+        self.assertTrue(body["request_id"].startswith("hc_"))
     
     @patch('health_check.check_database')
     def test_cache_control_headers(self, mock_check_db):
