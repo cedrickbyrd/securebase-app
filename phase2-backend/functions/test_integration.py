@@ -7,11 +7,26 @@ Run with: pytest test_integration.py -v --cov
 
 import json
 import os
+import sys
 import unittest
 from unittest.mock import patch, MagicMock
+
+# Mock psycopg2 and boto3 before any imports
+sys.modules['psycopg2'] = MagicMock()
+sys.modules['psycopg2.pool'] = MagicMock()
+sys.modules['psycopg2.extras'] = MagicMock()
+sys.modules['boto3'] = MagicMock()
+sys.modules['botocore'] = MagicMock()
+sys.modules['botocore.exceptions'] = MagicMock()
+
 import boto3
 from datetime import datetime, timedelta
 import time
+
+# Add lambda_layer/python to path for db_utils and other layer modules
+lambda_layer_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lambda_layer', 'python')
+if lambda_layer_path not in sys.path:
+    sys.path.insert(0, lambda_layer_path)
 
 # Set AWS environment
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
