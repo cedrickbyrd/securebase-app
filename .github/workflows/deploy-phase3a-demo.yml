@@ -79,6 +79,14 @@ jobs:
             echo "⚠️ demo-data.json not found, skipping"
           fi
 
+      - name: Verify CSS build
+        run: |
+          echo "📋 Listing dist/assets directory:"
+          ls -lah dist/assets/ || echo "No assets directory found"
+          echo ""
+          echo "🎨 Checking for CSS files:"
+          find dist -name "*.css" -exec echo "Found: {}" \; -exec wc -l {} \;
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.3
         with:
