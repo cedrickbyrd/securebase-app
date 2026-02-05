@@ -31,6 +31,16 @@ variable "auth_lambda_name" {
   type        = string
 }
 
+variable "health_check_lambda_arn" {
+  description = "ARN of the health check Lambda function"
+  type        = string
+}
+
+variable "health_check_lambda_name" {
+  description = "Name of the health check Lambda function"
+  type        = string
+}
+
 variable "webhook_lambda_arn" {
   description = "ARN of the webhook manager Lambda function"
   type        = string
