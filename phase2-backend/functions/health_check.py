@@ -151,6 +151,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"Health check handler failed: {str(e)}", exc_info=True)
+        
+        # Generate a request ID for correlation with logs
+        import uuid
+        request_id = str(uuid.uuid4())[:8]
+        
         return {
             "statusCode": 503,
             "headers": {
@@ -160,6 +165,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "body": json.dumps({
                 "status": "error",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-                "error": "Internal server error"
+                "error": "Service temporarily unavailable",
+                "request_id": f"hc_{request_id}"
             })
         }
