@@ -348,15 +348,16 @@ git push origin main
 
 While Netlify is the primary platform, configurations exist for alternatives:
 
-### Vercel (Staging/Testing)
+### AWS S3 + CloudFront (Production)
 
-**Configuration:** `vercel.json` (repository root)  
-**Current Use:** Staging environment  
-**URL:** `securebase-app.vercel.app`  
+**Configuration:** Can use existing build output  
+**Current Use:** Production environment  
+**URL:** `securebase.io`  
 
 **Deploy Command:**
 ```bash
-vercel --prod
+aws s3 sync dist/ s3://your-bucket-name
+aws cloudfront create-invalidation --distribution-id YOUR_ID --paths "/*"
 ```
 
 ---

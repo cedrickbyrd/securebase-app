@@ -3,7 +3,7 @@
 **Assessment Date:** February 1, 2026  
 **Repository:** cedrickbyrd/securebase-app (main branch)  
 **Assessment Type:** Public Demo & Marketing Site Deployment Readiness  
-**Target Platforms:** Vercel, Netlify, GitHub Pages
+**Target Platforms:** Netlify, GitHub Pages
 
 ---
 
@@ -18,7 +18,7 @@ SecureBase is a **multi-phase, multi-tenant AWS PaaS platform** with distinct de
 
 1. ✅ **GitHub Pages workflow exists** - Deploy workflow ready at `.github/workflows/deploy-pages.yml`
 2. ✅ **Frontend/backend properly separated** - Multiple independent deployable artifacts
-3. ✅ **Vercel/Netlify configs available** - `vercel.json` and `netlify.toml` files present
+3. ✅ **Netlify config available** - `netlify.toml` file present
 4. ⚠️ **Portal has API dependencies** - Phase 3a portal requires backend or mock API
 5. ✅ **Root marketing site is demo-ready** - Pure static React app, no dependencies
 
@@ -26,18 +26,7 @@ SecureBase is a **multi-phase, multi-tenant AWS PaaS platform** with distinct de
 
 ## 1. Frontend Configuration Assessment
 
-### 1.1 Vercel Configuration
-
-**Status:** ❌ **MISSING**
-
-**Files Searched:** None found
-- No `vercel.json` in repository root
-- No `vercel.json` in phase3a-portal/
-- No Vercel-specific configuration detected
-
-**Impact:** Cannot deploy to Vercel without manual configuration via dashboard or creating config file.
-
-### 1.2 Netlify Configuration
+### 1.1 Netlify Configuration
 
 **Status:** ✅ **CONFIGURED**
 
@@ -47,7 +36,7 @@ SecureBase is a **multi-phase, multi-tenant AWS PaaS platform** with distinct de
 
 **Impact:** Ready for immediate Netlify deployment via Git integration or CLI.
 
-### 1.3 GitHub Pages Configuration
+### 1.2 GitHub Pages Configuration
 
 **Status:** ✅ **CONFIGURED AND READY**
 
@@ -228,38 +217,7 @@ The repository contains **THREE distinct frontend applications**:
 
 ---
 
-### 3.2 Proposed Flow (Vercel - if configured)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Push to main branch OR Pull Request                        │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Vercel Auto-Build:                                          │
-│ 1. Detect vite.config.js                                    │
-│ 2. Run: npm run build                                       │
-│ 3. Deploy dist/ to CDN                                      │
-│ 4. Generate preview URL (for PRs)                           │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Live: https://securebase-app.vercel.app (production)       │
-│ Preview: https://securebase-app-pr-123.vercel.app (PR)     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Advantages:**
-- ✅ Automatic preview deployments for PRs
-- ✅ Zero-config deployment (Vite auto-detected)
-- ✅ Built-in CDN and edge caching
-- ✅ Custom domain support
-
----
-
-### 3.3 Proposed Flow (Netlify - if configured)
+### 3.2 Proposed Flow (Netlify)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -334,59 +292,7 @@ The repository contains **THREE distinct frontend applications**:
 
 ---
 
-### 4.2 Vercel (NEEDS CONFIGURATION)
-
-**Assessment:** ⚠️ **REQUIRES CONFIGURATION FILE**
-
-**What's Missing:**
-1. `vercel.json` configuration file
-2. Project connection to Vercel account
-
-**Required Configuration File (vercel.json):**
-```json
-{
-  "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**Steps to Deploy:**
-
-1. **Create vercel.json** (shown above)
-2. **Install Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
-3. **Deploy**
-   ```bash
-   vercel --prod
-   ```
-
-**Estimated Time:** 15-20 minutes
-
-**Blockers:** 
-- Configuration file must be created
-- Vercel account required
-
----
-
-### 4.3 Netlify (NEEDS CONFIGURATION)
+### 4.2 Netlify (NEEDS CONFIGURATION)
 
 **Assessment:** ⚠️ **REQUIRES CONFIGURATION FILE**
 
@@ -624,7 +530,7 @@ phase2-backend/
 **Phase 2 Serverless Backend:**
 - **Platform:** AWS Lambda + Aurora Serverless v2 + API Gateway
 - **Status:** ✅ **PRODUCTION DEPLOYED** (since Jan 26, 2026)
-- **PaaS Compatibility:** ❌ Not compatible with Vercel/Netlify/Heroku/Render
+- **PaaS Compatibility:** ❌ Not compatible with Netlify/Heroku/Render
 - **Recommendation:** Keep on AWS (no migration needed)
 
 **Phase 1 Infrastructure:**

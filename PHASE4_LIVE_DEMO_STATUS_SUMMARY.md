@@ -70,7 +70,6 @@ This document provides a concise summary of Phase 4 progress and live demo readi
 |--------|--------|---------|
 | **Mock API** | ✅ Complete | 721 lines, 37 endpoints, 10 data categories |
 | **Portal Code** | ✅ Complete | All Phase 4 components built |
-| **Configuration** | ✅ Ready | netlify.toml and vercel.json configured |
 | **Security** | ✅ Ready | CSP, headers, rate limiting configured |
 | **Documentation** | ✅ Complete | 7 guides, 112KB total |
 | **Deployment Time** | ⏱️ 15-30 min | Netlify Git integration ready |
@@ -272,7 +271,6 @@ Use this checklist to verify current status:
 - [x] 37 endpoints functional
 - [x] 10 data categories covered
 - [x] netlify.toml configured
-- [x] vercel.json configured
 - [x] Security headers configured
 - [x] Demo credentials ready (demo/demo)
 - [x] Documentation complete (7 guides)

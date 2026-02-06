@@ -8,7 +8,7 @@
 
 ## ⚡ Option 1: Marketing Site Only (15 Minutes)
 
-**What you get:** Professional landing page at https://securebase-demo.vercel.app
+**What you get:** Professional landing page at https://securebase-demo.netlify.app
 
 ### Steps
 
@@ -37,7 +37,7 @@ npx vercel --prod
 
 ### What's Already Configured
 
-✅ `vercel.json` with:
+✅ `netlify.toml` with:
 - Security headers (CSP, HSTS, X-Frame-Options)
 - SPA routing
 - Asset caching
@@ -425,7 +425,7 @@ npx netlify-cli deploy --prod
 ## ✅ Verification Checklist
 
 ### Marketing Site (Option 1)
-- [ ] Site loads at Vercel URL
+- [ ] Site loads at Netlify URL
 - [ ] Navigation works (Home, Features, Pricing, etc.)
 - [ ] Responsive on mobile and desktop
 - [ ] All images and assets load
@@ -463,7 +463,7 @@ npm run build
 
 ### Deployment Fails
 
-**Issue:** Vercel/Netlify deployment errors
+**Issue:** Netlify deployment errors
 
 **Solutions:**
 1. Check build output directory is set to `dist`
@@ -486,7 +486,7 @@ npm run build
 **Issue:** Security headers not appearing
 
 **Solutions:**
-1. Check `vercel.json` or `netlify.toml` exists
+1. Check `netlify.toml` exists
 2. Verify headers configuration syntax
 3. Redeploy to refresh configuration
 4. Test with: `curl -I https://your-demo-url.com`
@@ -502,7 +502,6 @@ npm run build
 - [DEMO_SECURITY_CONFIG.md](./DEMO_SECURITY_CONFIG.md) - Security implementation
 
 ### Platform Guides
-- Vercel: https://vercel.com/docs
 - Netlify: https://docs.netlify.com
 - Vite: https://vitejs.dev/guide
 
@@ -545,7 +544,7 @@ After deployment, verify:
    ```
 
 2. **Use Preview Deployments**
-   - Vercel and Netlify offer preview deployments
+   - Netlify offers preview deployments
    - Test changes before going to production
 
 3. **Monitor Performance**
@@ -572,7 +571,7 @@ After deployment, verify:
 | **Option 1: Marketing Site** | | |
 | Install dependencies | 5 min | Easy |
 | Build application | 2 min | Easy |
-| Deploy to Vercel | 5 min | Easy |
+| Deploy to Netlify | 5 min | Easy |
 | Verify deployment | 3 min | Easy |
 | **Total Option 1** | **15 min** | **Easy** |
 | | | |
