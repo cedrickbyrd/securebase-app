@@ -1,63 +1,49 @@
-# Deploy Phase 3A Demo Workflow Fix Summary
+# Test Live Demo Workflow Fix Summary
 
-## Problem
-The workflow `.github/workflows/deploy-phase3a-demo.yml` was failing immediately at the Setup Node.js step because:
-- Lines 41-42 configured built-in caching with `cache: 'npm'` and `cache-dependency-path: phase3a-portal/package-lock.json`
-- The `package-lock.json` file does not exist in the phase3a-portal directory
-- The `setup-node@v4` action requires this file to exist when using built-in caching
+## Issue
+The `test-demo.yml` GitHub Actions workflow was failing during the smoke tests phase. The workflow would pass the first test but then exit prematurely with exit code 1.
 
 ## Root Cause
-Duplicate caching configuration:
-1. **Built-in setup-node cache** - Required package-lock.json (FAILED)
-2. **Manual cache action** - Uses hashFiles() which gracefully handles missing files (WORKS)
+The `phase3a-portal/test-demo-live.sh` script uses `set -e` (exit on error) at the beginning, which causes the script to exit immediately if any command returns a non-zero exit code.
 
-## Solution Applied
-Made two minimal changes to fix immediate failure:
+The script uses arithmetic increment operations like `((PASSED++))` and `((FAILED++))` in the `test_result()` function. In Bash:
+- The expression `((PASSED++))` returns the **old** value of PASSED before incrementing
+- When PASSED starts at 0, `((PASSED++))` returns 0
+- Under `set -e`, a return value of 0 is interpreted as failure
+- This causes the script to exit immediately after the first test
 
-### Change 1: Removed built-in cache from setup-node (lines 41-42)
-```yaml
-# BEFORE
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '18'
-    cache: 'npm'
-    cache-dependency-path: phase3a-portal/package-lock.json
-
-# AFTER  
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '18'
+## Solution
+Changed all arithmetic increment operations from:
+```bash
+((PASSED++))
+((FAILED++))
+((CONSECUTIVE_PASSES++))
 ```
 
-### Change 2: Changed npm ci to npm install (line 53)
-```yaml
-# BEFORE
-- name: Install dependencies
-  run: npm ci
-
-# AFTER
-- name: Install dependencies
-  run: npm install
+To:
+```bash
+PASSED=$((PASSED + 1))
+FAILED=$((FAILED + 1))
+CONSECUTIVE_PASSES=$((CONSECUTIVE_PASSES + 1))
 ```
 
-## Why This Works
-- Manual cache action (lines 44-52) uses `hashFiles('phase3a-portal/package-lock.json')`
-- When file doesn't exist, hashFiles() returns empty string (not an error)
-- Cache key becomes `${{ runner.os }}-build-` which is valid
-- First workflow run creates package-lock.json via `npm install`
-- Subsequent runs cache based on the generated lock file
+This form doesn't have the same issue with `set -e` because it's an assignment operation that always succeeds.
 
-## Follow-up Recommendation
-For deterministic builds, consider:
-1. Generate package-lock.json locally: `cd phase3a-portal && npm install`
-2. Commit the package-lock.json file to the repository
-3. Change back to `npm ci` in the workflow
+## Files Changed
+- `phase3a-portal/test-demo-live.sh` - Fixed 3 instances of the arithmetic operation pattern
 
-This ensures identical dependency versions across all builds.
+## Testing
+The fix was validated with:
+1. Bash syntax checking (`bash -n`)
+2. Isolated test scripts to verify the behavior
+3. Simulated workflow environment
+4. Shellcheck static analysis
 
-## Status
-✅ Workflow will now run successfully (was completely failing before)
-⚠️ First run will be uncached (subsequent runs will benefit from caching)
-📝 Follow-up: Commit package-lock.json for fully deterministic builds
+## Prevention
+When using `set -e` in bash scripts, avoid using `((VAR++))` or `((VAR--))` as standalone statements. Instead use:
+- `VAR=$((VAR + 1))` for incrementing
+- `VAR=$((VAR - 1))` for decrementing
+- Or use `((VAR++)) || true` to explicitly ignore the return value
+
+## Related Issues
+The same pattern was found in `run_all_tests.sh` but it's not used in any GitHub workflows, so it was not fixed as part of this issue.
