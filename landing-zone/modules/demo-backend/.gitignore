@@ -1,0 +1,21 @@
+# Build artifacts
+builds/
+*.zip
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Data loading scripts output
+scripts/load_*.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
