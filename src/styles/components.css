@@ -1,0 +1,212 @@
+/**
+ * SecureBase Component Styles
+ * Following STYLEGUIDE.md naming convention
+ */
+
+/* Utilities */
+.u-text-muted {
+  color: var(--sb-color-text-muted);
+}
+
+/* Compliance Screen */
+.sb-ComplianceScreen {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--sb-space-lg);
+}
+
+.sb-ComplianceScreen__header {
+  margin-bottom: var(--sb-space-lg);
+}
+
+.sb-ComplianceScreen__header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 var(--sb-space-xs) 0;
+}
+
+/* Compliance Status */
+.sb-ComplianceStatus {
+  background: var(--sb-color-surface);
+  border-radius: var(--sb-radius-md);
+  padding: var(--sb-space-lg);
+  margin-bottom: var(--sb-space-lg);
+}
+
+.sb-ComplianceStatus__badge {
+  display: flex;
+  align-items: center;
+  gap: var(--sb-space-sm);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--sb-space-sm);
+}
+
+.sb-ComplianceStatus__badge--ready {
+  color: #10b981;
+}
+
+.sb-ComplianceStatus__badge--warning {
+  color: #f59e0b;
+}
+
+.sb-ComplianceStatus__badge--critical {
+  color: var(--sb-color-danger);
+}
+
+.sb-ComplianceStatus__icon {
+  font-size: 1.5rem;
+}
+
+.sb-ComplianceStatus__meta {
+  display: flex;
+  gap: var(--sb-space-md);
+  font-size: 0.875rem;
+}
+
+/* Controls List */
+.sb-ControlsList {
+  margin-bottom: var(--sb-space-lg);
+}
+
+.sb-ControlsList__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sb-space-md);
+}
+
+.sb-ControlsList__header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sb-ControlsList__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--sb-space-md);
+}
+
+/* Control Card */
+.sb-ControlCard {
+  background: var(--sb-color-surface);
+  border-radius: var(--sb-radius-md);
+  padding: var(--sb-space-md);
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.sb-ControlCard:hover {
+  border-color: var(--sb-color-accent);
+}
+
+.sb-ControlCard--warning {
+  border-color: #f59e0b;
+}
+
+.sb-ControlCard--failing {
+  border-color: var(--sb-color-danger);
+}
+
+.sb-ControlCard__header {
+  display: flex;
+  gap: var(--sb-space-sm);
+  margin-bottom: var(--sb-space-md);
+}
+
+.sb-ControlCard__status {
+  font-size: 1.5rem;
+}
+
+.sb-ControlCard__title h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.sb-ControlCard__metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.sb-ControlCard__metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-ControlCard__metricValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--sb-color-accent);
+}
+
+.sb-ControlCard__metricLabel {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.sb-ControlCard__timestamp {
+  font-size: 0.75rem;
+}
+
+.sb-ControlCard__warning {
+  margin-top: var(--sb-space-sm);
+  padding: var(--sb-space-xs) var(--sb-space-sm);
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: var(--sb-radius-sm);
+  font-size: 0.875rem;
+  color: #f59e0b;
+}
+
+/* Export Evidence */
+.sb-ExportEvidence {
+  background: var(--sb-color-surface);
+  border-radius: var(--sb-radius-md);
+  padding: var(--sb-space-lg);
+  border: 2px dashed var(--sb-color-accent);
+}
+
+.sb-ExportEvidence__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sb-space-md);
+}
+
+.sb-ExportEvidence__info h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 var(--sb-space-xs) 0;
+}
+
+/* Button Component */
+.sb-Button {
+  padding: var(--sb-space-sm) var(--sb-space-md);
+  border-radius: var(--sb-radius-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sb-Button--primary {
+  background: var(--sb-color-accent);
+  color: white;
+}
+
+.sb-Button--primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.sb-Button--large {
+  padding: var(--sb-space-md) var(--sb-space-lg);
+  font-size: 1rem;
+}
+
+.sb-Button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
