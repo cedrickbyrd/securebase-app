@@ -3,7 +3,7 @@
 **Assessment Date:** January 31, 2026  
 **Repository:** cedrickbyrd/securebase-app  
 **Assessment Type:** Public Demo Deployment Readiness  
-**Target Platforms:** Vercel, Netlify, Heroku, Render
+**Target Platforms:** Netlify, GitHub Pages, AWS S3
 
 ---
 
@@ -13,7 +13,7 @@ SecureBase is a **multi-phase, multi-tenant AWS PaaS platform** with a complex a
 
 **Overall Demo Readiness:** 🟡 **PARTIAL** - Requires architectural decisions and configuration before public demo deployment.
 
-**Key Finding:** This repository is designed for **AWS infrastructure deployment**, not traditional PaaS platforms like Vercel/Netlify. A successful public demo requires isolating specific components and creating simplified deployment configurations.
+**Key Finding:** This repository is designed for **AWS infrastructure deployment**, not traditional PaaS platforms like Netlify. A successful public demo requires isolating specific components and creating simplified deployment configurations.
 
 ---
 
@@ -25,10 +25,10 @@ The repository contains **4 distinct deployable components**:
 
 ```
 securebase-app/
-├─ Root Marketing Site (src/)           → Vercel/Netlify ready ✅
+├─ Root Marketing Site (src/)           → Netlify/GitHub Pages ready ✅
 ├─ Phase 1: Terraform Landing Zone       → Not applicable for PaaS ❌
 ├─ Phase 2: Lambda/Aurora Backend        → Requires AWS, not PaaS ❌
-└─ Phase 3a: Customer Portal             → Vercel/Netlify ready with config ⚠️
+└─ Phase 3a: Customer Portal             → Netlify ready with config ⚠️
 ```
 
 ### 1.2 Frontend/Backend Separation
@@ -74,10 +74,9 @@ securebase-app/
 
 ### 2.2 Platform-Specific Configurations
 
-#### ✅ **AVAILABLE: Vercel/Netlify Configs**
+#### ✅ **AVAILABLE: Netlify Configs**
 
 **Available Deployment Configurations:**
-- ✅ `vercel.json` - Vercel configuration (root marketing site)
 - ✅ `netlify.toml` - Netlify configuration (root marketing site)
 - ✅ `phase3a-portal/netlify.toml` - Netlify configuration (customer portal)
 - ✅ `package.json` (root) - npm scripts defined
