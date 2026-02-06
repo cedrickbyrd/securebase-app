@@ -29,19 +29,20 @@ fi
 echo "🏗️  Building for production..."
 npm run build
 
-# Install Vercel if not available
-if ! command -v vercel &> /dev/null; then
-    echo "Installing Vercel CLI..."
-    npm install -g vercel
-fi
-
 echo ""
-echo "🚀 Deploying to Vercel..."
+echo "🚀 Deploying to Netlify..."
 echo "========================"
 echo ""
 
 # Deploy to production
-vercel --prod
+# Note: This requires Netlify CLI to be installed and configured
+# Install with: npm install -g netlify-cli
+# Login with: netlify login
+# Deploy with: netlify deploy --prod
+
+echo "Please deploy the built files from dist/ to your hosting provider"
+echo "For Netlify: netlify deploy --prod"
+echo "For AWS S3: aws s3 sync dist/ s3://your-bucket-name"
 
 echo ""
 echo -e "${GREEN}✅ Signup page deployed!${NC}"

@@ -93,7 +93,7 @@
 ./deploy-demo-github-pages.sh
 ```
 
-📖 **[Full Deployment Guide](./DEPLOY_LIVE_DEMO.md)** - Netlify, Vercel, AWS S3, or GitHub Pages
+📖 **[Full Deployment Guide](./DEPLOY_LIVE_DEMO.md)** - Netlify, AWS S3, or GitHub Pages
 
 **What you get:**
 - ✅ Complete mock API (37 endpoints, realistic data)

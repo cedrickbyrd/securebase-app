@@ -170,49 +170,15 @@ aws s3 sync dist/ s3://securebase-phase3a-demo/ --delete
 
 ---
 
-## Option 3: Vercel Deployment (Alternative)
+## Option 3: AWS S3 + CloudFront (Production)
 
-**Best for:** Teams already using Vercel  
-**Time:** 5 minutes  
-**Cost:** $0 (Free tier)
+**Best for:** Production deployments  
+**Time:** 15-20 minutes  
+**Cost:** ~$1-3/month
 
 ### Steps
 
-1. **Install Vercel CLI** (optional - can use web UI)
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **Deploy Portal**
-   ```bash
-   cd phase3a-portal
-   vercel --prod
-   
-   # Follow prompts:
-   # - Set up and deploy? Yes
-   # - Scope: (your Vercel team)
-   # - Link to existing project? No
-   # - Project name: securebase-demo
-   # - Directory: phase3a-portal
-   ```
-
-3. **Configure Environment Variables** (in Vercel Dashboard)
-   - Go to project settings
-   - Add environment variables:
-     ```
-     VITE_USE_MOCK_API=true
-     VITE_ENV=demo
-     VITE_ANALYTICS_ENABLED=false
-     ```
-   - Redeploy for changes to take effect
-
-4. **Access Demo**
-   - URL: `https://securebase-demo.vercel.app`
-   - Or custom domain via Vercel settings
-
----
-
-## ✅ Post-Deployment Checklist
+1. **Build Portal**
 
 After deploying, verify these work:
 
@@ -280,7 +246,7 @@ curl -I https://your-demo-url.com | grep -i "content-security-policy"
 
 ## 🐛 Troubleshooting
 
-### Build Fails on Netlify/Vercel
+### Build Fails on Netlify
 
 **Error:** `vite: not found`
 
@@ -295,7 +261,6 @@ curl -I https://your-demo-url.com | grep -i "content-security-policy"
 
 **Solution:**
 - For Netlify: Verify `netlify.toml` redirect rules present
-- For Vercel: Verify `vercel.json` rewrites configured
 - For S3: Error document should be `index.html`
 
 ### Demo Data Not Loading
@@ -314,7 +279,6 @@ curl -I https://your-demo-url.com | grep -i "content-security-policy"
 
 **Solution:**
 - For Netlify: Check `netlify.toml` headers section
-- For Vercel: Check `vercel.json` headers configuration
 - For S3: Add CloudFront distribution for custom headers
 - Test with: `curl -I https://your-url.com`
 

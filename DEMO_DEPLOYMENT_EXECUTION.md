@@ -149,7 +149,7 @@ npx netlify-cli deploy --prod
 3. Deploy automatically on push
 4. Configuration in netlify.toml will be used
 
-### Option 3: Deploy Marketing Site to Vercel
+### Option 3: Deploy Marketing Site to Netlify
 
 The root marketing site can deploy separately:
 
@@ -258,7 +258,7 @@ Mock API covers:
 - Cannot run local build (npm registry blocked)
 - Code syntax valid
 - Import paths correct
-- Deployment will validate in Netlify/Vercel
+- Deployment will validate in Netlify
 
 ### ✅ Documentation
 - Implementation documented
@@ -331,7 +331,7 @@ Mock API covers:
 ---
 
 **Implementation Status:** ✅ Complete  
-**Deployment Status:** ⚠️ Ready (blocked by CI environment, ready for Netlify/Vercel)  
+**Deployment Status:** ⚠️ Ready (blocked by CI environment, ready for Netlify)  
 **Next Action:** Deploy to Netlify or Vercel when npm registry access available  
 
 **Implemented By:** AI Coding Agent  
