@@ -1,0 +1,70 @@
+name: SecureBase PR Verification
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install project dependencies
+        run: npm ci --prefer-offline
+      
+      - name: Run code linter
+        run: npm run lint
+        continue-on-error: false
+      
+      - name: Build marketing site
+        run: npm run build
+        env:
+          VITE_SECUREBASE_MODE: staging
+      
+      - name: Publish validation results
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            const validationMessage = `### ✓ SecureBase PR Validation Passed\n\n` +
+              `All quality checks have completed successfully:\n` +
+              `- Code linting: **Passed**\n` +
+              `- Build compilation: **Passed**\n` +
+              `- Asset generation: **Passed**\n\n` +
+              `This pull request is ready for code review.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: validationMessage
+            });
+      
+      - name: Report validation failure
+        uses: actions/github-script@v7
+        if: failure()
+        with:
+          script: |
+            const failureMessage = `### ✗ SecureBase PR Validation Failed\n\n` +
+              `One or more quality checks did not pass. ` +
+              `Please review the workflow logs and fix the issues before merging.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: failureMessage
+            });
