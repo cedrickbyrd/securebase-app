@@ -1,5 +1,9 @@
 # 🚀 SecureBase - Compliant AWS Infrastructure in <10 Minutes
 
+[![SecureBase Frontend Pipeline](https://github.com/cedrickbyrd/securebase-app/workflows/SecureBase%20Frontend%20Pipeline/badge.svg)](https://github.com/cedrickbyrd/securebase-app/actions)
+[![Health Monitor](https://github.com/cedrickbyrd/securebase-app/workflows/SecureBase%20Health%20Monitor/badge.svg)](https://github.com/cedrickbyrd/securebase-app/actions)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/YOUR-SITE-ID/deploy-status)](https://app.netlify.com/sites/securebase-app/deploys)
+
 **Stop spending 6-12 weeks on AWS setup.** SecureBase deploys production-ready, SOC 2/HIPAA-compliant infrastructure in under 10 minutes.
 
 <a href="https://securebase.io/signup">🚀 Start Free Trial</a> | <a href="https://securebase.io/contact">📞 Book Demo</a> | <a href="https://securebase.io/pricing">💰 View Pricing</a>
