@@ -4,6 +4,9 @@
   "private": true,
   "description": "SecureBase Customer Portal - Phase 3A",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
