@@ -64,7 +64,6 @@ Comprehensive demo fixtures for:
   VITE_ENV = "demo"
 ```
 
-✅ **vercel.json** (root marketing site)
 - Security headers configured
 - CSP, HSTS, X-Frame-Options
 - Demo environment indicator
@@ -101,7 +100,6 @@ Comprehensive demo fixtures for:
 
 ### Configuration
 - ✅ netlify.toml complete and correct
-- ✅ vercel.json complete and correct
 - ✅ Environment variables configured
 - ✅ Security headers configured
 - ✅ SPA routing configured

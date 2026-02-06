@@ -30,7 +30,6 @@ Component 7 (UAT/Docs):        📅   0% - Starts Mar 17
 |------|--------|
 | Mock API (721 lines, 37 endpoints) | ✅ Done |
 | Portal Code (17,000+ lines) | ✅ Done |
-| netlify.toml / vercel.json | ✅ Done |
 | Security Headers | ✅ Done |
 | Documentation (7 guides) | ✅ Done |
 | **Deployment Time** | **15-30 min** |

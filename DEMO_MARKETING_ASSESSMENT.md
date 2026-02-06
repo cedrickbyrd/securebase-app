@@ -530,7 +530,7 @@ phase2-backend/
 **Phase 2 Serverless Backend:**
 - **Platform:** AWS Lambda + Aurora Serverless v2 + API Gateway
 - **Status:** ✅ **PRODUCTION DEPLOYED** (since Jan 26, 2026)
-- **PaaS Compatibility:** ❌ Not compatible with Vercel/Netlify/Heroku/Render
+- **PaaS Compatibility:** ❌ Not compatible with Netlify/Heroku/Render
 - **Recommendation:** Keep on AWS (no migration needed)
 
 **Phase 1 Infrastructure:**

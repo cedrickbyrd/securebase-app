@@ -278,8 +278,8 @@ npm run build
 aws s3 sync dist/ s3://portal.securebase.io/ --delete
 aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 
-# Option B: Vercel
-# npx vercel --prod
+# Option B: AWS S3 + CloudFront
+# aws s3 sync dist/ s3://your-bucket-name
 
 # Option C: Netlify
 # npx netlify deploy --prod --dir=dist
