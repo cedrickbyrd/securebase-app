@@ -106,11 +106,12 @@ aws s3 sync dist/ s3://your-bucket-name --delete
 aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 ```
 
-### Option 2: Vercel
+### Option 2: AWS S3 + CloudFront
 
 ```bash
-npm install -g vercel
-vercel --prod
+npm run build
+aws s3 sync dist/ s3://your-bucket-name
+aws cloudfront create-invalidation --distribution-id YOUR_ID --paths "/*"
 ```
 
 ### Option 3: Netlify

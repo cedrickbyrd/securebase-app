@@ -64,9 +64,8 @@ The included `netlify.toml` automatically sets `VITE_USE_MOCK_API=true` for prod
 2. Set base directory to `phase3a-portal`
 3. Deploy - the demo mode will be active automatically
 
-### Vercel
-For Vercel deployments, set the environment variable in the Vercel dashboard:
-1. Go to Project Settings → Environment Variables
+### AWS S3/CloudFront
+For AWS deployments, set environment variables in your build/deployment pipeline or use `.env.production` file (not committed to git).
 2. Add `VITE_USE_MOCK_API` with value `true`
 3. Scope to Production (or all environments as needed)
 
