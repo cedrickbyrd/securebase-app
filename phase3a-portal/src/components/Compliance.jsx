@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatDate } from '../utils/formatters';
+import styles from './Compliance.module.css';
 
 export const Compliance = () => {
   const [loading, setLoading] = useState(true);
@@ -76,22 +77,22 @@ export const Compliance = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.complianceContainer}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Compliance</h1>
-              <p className="text-gray-600 mt-1">
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.headerTop}>
+            <div className={styles.headerTitle}>
+              <h1 className={styles.title}>Compliance</h1>
+              <p className={styles.subtitle}>
                 Track your compliance status across frameworks
               </p>
             </div>
             <button
               onClick={handleDownloadReport}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className={styles.downloadButton}
             >
-              <Download className="w-5 h-5 mr-2" />
+              <Download />
               Download Report
             </button>
           </div>
@@ -99,35 +100,35 @@ export const Compliance = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={styles.content}>
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
-            <div>
-              <h3 className="font-medium text-red-900">Error</h3>
-              <p className="text-sm text-red-800 mt-1">{error}</p>
+          <div className={styles.errorAlert}>
+            <AlertCircle className={styles.errorIcon} />
+            <div className={styles.errorContent}>
+              <h3>Error</h3>
+              <p>{error}</p>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center min-h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading compliance data...</p>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingContent}>
+              <div className={styles.spinner}></div>
+              <p className={styles.loadingText}>Loading compliance data...</p>
             </div>
           </div>
         ) : (
           <>
             {/* Overall Status Card */}
-            <div className="mb-8 bg-white rounded-lg shadow-lg border-l-4 border-green-600 p-6">
-              <div className="flex items-center">
-                <CheckCircle2 className="w-12 h-12 text-green-600 mr-4" />
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+            <div className={styles.overallStatusCard}>
+              <div className={styles.overallStatusContent}>
+                <CheckCircle2 className={styles.overallStatusIcon} />
+                <div className={styles.overallStatusText}>
+                  <h2>
                     Overall Status: Passing
                   </h2>
-                  <p className="text-gray-600 mt-1">
+                  <p>
                     Last assessment:{' '}
                     {complianceData.last_assessment
                       ? formatDate(complianceData.last_assessment)
@@ -138,79 +139,79 @@ export const Compliance = () => {
             </div>
 
             {/* Framework Status Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                <div className="flex items-center justify-between">
+            <div className={styles.frameworkStatsGrid}>
+              <div className={`${styles.statCard} ${styles.passing}`}>
+                <div className={styles.statCardContent}>
                   <div>
-                    <p className="text-sm text-gray-600 uppercase font-semibold">
+                    <p className={styles.statLabel}>
                       Passing
                     </p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">
+                    <p className={styles.statValue}>
                       {frameworkStats.passing}
                     </p>
                   </div>
-                  <CheckCircle2 className="w-10 h-10 text-green-600 opacity-30" />
+                  <CheckCircle2 className={styles.statCardIcon} />
                 </div>
               </div>
-              <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
-                <div className="flex items-center justify-between">
+              <div className={`${styles.statCard} ${styles.warning}`}>
+                <div className={styles.statCardContent}>
                   <div>
-                    <p className="text-sm text-gray-600 uppercase font-semibold">
+                    <p className={styles.statLabel}>
                       Warning
                     </p>
-                    <p className="text-3xl font-bold text-yellow-600 mt-2">
+                    <p className={styles.statValue}>
                       {frameworkStats.warning}
                     </p>
                   </div>
-                  <AlertTriangle className="w-10 h-10 text-yellow-600 opacity-30" />
+                  <AlertTriangle className={styles.statCardIcon} />
                 </div>
               </div>
-              <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-                <div className="flex items-center justify-between">
+              <div className={`${styles.statCard} ${styles.failing}`}>
+                <div className={styles.statCardContent}>
                   <div>
-                    <p className="text-sm text-gray-600 uppercase font-semibold">
+                    <p className={styles.statLabel}>
                       Failing
                     </p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">
+                    <p className={styles.statValue}>
                       {frameworkStats.failing}
                     </p>
                   </div>
-                  <AlertCircle className="w-10 h-10 text-red-600 opacity-30" />
+                  <AlertCircle className={styles.statCardIcon} />
                 </div>
               </div>
             </div>
 
             {/* Frameworks */}
-            <div className="bg-white rounded-lg shadow mb-8">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+            <div className={styles.frameworksCard}>
+              <div className={styles.frameworksHeader}>
+                <h2>
                   Compliance Frameworks
                 </h2>
               </div>
-              <div className="divide-y divide-gray-200">
+              <div className={styles.frameworksList}>
                 {complianceData.frameworks.map((framework) => (
-                  <div key={framework.id} className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center flex-1">
-                        <Shield className="w-6 h-6 mr-3 text-gray-400" />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">
+                  <div key={framework.id} className={styles.frameworkItem}>
+                    <div className={styles.frameworkContent}>
+                      <div className={styles.frameworkLeft}>
+                        <Shield className={styles.frameworkIcon} />
+                        <div className={styles.frameworkInfo}>
+                          <h3>
                             {framework.name}
                           </h3>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p>
                             {framework.description}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
+                      <div className={styles.frameworkRight}>
+                        <div className={styles.frameworkProgress}>
+                          <p>
                             {framework.passing_controls}/{framework.total_controls}{' '}
                             Controls
                           </p>
-                          <div className="w-32 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                          <div className={styles.progressBar}>
                             <div
-                              className="h-full bg-green-600 transition-all"
+                              className={styles.progressFill}
                               style={{
                                 width: `${
                                   (framework.passing_controls /
@@ -222,12 +223,12 @@ export const Compliance = () => {
                           </div>
                         </div>
                         <span
-                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          className={`${styles.statusBadge} ${
                             framework.status === 'passing'
-                              ? 'bg-green-100 text-green-800'
+                              ? styles.passing
                               : framework.status === 'warning'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
+                              ? styles.warning
+                              : styles.failing
                           }`}
                         >
                           {framework.status.charAt(0).toUpperCase() +
@@ -241,103 +242,95 @@ export const Compliance = () => {
             </div>
 
             {/* Findings */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+            <div className={styles.findingsCard}>
+              <div className={styles.findingsHeader}>
+                <h2>
                   Findings ({complianceData.findings.length})
                 </h2>
               </div>
 
               {complianceData.findings.length > 0 ? (
-                <div className="divide-y divide-gray-200">
+                <div className={styles.findingsList}>
                   {complianceData.findings.map((finding) => (
                     <div
                       key={finding.id}
-                      className="px-6 py-4 hover:bg-gray-50 transition"
+                      className={styles.findingItem}
                     >
                       <button
                         onClick={() => toggleFinding(finding.id)}
-                        className="w-full text-left"
+                        className={styles.findingButton}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start flex-1">
+                        <div className={styles.findingTop}>
+                          <div className={styles.findingLeft}>
                             {finding.severity === 'critical' && (
-                              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                              <AlertCircle className={`${styles.findingSeverityIcon} ${styles.critical}`} />
                             )}
                             {finding.severity === 'high' && (
-                              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
+                              <AlertTriangle className={`${styles.findingSeverityIcon} ${styles.high}`} />
                             )}
                             {finding.severity === 'medium' && (
-                              <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+                              <AlertTriangle className={`${styles.findingSeverityIcon} ${styles.medium}`} />
                             )}
                             {finding.severity === 'low' && (
-                              <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                              <CheckCircle2 className={`${styles.findingSeverityIcon} ${styles.low}`} />
                             )}
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900">
+                            <div className={styles.findingInfo}>
+                              <h3>
                                 {finding.title}
                               </h3>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className={styles.findingMeta}>
                                 {finding.framework} • {finding.control_id}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className={styles.findingRight}>
                             <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                finding.severity === 'critical'
-                                  ? 'bg-red-100 text-red-800'
-                                  : finding.severity === 'high'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : finding.severity === 'medium'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}
+                              className={`${styles.severityBadge} ${styles[finding.severity]}`}
                             >
                               {finding.severity.charAt(0).toUpperCase() +
                                 finding.severity.slice(1)}
                             </span>
                             {expandedFindings[finding.id] ? (
-                              <ChevronUp className="w-5 h-5 text-gray-400" />
+                              <ChevronUp className={styles.chevronIcon} />
                             ) : (
-                              <ChevronDown className="w-5 h-5 text-gray-400" />
+                              <ChevronDown className={styles.chevronIcon} />
                             )}
                           </div>
                         </div>
                       </button>
 
                       {expandedFindings[finding.id] && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                            <h4 className="font-medium text-gray-900 mb-2">
+                        <div className={styles.findingDetails}>
+                          <div className={styles.detailSection}>
+                            <h4>
                               Description
                             </h4>
-                            <p className="text-sm text-gray-700">
+                            <p>
                               {finding.description}
                             </p>
                           </div>
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                            <h4 className="font-medium text-gray-900 mb-2">
+                          <div className={styles.detailSection}>
+                            <h4>
                               Remediation
                             </h4>
-                            <p className="text-sm text-gray-700">
+                            <p>
                               {finding.remediation}
                             </p>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <p className="text-xs text-gray-600 uppercase">
+                          <div className={styles.detailGrid}>
+                            <div className={styles.detailGridItem}>
+                              <p className={styles.detailLabel}>
                                 Found
                               </p>
-                              <p className="text-sm font-medium text-gray-900 mt-1">
+                              <p className={styles.detailValue}>
                                 {formatDate(finding.discovered_at)}
                               </p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <p className="text-xs text-gray-600 uppercase">
+                            <div className={styles.detailGridItem}>
+                              <p className={styles.detailLabel}>
                                 Status
                               </p>
-                              <p className="text-sm font-medium text-gray-900 mt-1 capitalize">
+                              <p className={styles.detailValue}>
                                 {finding.status}
                               </p>
                             </div>
@@ -348,11 +341,11 @@ export const Compliance = () => {
                   ))}
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4 opacity-20" />
-                    <p className="text-gray-600 font-medium">No findings</p>
-                    <p className="text-gray-500 text-sm mt-1">
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyStateContent}>
+                    <CheckCircle2 className={styles.emptyStateIcon} />
+                    <p className={styles.emptyStateTitle}>No findings</p>
+                    <p className={styles.emptyStateText}>
                       Your infrastructure is fully compliant
                     </p>
                   </div>
