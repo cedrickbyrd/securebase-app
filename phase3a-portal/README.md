@@ -275,7 +275,8 @@ aws s3 sync dist/ s3://securebase-phase3a-demo/ --delete
 
 ### Demo Environment Features
 
-- **URL:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+- **CloudFront (HTTPS):** https://dxft3rdv46wz7.cloudfront.net (primary)
+- **S3 Direct (HTTP):** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com (fallback)
 - **Auto-Login:** No signup required
 - **Read-Only:** All write operations disabled
 - **Sample Data:** 5 mock customers, 30+ invoices

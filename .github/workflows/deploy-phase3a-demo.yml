@@ -22,6 +22,11 @@ on:
         options:
           - demo
 
+env:
+  AWS_REGION: us-east-1
+  S3_BUCKET: securebase-phase3a-demo
+  CLOUDFRONT_DIST_ID: EGY0W64KNE7BO
+
 jobs:
   build-demo:
     name: Build Demo Portal
