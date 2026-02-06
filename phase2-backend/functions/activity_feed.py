@@ -172,6 +172,9 @@ def get_activity_feed(customer_id: str, current_user_role: str, params: Dict) ->
         if conn:
             release_connection(conn)
 
+def query_all(*args, **kwargs):
+    # Implement according to the expected usage in your test
+    return get_activity_feed(*args, **kwargs)
 
 def get_user_activity(customer_id: str, current_user_role: str, user_id: str, params: Dict) -> Dict:
     """Get activity feed for specific user."""
