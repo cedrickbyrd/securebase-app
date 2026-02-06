@@ -1,0 +1,37 @@
+{
+  "monthly_cost": 58240,
+  "cost_trend": "+2.3%",
+  "cost_change": 1312,
+  "compliance_score": 92,
+  "compliance_trend": "+1",
+  "active_alerts": 3,
+  "alerts_trend": "-2",
+  "uptime_percentage": 99.87,
+  "uptime_trend": "+0.02%",
+  "api_calls_month": 3450000,
+  "api_calls_trend": "+15.2%",
+  "api_calls_limit": 10000000,
+  "total_customers": 5,
+  "account_count": 233,
+  "cloudtrail_events": 8245678,
+  "log_storage_gb": 1256.7,
+  "data_transfer_gb": 589.3,
+  "cost_breakdown": {
+    "compliance": 46400,
+    "support": 11600,
+    "infrastructure": 240
+  },
+  "cost_history": [
+    {"month": "Sep", "cost": 56980, "date": "2025-09-01"},
+    {"month": "Oct", "cost": 57210, "date": "2025-10-01"},
+    {"month": "Nov", "cost": 57540, "date": "2025-11-01"},
+    {"month": "Dec", "cost": 57820, "date": "2025-12-01"},
+    {"month": "Jan", "cost": 58000, "date": "2026-01-01"},
+    {"month": "Feb", "cost": 58240, "date": "2026-02-01"}
+  ],
+  "resource_usage": {
+    "compute": 67,
+    "storage": 45,
+    "network": 82
+  }
+}
