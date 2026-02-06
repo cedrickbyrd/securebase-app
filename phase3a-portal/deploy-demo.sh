@@ -30,7 +30,7 @@ fi
 # Configuration
 ENVIRONMENT="demo"
 S3_BUCKET="securebase-phase3a-demo"
-CLOUDFRONT_DISTRIBUTION_ID=""  # Add your CloudFront distribution ID here
+CLOUDFRONT_DISTRIBUTION_ID="EGY0W64KNE7BO"
 AWS_REGION="us-east-1"
 BUILD_DIR="dist"
 
@@ -228,6 +228,13 @@ EOF
 else
     echo -e "${GREEN}✓ S3 bucket exists${NC}"
 fi
+
+# Always configure S3 website hosting (ensures error document is set for SPA routing)
+echo -e "${YELLOW}Ensuring S3 website configuration is current...${NC}"
+aws s3 website "s3://$S3_BUCKET" \
+    --index-document index.html \
+    --error-document index.html
+echo -e "${GREEN}✓ S3 website hosting configured for SPA routing${NC}"
 echo ""
 
 # ============================================================================
@@ -260,11 +267,23 @@ echo -e "${YELLOW}[9/9] CloudFront cache invalidation...${NC}"
 if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
     echo -e "${YELLOW}Invalidating CloudFront cache...${NC}"
     
-    aws cloudfront create-invalidation \
+    INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation \
         --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-        --paths "/*"
+        --paths "/*" \
+        --query 'Invalidation.Id' \
+        --output text)
     
-    echo -e "${GREEN}✓ CloudFront cache invalidated${NC}"
+    echo -e "${GREEN}✓ Invalidation created: $INVALIDATION_OUTPUT${NC}"
+    
+    if [ "$QUIET_MODE" = false ]; then
+        echo -e "${YELLOW}⏳ Waiting for cache invalidation to complete...${NC}"
+        aws cloudfront wait invalidation-completed \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --id "$INVALIDATION_OUTPUT"
+        echo -e "${GREEN}✓ CloudFront cache fully invalidated${NC}"
+    else
+        echo -e "${YELLOW}⏳ Cache invalidation in progress (background)${NC}"
+    fi
 else
     echo -e "${YELLOW}⚠ CloudFront distribution ID not set. Skipping cache invalidation.${NC}"
     echo -e "${YELLOW}  To enable, set CLOUDFRONT_DISTRIBUTION_ID in this script.${NC}"
@@ -285,7 +304,8 @@ echo -e "  S3 Bucket:       s3://$S3_BUCKET"
 echo -e "  S3 Website URL:  $DEMO_URL"
 echo -e "  Region:          $AWS_REGION"
 if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
-    echo -e "  CloudFront:      https://demo.securebase.io"
+    echo -e "  CloudFront URL:  https://dxft3rdv46wz7.cloudfront.net"
+    echo -e "  Distribution ID: $CLOUDFRONT_DISTRIBUTION_ID"
 fi
 echo ""
 
