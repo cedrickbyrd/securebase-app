@@ -189,10 +189,10 @@ Then repeat the manual testing checklist above on `http://localhost:5173`.
 
 ## Deployed Testing
 
-### Marketing Site (Vercel)
+### Marketing Site (Netlify/GitHub Pages)
 The root marketing site is deployed separately from the customer portal.
 
-**Demo URL:** `https://securebase-app.vercel.app` (or similar)
+**Demo URL:** `https://securebase-demo.netlify.app` (or similar)
 
 #### Test Checklist
 - [ ] Marketing page loads at root URL
@@ -201,7 +201,7 @@ The root marketing site is deployed separately from the customer portal.
 - [ ] Click "Portal" or "Customer Portal" link
 - [ ] Verify it navigates to the portal (separate deployment or subdomain)
 
-### Customer Portal (Netlify/Vercel)
+### Customer Portal (Netlify)
 The Phase 3a portal is deployed as a separate app.
 
 **Demo URL:** `https://demo.securebase.io` or `https://portal.securebase.io` (check deployment)
@@ -385,7 +385,7 @@ Use this checklist for comprehensive verification before release:
 ### Issue: Deployed site shows 404 errors
 
 **Solution:**
-- Verify SPA rewrites are configured in `netlify.toml` or `vercel.json`
+- Verify SPA rewrites are configured in `netlify.toml`
 - Check that `index.html` is in the correct location (`dist/`)
 - Ensure build output directory is set correctly in deployment config
 
