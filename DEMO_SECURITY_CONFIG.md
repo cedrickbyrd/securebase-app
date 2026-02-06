@@ -190,7 +190,7 @@ All mock data in the demo environment:
 
 #### HTTPS Enforcement
 - **All traffic:** HTTPS-only via HSTS header
-- **Certificate:** Managed by Vercel/Netlify (automatic renewal)
+- **Certificate:** Managed by Netlify/GitHub Pages (automatic renewal)
 - **TLS Version:** TLS 1.2+ only
 - **Cipher Suites:** Platform-managed (modern, secure ciphers)
 
@@ -280,7 +280,7 @@ Cache-Control: no-cache, no-store, must-revalidate
 ### Pre-Deployment Verification
 
 - [x] **No production secrets** in environment variables
-- [x] **Security headers** configured in vercel.json and netlify.toml
+- [x] **Security headers** configured in netlify.toml
 - [x] **Mock authentication** uses demo/demo credentials only
 - [x] **Rate limiting** enabled on authentication
 - [x] **HTTPS** enforced via HSTS

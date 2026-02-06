@@ -477,7 +477,7 @@ kubeconfig
 #### **Phase 2: Serverless Backend**
 - **Type:** Lambda + Aurora + API Gateway
 - **Target:** AWS Serverless
-- **PaaS Compatibility:** None - cannot run on Vercel/Netlify/Heroku
+- **PaaS Compatibility:** None - cannot run on Netlify/Heroku
 - **Recommendation:** Deploy to AWS (already production) or create mock for demo
 
 ---

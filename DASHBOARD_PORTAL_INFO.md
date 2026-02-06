@@ -461,9 +461,6 @@ Desktop (>1024px):
 2. Set build command: `npm run build`
 3. Deploy automatically on push
 
-### Option 3: Vercel
-
-**Pros:**
 - ✅ Optimized for React
 - ✅ Edge network performance
 - ✅ Automatic preview deployments
