@@ -30,10 +30,10 @@ FAILED=0
 test_result() {
   if [ $1 -eq 0 ]; then
     echo -e "${GREEN}✅ PASS${NC}: $2"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
   else
     echo -e "${RED}❌ FAIL${NC}: $2"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
   fi
 }
 
@@ -178,7 +178,7 @@ CONSECUTIVE_PASSES=0
 for i in {1..3}; do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$DEMO_URL" 2>/dev/null || echo "000")
   if [ "$STATUS" -eq 200 ]; then
-    ((CONSECUTIVE_PASSES++))
+    CONSECUTIVE_PASSES=$((CONSECUTIVE_PASSES + 1))
   fi
   sleep 1
 done
