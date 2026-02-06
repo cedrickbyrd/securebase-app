@@ -146,9 +146,8 @@
 
 The demo environment can be deployed to:
 
-1. **Marketing Site (Root):** Netlify or Vercel ([demo.securebase.io](https://demo.securebase.io))
+1. **Marketing Site (Root):** Netlify ([demo.securebase.io](https://demo.securebase.io))
    - Netlify: `netlify.toml` in repository root
-   - Vercel: `vercel.json` in repository root
 2. **Customer Portal:** Netlify ([portal-demo.securebase.io](https://portal-demo.securebase.io))
    - Configuration: `phase3a-portal/netlify.toml`
 
@@ -326,7 +325,7 @@ POST /api/auth/logout          # Session cleanup
    - Try different browser
 
 4. **Security headers not working**
-   - Check deployment config (netlify.toml, vercel.json)
+   - Check deployment config (netlify.toml)
    - Verify environment variables set correctly
    - Re-deploy to refresh configuration
 

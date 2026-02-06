@@ -27,7 +27,7 @@ This PR adds Netlify as a deployment option for the SecureBase marketing site, e
 
 3. **`DEMO_README.md`**
    - Updated deployment platforms section
-   - Added Netlify and Vercel configuration file references
+   - Added Netlify configuration file references
 
 4. **`DEMO_HOSTING_READINESS.md`**
    - Changed status from "MISSING" to "AVAILABLE"
@@ -56,7 +56,6 @@ This PR adds Netlify as a deployment option for the SecureBase marketing site, e
 - ✅ SPA redirect support
 
 ### Compatibility
-- ✅ Aligns with existing `vercel.json`
 - ✅ Mirrors `phase3a-portal/netlify.toml` patterns
 - ✅ TOML syntax validated
 - ✅ No breaking changes
@@ -65,9 +64,8 @@ This PR adds Netlify as a deployment option for the SecureBase marketing site, e
 
 The marketing site can now be deployed to:
 
-1. **Netlify** - `netlify.toml` (NEW ✨)
-2. **Vercel** - `vercel.json` (existing)
-3. **GitHub Pages** - `.github/workflows/deploy-pages.yml` (existing)
+1. **Netlify** - `netlify.toml` (PRIMARY)
+2. **GitHub Pages** - `.github/workflows/deploy-pages.yml` (existing)
 
 ## Testing
 
