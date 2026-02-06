@@ -1,0 +1,902 @@
+[
+  {
+    "id": "inv_2026_02_demo-customer-001",
+    "invoice_number": "INV-2026-0001",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "February 2026",
+    "total_amount": 15010,
+    "status": "paid",
+    "due_date": "2026-03-16",
+    "paid_date": "2026-02-28",
+    "created_at": "2026-02-01T00:00:00Z",
+    "billing_period_start": "2026-02-01",
+    "billing_period_end": "2026-02-28",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_02_demo-customer-002",
+    "invoice_number": "INV-2026-0002",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "February 2026",
+    "total_amount": 8020,
+    "status": "paid",
+    "due_date": "2026-03-17",
+    "paid_date": "2026-02-26",
+    "created_at": "2026-02-01T00:00:00Z",
+    "billing_period_start": "2026-02-01",
+    "billing_period_end": "2026-02-28",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_02_demo-customer-003",
+    "invoice_number": "INV-2026-0003",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "February 2026",
+    "total_amount": 2030,
+    "status": "paid",
+    "due_date": "2026-03-18",
+    "paid_date": "2026-02-24",
+    "created_at": "2026-02-01T00:00:00Z",
+    "billing_period_start": "2026-02-01",
+    "billing_period_end": "2026-02-28",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_02_demo-customer-004",
+    "invoice_number": "INV-2026-0004",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "February 2026",
+    "total_amount": 25040,
+    "status": "issued",
+    "due_date": "2026-03-19",
+    "paid_date": null,
+    "created_at": "2026-02-01T00:00:00Z",
+    "billing_period_start": "2026-02-01",
+    "billing_period_end": "2026-02-28",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_02_demo-customer-005",
+    "invoice_number": "INV-2026-0005",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "February 2026",
+    "total_amount": 8050,
+    "status": "overdue",
+    "due_date": "2026-03-20",
+    "paid_date": null,
+    "created_at": "2026-02-01T00:00:00Z",
+    "billing_period_start": "2026-02-01",
+    "billing_period_end": "2026-02-28",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_01_demo-customer-001",
+    "invoice_number": "INV-2026-0006",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "January 2026",
+    "total_amount": 15060,
+    "status": "draft",
+    "due_date": "2026-02-21",
+    "paid_date": null,
+    "created_at": "2026-01-01T00:00:00Z",
+    "billing_period_start": "2026-01-01",
+    "billing_period_end": "2026-01-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_01_demo-customer-002",
+    "invoice_number": "INV-2026-0007",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "January 2026",
+    "total_amount": 8070,
+    "status": "paid",
+    "due_date": "2026-02-22",
+    "paid_date": "2026-01-26",
+    "created_at": "2026-01-01T00:00:00Z",
+    "billing_period_start": "2026-01-01",
+    "billing_period_end": "2026-01-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_01_demo-customer-003",
+    "invoice_number": "INV-2026-0008",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "January 2026",
+    "total_amount": 2080,
+    "status": "paid",
+    "due_date": "2026-02-23",
+    "paid_date": "2026-01-24",
+    "created_at": "2026-01-01T00:00:00Z",
+    "billing_period_start": "2026-01-01",
+    "billing_period_end": "2026-01-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_01_demo-customer-004",
+    "invoice_number": "INV-2026-0009",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "January 2026",
+    "total_amount": 25090,
+    "status": "paid",
+    "due_date": "2026-02-24",
+    "paid_date": "2026-01-22",
+    "created_at": "2026-01-01T00:00:00Z",
+    "billing_period_start": "2026-01-01",
+    "billing_period_end": "2026-01-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2026_01_demo-customer-005",
+    "invoice_number": "INV-2026-0010",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "January 2026",
+    "total_amount": 8100,
+    "status": "paid",
+    "due_date": "2026-02-25",
+    "paid_date": "2026-01-20",
+    "created_at": "2026-01-01T00:00:00Z",
+    "billing_period_start": "2026-01-01",
+    "billing_period_end": "2026-01-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_12_demo-customer-001",
+    "invoice_number": "INV-2025-0011",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "December 2025",
+    "total_amount": 15110,
+    "status": "issued",
+    "due_date": "2026-01-26",
+    "paid_date": null,
+    "created_at": "2025-12-01T00:00:00Z",
+    "billing_period_start": "2025-12-01",
+    "billing_period_end": "2025-12-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_12_demo-customer-002",
+    "invoice_number": "INV-2025-0012",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "December 2025",
+    "total_amount": 8120,
+    "status": "overdue",
+    "due_date": "2026-01-27",
+    "paid_date": null,
+    "created_at": "2025-12-01T00:00:00Z",
+    "billing_period_start": "2025-12-01",
+    "billing_period_end": "2025-12-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_12_demo-customer-003",
+    "invoice_number": "INV-2025-0013",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "December 2025",
+    "total_amount": 2130,
+    "status": "draft",
+    "due_date": "2026-01-28",
+    "paid_date": null,
+    "created_at": "2025-12-01T00:00:00Z",
+    "billing_period_start": "2025-12-01",
+    "billing_period_end": "2025-12-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_12_demo-customer-004",
+    "invoice_number": "INV-2025-0014",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "December 2025",
+    "total_amount": 25140,
+    "status": "paid",
+    "due_date": "2026-01-29",
+    "paid_date": "2025-12-22",
+    "created_at": "2025-12-01T00:00:00Z",
+    "billing_period_start": "2025-12-01",
+    "billing_period_end": "2025-12-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_12_demo-customer-005",
+    "invoice_number": "INV-2025-0015",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "December 2025",
+    "total_amount": 8150,
+    "status": "paid",
+    "due_date": "2026-01-15",
+    "paid_date": "2025-12-20",
+    "created_at": "2025-12-01T00:00:00Z",
+    "billing_period_start": "2025-12-01",
+    "billing_period_end": "2025-12-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_11_demo-customer-001",
+    "invoice_number": "INV-2025-0016",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "November 2025",
+    "total_amount": 15160,
+    "status": "paid",
+    "due_date": "2025-12-16",
+    "paid_date": "2025-11-28",
+    "created_at": "2025-11-01T00:00:00Z",
+    "billing_period_start": "2025-11-01",
+    "billing_period_end": "2025-11-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_11_demo-customer-002",
+    "invoice_number": "INV-2025-0017",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "November 2025",
+    "total_amount": 8170,
+    "status": "paid",
+    "due_date": "2025-12-17",
+    "paid_date": "2025-11-26",
+    "created_at": "2025-11-01T00:00:00Z",
+    "billing_period_start": "2025-11-01",
+    "billing_period_end": "2025-11-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_11_demo-customer-003",
+    "invoice_number": "INV-2025-0018",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "November 2025",
+    "total_amount": 2180,
+    "status": "issued",
+    "due_date": "2025-12-18",
+    "paid_date": null,
+    "created_at": "2025-11-01T00:00:00Z",
+    "billing_period_start": "2025-11-01",
+    "billing_period_end": "2025-11-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_11_demo-customer-004",
+    "invoice_number": "INV-2025-0019",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "November 2025",
+    "total_amount": 25190,
+    "status": "overdue",
+    "due_date": "2025-12-19",
+    "paid_date": null,
+    "created_at": "2025-11-01T00:00:00Z",
+    "billing_period_start": "2025-11-01",
+    "billing_period_end": "2025-11-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_11_demo-customer-005",
+    "invoice_number": "INV-2025-0020",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "November 2025",
+    "total_amount": 8200,
+    "status": "draft",
+    "due_date": "2025-12-20",
+    "paid_date": null,
+    "created_at": "2025-11-01T00:00:00Z",
+    "billing_period_start": "2025-11-01",
+    "billing_period_end": "2025-11-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_10_demo-customer-001",
+    "invoice_number": "INV-2025-0021",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "October 2025",
+    "total_amount": 15210,
+    "status": "paid",
+    "due_date": "2025-11-21",
+    "paid_date": "2025-10-28",
+    "created_at": "2025-10-01T00:00:00Z",
+    "billing_period_start": "2025-10-01",
+    "billing_period_end": "2025-10-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_10_demo-customer-002",
+    "invoice_number": "INV-2025-0022",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "October 2025",
+    "total_amount": 8220,
+    "status": "paid",
+    "due_date": "2025-11-22",
+    "paid_date": "2025-10-26",
+    "created_at": "2025-10-01T00:00:00Z",
+    "billing_period_start": "2025-10-01",
+    "billing_period_end": "2025-10-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_10_demo-customer-003",
+    "invoice_number": "INV-2025-0023",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "October 2025",
+    "total_amount": 2230,
+    "status": "paid",
+    "due_date": "2025-11-23",
+    "paid_date": "2025-10-24",
+    "created_at": "2025-10-01T00:00:00Z",
+    "billing_period_start": "2025-10-01",
+    "billing_period_end": "2025-10-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_10_demo-customer-004",
+    "invoice_number": "INV-2025-0024",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "October 2025",
+    "total_amount": 25240,
+    "status": "paid",
+    "due_date": "2025-11-24",
+    "paid_date": "2025-10-22",
+    "created_at": "2025-10-01T00:00:00Z",
+    "billing_period_start": "2025-10-01",
+    "billing_period_end": "2025-10-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_10_demo-customer-005",
+    "invoice_number": "INV-2025-0025",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "October 2025",
+    "total_amount": 8250,
+    "status": "issued",
+    "due_date": "2025-11-25",
+    "paid_date": null,
+    "created_at": "2025-10-01T00:00:00Z",
+    "billing_period_start": "2025-10-01",
+    "billing_period_end": "2025-10-31",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_09_demo-customer-001",
+    "invoice_number": "INV-2025-0026",
+    "customer_id": "demo-customer-001",
+    "customer_name": "HealthCorp Medical Systems",
+    "month": "September 2025",
+    "total_amount": 15260,
+    "status": "overdue",
+    "due_date": "2025-10-26",
+    "paid_date": null,
+    "created_at": "2025-09-01T00:00:00Z",
+    "billing_period_start": "2025-09-01",
+    "billing_period_end": "2025-09-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 12000,
+        "quantity": 1,
+        "unit_price": 12000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 3000,
+        "quantity": 1,
+        "unit_price": 3000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_09_demo-customer-002",
+    "invoice_number": "INV-2025-0027",
+    "customer_id": "demo-customer-002",
+    "customer_name": "FinTechAI Analytics",
+    "month": "September 2025",
+    "total_amount": 8270,
+    "status": "draft",
+    "due_date": "2025-10-27",
+    "paid_date": null,
+    "created_at": "2025-09-01T00:00:00Z",
+    "billing_period_start": "2025-09-01",
+    "billing_period_end": "2025-09-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_09_demo-customer-003",
+    "invoice_number": "INV-2025-0028",
+    "customer_id": "demo-customer-003",
+    "customer_name": "StartupMVP Inc",
+    "month": "September 2025",
+    "total_amount": 2280,
+    "status": "paid",
+    "due_date": "2025-10-28",
+    "paid_date": "2025-09-24",
+    "created_at": "2025-09-01T00:00:00Z",
+    "billing_period_start": "2025-09-01",
+    "billing_period_end": "2025-09-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 400,
+        "quantity": 1,
+        "unit_price": 400
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_09_demo-customer-004",
+    "invoice_number": "INV-2025-0029",
+    "customer_id": "demo-customer-004",
+    "customer_name": "GovContractor Defense Solutions",
+    "month": "September 2025",
+    "total_amount": 25290,
+    "status": "paid",
+    "due_date": "2025-10-29",
+    "paid_date": "2025-09-22",
+    "created_at": "2025-09-01T00:00:00Z",
+    "billing_period_start": "2025-09-01",
+    "billing_period_end": "2025-09-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 20000,
+        "quantity": 1,
+        "unit_price": 20000
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 5000,
+        "quantity": 1,
+        "unit_price": 5000
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  },
+  {
+    "id": "inv_2025_09_demo-customer-005",
+    "invoice_number": "INV-2025-0030",
+    "customer_id": "demo-customer-005",
+    "customer_name": "SaaSPlatform Cloud Services",
+    "month": "September 2025",
+    "total_amount": 8300,
+    "status": "paid",
+    "due_date": "2025-10-15",
+    "paid_date": "2025-09-20",
+    "created_at": "2025-09-01T00:00:00Z",
+    "billing_period_start": "2025-09-01",
+    "billing_period_end": "2025-09-30",
+    "line_items": [
+      {
+        "description": "Base Platform Fee",
+        "amount": 6400,
+        "quantity": 1,
+        "unit_price": 6400
+      },
+      {
+        "description": "Support & Maintenance",
+        "amount": 1600,
+        "quantity": 1,
+        "unit_price": 1600
+      }
+    ],
+    "pdf_url": "#",
+    "currency": "USD"
+  }
+]

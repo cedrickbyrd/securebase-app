@@ -403,3 +403,26 @@ Deploy multi-user team collaboration with role-based access control:
 
 *Last Updated: January 29, 2026*  
 *Version: 1.0.0 (Sales Enablement Sprint)*
+---
+
+## 🆕 Phase 2 Demo Backend (NEW!)
+
+**Location:** `landing-zone/modules/demo-backend/`
+
+A complete serverless backend for SecureBase Phase 2 demo that provides real API endpoints with JWT authentication, using the exact 5 test clients from mockData.js.
+
+### Quick Start
+```bash
+cd landing-zone/environments/dev
+cat ../../modules/demo-backend/example.tf >> main.tf
+terraform init && terraform apply
+```
+
+**Cost:** ~$0.36/month | **Deploy Time:** 3 minutes
+
+📖 **Documentation:**
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Complete implementation details
+- [landing-zone/modules/demo-backend/README.md](landing-zone/modules/demo-backend/README.md) - Module documentation
+- [landing-zone/modules/demo-backend/QUICKSTART.md](landing-zone/modules/demo-backend/QUICKSTART.md) - Quick start guide
+- [landing-zone/modules/demo-backend/DEPLOYMENT.md](landing-zone/modules/demo-backend/DEPLOYMENT.md) - Deployment guide
+
