@@ -230,7 +230,7 @@ else
 fi
 
 # Always configure S3 website hosting (ensures error document is set for SPA routing)
-echo -e "${YELLOW}Ensuring S3 website configuration is current...${NC}"
+echo -e "${YELLOW}Configuring S3 static website hosting...${NC}"
 aws s3 website "s3://$S3_BUCKET" \
     --index-document index.html \
     --error-document index.html
