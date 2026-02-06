@@ -261,7 +261,6 @@ dig demo.securebase.io CNAME
 | Platform | Config File | Status | Best For |
 |----------|-------------|--------|----------|
 | **Netlify** | `netlify.toml` | ✅ Ready | Demo sites, SPAs |
-| **Vercel** | `vercel.json` | ✅ Ready | Marketing sites |
 | **GitHub Pages** | `.github/workflows/` | ✅ Ready | Open source projects |
 | **AWS S3 + CloudFront** | `deploy-staging.sh` | ✅ Ready | Production portal |
 
@@ -272,7 +271,6 @@ dig demo.securebase.io CNAME
 - [DEMO_README.md](DEMO_README.md) - Demo environment overview
 - [DEMO_HOSTING_READINESS.md](DEMO_HOSTING_READINESS.md) - Platform comparison
 - [DEMO_SECURITY_CONFIG.md](DEMO_SECURITY_CONFIG.md) - Security implementation
-- [vercel.json](vercel.json) - Vercel deployment config
 
 ---
 
