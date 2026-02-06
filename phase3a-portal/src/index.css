@@ -1,3 +1,4 @@
 /* Phase 3A Portal application styles */
 @import './styles/variables.css';
 @import './styles/global.css';
+@import '../../src/styles/components.css';
