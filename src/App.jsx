@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code } from 'lucide-react';
+import ComplianceScreen from './components/compliance/ComplianceScreen';
 
 export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -558,6 +559,7 @@ COMPLIANCE:
           <nav className="flex gap-6 items-center">
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Overview</button>
             <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Modules</button>
+            <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Compliance</button>
             <button onClick={() => setActiveTab('devenv')} className="bg-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition flex items-center gap-2">
               <Rocket className="w-4 h-4" />
               Deploy Dev
@@ -972,10 +974,15 @@ COMPLIANCE:
             )}
           </div>
         )}
+
+        {/* Compliance Tab */}
+        {activeTab === 'compliance' && (
+          <ComplianceScreen />
+        )}
       </main>
 
       {/* Footer CTA */}
-      {activeTab !== 'devenv' && (
+      {activeTab !== 'devenv' && activeTab !== 'compliance' && (
         <footer className="max-w-7xl mx-auto px-6 py-16">
           <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-12 text-center">
             <h3 className="text-3xl font-bold mb-4">Ready to Deploy?</h3>
