@@ -69,7 +69,14 @@ export default function Dashboard() {
         pendingTickets: tickets.data.length,
       });
 
-      console.log('✅ Dashboard state updated');
+      console.log('✅ Dashboard state updated:', {
+        monthlyCharge: invoices.data[0]?.total_amount || 0,
+        apiKeysCount: apiKeys.data.length,
+        complianceStatus: compliance.data.status,
+        pendingTickets: tickets.data.length,
+        recentInvoicesCount: invoices.data.length,
+      });
+
       setError(null);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -81,7 +88,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="sb-Dashboard sb-Dashboard--loading">
+      <div className="sb-Dashboard__loading">
         <div className="sb-Dashboard__loadingContent">
           <div className="sb-Spinner"></div>
           <p className="sb-Dashboard__loadingText">Loading dashboard...</p>
@@ -90,21 +97,31 @@ export default function Dashboard() {
     );
   }
 
+  console.log('🎨 Dashboard rendering with data:', {
+    hasData: !!dashboardData,
+    monthlyCharge: dashboardData.monthlyCharge,
+    loading: false
+  });
+
   return (
     <div className="sb-Dashboard">
       {/* Header */}
       <div className="sb-Dashboard__header">
-        <h1 className="sb-Dashboard__title">Dashboard</h1>
-        <p className="sb-Dashboard__subtitle">Welcome back to SecureBase</p>
+        <div className="sb-Dashboard__headerContent">
+          <h1 className="sb-Dashboard__title">Dashboard</h1>
+          <p className="sb-Dashboard__subtitle">Welcome back to SecureBase</p>
+        </div>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="sb-Alert sb-Alert--error">
-          <AlertCircle className="sb-Alert__icon" />
-          <div className="sb-Alert__content">
-            <h3 className="sb-Alert__title">Error loading dashboard</h3>
-            <p className="sb-Alert__text">{error}</p>
+        <div className="sb-Dashboard__errorContainer">
+          <div className="sb-Alert sb-Alert--error">
+            <AlertCircle className="sb-Alert__icon" />
+            <div className="sb-Alert__content">
+              <h3 className="sb-Alert__title">Error loading dashboard</h3>
+              <p className="sb-Alert__text">{error}</p>
+            </div>
           </div>
         </div>
       )}
@@ -112,7 +129,7 @@ export default function Dashboard() {
       {/* Content */}
       <div className="sb-Dashboard__content">
         {/* Top Stats Grid */}
-        <div className="sb-StatsGrid">
+        <div className="sb-Dashboard__statsGrid">
           {/* Monthly Charge */}
           <div className="sb-StatCard">
             <div className="sb-StatCard__content">
@@ -144,9 +161,11 @@ export default function Dashboard() {
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
                 <p className="sb-StatCard__label">Compliance Status</p>
-                <div className="sb-StatCard__statusRow">
-                  <CheckCircle2 className="sb-StatCard__statusIcon" />
-                  <p className="sb-StatCard__statusText">{dashboardData.complianceStatus}</p>
+                <div className="sb-StatCard__statusWrapper">
+                  <CheckCircle2 className="sb-StatCard__statusIcon sb-StatCard__statusIcon--success" />
+                  <p className="sb-StatCard__statusText sb-StatCard__statusText--success">
+                    {dashboardData.complianceStatus}
+                  </p>
                 </div>
               </div>
               <Shield className="sb-StatCard__icon sb-StatCard__icon--green" />
@@ -170,26 +189,26 @@ export default function Dashboard() {
         {/* Recent Invoices & Quick Actions */}
         <div className="sb-Dashboard__mainGrid">
           {/* Recent Invoices */}
-          <div className="sb-InvoicesList">
-            <div className="sb-InvoicesList__header">
-              <h2 className="sb-InvoicesList__title">Recent Invoices</h2>
+          <div className="sb-InvoiceList">
+            <div className="sb-InvoiceList__header">
+              <h2 className="sb-InvoiceList__title">Recent Invoices</h2>
             </div>
-            <div className="sb-InvoicesList__content">
+            <div className="sb-InvoiceList__items">
               {dashboardData.recentInvoices.length > 0 ? (
                 dashboardData.recentInvoices.map((invoice) => (
                   <div key={invoice.id} className="sb-InvoiceItem">
                     <div className="sb-InvoiceItem__content">
-                      <div className="sb-InvoiceItem__details">
+                      <div className="sb-InvoiceItem__info">
                         <p className="sb-InvoiceItem__number">{invoice.invoice_number}</p>
                         <p className="sb-InvoiceItem__date">
                           {formatDate(invoice.created_at)}
                         </p>
                       </div>
-                      <div className="sb-InvoiceItem__summary">
+                      <div className="sb-InvoiceItem__details">
                         <p className="sb-InvoiceItem__amount">
                           {formatCurrency(invoice.total_amount)}
                         </p>
-                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>    
+                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>  
                           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </span>
                       </div>
@@ -197,12 +216,12 @@ export default function Dashboard() {
                   </div>
                 ))
               ) : (
-                <div className="sb-InvoicesList__empty">
+                <div className="sb-InvoiceList__empty">
                   <p className="u-text-muted">No invoices yet</p>
                 </div>
               )}
             </div>
-            <div className="sb-InvoicesList__footer">
+            <div className="sb-InvoiceList__footer">
               <a href="/invoices" className="sb-Link">
                 View all invoices →
               </a>
@@ -213,19 +232,31 @@ export default function Dashboard() {
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
-              <a href="/invoices/download" className="sb-ActionButton sb-ActionButton--blue">
+              <a
+                href="/invoices/download"
+                className="sb-ActionButton sb-ActionButton--blue"
+              >
                 <Download className="sb-ActionButton__icon" />
                 Download Invoice
               </a>
-              <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
+              <a
+                href="/api-keys"
+                className="sb-ActionButton sb-ActionButton--purple"
+              >
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
               </a>
-              <a href="/compliance" className="sb-ActionButton sb-ActionButton--green">
+              <a
+                href="/compliance"
+                className="sb-ActionButton sb-ActionButton--green"
+              >
                 <Shield className="sb-ActionButton__icon" />
                 View Compliance
               </a>
-              <a href="/support" className="sb-ActionButton sb-ActionButton--orange">
+              <a
+                href="/support"
+                className="sb-ActionButton sb-ActionButton--orange"
+              >
                 <Ticket className="sb-ActionButton__icon" />
                 Submit Ticket
               </a>
@@ -234,12 +265,12 @@ export default function Dashboard() {
         </div>
 
         {/* Usage Trends */}
-        <div className="sb-UsagePanel">
-          <div className="sb-UsagePanel__header">
-            <TrendingUp className="sb-UsagePanel__headerIcon" />
-            <h2 className="sb-UsagePanel__title">Usage This Month</h2>
+        <div className="sb-UsageTrends">
+          <div className="sb-UsageTrends__header">
+            <TrendingUp className="sb-UsageTrends__icon" />
+            <h2 className="sb-UsageTrends__title">Usage This Month</h2>
           </div>
-          <div className="sb-UsagePanel__grid">
+          <div className="sb-UsageTrends__grid">
             <div className="sb-UsageMetric">
               <p className="sb-UsageMetric__label">AWS Accounts</p>
               <p className="sb-UsageMetric__value">
