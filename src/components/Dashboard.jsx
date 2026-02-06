@@ -16,8 +16,6 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
-import { apiService } from '../services/apiService';
-import { formatCurrency, formatDate } from '../utils/formatters';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -38,27 +36,15 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [
-        metrics,
-        invoices,
-        apiKeys,
-        compliance,
-        tickets,
-      ] = await Promise.all([
+      const { apiService } = await import('../services/apiService');
+      
+      const [metrics, invoices, apiKeys, compliance, tickets] = await Promise.all([
         apiService.getMetrics(),
         apiService.getInvoices({ limit: 5 }),
         apiService.getApiKeys(),
         apiService.getComplianceStatus(),
         apiService.getSupportTickets({ status: 'open' }),
       ]);
-
-      console.log('📊 Dashboard data received:', {
-        metrics: metrics.data,
-        invoices: invoices.data,
-        apiKeys: apiKeys.data,
-        compliance: compliance.data,
-        tickets: tickets.data,
-      });
 
       setDashboardData({
         monthlyCharge: invoices.data[0]?.total_amount || 0,
@@ -69,14 +55,6 @@ export default function Dashboard() {
         pendingTickets: tickets.data.length,
       });
 
-      console.log('✅ Dashboard state updated:', {
-        monthlyCharge: invoices.data[0]?.total_amount || 0,
-        apiKeysCount: apiKeys.data.length,
-        complianceStatus: compliance.data.status,
-        pendingTickets: tickets.data.length,
-        recentInvoicesCount: invoices.data.length,
-      });
-
       setError(null);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -84,6 +62,21 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   if (loading) {
@@ -96,12 +89,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  console.log('🎨 Dashboard rendering with data:', {
-    hasData: !!dashboardData,
-    monthlyCharge: dashboardData.monthlyCharge,
-    loading: false
-  });
 
   return (
     <div className="sb-Dashboard">
@@ -148,9 +135,7 @@ export default function Dashboard() {
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
                 <p className="sb-StatCard__label">Active API Keys</p>
-                <p className="sb-StatCard__value">
-                  {dashboardData.apiKeysCount}
-                </p>
+                <p className="sb-StatCard__value">{dashboardData.apiKeysCount}</p>
               </div>
               <Key className="sb-StatCard__icon sb-StatCard__icon--purple" />
             </div>
@@ -177,9 +162,7 @@ export default function Dashboard() {
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
                 <p className="sb-StatCard__label">Open Tickets</p>
-                <p className="sb-StatCard__value">
-                  {dashboardData.pendingTickets}
-                </p>
+                <p className="sb-StatCard__value">{dashboardData.pendingTickets}</p>
               </div>
               <Ticket className="sb-StatCard__icon sb-StatCard__icon--orange" />
             </div>
@@ -208,16 +191,14 @@ export default function Dashboard() {
                         <p className="sb-InvoiceItem__amount">
                           {formatCurrency(invoice.total_amount)}
                         </p>
-                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>  
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
+                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>{invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</span>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="sb-InvoiceList__empty">
-                  <p className="u-text-muted">No invoices yet</p>
+                  <p>No invoices yet</p>
                 </div>
               )}
             </div>
@@ -232,31 +213,19 @@ export default function Dashboard() {
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
-              <a
-                href="/invoices/download"
-                className="sb-ActionButton sb-ActionButton--blue"
-              >
+              <a href="/invoices/download" className="sb-ActionButton sb-ActionButton--blue">
                 <Download className="sb-ActionButton__icon" />
                 Download Invoice
               </a>
-              <a
-                href="/api-keys"
-                className="sb-ActionButton sb-ActionButton--purple"
-              >
+              <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
               </a>
-              <a
-                href="/compliance"
-                className="sb-ActionButton sb-ActionButton--green"
-              >
+              <a href="/compliance" className="sb-ActionButton sb-ActionButton--green">
                 <Shield className="sb-ActionButton__icon" />
                 View Compliance
               </a>
-              <a
-                href="/support"
-                className="sb-ActionButton sb-ActionButton--orange"
-              >
+              <a href="/support" className="sb-ActionButton sb-ActionButton--orange">
                 <Ticket className="sb-ActionButton__icon" />
                 Submit Ticket
               </a>
