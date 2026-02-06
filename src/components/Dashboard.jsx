@@ -1,147 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/apiService';
+import React from 'react';
+import apiService from '../../services/apiService';
 
-export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [dashboardData, setDashboardData] = useState({
-    monthlyCharge: 0,
-    monthlyUsage: {},
-    recentInvoices: [],
-    apiKeysCount: 0,
-    complianceStatus: '',
-    pendingTickets: 0,
-  });
+const Dashboard = () => {
+    const [metrics, setMetrics] = React.useState({});
+    const [invoices, setInvoices] = React.useState([]);
+    const [apiKeys, setApiKeys] = React.useState([]);
+    const [complianceStatus, setComplianceStatus] = React.useState('');
+    const [supportTickets, setSupportTickets] = React.useState([]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+    React.useEffect(() => {
+        // fetch metrics, invoices, api keys, compliance status, and support tickets
+        apiService.fetchMetrics().then(setMetrics);
+        apiService.fetchInvoices().then(setInvoices);
+        apiService.fetchApiKeys().then(setApiKeys);
+        apiService.fetchComplianceStatus().then(setComplianceStatus);
+        apiService.fetchSupportTickets().then(setSupportTickets);
+    }, []);
 
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [metrics, invoices, apiKeys, compliance, tickets] = await Promise.all([
-        apiService.getMetrics(),
-        apiService.getInvoices({ limit: 5 }),
-        apiService.getApiKeys(),
-        apiService.getComplianceStatus(),
-        apiService.getSupportTickets({ status: 'open' }),
-      ]);
-
-      setDashboardData({
-        monthlyCharge: invoices.data[0]?.total_amount || 0,
-        monthlyUsage: metrics.data,
-        recentInvoices: invoices.data,
-        apiKeysCount: apiKeys.data.length,
-        complianceStatus: compliance.data.status,
-        pendingTickets: tickets.data.length,
-      });
-
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      setError(err.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
     return (
-      <div className="sb-Dashboard sb-Dashboard--loading">
-        <div className="sb-Dashboard__spinner"></div>
-        <p className="u-text-muted">Loading dashboard...</p>
-      </div>
+        <div className="sb-Dashboard">
+            <header className="sb-Dashboard__header">
+                <h1>Dashboard</h1>
+            </header>
+            <section className="sb-Dashboard__metrics">
+                <h2>Metrics</h2>
+                {/* Display metrics here */}
+            </section>
+            <section className="sb-Dashboard__invoices">
+                <h2>Invoices</h2>
+                {/* Display invoices here */}
+            </section>
+            <section className="sb-Dashboard__api-keys">
+                <h2>API Keys</h2>
+                {/* Display API keys here */}
+            </section>
+            <section className="sb-Dashboard__compliance-status">
+                <h2>Compliance Status</h2>
+                {/* Display compliance status here */}
+            </section>
+            <section className="sb-Dashboard__support-tickets">
+                <h2>Support Tickets</h2>
+                {/* Display support tickets here */}
+            </section>
+        </div>
     );
-  }
+};
 
-  return (
-    <div className="sb-Dashboard">
-      <div className="sb-Dashboard__header">
-        <h1>Dashboard</h1>
-        <p className="u-text-muted">Welcome back to SecureBase</p>
-      </div>
-
-      {error && (
-        <div className="sb-Alert sb-Alert--error">
-          <span className="sb-Alert__icon">⚠️</span>
-          <div className="sb-Alert__content">
-            <h3>Error</h3>
-            <p>{error}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="sb-Dashboard__grid">
-        {/* Monthly Charge Card */}
-        <div className="sb-Card sb-Card--highlight">
-          <div className="sb-Card__header">
-            <span className="sb-Card__icon">💳</span>
-            <h3>Monthly Charge</h3>
-          </div>
-          <div className="sb-Card__value">${(dashboardData.monthlyCharge / 100).toFixed(2)}</div>
-          <p className="u-text-muted">Current billing cycle</p>
-        </div>
-
-        {/* API Keys Card */}
-        <div className="sb-Card">
-          <div className="sb-Card__header">
-            <span className="sb-Card__icon">🔑</span>
-            <h3>API Keys</h3>
-          </div>
-          <div className="sb-Card__value">{dashboardData.apiKeysCount}</div>
-          <p className="u-text-muted">Active keys</p>
-        </div>
-
-        {/* Compliance Card */}
-        <div className="sb-Card">
-          <div className="sb-Card__header">
-            <span className="sb-Card__icon">🛡️</span>
-            <h3>Compliance</h3>
-          </div>
-          <div className={`sb-Badge sb-Badge--${dashboardData.complianceStatus}`}>{dashboardData.complianceStatus}</div>
-          <p className="u-text-muted">Security posture</p>
-        </div>
-
-        {/* Support Tickets Card */}
-        <div className="sb-Card">
-          <div className="sb-Card__header">
-            <span className="sb-Card__icon">🎫</span>
-            <h3>Support</h3>
-          </div>
-          <div className="sb-Card__value">{dashboardData.pendingTickets}</div>
-          <p className="u-text-muted">Open tickets</p>
-        </div>
-      </div>
-
-      {/* Recent Invoices */}
-      <div className="sb-Dashboard__section">
-        <h2>Recent Invoices</h2>
-        <div className="sb-Table">
-          <table>
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboardData.recentInvoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td>{invoice.invoice_number}</td>
-                  <td>{new Date(invoice.created_at).toLocaleDateString()}</td>
-                  <td>${(invoice.total_amount / 100).toFixed(2)}</td>
-                  <td>
-                    <span className={`sb-Badge sb-Badge--${invoice.status}`}>{invoice.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
+export default Dashboard;
