@@ -75,3 +75,11 @@ variable "reporting_layer_arn" {
   default     = null
 }
 
+# Netlify Module Variables
+variable "netlify_token" {
+  description = "Netlify API token from AWS Secrets Manager or environment variable"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

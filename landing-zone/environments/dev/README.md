@@ -202,6 +202,78 @@ This script will:
 
 ---
 
+## Netlify Deployments (Marketing Site & Portal Demo)
+
+### Prerequisites
+1. **Netlify API Token**: Generate at https://app.netlify.com/user/applications#personal-access-tokens
+2. **Set Environment Variable**:
+   ```bash
+   export TF_VAR_netlify_token="your-netlify-token-here"
+   ```
+
+### Quick Start
+```bash
+cd landing-zone/environments/dev
+terraform init
+terraform plan -target=module.netlify_sites
+terraform apply -target=module.netlify_sites
+```
+
+### Import Existing Netlify Sites
+If you already have sites deployed on Netlify:
+
+```bash
+# Get site IDs from Netlify dashboard
+# Settings → General → Site information → API ID
+
+# Import marketing site
+terraform import 'module.netlify_sites.netlify_site.marketing' <marketing-site-id>
+
+# Import portal demo site
+terraform import 'module.netlify_sites.netlify_site.portal_demo' <portal-demo-site-id>
+
+# Verify import
+terraform plan -target=module.netlify_sites
+```
+
+### Verify Netlify Deployment
+```bash
+# View outputs
+terraform output netlify_marketing_site_url
+terraform output netlify_portal_demo_url
+terraform output netlify_deployment_summary
+
+# Test sites
+curl -I https://securebase.io
+curl -I https://portal-demo.securebase.io
+```
+
+### DNS Configuration
+After deploying, configure DNS for custom domains:
+
+**Marketing Site (securebase.io)**:
+```
+# Add to your DNS provider
+securebase.io.  ALIAS   <netlify-marketing-url>
+# Or: securebase.io.  A   75.2.60.5
+```
+
+**Portal Demo (portal-demo.securebase.io)**:
+```
+# Add to your DNS provider
+portal-demo.securebase.io.  CNAME   <netlify-demo-url>
+```
+
+### Troubleshooting Netlify Deployments
+- **Invalid token**: Verify `TF_VAR_netlify_token` is set correctly
+- **Site already exists**: Import existing site (see above)
+- **DNS not configured**: Add DNS records to your DNS provider
+- **Build fails**: Check build logs in Netlify dashboard
+
+See `landing-zone/modules/netlify-sites/README.md` for detailed documentation.
+
+---
+
 ## Directory Structure Reference
 
 ```
