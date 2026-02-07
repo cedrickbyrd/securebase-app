@@ -14,21 +14,6 @@ export default defineConfig({
     // Performance optimizations
     target: 'es2015',
     minify: 'esbuild',        // Fast minification with esbuild
-    
-    rollupOptions: {
-      output: {
-        // Content-hashed filenames for cache busting
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]',
-        
-        // Code splitting for better performance
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'icons': ['lucide-react'],
-        },
-      },
-    },
   },
   
   // Base path configuration
