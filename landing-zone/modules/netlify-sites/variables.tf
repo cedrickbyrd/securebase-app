@@ -24,7 +24,7 @@ variable "marketing_domain" {
   default     = "securebase.io"
 
   validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]*[a-z0-9]\\.[a-z]{2,}$", var.marketing_domain))
+    condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?\\.([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)*[a-z]{2,}$", var.marketing_domain))
     error_message = "Marketing domain must be a valid domain name (e.g., securebase.io)"
   }
 }
@@ -35,7 +35,7 @@ variable "portal_demo_domain" {
   default     = "portal-demo.securebase.io"
 
   validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]*[a-z0-9]\\.[a-z]{2,}$", var.portal_demo_domain))
+    condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?\\.([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)*[a-z]{2,}$", var.portal_demo_domain))
     error_message = "Portal demo domain must be a valid domain name (e.g., portal-demo.securebase.io)"
   }
 }
