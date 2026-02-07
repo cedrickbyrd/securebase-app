@@ -220,6 +220,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "reports" {
     id     = "expire-old-reports"
     status = "Enabled"
 
+    # AWS provider v5.x requires filter block for lifecycle rules
+    filter {}
+
     expiration {
       days = 90
     }
