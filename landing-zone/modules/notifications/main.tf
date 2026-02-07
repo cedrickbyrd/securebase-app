@@ -611,26 +611,7 @@ resource "aws_cloudwatch_metric_alarm" "old_messages" {
   tags = var.tags
 }
 
-# ============================================
-# Outputs
-# ============================================
 
-output "notifications_topic_arn" {
-  description = "ARN of general notifications topic"
-  value       = aws_sns_topic.notifications.arn
-}
 
-output "support_events_topic_arn" {
-  description = "ARN of support events topic"
-  value       = aws_sns_topic.support_events.arn
-}
 
-output "webhook_events_topic_arn" {
-  description = "ARN of webhook events topic"
-  value       = aws_sns_topic.webhook_events.arn
-}
 
-output "cost_alerts_topic_arn" {
-  description = "ARN of cost alerts topic"
-  value       = aws_sns_topic.cost_alerts.arn
-}
