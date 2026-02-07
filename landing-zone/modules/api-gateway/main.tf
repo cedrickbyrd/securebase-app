@@ -842,13 +842,6 @@ resource "aws_api_gateway_stage" "main" {
   }
 
   # Global throttling settings (can be overridden per method)
-  # AWS provider v5.x uses 'settings' instead of 'throttle_settings'
-  settings {
-    throttle {
-      rate_limit  = var.default_rate_limit
-      burst_limit = var.default_burst_limit
-    }
-  }
 
   tags = merge(var.tags, {
     Name = "securebase-${var.environment}-stage"
