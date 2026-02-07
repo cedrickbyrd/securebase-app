@@ -18,7 +18,7 @@ output "marketing_deploy_url" {
 
 output "marketing_custom_domain" {
   description = "Custom domain for marketing site"
-  value       = netlify_site_domain.marketing.domain
+  value       = netlify_site.marketing.custom_domain
 }
 
 output "marketing_build_hook_url" {
@@ -45,7 +45,7 @@ output "portal_demo_deploy_url" {
 
 output "portal_demo_custom_domain" {
   description = "Custom domain for portal demo site"
-  value       = netlify_site_domain.portal_demo.domain
+  value       = netlify_site.portal_demo.custom_domain
 }
 
 output "portal_demo_build_hook_url" {
@@ -60,12 +60,12 @@ output "deployment_summary" {
   value = {
     marketing_site = {
       netlify_url   = "https://${netlify_site.marketing.default_domain}"
-      custom_domain = var.marketing_domain
+      custom_domain = netlify_site.marketing.custom_domain
       site_id       = netlify_site.marketing.id
     }
     portal_demo = {
       netlify_url   = "https://${netlify_site.portal_demo.default_domain}"
-      custom_domain = var.portal_demo_domain
+      custom_domain = netlify_site.portal_demo.custom_domain
       site_id       = netlify_site.portal_demo.id
     }
   }

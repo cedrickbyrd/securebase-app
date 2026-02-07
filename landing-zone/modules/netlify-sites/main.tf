@@ -1,5 +1,17 @@
 # Netlify Sites Module
 # Manages Netlify deployments for marketing site and portal demo
+#
+# IMPORTANT: This configuration is based on Netlify Terraform provider ~> 1.0.
+# The actual resource schema may vary. Please consult the official provider docs:
+# https://registry.terraform.io/providers/netlify/netlify/latest/docs
+# 
+# You may need to adjust resource names and attributes based on the provider version.
+# Common adjustments needed:
+# - Resource names (netlify_site, netlify_build_settings, netlify_env_var, etc.)
+# - Attribute names within resources
+# - Block structure (repo, environment, etc.)
+#
+# Before deploying, run `terraform init` and `terraform validate` to check compatibility.
 
 terraform {
   required_providers {
@@ -17,8 +29,10 @@ terraform {
 resource "netlify_site" "marketing" {
   name = "securebase-marketing"
 
+  custom_domain = var.marketing_domain
+
   repo {
-    repo_branch   = "main"
+    branch        = "main"
     command       = "npm run build"
     deploy_key_id = netlify_deploy_key.marketing.id
     dir           = "dist"
@@ -31,22 +45,27 @@ resource "netlify_deploy_key" "marketing" {
   # Netlify will generate a deploy key automatically
 }
 
-resource "netlify_build_settings" "marketing" {
+# Environment variables for marketing site
+resource "netlify_env_var" "marketing_node_version" {
   site_id = netlify_site.marketing.id
-
-  build_command      = "npm run build"
-  publish_directory  = "dist"
-  production_branch  = "main"
-
-  environment = {
-    NODE_VERSION = "22"
-    VITE_ENV     = "production"
-  }
+  key     = "NODE_VERSION"
+  values  = [
+    {
+      value   = "22"
+      context = "all"
+    }
+  ]
 }
 
-resource "netlify_site_domain" "marketing" {
+resource "netlify_env_var" "marketing_vite_env" {
   site_id = netlify_site.marketing.id
-  domain  = var.marketing_domain
+  key     = "VITE_ENV"
+  values  = [
+    {
+      value   = "production"
+      context = "all"
+    }
+  ]
 }
 
 # ============================================================================
@@ -56,8 +75,10 @@ resource "netlify_site_domain" "marketing" {
 resource "netlify_site" "portal_demo" {
   name = "securebase-portal-demo"
 
+  custom_domain = var.portal_demo_domain
+
   repo {
-    repo_branch   = "main"
+    branch        = "main"
     command       = "cd phase3a-portal && npm run build"
     deploy_key_id = netlify_deploy_key.portal_demo.id
     dir           = "phase3a-portal/dist"
@@ -70,24 +91,49 @@ resource "netlify_deploy_key" "portal_demo" {
   # Netlify will generate a deploy key automatically
 }
 
-resource "netlify_build_settings" "portal_demo" {
+# Environment variables for portal demo site
+resource "netlify_env_var" "portal_demo_node_version" {
   site_id = netlify_site.portal_demo.id
-
-  build_command      = "cd phase3a-portal && npm run build"
-  publish_directory  = "phase3a-portal/dist"
-  production_branch  = "main"
-
-  environment = {
-    NODE_VERSION            = "22"
-    VITE_USE_MOCK_API       = "true"
-    VITE_ENV                = "demo"
-    VITE_ANALYTICS_ENABLED  = "false"
-  }
+  key     = "NODE_VERSION"
+  values  = [
+    {
+      value   = "22"
+      context = "all"
+    }
+  ]
 }
 
-resource "netlify_site_domain" "portal_demo" {
+resource "netlify_env_var" "portal_demo_mock_api" {
   site_id = netlify_site.portal_demo.id
-  domain  = var.portal_demo_domain
+  key     = "VITE_USE_MOCK_API"
+  values  = [
+    {
+      value   = "true"
+      context = "all"
+    }
+  ]
+}
+
+resource "netlify_env_var" "portal_demo_vite_env" {
+  site_id = netlify_site.portal_demo.id
+  key     = "VITE_ENV"
+  values  = [
+    {
+      value   = "demo"
+      context = "all"
+    }
+  ]
+}
+
+resource "netlify_env_var" "portal_demo_analytics" {
+  site_id = netlify_site.portal_demo.id
+  key     = "VITE_ANALYTICS_ENABLED"
+  values  = [
+    {
+      value   = "false"
+      context = "all"
+    }
+  ]
 }
 
 # ============================================================================
