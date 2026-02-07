@@ -1,16 +1,6 @@
 terraform {
   required_version = ">= 1.5.0"
 
-  # REQUIRED: Remote state prevents state loss and enables collaboration
-  # This matches your DEPLOYMENT_GUIDE.md requirements
-  backend "s3" {
-    bucket         = "securebase-foundation-tfstate" # Change to your bootstrap bucket
-    key            = "v0.1/landing-zone.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "securebase-lock-table"
-    encrypt        = true
-  }
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -22,12 +12,6 @@ terraform {
 # 3. Dynamic Identity (Prevents Hard-coding)
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
-
-# Outputs for API Gateway endpoint
-output "api_gateway_endpoint" {
-  description = "Base URL for API Gateway"
-  value       = try(module.api_gateway.api_gateway_endpoint, "Not deployed yet")
-}
 
 output "api_endpoints" {
   description = "Map of all API endpoints"
@@ -413,13 +397,10 @@ module "api_gateway" {
   # Phase 4: Analytics Lambda
   analytics_lambda_arn        = try(module.analytics.report_engine_function_arn, null)
   analytics_lambda_name       = try(module.analytics.report_engine_function_name, null)
-  analytics_lambda_invoke_arn = try(module.analytics.report_engine_invoke_arn, null)
 
-  # Phase 4: RBAC Lambdas
-  user_management_lambda_arn        = try(module.rbac.user_management_function_arn, null)
-  user_management_lambda_name       = try(module.rbac.user_management_function_name, null)
-  user_management_lambda_invoke_arn = try(module.rbac.user_management_invoke_arn, null)
-  
+  # Health Check Lambda
+  health_check_lambda_arn  = module.lambda_functions.health_check_arn
+  health_check_lambda_name = module.lambda_functions.health_check_name
   session_management_lambda_arn        = try(module.rbac.session_management_function_arn, null)
   session_management_lambda_name       = try(module.rbac.session_management_function_name, null)
   session_management_lambda_invoke_arn = try(module.rbac.session_management_invoke_arn, null)

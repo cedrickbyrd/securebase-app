@@ -13,14 +13,6 @@
 #
 # Before deploying, run `terraform init` and `terraform validate` to check compatibility.
 
-terraform {
-  required_providers {
-    netlify = {
-      source  = "netlify/netlify"
-      version = "~> 1.0"
-    }
-  }
-}
 
 # ============================================================================
 # Marketing Site (securebase.io)

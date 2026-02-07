@@ -44,3 +44,9 @@ module "netlify_sites" {
   portal_demo_domain  = "portal-demo.securebase.io"
   tags                = var.tags
 }
+
+terraform {
+  required_version = ">= 1.5.0"
+
+  backend "s3" {}
+} 
