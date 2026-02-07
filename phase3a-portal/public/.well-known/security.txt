@@ -1,0 +1,31 @@
+Contact: mailto:security@securebase.io
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://demo.securebase.io/.well-known/security.txt
+
+# Security Policy for SecureBase Demo Environment
+
+This is a DEMO environment containing NO real customer data.
+- All credentials are mock credentials (demo/demo)
+- No production systems are accessible from this environment
+- No real API keys or secrets are exposed
+- All data displayed is synthetic/mock data
+
+For production security issues, please contact: security@securebase.io
+For demo-specific issues, please use: demo-support@securebase.io
+
+# Scope
+This demo environment is intended for:
+- Product evaluation
+- Sales demonstrations
+- User experience testing
+
+This demo environment is NOT connected to:
+- Production AWS infrastructure
+- Real customer accounts
+- Live payment systems
+- Actual compliance data
+
+# Safe Harbor
+We appreciate responsible disclosure of security issues.
+Good faith security research on this demo environment is welcomed.
