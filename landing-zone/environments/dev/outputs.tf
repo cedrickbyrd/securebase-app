@@ -78,3 +78,29 @@ output "analytics_lambda_function" {
   description = "Report engine Lambda function name"
   value       = try(module.analytics.report_engine_function_name, null)
 }
+
+# Netlify Module Outputs
+output "netlify_marketing_site_url" {
+  description = "Marketing site Netlify URL"
+  value       = try(module.netlify_sites.marketing_site_url, null)
+}
+
+output "netlify_marketing_site_id" {
+  description = "Marketing site Netlify ID"
+  value       = try(module.netlify_sites.marketing_site_id, null)
+}
+
+output "netlify_portal_demo_url" {
+  description = "Portal demo site Netlify URL"
+  value       = try(module.netlify_sites.portal_demo_url, null)
+}
+
+output "netlify_portal_demo_site_id" {
+  description = "Portal demo site Netlify ID"
+  value       = try(module.netlify_sites.portal_demo_site_id, null)
+}
+
+output "netlify_deployment_summary" {
+  description = "Summary of Netlify deployments"
+  value       = try(module.netlify_sites.deployment_summary, null)
+}
