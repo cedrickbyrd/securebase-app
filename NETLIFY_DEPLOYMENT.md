@@ -6,6 +6,79 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 
 ---
 
+## 🔄 Automated Deployments via GitHub Actions
+
+### Marketing Site Workflow (securebase.io)
+
+**File**: `.github/workflows/deploy-marketing-site.yml`
+
+**Triggers:**
+- Push to `main` branch (auto-deploy to production)
+- Pull requests to `main` (preview deployment)
+- Manual workflow dispatch
+
+**Path filters:**
+- Deploys only when marketing site files change (`src/`, `public/`, etc.)
+
+**Required Secrets:**
+- `NETLIFY_AUTH_TOKEN` - Your Netlify personal access token
+- `NETLIFY_MARKETING_SITE_ID` - Netlify site ID for securebase.io
+
+**Features:**
+- ✅ Automatic production deployment on merge to main
+- ✅ Preview deployments for PRs with unique URLs
+- ✅ Health checks and security header validation
+- ✅ Deployment summaries in GitHub Actions UI
+
+---
+
+### Demo Portal Workflow (demo.securebase.io)
+
+**File**: `.github/workflows/deploy-demo-portal.yml`
+
+**Triggers:**
+- Push to `main` branch (auto-deploy to production)
+- Pull requests to `main` (preview deployment)
+- Manual workflow dispatch
+- **After marketing site deployment completes** (workflow_run trigger)
+
+**Dependency:**
+- ⚠️ **Checks if `securebase.io` exists and is healthy before deploying**
+- If marketing site is down, demo portal deployment is skipped (unless manually triggered)
+
+**Path filters:**
+- Deploys only when demo portal files change (`phase3a-portal/**`)
+
+**Required Secrets:**
+- `NETLIFY_AUTH_TOKEN` - Your Netlify personal access token
+- `NETLIFY_DEMO_SITE_ID` - Netlify site ID for demo.securebase.io
+
+**Features:**
+- ✅ Validates marketing site health before deployment
+- ✅ Independent deployment pipeline
+- ✅ Automatically triggered after marketing site updates
+- ✅ Can be manually triggered even if marketing site check fails
+
+---
+
+### Workflow Execution Order
+
+1. **Marketing Site deploys first** (independent)
+2. **Demo Portal checks marketing site health**
+3. **If healthy → Demo Portal deploys**
+4. **If unhealthy → Demo Portal skips (unless manual)**
+
+### Manual Deployment
+
+To manually trigger either workflow:
+1. Go to **Actions** tab
+2. Select the workflow
+3. Click **Run workflow**
+4. Choose the branch
+5. Click **Run workflow** button
+
+---
+
 ## Option 1: One-Click Deploy (Fastest ⚡)
 
 ### Via Netlify Dashboard
