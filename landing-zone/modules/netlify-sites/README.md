@@ -3,6 +3,8 @@
 ## Overview
 This Terraform module manages Netlify deployments for SecureBase's marketing site and customer portal demo. It provides declarative infrastructure-as-code for Netlify site configuration, build settings, custom domains, and deployment automation.
 
+**Important Note**: This module uses the Netlify Terraform provider (~> 1.0). The exact resource schema may vary based on the provider version. Please consult the [official Netlify Terraform provider documentation](https://registry.terraform.io/providers/netlify/netlify/latest/docs) for the most up-to-date resource specifications and adjust the configuration as needed.
+
 ## Features
 
 ### ✅ Automated Site Management
