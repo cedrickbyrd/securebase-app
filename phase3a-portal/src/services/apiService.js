@@ -58,6 +58,34 @@ class ApiService {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }
 
+  /**
+   * Authenticate with API key
+   * @param {string} apiKey - Customer API key (starts with sb_)
+   * @returns {Promise<Object>} Session token and customer info
+   */
+  async authenticate(apiKey) {
+    try {
+      const response = await this.post('/auth/login', { api_key: apiKey });
+      
+      // Store session token in localStorage
+      // API may return either 'token' or 'session_token' - prefer 'token' for consistency
+      if (response.token || response.session_token) {
+        const token = response.token || response.session_token;
+        localStorage.setItem('sessionToken', token);
+      }
+      
+      return response;
+    } catch (error) {
+      // Log detailed error for debugging while providing user-friendly message
+      console.error('Authentication failed:', error);
+      const isNetworkError = error.message && error.message.includes('fetch');
+      const errorMessage = isNetworkError 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Invalid API key. Please check your credentials.';
+      throw new Error(errorMessage);
+    }
+  }
+
   // Dashboard data
   async getDashboardData() {
     return this.get('/dashboard');
