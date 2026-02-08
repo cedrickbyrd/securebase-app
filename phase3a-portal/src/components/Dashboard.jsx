@@ -131,7 +131,7 @@ export const Dashboard = () => {
         {/* Top Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {/* Monthly Charge */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Monthly Charge</p>
@@ -139,12 +139,14 @@ export const Dashboard = () => {
                   {formatCurrency(dashboardData.monthlyCharge)}
                 </p>
               </div>
-              <CreditCard className="w-10 h-10 text-blue-600 opacity-20" />
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <CreditCard className="w-8 h-8 text-blue-600" />
+              </div>
             </div>
           </div>
 
           {/* API Keys */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active API Keys</p>
@@ -152,12 +154,14 @@ export const Dashboard = () => {
                   {dashboardData.apiKeysCount}
                 </p>
               </div>
-              <Key className="w-10 h-10 text-purple-600 opacity-20" />
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <Key className="w-8 h-8 text-purple-600" />
+              </div>
             </div>
           </div>
 
           {/* Compliance Status */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Compliance Status</p>
@@ -166,12 +170,14 @@ export const Dashboard = () => {
                   <p className="text-xl font-semibold text-green-600">{dashboardData.complianceStatus}</p>
                 </div>
               </div>
-              <Shield className="w-10 h-10 text-green-600 opacity-20" />
+              <div className="bg-green-50 p-3 rounded-lg">
+                <Shield className="w-8 h-8 text-green-600" />
+              </div>
             </div>
           </div>
 
           {/* Open Tickets */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Open Tickets</p>
@@ -179,7 +185,9 @@ export const Dashboard = () => {
                   {dashboardData.pendingTickets}
                 </p>
               </div>
-              <Ticket className="w-10 h-10 text-orange-600 opacity-20" />
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <Ticket className="w-8 h-8 text-orange-600" />
+              </div>
             </div>
           </div>
         </div>
@@ -187,8 +195,8 @@ export const Dashboard = () => {
         {/* Recent Invoices & Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Invoices */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow">
-            <div className="border-b border-gray-200 px-6 py-4">
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-md border border-gray-200">
+            <div className="border-b border-gray-200 px-6 py-4 bg-blue-50">
               <h2 className="text-lg font-semibold text-gray-900">Recent Invoices</h2>
             </div>
             <div className="divide-y divide-gray-200">
@@ -235,19 +243,19 @@ export const Dashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
               <a
                 href="/invoices/download"
-                className="flex items-center px-4 py-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition font-medium"
+                className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition font-medium"
               >
                 <Download className="w-5 h-5 mr-2" />
                 Download Invoice
               </a>
               <a
                 href="/api-keys"
-                className="flex items-center px-4 py-3 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition font-medium"
+                className="flex items-center px-4 py-3 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition font-medium"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create API Key

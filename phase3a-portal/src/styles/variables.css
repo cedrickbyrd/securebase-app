@@ -1,20 +1,20 @@
 /**
  * SecureBase Design System - CSS Custom Properties
- * Professional enterprise-grade color palette and design tokens
+ * Clean Corporate Blue Theme - Professional light color palette
  */
 
 :root {
-  /* Primary Colors - Navy Blue */
-  --color-primary-900: #1e3a8a;
-  --color-primary-800: #1e40af;
-  --color-primary-700: #1d4ed8;
-  --color-primary-600: #2563eb;
-  --color-primary-500: #3b82f6;
-  --color-primary-400: #60a5fa;
-  --color-primary-300: #93c5fd;
-  --color-primary-200: #bfdbfe;
-  --color-primary-100: #dbeafe;
-  --color-primary-50: #eff6ff;
+  /* Primary Colors - Corporate Blue */
+  --color-primary-900: #004080;
+  --color-primary-800: #0052A3;
+  --color-primary-700: #0066CC;
+  --color-primary-600: #0066CC;
+  --color-primary-500: #3399FF;
+  --color-primary-400: #66B3FF;
+  --color-primary-300: #99CCFF;
+  --color-primary-200: #CCE5FF;
+  --color-primary-100: #E6F2FF;
+  --color-primary-50: #F0F8FF;
 
   /* Secondary Colors - Slate Gray */
   --color-secondary-900: #0f172a;
@@ -28,29 +28,29 @@
   --color-secondary-100: #f1f5f9;
   --color-secondary-50: #f8fafc;
 
-  /* Success Colors - Professional Green */
-  --color-success-900: #064e3b;
-  --color-success-800: #065f46;
-  --color-success-700: #047857;
-  --color-success-600: #059669;
-  --color-success-500: #10b981;
-  --color-success-400: #34d399;
-  --color-success-300: #6ee7b7;
-  --color-success-200: #a7f3d0;
-  --color-success-100: #d1fae5;
-  --color-success-50: #ecfdf5;
+  /* Success Colors - Fresh Green */
+  --color-success-900: #006644;
+  --color-success-800: #007A52;
+  --color-success-700: #008F60;
+  --color-success-600: #00A76F;
+  --color-success-500: #00B894;
+  --color-success-400: #33C6A6;
+  --color-success-300: #66D4B9;
+  --color-success-200: #99E2CB;
+  --color-success-100: #CCF0DE;
+  --color-success-50: #E6F8F0;
 
-  /* Warning Colors - Amber */
-  --color-warning-900: #78350f;
-  --color-warning-800: #92400e;
-  --color-warning-700: #b45309;
-  --color-warning-600: #d97706;
-  --color-warning-500: #f59e0b;
-  --color-warning-400: #fbbf24;
-  --color-warning-300: #fcd34d;
-  --color-warning-200: #fde68a;
-  --color-warning-100: #fef3c7;
-  --color-warning-50: #fffbeb;
+  /* Warning Colors - Vibrant Orange */
+  --color-warning-900: #CC6600;
+  --color-warning-800: #E07300;
+  --color-warning-700: #F37F00;
+  --color-warning-600: #FF8C1A;
+  --color-warning-500: #FF9F43;
+  --color-warning-400: #FFB269;
+  --color-warning-300: #FFC68F;
+  --color-warning-200: #FFD9B5;
+  --color-warning-100: #FFECDA;
+  --color-warning-50: #FFF6ED;
 
   /* Error Colors - Red */
   --color-error-900: #7f1d1d;
@@ -65,33 +65,39 @@
   --color-error-50: #fef2f2;
 
   /* Neutral Colors - Gray Scale */
-  --color-neutral-900: #111827;
-  --color-neutral-800: #1f2937;
-  --color-neutral-700: #374151;
-  --color-neutral-600: #4b5563;
-  --color-neutral-500: #6b7280;
-  --color-neutral-400: #9ca3af;
-  --color-neutral-300: #d1d5db;
-  --color-neutral-200: #e5e7eb;
-  --color-neutral-100: #f3f4f6;
-  --color-neutral-50: #f9fafb;
-  --color-white: #ffffff;
+  --color-neutral-900: #1E293B;
+  --color-neutral-800: #334155;
+  --color-neutral-700: #475569;
+  --color-neutral-600: #64748B;
+  --color-neutral-500: #94A3B8;
+  --color-neutral-400: #CBD5E1;
+  --color-neutral-300: #E2E8F0;
+  --color-neutral-200: #F1F5F9;
+  --color-neutral-100: #F8FAFC;
+  --color-neutral-50: #FAFBFC;
+  --color-white: #FFFFFF;
 
-  /* Background Colors */
+  /* Accent Colors */
+  --color-accent-teal: #00CEC9;
+  --color-accent-teal-light: #80E7E3;
+  --color-accent-teal-dark: #00A8A3;
+
+  /* Background Colors - Light Theme */
   --bg-primary: var(--color-white);
-  --bg-secondary: var(--color-neutral-50);
-  --bg-tertiary: var(--color-neutral-100);
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: var(--color-neutral-200);
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 
-  /* Text Colors */
-  --text-primary: var(--color-neutral-900);
-  --text-secondary: var(--color-neutral-600);
-  --text-tertiary: var(--color-neutral-500);
+  /* Text Colors - Light Theme */
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
   --text-inverse: var(--color-white);
 
   /* Border Colors */
-  --border-light: var(--color-neutral-200);
-  --border-medium: var(--color-neutral-300);
-  --border-dark: var(--color-neutral-400);
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
+  --border-dark: #94A3B8;
 
   /* Typography */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -142,12 +148,12 @@
   --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* Shadows - Subtle Elevation System */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  /* Shadows - Elevation System */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
 
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
