@@ -58,6 +58,28 @@ class ApiService {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }
 
+  /**
+   * Authenticate with API key
+   * @param {string} apiKey - Customer API key (starts with sb_)
+   * @returns {Promise<Object>} Session token and customer info
+   */
+  async authenticate(apiKey) {
+    try {
+      const response = await this.post('/auth/login', { api_key: apiKey });
+      
+      // Store session token in localStorage
+      if (response.token || response.session_token) {
+        const token = response.token || response.session_token;
+        localStorage.setItem('sessionToken', token);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Authentication failed:', error);
+      throw new Error('Invalid API key. Please check your credentials.');
+    }
+  }
+
   // Dashboard data
   async getDashboardData() {
     return this.get('/dashboard');
