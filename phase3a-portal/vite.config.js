@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  publicDir: 'public',  // Explicitly set public directory
-  base: mode === 'production' ? '/securebase-app/' : '/',  // GitHub Pages base path for production only, staging uses root
+  publicDir: 'public',
+  base: '/',  // Changed to root for Netlify deployment
   server: {
     port: 3000,
     open: true,
@@ -12,18 +12,15 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    copyPublicDir: true,  // Force copy public folder to dist
+    copyPublicDir: true,
     sourcemap: true,
-    // Performance optimizations
     target: 'es2015',
-    minify: 'esbuild',  // Use esbuild instead of terser (faster and built-in)
+    minify: 'esbuild',
     rollupOptions: {
       output: {
-        // Content-hashed filenames for cache busting
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
-        // Aggressive code splitting for better caching
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'charts-legacy': ['chart.js', 'react-chartjs-2'],
@@ -33,12 +30,9 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
-    // Enable CSS code splitting
     cssCodeSplit: true,
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: [
       'react',
