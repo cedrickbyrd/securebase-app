@@ -68,3 +68,6 @@ exports/
 
 # Vercel
 .vercel
+
+# Local Netlify folder
+.netlify
