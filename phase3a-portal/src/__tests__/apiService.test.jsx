@@ -75,8 +75,17 @@ describe('ApiService - authenticate() method', () => {
     expect(localStorage.getItem('sessionToken')).toBe('session-xyz-789');
   });
 
-  it('should throw error with invalid API key', async () => {
-    // Mock failed authentication
+  it('should handle network errors gracefully', async () => {
+    // Mock network error
+    global.fetch.mockRejectedValueOnce(new Error('fetch failed: Network error'));
+
+    await expect(
+      apiService.authenticate('sb_test_key')
+    ).rejects.toThrow('Network error. Please check your connection and try again.');
+  });
+
+  it('should handle authentication errors with appropriate message', async () => {
+    // Mock authentication error (non-network)
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
@@ -84,15 +93,6 @@ describe('ApiService - authenticate() method', () => {
 
     await expect(
       apiService.authenticate('sb_invalid_key')
-    ).rejects.toThrow('Invalid API key. Please check your credentials.');
-  });
-
-  it('should handle network errors gracefully', async () => {
-    // Mock network error
-    global.fetch.mockRejectedValueOnce(new Error('Network error'));
-
-    await expect(
-      apiService.authenticate('sb_test_key')
     ).rejects.toThrow('Invalid API key. Please check your credentials.');
   });
 

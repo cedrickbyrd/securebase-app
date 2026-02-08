@@ -68,6 +68,7 @@ class ApiService {
       const response = await this.post('/auth/login', { api_key: apiKey });
       
       // Store session token in localStorage
+      // API may return either 'token' or 'session_token' - prefer 'token' for consistency
       if (response.token || response.session_token) {
         const token = response.token || response.session_token;
         localStorage.setItem('sessionToken', token);
@@ -75,8 +76,13 @@ class ApiService {
       
       return response;
     } catch (error) {
+      // Log detailed error for debugging while providing user-friendly message
       console.error('Authentication failed:', error);
-      throw new Error('Invalid API key. Please check your credentials.');
+      const isNetworkError = error.message && error.message.includes('fetch');
+      const errorMessage = isNetworkError 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Invalid API key. Please check your credentials.';
+      throw new Error(errorMessage);
     }
   }
 
