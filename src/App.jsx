@@ -545,22 +545,22 @@ COMPLIANCE:
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
+      <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Shield className="text-blue-500 w-8 h-8" />
+            <Shield className="text-blue-600 w-8 h-8" />
             <div>
-              <div className="text-2xl font-bold tracking-tight">SecureBase</div>
-              <div className="text-xs text-slate-400">AWS Landing Zone Terraform</div>
+              <div className="text-2xl font-bold tracking-tight text-gray-900">SecureBase</div>
+              <div className="text-xs text-gray-600">AWS Landing Zone Terraform</div>
             </div>
           </div>
           <nav className="flex gap-6 items-center">
-            <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Overview</button>
-            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Modules</button>
-            <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-400' : 'text-slate-400 hover:text-white'} transition`}>Compliance</button>
-            <button onClick={() => setActiveTab('devenv')} className="bg-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition flex items-center gap-2">
+            <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
+            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Modules</button>
+            <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
+            <button onClick={() => setActiveTab('devenv')} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
               <Rocket className="w-4 h-4" />
               Deploy Dev
             </button>
@@ -587,33 +587,33 @@ COMPLIANCE:
         {activeTab === 'overview' && (
           <div className="space-y-16">
             <section className="text-center space-y-6">
-              <div className="inline-block px-4 py-2 bg-blue-600/20 border border-blue-500/50 rounded-full text-blue-300 text-sm mb-4">
+              <div className="inline-block px-4 py-2 bg-blue-100 border border-blue-300 rounded-full text-blue-700 text-sm mb-4 font-medium">
                 Production-Grade Terraform • CIS Compliant • SOC2 + Gov Ready
               </div>
-              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-white via-blue-100 to-slate-400 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent leading-tight">
                 Fintech & Gov-Ready<br />AWS Landing Zone
               </h1>
-              <p className="text-slate-400 text-xl max-w-3xl mx-auto leading-relaxed">
+              <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
                 Real Terraform modules with zero Control Tower dependency. Built for SOC2, NIST 800-53, RMF, and fintech audits. Deploy in hours with production-grade security controls.
               </p>
               
               {/* Stats */}
               <div className="grid grid-cols-4 gap-6 max-w-4xl mx-auto mt-12">
-                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-                  <div className="text-3xl font-bold text-green-400">2-4hrs</div>
-                  <div className="text-sm text-slate-400">Deploy Time</div>
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
+                  <div className="text-3xl font-bold text-green-600">2-4hrs</div>
+                  <div className="text-sm text-gray-600">Deploy Time</div>
                 </div>
-                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-                  <div className="text-3xl font-bold text-blue-400">430+</div>
-                  <div className="text-sm text-slate-400">Controls</div>
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
+                  <div className="text-3xl font-bold text-blue-600">430+</div>
+                  <div className="text-sm text-gray-600">Controls</div>
                 </div>
-                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-                  <div className="text-3xl font-bold text-purple-400">6</div>
-                  <div className="text-sm text-slate-400">Modules</div>
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
+                  <div className="text-3xl font-bold" style={{color: '#00CEC9'}}>6</div>
+                  <div className="text-sm text-gray-600">Modules</div>
                 </div>
-                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-                  <div className="text-3xl font-bold text-cyan-400">100%</div>
-                  <div className="text-sm text-slate-400">IaC</div>
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
+                  <div className="text-3xl font-bold text-blue-600">100%</div>
+                  <div className="text-sm text-gray-600">IaC</div>
                 </div>
               </div>
             </section>
@@ -621,69 +621,69 @@ COMPLIANCE:
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-8">
               {features.map((f, i) => (
-                <div key={i} className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition">
-                  <f.icon className="text-blue-500 mb-4 w-10 h-10" />
-                  <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{f.description}</p>
+                <div key={i} className="p-6 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300 transition">
+                  <f.icon className="text-blue-600 mb-4 w-10 h-10" />
+                  <h3 className="text-lg font-bold mb-2 text-gray-900">{f.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{f.description}</p>
                 </div>
               ))}
             </div>
 
             {/* Architecture Overview */}
-            <div className="bg-slate-800/30 rounded-2xl p-8 border border-slate-700">
-              <h2 className="text-2xl font-bold mb-6">Account Architecture</h2>
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
+              <h2 className="text-2xl font-bold mb-6 text-gray-900">Account Architecture</h2>
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-300 mb-4">Organizational Units</h3>
+                  <h3 className="text-lg font-semibold text-blue-600 mb-4">Organizational Units</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-medium">Management Account</div>
-                        <div className="text-slate-400">Organization root, billing consolidation</div>
+                        <div className="font-medium text-gray-900">Management Account</div>
+                        <div className="text-gray-600">Organization root, billing consolidation</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-medium">Security OU</div>
-                        <div className="text-slate-400">GuardDuty, Security Hub, Log Archive</div>
+                        <div className="font-medium text-gray-900">Security OU</div>
+                        <div className="text-gray-600">GuardDuty, Security Hub, Log Archive</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-medium">Shared Services OU</div>
-                        <div className="text-slate-400">Networking, CI/CD, shared resources</div>
+                        <div className="font-medium text-gray-900">Shared Services OU</div>
+                        <div className="text-gray-600">Networking, CI/CD, shared resources</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-medium">Workloads OU</div>
-                        <div className="text-slate-400">Production, Staging, Development</div>
+                        <div className="font-medium text-gray-900">Workloads OU</div>
+                        <div className="text-gray-600">Production, Staging, Development</div>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-300 mb-4">Security Controls</h3>
+                  <h3 className="text-lg font-semibold text-blue-600 mb-4">Security Controls</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>Multi-region CloudTrail with log validation</span>
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">Multi-region CloudTrail with log validation</span>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>GuardDuty threat detection across all accounts</span>
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">GuardDuty threat detection across all accounts</span>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>AWS Config with auto-remediation</span>
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">AWS Config with auto-remediation</span>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <span>SCPs enforcing security baselines</span>
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">SCPs enforcing security baselines</span>
                     </div>
                   </div>
                 </div>
@@ -696,37 +696,37 @@ COMPLIANCE:
         {activeTab === 'modules' && (
           <div>
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Production Modules</h2>
-              <p className="text-slate-400 text-lg">Click any module to view detailed specifications</p>
+              <h2 className="text-4xl font-bold mb-4 text-gray-900">Production Modules</h2>
+              <p className="text-gray-600 text-lg">Click any module to view detailed specifications</p>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               {modules.map((m) => (
                 <div 
                   key={m.id} 
-                  className={`p-6 bg-slate-800 rounded-xl border cursor-pointer transition ${
-                    selectedModule === m.id ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-700 hover:border-blue-500/50'
+                  className={`p-6 bg-white rounded-xl border cursor-pointer transition shadow-md ${
+                    selectedModule === m.id ? 'border-blue-600 ring-2 ring-blue-200 shadow-lg' : 'border-gray-200 hover:border-blue-400 hover:shadow-lg'
                   }`}
                   onClick={() => setSelectedModule(selectedModule === m.id ? null : m.id)}
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <m.icon className="text-blue-400" size={32} />
+                    <m.icon className="text-blue-600" size={32} />
                     <div className="flex gap-2">
                       <span className={`text-xs font-mono px-2 py-1 rounded ${
-                        m.status === 'essential' ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                        m.status === 'essential' ? 'bg-orange-100 text-orange-700 border border-orange-300' : 'bg-blue-100 text-blue-700 border border-blue-300'
                       }`}>
                         {m.status}
                       </span>
-                      <span className="text-xs font-mono text-green-300 bg-green-500/10 px-2 py-1 rounded">
+                      <span className="text-xs font-mono text-green-700 bg-green-100 px-2 py-1 rounded border border-green-300">
                         {m.devCost}
                       </span>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{m.name}</h3>
-                  <p className="text-slate-400 text-sm mb-4 leading-relaxed">{m.description}</p>
+                  <h3 className="text-xl font-bold mb-2 text-gray-900">{m.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{m.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
                     {m.resources.map((r, i) => (
-                      <span key={i} className="text-xs px-2 py-1 bg-slate-700/50 rounded text-slate-300">
+                      <span key={i} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-700 border border-gray-200">
                         {r}
                       </span>
                     ))}
@@ -735,7 +735,7 @@ COMPLIANCE:
                   {m.compliance && (
                     <div className="flex flex-wrap gap-1">
                       {m.compliance.map((c, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded border border-purple-700/30">
+                        <span key={i} className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200">
                           {c}
                         </span>
                       ))}
@@ -743,8 +743,8 @@ COMPLIANCE:
                   )}
                   
                   {selectedModule === m.id && (
-                    <div className="mt-6 pt-6 border-t border-slate-700">
-                      <pre className="p-4 bg-black/50 rounded text-xs text-green-400 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <pre className="p-4 bg-gray-900 rounded text-xs text-green-400 overflow-x-auto leading-relaxed whitespace-pre-wrap">
                         {moduleDetails[m.id]}
                       </pre>
                     </div>
@@ -759,45 +759,45 @@ COMPLIANCE:
         {activeTab === 'devenv' && (
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold mb-4">Deploy Development Environment</h2>
-              <p className="text-slate-400 text-lg">Test SecureBase with minimal AWS resources</p>
+              <h2 className="text-4xl font-bold mb-4 text-gray-900">Deploy Development Environment</h2>
+              <p className="text-gray-600 text-lg">Test SecureBase with minimal AWS resources</p>
             </div>
 
             {devEnvStep === 'config' && (
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Configuration */}
-                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-blue-400" />
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900">
+                    <Settings className="w-5 h-5 text-blue-600" />
                     Configuration
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Organization Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
                       <input
                         type="text"
                         value={devConfig.orgName}
                         onChange={(e) => setDevConfig({...devConfig, orgName: e.target.value})}
                         placeholder="my-company"
-                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Root Email</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Root Email</label>
                       <input
                         type="email"
                         value={devConfig.email}
                         onChange={(e) => setDevConfig({...devConfig, email: e.target.value})}
                         placeholder="aws-root@company.com"
-                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Region</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
                       <select
                         value={devConfig.region}
                         onChange={(e) => setDevConfig({...devConfig, region: e.target.value})}
-                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                       >
                         <option value="us-east-1">us-east-1 (N. Virginia)</option>
                         <option value="us-west-2">us-west-2 (Oregon)</option>
@@ -809,9 +809,9 @@ COMPLIANCE:
                 </div>
 
                 {/* Module Selection */}
-                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Database className="w-5 h-5 text-blue-400" />
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900">
+                    <Database className="w-5 h-5 text-blue-600" />
                     Select Modules
                   </h3>
                   <div className="space-y-3">
@@ -820,8 +820,8 @@ COMPLIANCE:
                         key={m.id}
                         className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition ${
                           devConfig.enabledModules[m.id]
-                            ? 'bg-blue-900/30 border-blue-500'
-                            : 'bg-slate-900/50 border-slate-600 hover:border-slate-500'
+                            ? 'bg-blue-50 border-blue-300'
+                            : 'bg-white border-gray-300 hover:border-blue-300'
                         }`}
                       >
                         <input
@@ -834,28 +834,28 @@ COMPLIANCE:
                               [m.id]: e.target.checked
                             }
                           })}
-                          className="w-4 h-4"
+                          className="w-4 h-4 text-blue-600"
                         />
-                        <m.icon className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                        <m.icon className="w-5 h-5 text-blue-600 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{m.name}</div>
-                          <div className="text-xs text-slate-400">{m.devCost}</div>
+                          <div className="font-medium text-sm text-gray-900">{m.name}</div>
+                          <div className="text-xs text-gray-600">{m.devCost}</div>
                         </div>
                       </label>
                     ))}
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-slate-700">
+                  <div className="mt-6 pt-6 border-t border-gray-200">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-slate-400">Est. Monthly Cost:</span>
-                      <span className="text-2xl font-bold text-green-400">
+                      <span className="text-gray-600">Est. Monthly Cost:</span>
+                      <span className="text-2xl font-bold text-green-600">
                         ${calculateCost()}-{calculateCost() + 15}
                       </span>
                     </div>
                     <button
                       onClick={simulateDeployment}
                       disabled={!devConfig.orgName || !devConfig.email}
-                      className="w-full px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg font-semibold flex items-center justify-center gap-2 transition"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition shadow-md"
                     >
                       <Rocket className="w-5 h-5" />
                       Deploy Environment
@@ -866,28 +866,28 @@ COMPLIANCE:
             )}
 
             {devEnvStep === 'deploying' && (
-              <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                <div className="p-6 border-b border-slate-700">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <Terminal className="w-5 h-5 text-green-400" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 text-gray-900">
+                      <Terminal className="w-5 h-5 text-green-600" />
                       Deployment in Progress
                     </h3>
                     <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-500 border-t-transparent"></div>
-                      <span className="text-sm text-slate-400">Running Terraform</span>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-600 border-t-transparent"></div>
+                      <span className="text-sm text-gray-600">Running Terraform</span>
                     </div>
                   </div>
                 </div>
-                <div className="p-6 bg-black/30 font-mono text-sm h-96 overflow-y-auto">
+                <div className="p-6 bg-gray-900 font-mono text-sm h-96 overflow-y-auto">
                   {deploymentLog.map((log, i) => (
                     <div
                       key={i}
                       className={`mb-1 ${
-                        log.type === 'success' ? 'text-green-400' : 'text-slate-300'
+                        log.type === 'success' ? 'text-green-400' : 'text-gray-300'
                       }`}
                     >
-                      <span className="text-slate-500">[{log.timestamp}]</span> {log.message}
+                      <span className="text-gray-500">[{log.timestamp}]</span> {log.message}
                     </div>
                   ))}
                   {isDeploying && (
@@ -899,25 +899,25 @@ COMPLIANCE:
 
             {devEnvStep === 'complete' && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-green-900/20 to-emerald-800/20 border border-green-700/50 rounded-xl p-8 text-center">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-xl p-8 text-center shadow-md">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
                     <CheckCircle className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-green-300 mb-2">Deployment Complete!</h3>
-                  <p className="text-green-100 mb-6">Your SecureBase environment is ready</p>
+                  <h3 className="text-2xl font-bold text-green-700 mb-2">Deployment Complete!</h3>
+                  <p className="text-green-700 mb-6">Your SecureBase environment is ready</p>
                   
                   <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-                    <div className="bg-slate-800/50 rounded p-4 border border-slate-700">
-                      <div className="text-sm text-slate-400 mb-1">Resources</div>
-                      <div className="text-2xl font-bold text-white">23</div>
+                    <div className="bg-white rounded p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Resources</div>
+                      <div className="text-2xl font-bold text-gray-900">23</div>
                     </div>
-                    <div className="bg-slate-800/50 rounded p-4 border border-slate-700">
-                      <div className="text-sm text-slate-400 mb-1">Deploy Time</div>
-                      <div className="text-2xl font-bold text-white">14m 32s</div>
+                    <div className="bg-white rounded p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Deploy Time</div>
+                      <div className="text-2xl font-bold text-gray-900">14m 32s</div>
                     </div>
-                    <div className="bg-slate-800/50 rounded p-4 border border-slate-700">
-                      <div className="text-sm text-slate-400 mb-1">Security Score</div>
-                      <div className="text-2xl font-bold text-green-400">A+</div>
+                    <div className="bg-white rounded p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Security Score</div>
+                      <div className="text-2xl font-bold text-green-600">A+</div>
                     </div>
                   </div>
                 </div>
@@ -928,26 +928,26 @@ COMPLIANCE:
                       setDevEnvStep('config');
                       setDeploymentLog([]);
                     }}
-                    className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold transition"
+                    className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold transition"
                   >
                     Deploy Another
                   </button>
-                  <button className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition">
+                  <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition">
                     View AWS Console
                   </button>
-                  <button className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition">
+                  <button className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition">
                     Destroy
                   </button>
                 </div>
 
-                <div className="bg-slate-800 rounded-xl border border-slate-700">
-                  <div className="p-6 border-b border-slate-700">
-                    <h4 className="text-lg font-semibold">Deployment Log</h4>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-md">
+                  <div className="p-6 border-b border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900">Deployment Log</h4>
                   </div>
-                  <div className="p-6 bg-black/30 font-mono text-sm max-h-64 overflow-y-auto">
+                  <div className="p-6 bg-gray-900 font-mono text-sm max-h-64 overflow-y-auto">
                     {deploymentLog.map((log, i) => (
-                      <div key={i} className={log.type === 'success' ? 'text-green-400 mb-1' : 'text-slate-300 mb-1'}>
-                        <span className="text-slate-500">[{log.timestamp}]</span> {log.message}
+                      <div key={i} className={log.type === 'success' ? 'text-green-400 mb-1' : 'text-gray-300 mb-1'}>
+                        <span className="text-gray-500">[{log.timestamp}]</span> {log.message}
                       </div>
                     ))}
                   </div>
@@ -956,12 +956,12 @@ COMPLIANCE:
             )}
 
             {devEnvStep === 'config' && (
-              <div className="mt-8 bg-blue-900/20 border border-blue-700/50 rounded-xl p-6">
+              <div className="mt-8 bg-blue-50 border border-blue-300 rounded-xl p-6">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
+                  <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                   <div>
-                    <h4 className="font-semibold text-blue-300 mb-2">Development Environment Notes</h4>
-                    <ul className="text-blue-100 space-y-1 text-sm">
+                    <h4 className="font-semibold text-blue-700 mb-2">Development Environment Notes</h4>
+                    <ul className="text-blue-700 space-y-1 text-sm">
                       <li>• Simulated deployment for demonstration purposes</li>
                       <li>• In production, run actual Terraform in your terminal</li>
                       <li>• Dev environments use minimal resources to reduce costs</li>
@@ -984,19 +984,19 @@ COMPLIANCE:
       {/* Footer CTA */}
       {activeTab !== 'devenv' && activeTab !== 'compliance' && (
         <footer className="max-w-7xl mx-auto px-6 py-16">
-          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-12 text-center">
-            <h3 className="text-3xl font-bold mb-4">Ready to Deploy?</h3>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-center shadow-lg">
+            <h3 className="text-3xl font-bold mb-4 text-white">Ready to Deploy?</h3>
             <p className="text-blue-100 mb-8 text-lg">
               Get started with SecureBase and have your AWS foundation running in hours
             </p>
             <div className="flex gap-4 justify-center">
-              <button className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2">
+              <button className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
                 <Download className="w-5 h-5" />
                 Download Modules
               </button>
               <button 
                 onClick={() => setActiveTab('devenv')}
-                className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2"
+                className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md"
               >
                 <Rocket className="w-5 h-5" />
                 Try Dev Environment
