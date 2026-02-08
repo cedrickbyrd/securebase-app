@@ -13,7 +13,7 @@ terraform plan       # ❌ This will fail!
 ```bash
 # CORRECT DIRECTORY ✅
 cd /workspaces/securebase-app/landing-zone/environments/dev
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 ```
@@ -35,13 +35,16 @@ ls   # Should show: terraform.tfvars, client.auto.tfvars, variables.tf, main.tf
 
 ### 2️⃣ Initialize Terraform
 ```bash
-terraform init
+terraform init -backend-config=backend.hcl
 ```
 
 **What this does:**
 - Downloads AWS provider
 - Creates .terraform directory (in THIS directory, not root)
+- Configures S3 backend using backend.hcl settings
 - Sets up state management
+
+**Note:** The `-backend-config=backend.hcl` flag is required to load the S3 backend configuration. Without it, Terraform will prompt for the backend settings.
 
 ### 3️⃣ Validate Configuration
 ```bash
@@ -133,7 +136,7 @@ rm -f landing-zone/terraform.tfstate*
 cd landing-zone/environments/dev
 
 # Re-initialize (creates fresh state)
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan
 ```
 
@@ -214,7 +217,7 @@ This script will:
 ### Quick Start
 ```bash
 cd landing-zone/environments/dev
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan -target=module.netlify_sites
 terraform apply -target=module.netlify_sites
 ```
@@ -332,7 +335,7 @@ After successful `terraform apply`:
 
 ```bash
 cd landing-zone/environments/dev
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 ```
