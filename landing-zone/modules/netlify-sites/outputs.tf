@@ -3,7 +3,7 @@
 # Marketing Site Outputs
 output "marketing_site_url" {
   description = "Marketing site URL (primary Netlify URL)"
-  value       = data.netlify_site.marketing.url
+  value       = "${data.netlify_site.marketing.name}.netlify.app"
 }
 
 output "marketing_site_id" {
@@ -13,7 +13,7 @@ output "marketing_site_id" {
 
 output "marketing_deploy_url" {
   description = "Latest deploy URL for marketing site"
-  value       = "https://${data.netlify_site.marketing.url}"
+  value       = "https://${data.netlify_site.marketing.name}.netlify.app"
 }
 
 output "marketing_custom_domain" {
@@ -27,7 +27,7 @@ output "marketing_custom_domain" {
 # Portal Demo Site Outputs
 output "portal_demo_url" {
   description = "Portal demo site URL (primary Netlify URL)"
-  value       = data.netlify_site.portal_demo.url
+  value       = "${data.netlify_site.portal_demo.name}.netlify.app"
 }
 
 output "portal_demo_site_id" {
@@ -37,7 +37,7 @@ output "portal_demo_site_id" {
 
 output "portal_demo_deploy_url" {
   description = "Latest deploy URL for portal demo site"
-  value       = "https://${data.netlify_site.portal_demo.url}"
+  value       = "https://${data.netlify_site.portal_demo.name}.netlify.app"
 }
 
 output "portal_demo_custom_domain" {
@@ -50,12 +50,12 @@ output "deployment_summary" {
   description = "Summary of Netlify deployments"
   value = {
     marketing_site = {
-      netlify_url   = "https://${data.netlify_site.marketing.url}"
+      netlify_url   = "https://${data.netlify_site.marketing.name}.netlify.app"
       custom_domain = data.netlify_site.marketing.custom_domain
       site_id       = data.netlify_site.marketing.id
     }
     portal_demo = {
-      netlify_url   = "https://${data.netlify_site.portal_demo.url}"
+      netlify_url   = "https://${data.netlify_site.portal_demo.name}.netlify.app"
       custom_domain = data.netlify_site.portal_demo.custom_domain
       site_id       = data.netlify_site.portal_demo.id
     }
