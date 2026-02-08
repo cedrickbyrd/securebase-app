@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: http://securebase-phase3a-production.s3-website-us-east-1.amazonaws.com
+      url: http://securebase-fe-prod.s3-website-us-east-1.amazonaws.com
 
     steps:
       - name: Checkout code
@@ -87,7 +87,7 @@ jobs:
 
       - name: Create S3 bucket
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
 
           if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
@@ -103,14 +103,14 @@ jobs:
 
       - name: Configure S3 static website hosting
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           aws s3 website "s3://$BUCKET_NAME" \
             --index-document index.html \
             --error-document index.html
 
       - name: Set S3 bucket policy
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           cat > bucket-policy.json << POLICY
           {
             "Version": "2012-10-17",
@@ -131,7 +131,7 @@ jobs:
 
       - name: Sync files to S3
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
 
           # Sync all files except HTML with long cache
           aws s3 sync dist/ "s3://$BUCKET_NAME/" \
@@ -146,7 +146,7 @@ jobs:
 
       - name: Output production URL
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
           PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
           echo "🚀 Production URL: $PRODUCTION_URL"
@@ -164,7 +164,7 @@ jobs:
 
       - name: Smoke test - Check HTTP status
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
           PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
 
@@ -179,7 +179,7 @@ jobs:
 
       - name: Validate index.html
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
           PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
 
@@ -199,7 +199,7 @@ jobs:
     steps:
       - name: Deployment notification
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-phase3a-production' }}"
+          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
           REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
           PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
 
