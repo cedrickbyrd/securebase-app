@@ -1,35 +1,16 @@
-/**
- * Dashboard Component
- * Main landing page for authenticated customers
- * Shows summary of invoices, API keys, compliance status
- */
-
 import React, { useState, useEffect } from 'react';
-import {
-  CreditCard,
-  Key,
-  Shield,
-  Ticket,
-  TrendingUp,
-  Download,
-  Plus,
-  AlertCircle,
-  CheckCircle2,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import './Dashboard.css';
 
-export const Dashboard = () => {
+function Dashboard() {
+  const navigate = useNavigate();
+  const [metrics, setMetrics] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [compliance, setCompliance] = useState(null);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [dashboardData, setDashboardData] = useState({
-    monthlyCharge: 0,
-    monthlyUsage: {},
-    recentInvoices: [],
-    apiKeysCount: 0,
-    complianceStatus: '',
-    pendingTickets: 0,
-  });
 
   useEffect(() => {
     loadDashboardData();
@@ -37,283 +18,236 @@ export const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true);
-      const [
-        metrics,
-        invoices,
-        apiKeys,
-        compliance,
-        tickets,
-      ] = await Promise.all([
+      const [metricsData, invoicesData, keysData, complianceData, ticketsData] = await Promise.all([
         apiService.getMetrics(),
-        apiService.getInvoices({ limit: 5 }),
+        apiService.getInvoices(),
         apiService.getApiKeys(),
         apiService.getComplianceStatus(),
-        apiService.getSupportTickets({ status: 'open' }),
+        apiService.getTickets({ status: 'open', limit: 5 })
       ]);
 
-      console.log('📊 Dashboard data received:', {
-        metrics: metrics.data,
-        invoices: invoices.data,
-        apiKeys: apiKeys.data,
-        compliance: compliance.data,
-        tickets: tickets.data,
-      });
-
-      setDashboardData({
-        monthlyCharge: invoices.data[0]?.total_amount || 0,
-        monthlyUsage: metrics.data,
-        recentInvoices: invoices.data,
-        apiKeysCount: apiKeys.data.length,
-        complianceStatus: compliance.data.status,
-        pendingTickets: tickets.data.length,
-      });
-
-      console.log('✅ Dashboard state updated:', {
-        monthlyCharge: invoices.data[0]?.total_amount || 0,
-        apiKeysCount: apiKeys.data.length,
-        complianceStatus: compliance.data.status,
-        pendingTickets: tickets.data.length,
-        recentInvoicesCount: invoices.data.length,
-      });
-
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      setError(err.message || 'Failed to load dashboard data');
+      setMetrics(metricsData);
+      setInvoices(invoicesData.slice(0, 3));
+      setApiKeys(keysData);
+      setCompliance(complianceData);
+      setTickets(ticketsData.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.clear();
+    navigate('/login');
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
+      <div className="dashboard-loading">
+        <div className="spinner"></div>
+        <p>Loading dashboard...</p>
       </div>
     );
   }
 
-  console.log('🎨 Dashboard rendering with data:', {
-    hasData: !!dashboardData,
-    monthlyCharge: dashboardData.monthlyCharge,
-    loading: false
-  });
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="dashboard-page">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back to SecureBase</p>
-        </div>
-      </div>
-
-      {/* Error Alert */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
-            <div>
-              <h3 className="font-medium text-red-900">Error loading dashboard</h3>
-              <p className="text-sm text-red-800 mt-1">{error}</p>
-            </div>
+      <header className="dashboard-header">
+        <div className="header-content">
+          <div className="header-left">
+            <h1>Dashboard</h1>
+            <p>Welcome back to SecureBase</p>
+          </div>
+          <div className="header-right">
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         </div>
-      )}
+      </header>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Top Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Monthly Charge */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Monthly Charge</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {formatCurrency(dashboardData.monthlyCharge)}
-                </p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <CreditCard className="w-8 h-8 text-blue-600" />
-              </div>
+      {/* Main Content */}
+      <main className="dashboard-main">
+        {/* Metrics Grid */}
+        <section className="metrics-grid">
+          <div className="metric-card">
+            <div className="metric-icon" style={{ background: '#e6f2ff' }}>
+              💳
+            </div>
+            <div className="metric-content">
+              <h3>Monthly Charge</h3>
+              <p className="metric-value">${metrics?.monthlyCharge?.toLocaleString() || '0'}</p>
             </div>
           </div>
 
-          {/* API Keys */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active API Keys</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {dashboardData.apiKeysCount}
-                </p>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-lg">
-                <Key className="w-8 h-8 text-purple-600" />
-              </div>
+          <div className="metric-card">
+            <div className="metric-icon" style={{ background: '#f0fdf4' }}>
+              🔑
+            </div>
+            <div className="metric-content">
+              <h3>Active API Keys</h3>
+              <p className="metric-value">{apiKeys?.filter(k => k.status === 'active').length || 0}</p>
             </div>
           </div>
 
-          {/* Compliance Status */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Compliance Status</p>
-                <div className="flex items-center mt-2">
-                  <CheckCircle2 className="w-6 h-6 text-green-600 mr-2" />
-                  <p className="text-xl font-semibold text-green-600">{dashboardData.complianceStatus}</p>
-                </div>
-              </div>
-              <div className="bg-green-50 p-3 rounded-lg">
-                <Shield className="w-8 h-8 text-green-600" />
-              </div>
+          <div className="metric-card clickable" onClick={() => navigate('/compliance')}>
+            <div className="metric-icon" style={{ background: compliance?.overall_status === 'passing' ? '#f0fdf4' : '#fff7ed' }}>
+              {compliance?.overall_status === 'passing' ? '✅' : '⚠️'}
+            </div>
+            <div className="metric-content">
+              <h3>Compliance Status</h3>
+              <p className="metric-value">{compliance?.overall_status || 'Unknown'}</p>
             </div>
           </div>
 
-          {/* Open Tickets */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Open Tickets</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {dashboardData.pendingTickets}
-                </p>
-              </div>
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <Ticket className="w-8 h-8 text-orange-600" />
-              </div>
+          <div className="metric-card">
+            <div className="metric-icon" style={{ background: '#fef2f2' }}>
+              🎫
+            </div>
+            <div className="metric-content">
+              <h3>Open Tickets</h3>
+              <p className="metric-value">{tickets?.length || 0}</p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Recent Invoices & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Invoices */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4 bg-blue-50">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Invoices</h2>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {dashboardData.recentInvoices.length > 0 ? (
-                dashboardData.recentInvoices.map((invoice) => (
-                  <div key={invoice.id} className="px-6 py-4 hover:bg-gray-50 transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{invoice.invoice_number}</p>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(invoice.created_at)}
-                        </p>
+        {/* Two Column Layout */}
+        <div className="dashboard-columns">
+          {/* Left Column */}
+          <div className="dashboard-column">
+            {/* Recent Invoices */}
+            <section className="dashboard-card">
+              <div className="card-header">
+                <h2>Recent Invoices</h2>
+                <button className="view-all-btn">View All →</button>
+              </div>
+              <div className="card-content">
+                {invoices.length > 0 ? (
+                  <div className="invoices-list">
+                    {invoices.map((invoice) => (
+                      <div key={invoice.id} className="invoice-item">
+                        <div className="invoice-info">
+                          <p className="invoice-number">{invoice.invoice_number}</p>
+                          <p className="invoice-date">{new Date(invoice.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="invoice-amount">
+                          <p className="amount">${invoice.amount.toLocaleString()}</p>
+                          <span className={`status-badge ${invoice.status}`}>{invoice.status}</span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          {formatCurrency(invoice.total_amount)}
-                        </p>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
-                            invoice.status === 'paid'
-                              ? 'bg-green-100 text-green-800'
-                              : invoice.status === 'overdue'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-state">No invoices found</p>
+                )}
+              </div>
+            </section>
+
+            {/* API Keys Summary */}
+            <section className="dashboard-card">
+              <div className="card-header">
+                <h2>API Keys</h2>
+                <button className="view-all-btn">Manage →</button>
+              </div>
+              <div className="card-content">
+                {apiKeys.length > 0 ? (
+                  <div className="api-keys-list">
+                    {apiKeys.slice(0, 3).map((key) => (
+                      <div key={key.id} className="api-key-item">
+                        <div className="key-info">
+                          <p className="key-name">{key.name}</p>
+                          <p className="key-preview">{key.key_preview}</p>
+                        </div>
+                        <span className={`status-badge ${key.status}`}>{key.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-state">No API keys found</p>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column */}
+          <div className="dashboard-column">
+            {/* Compliance Overview */}
+            <section className="dashboard-card">
+              <div className="card-header">
+                <h2>Compliance Overview</h2>
+                <button className="view-all-btn" onClick={() => navigate('/compliance')}>
+                  View Details →
+                </button>
+              </div>
+              <div className="card-content">
+                {compliance ? (
+                  <div className="compliance-summary">
+                    <div className="compliance-status">
+                      <div className={`status-indicator ${compliance.overall_status}`}>
+                        {compliance.overall_status === 'passing' ? '✅' : '⚠️'}
+                      </div>
+                      <div>
+                        <p className="status-label">Overall Status</p>
+                        <p className="status-value">{compliance.overall_status}</p>
+                      </div>
+                    </div>
+                    <div className="compliance-stats">
+                      <div className="stat">
+                        <span className="stat-value" style={{ color: '#10b981' }}>{compliance.passing || 0}</span>
+                        <span className="stat-label">Passing</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value" style={{ color: '#f59e0b' }}>{compliance.warning || 0}</span>
+                        <span className="stat-label">Warning</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value" style={{ color: '#ef4444' }}>{compliance.failing || 0}</span>
+                        <span className="stat-label">Failing</span>
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="px-6 py-8 text-center">
-                  <p className="text-gray-600">No invoices yet</p>
-                </div>
-              )}
-            </div>
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <a href="/invoices" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                View all invoices →
-              </a>
-            </div>
-          </div>
+                ) : (
+                  <p className="empty-state">No compliance data available</p>
+                )}
+              </div>
+            </section>
 
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <a
-                href="/invoices/download"
-                className="flex items-center px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition font-medium"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download Invoice
-              </a>
-              <a
-                href="/api-keys"
-                className="flex items-center px-4 py-3 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition font-medium"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Create API Key
-              </a>
-              <a
-                href="/compliance"
-                className="flex items-center px-4 py-3 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition font-medium"
-              >
-                <Shield className="w-5 h-5 mr-2" />
-                View Compliance
-              </a>
-              <a
-                href="/support"
-                className="flex items-center px-4 py-3 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition font-medium"
-              >
-                <Ticket className="w-5 h-5 mr-2" />
-                Submit Ticket
-              </a>
-            </div>
+            {/* Support Tickets */}
+            <section className="dashboard-card">
+              <div className="card-header">
+                <h2>Recent Tickets</h2>
+                <button className="view-all-btn">View All →</button>
+              </div>
+              <div className="card-content">
+                {tickets.length > 0 ? (
+                  <div className="tickets-list">
+                    {tickets.map((ticket) => (
+                      <div key={ticket.id} className="ticket-item">
+                        <div className="ticket-info">
+                          <p className="ticket-title">{ticket.subject}</p>
+                          <p className="ticket-meta">
+                            <span className={`priority-badge ${ticket.priority}`}>{ticket.priority}</span>
+                            <span className="ticket-date">{new Date(ticket.created_at).toLocaleDateString()}</span>
+                          </p>
+                        </div>
+                        <span className={`status-badge ${ticket.status}`}>{ticket.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-state">No open tickets</p>
+                )}
+              </div>
+            </section>
           </div>
         </div>
-
-        {/* Usage Trends */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <div className="flex items-center mb-6">
-            <TrendingUp className="w-6 h-6 text-gray-400 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Usage This Month</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">AWS Accounts</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {dashboardData.monthlyUsage.account_count || 0}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">CloudTrail Events</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {(dashboardData.monthlyUsage.cloudtrail_events || 0).toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Log Storage</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {dashboardData.monthlyUsage.log_storage_gb || 0} GB
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Data Transfer</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {dashboardData.monthlyUsage.data_transfer_gb || 0} GB
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
-};
+}
 
 export default Dashboard;
