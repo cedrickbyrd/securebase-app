@@ -9,7 +9,7 @@ import { apiService } from '../services/apiService';
 import authClient from '../services/authAdapter';
 import { useNavigate } from 'react-router-dom';
 
-export const Login = () => {
+export const Login = ({ setAuth }) => {
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState('');
   const [username, setUsername] = useState('');
@@ -33,6 +33,7 @@ export const Login = () => {
         const { token, user } = await authClient.login({ username, password });
         sessionStorage.setItem('demo_token', token);
         sessionStorage.setItem('demo_user', JSON.stringify(user));
+        setAuth(true);        
         setSuccess(true);
         setTimeout(() => {
           navigate('/dashboard');
@@ -40,7 +41,7 @@ export const Login = () => {
       } else {
         // Use apiService for production mode (API key)
         await apiService.authenticate(apiKey);
-        setSuccess(true);
+setAuth(true);        setSuccess(true);
         setTimeout(() => {
           navigate('/dashboard');
         }, 500);

@@ -1,9 +1,13 @@
 // API Service for SecureBase Customer Portal
+import { mockApiService } from './mockApiService';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.io';
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.useMock = USE_MOCK;
   }
 
   async request(endpoint, options = {}) {
@@ -30,12 +34,10 @@ class ApiService {
     }
   }
 
-  // GET request
   async get(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'GET' });
   }
 
-  // POST request
   async post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
@@ -44,7 +46,6 @@ class ApiService {
     });
   }
 
-  // PUT request
   async put(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
@@ -53,7 +54,6 @@ class ApiService {
     });
   }
 
-  // DELETE request
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }
@@ -64,11 +64,11 @@ class ApiService {
    * @returns {Promise<Object>} Session token and customer info
    */
   async authenticate(apiKey) {
+    if (this.useMock) return mockApiService.authenticate(apiKey);
+    
     try {
       const response = await this.post('/auth/login', { api_key: apiKey });
       
-      // Store session token in localStorage
-      // API may return either 'token' or 'session_token' - prefer 'token' for consistency
       if (response.token || response.session_token) {
         const token = response.token || response.session_token;
         localStorage.setItem('sessionToken', token);
@@ -76,7 +76,6 @@ class ApiService {
       
       return response;
     } catch (error) {
-      // Log detailed error for debugging while providing user-friendly message
       console.error('Authentication failed:', error);
       const isNetworkError = error.message && error.message.includes('fetch');
       const errorMessage = isNetworkError 
@@ -86,43 +85,60 @@ class ApiService {
     }
   }
 
-  // Dashboard data
+  async getMetrics() {
+    if (this.useMock) return mockApiService.getMetrics();
+    return this.get('/metrics');
+  }
+
   async getDashboardData() {
+    if (this.useMock) return mockApiService.getDashboardData();
     return this.get('/dashboard');
   }
 
-  // User data
   async getUserProfile() {
+    if (this.useMock) return mockApiService.getUserProfile();
     return this.get('/user/profile');
   }
 
-  // Invoices
   async getInvoices() {
+    if (this.useMock) return mockApiService.getInvoices();
     return this.get('/invoices');
   }
 
-  // API Keys
   async getApiKeys() {
+    if (this.useMock) return mockApiService.getApiKeys();
     return this.get('/api-keys');
   }
 
-  // Mock data for demo/development
-  getMockDashboardData() {
-    return Promise.resolve({
-      metrics: {
-        totalScans: 1247,
-        activeThreats: 3,
-        resolvedIssues: 156,
-        systemHealth: 98.5,
-      },
-      recentActivity: [
-        { id: 1, type: 'scan', message: 'Security scan completed', timestamp: new Date().toISOString() },
-        { id: 2, type: 'alert', message: 'New threat detected', timestamp: new Date().toISOString() },
-      ],
-    });
+  async getComplianceStatus() {
+    if (this.useMock) return mockApiService.getComplianceStatus();
+    return this.get('/compliance/status');
+  }
+
+  async getComplianceFindings() {
+    if (this.useMock) return mockApiService.getComplianceFindings();
+    return this.get('/compliance/findings');
+  }
+
+  async downloadComplianceReport() {
+    if (this.useMock) return mockApiService.downloadComplianceReport();
+    return this.get('/compliance/report/download');
+  }
+
+  async getTickets(params) {
+    if (this.useMock) return mockApiService.getTickets(params);
+    return this.get('/tickets', { params });
+  }
+
+  async getSupportTickets(params) {
+    return this.getTickets(params);
+  }
+
+  async createTicket(ticketData) {
+    if (this.useMock) return mockApiService.createTicket(ticketData);
+    return this.post('/tickets', ticketData);
   }
 }
 
-// Export as named export to match the import
 export const apiService = new ApiService();
 export default apiService;
