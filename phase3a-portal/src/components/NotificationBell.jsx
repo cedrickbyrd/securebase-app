@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Shield, DollarSign, Server, CheckCircle, Eye, X } from 'lucide-react';
+import { Bell, Shield, CreditCard, Server, CheckCircle, Eye, X, Settings } from 'lucide-react';
 import { mockApiService } from '../services/mockApiService';
 import styles from './NotificationBell.module.css';
 
@@ -29,14 +29,14 @@ const NotificationBell = ({ onCriticalAlert }) => {
     };
   }, [isOpen]);
 
-  // Check for critical alerts and show toast on mount
+  // Check for critical/warning alerts and show toast on mount
   useEffect(() => {
-    const criticalNotifications = notifications.filter(
-      n => !n.read && n.severity === 'error'
+    const alertNotifications = notifications.filter(
+      n => !n.read && (n.severity === 'critical' || n.severity === 'warning')
     );
     
-    if (criticalNotifications.length > 0 && onCriticalAlert) {
-      criticalNotifications.forEach(notification => {
+    if (alertNotifications.length > 0 && onCriticalAlert) {
+      alertNotifications.forEach(notification => {
         onCriticalAlert(notification);
       });
     }
@@ -98,8 +98,8 @@ const NotificationBell = ({ onCriticalAlert }) => {
   const getIcon = (type) => {
     const icons = {
       security: Shield,
-      billing: DollarSign,
-      system: Server,
+      billing: CreditCard,
+      system: Settings,
       compliance: CheckCircle
     };
     const IconComponent = icons[type] || Bell;
@@ -239,7 +239,7 @@ const NotificationBell = ({ onCriticalAlert }) => {
                       </span>
                       {notification.actionUrl && (
                         <span className={styles.actionLink}>
-                          {notification.actionText}
+                          View Details →
                         </span>
                       )}
                     </div>
