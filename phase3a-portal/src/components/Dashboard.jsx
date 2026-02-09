@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import NotificationBell from './NotificationBell';
+import { ToastContainer } from './NotificationToast';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -11,6 +13,7 @@ function Dashboard() {
   const [compliance, setCompliance] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -44,6 +47,15 @@ function Dashboard() {
     navigate('/login');
   };
 
+  const handleCriticalAlert = (notification) => {
+    // Add toast for critical notification
+    setToasts(prev => [...prev, notification]);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -55,6 +67,9 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
@@ -63,6 +78,7 @@ function Dashboard() {
             <p>Welcome back to SecureBase</p>
           </div>
           <div className="header-right">
+            <NotificationBell onCriticalAlert={handleCriticalAlert} />
             <button className="logout-button" onClick={handleLogout}>
               Logout
             </button>
