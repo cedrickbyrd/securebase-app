@@ -133,6 +133,63 @@ const mockData = {
       created_at: '2026-02-01T09:15:00Z',
       updated_at: '2026-02-06T11:45:00Z'
     }
+  ],
+  notifications: [
+    {
+      id: 'notif_001',
+      type: 'security',
+      severity: 'warning',
+      title: 'CloudTrail Disabled',
+      message: 'CloudTrail logging was disabled in us-west-2 region',
+      timestamp: '2026-02-08T14:30:00Z',
+      read: false,
+      actionUrl: '/compliance',
+      actionText: 'View Details'
+    },
+    {
+      id: 'notif_002',
+      type: 'billing',
+      severity: 'info',
+      title: 'Invoice Generated',
+      message: 'Your February invoice is ready for $1,250.00',
+      timestamp: '2026-02-01T09:00:00Z',
+      read: false,
+      actionUrl: '/invoices',
+      actionText: 'View Invoice'
+    },
+    {
+      id: 'notif_003',
+      type: 'compliance',
+      severity: 'success',
+      title: 'SOC 2 Assessment Complete',
+      message: 'Your SOC 2 Type II assessment passed with 98% score',
+      timestamp: '2026-01-31T16:00:00Z',
+      read: true,
+      actionUrl: '/compliance',
+      actionText: 'View Report'
+    },
+    {
+      id: 'notif_004',
+      type: 'system',
+      severity: 'info',
+      title: 'Scheduled Maintenance',
+      message: 'System maintenance scheduled for Feb 15, 2026 at 2:00 AM UTC',
+      timestamp: '2026-01-28T10:00:00Z',
+      read: true,
+      actionUrl: null,
+      actionText: null
+    },
+    {
+      id: 'notif_005',
+      type: 'security',
+      severity: 'error',
+      title: 'Failed Login Attempts',
+      message: '5 failed login attempts detected from IP 192.168.1.100',
+      timestamp: '2026-02-07T22:15:00Z',
+      read: false,
+      actionUrl: '/settings/security',
+      actionText: 'Review Activity'
+    }
   ]
 };
 
@@ -179,6 +236,26 @@ export const mockApiService = {
   // Support Tickets
   getTickets: () => {
     return Promise.resolve(mockData.tickets);
+  },
+
+  // Notifications
+  getNotifications: () => {
+    return Promise.resolve(mockData.notifications);
+  },
+
+  markNotificationAsRead: (id) => {
+    const notification = mockData.notifications.find(n => n.id === id);
+    if (notification) {
+      notification.read = true;
+    }
+    return Promise.resolve({ success: true, id });
+  },
+
+  markAllNotificationsAsRead: () => {
+    mockData.notifications.forEach(n => {
+      n.read = true;
+    });
+    return Promise.resolve({ success: true });
   }
 };
 
