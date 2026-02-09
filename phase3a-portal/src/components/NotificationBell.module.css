@@ -212,6 +212,10 @@
   border-left-color: #ef4444;
 }
 
+.severityCritical {
+  border-left-color: #ef4444;
+}
+
 .iconContainer {
   flex-shrink: 0;
   width: 40px;

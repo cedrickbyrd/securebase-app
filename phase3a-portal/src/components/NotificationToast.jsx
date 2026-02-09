@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import './NotificationToast.css';
 
 const NotificationToast = ({ notification, onClose }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Auto-dismiss after 5 seconds
+    // Auto-dismiss: 10 seconds for critical, 5 seconds for others
+    const dismissTime = notification.severity === 'critical' ? 10000 : 5000;
     const timer = setTimeout(() => {
       handleClose();
-    }, 5000);
+    }, dismissTime);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [notification.severity]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -25,10 +26,31 @@ const NotificationToast = ({ notification, onClose }) => {
 
   if (!notification) return null;
 
+  // Get icon based on severity
+  const getIcon = () => {
+    switch (notification.severity) {
+      case 'critical':
+        return <AlertCircle className="toast-icon" />;
+      case 'warning':
+        return <AlertTriangle className="toast-icon" />;
+      case 'info':
+        return <Info className="toast-icon" />;
+      case 'success':
+        return <CheckCircle className="toast-icon" />;
+      default:
+        return <AlertCircle className="toast-icon" />;
+    }
+  };
+
+  // Get severity class for styling
+  const getSeverityClass = () => {
+    return `severity-${notification.severity || 'info'}`;
+  };
+
   return (
-    <div className={`notification-toast ${isVisible ? 'visible' : 'hidden'}`}>
+    <div className={`notification-toast ${getSeverityClass()} ${isVisible ? 'visible' : 'hidden'}`}>
       <div className="toast-icon-container">
-        <AlertCircle className="toast-icon" />
+        {getIcon()}
       </div>
       <div className="toast-content">
         <h4 className="toast-title">{notification.title}</h4>
@@ -47,9 +69,12 @@ const NotificationToast = ({ notification, onClose }) => {
 
 // Toast Container component to manage multiple toasts
 export const ToastContainer = ({ toasts, onRemove }) => {
+  // Limit to max 3 visible toasts (show most recent)
+  const visibleToasts = toasts.slice(-3);
+  
   return (
     <div className="toast-container">
-      {toasts.map((toast) => (
+      {visibleToasts.map((toast) => (
         <NotificationToast
           key={toast.id}
           notification={toast}
