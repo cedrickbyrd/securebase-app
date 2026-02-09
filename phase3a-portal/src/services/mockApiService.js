@@ -138,57 +138,52 @@ const mockData = {
     {
       id: 'notif_001',
       type: 'security',
-      severity: 'warning',
-      title: 'CloudTrail Disabled',
-      message: 'CloudTrail logging was disabled in us-west-2 region',
-      timestamp: '2026-02-08T14:30:00Z',
+      severity: 'critical',
+      title: 'Security Alert',
+      message: 'Unusual API activity detected from IP 192.168.1.100',
+      timestamp: '2026-02-08T15:30:00Z',
       read: false,
-      actionUrl: '/compliance',
-      actionText: 'View Details'
+      actionUrl: '/activity'
     },
     {
       id: 'notif_002',
       type: 'billing',
-      severity: 'info',
-      title: 'Invoice Generated',
-      message: 'Your February invoice is ready for $1,250.00',
-      timestamp: '2026-02-01T09:00:00Z',
+      severity: 'warning',
+      title: 'Invoice Due',
+      message: 'Invoice INV-2026-002 is due in 3 days',
+      timestamp: '2026-02-07T10:00:00Z',
       read: false,
-      actionUrl: '/invoices',
-      actionText: 'View Invoice'
+      actionUrl: '/invoices'
     },
     {
       id: 'notif_003',
       type: 'compliance',
-      severity: 'success',
-      title: 'SOC 2 Assessment Complete',
-      message: 'Your SOC 2 Type II assessment passed with 98% score',
-      timestamp: '2026-01-31T16:00:00Z',
+      severity: 'info',
+      title: 'Compliance Assessment Complete',
+      message: 'SOC 2 assessment completed successfully',
+      timestamp: '2026-02-06T14:22:00Z',
       read: true,
-      actionUrl: '/compliance',
-      actionText: 'View Report'
+      actionUrl: '/compliance'
     },
     {
       id: 'notif_004',
       type: 'system',
-      severity: 'info',
-      title: 'Scheduled Maintenance',
-      message: 'System maintenance scheduled for Feb 15, 2026 at 2:00 AM UTC',
-      timestamp: '2026-01-28T10:00:00Z',
+      severity: 'success',
+      title: 'Backup Completed',
+      message: 'Daily backup completed successfully',
+      timestamp: '2026-02-06T02:00:00Z',
       read: true,
-      actionUrl: null,
-      actionText: null
+      actionUrl: null
     },
     {
       id: 'notif_005',
       type: 'security',
-      severity: 'error',
-      title: 'Failed Login Attempts',
-      message: '5 failed login attempts detected from IP 192.168.1.100',
-      timestamp: '2026-02-07T22:15:00Z',
+      severity: 'warning',
+      title: 'API Key Expiring Soon',
+      message: 'Production API Key will expire in 7 days',
+      timestamp: '2026-02-05T09:15:00Z',
       read: false,
-      actionUrl: '/settings/security',
-      actionText: 'Review Activity'
+      actionUrl: '/api-keys'
     }
   ]
 };
@@ -240,13 +235,29 @@ export const mockApiService = {
 
   // Notifications
   getNotifications: () => {
-    return Promise.resolve(mockData.notifications);
+    // Get read state from localStorage
+    const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+    
+    // Merge with mock data
+    const notificationsWithReadState = mockData.notifications.map(n => ({
+      ...n,
+      read: readNotifications.includes(n.id) || n.read
+    }));
+    
+    return Promise.resolve(notificationsWithReadState);
   },
 
   markNotificationAsRead: (id) => {
     const notification = mockData.notifications.find(n => n.id === id);
     if (notification) {
       notification.read = true;
+      
+      // Persist to localStorage
+      const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+      if (!readNotifications.includes(id)) {
+        readNotifications.push(id);
+        localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+      }
     }
     return Promise.resolve({ success: true, id });
   },
@@ -255,6 +266,11 @@ export const mockApiService = {
     mockData.notifications.forEach(n => {
       n.read = true;
     });
+    
+    // Persist all notification IDs to localStorage
+    const allIds = mockData.notifications.map(n => n.id);
+    localStorage.setItem('readNotifications', JSON.stringify(allIds));
+    
     return Promise.resolve({ success: true });
   }
 };
