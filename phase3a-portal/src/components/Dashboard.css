@@ -39,6 +39,12 @@
   font-size: 0.875rem;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .logout-button {
   padding: 0.625rem 1.25rem;
   background: white;
