@@ -8,6 +8,8 @@ export default {
     extend: {
       colors: {
         // Corporate Blue (Primary)
+        // Note: blue-600 and blue-700 are intentionally identical (#0066CC) 
+        // This is the main corporate blue color defined in the design system
         blue: {
           50: '#F0F8FF',    // --color-primary-50
           100: '#E6F2FF',   // --color-primary-100
@@ -16,7 +18,7 @@ export default {
           400: '#66B3FF',   // --color-primary-400
           500: '#3399FF',   // --color-primary-500
           600: '#0066CC',   // --color-primary-600 (MAIN)
-          700: '#0066CC',   // --color-primary-700
+          700: '#0066CC',   // --color-primary-700 (MAIN - same as 600)
           800: '#0052A3',   // --color-primary-800
           900: '#004080',   // --color-primary-900
         },
