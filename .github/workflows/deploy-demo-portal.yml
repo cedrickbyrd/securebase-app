@@ -1,33 +1,127 @@
-# Deploy Demo Portal
-
-name: Deploy Demo Portal
+name: Deploy Demo Portal (Netlify)
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'phase3a-portal/**'
+      - '.github/workflows/deploy-demo-portal.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase3a-portal/**'
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-demo-portal:
+    name: Deploy to Netlify
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+    defaults:
+      run:
+        working-directory: phase3a-portal
+    outputs:
+      deployment-url: ${{ steps.netlify-deploy.outputs.deploy-url }}
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build
-      run: npm run build
+      - name: Build demo portal
+        run: npm run build
+        env:
+          VITE_USE_MOCK_API: true
+          VITE_ENV: demo
+          VITE_ANALYTICS_ENABLED: false
 
-    - name: Deploy to Netlify
-      run: npm run deploy
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        SITE_ID: ${{ secrets.SITE_ID }}
+      - name: Copy demo data
+        run: |
+          if [ -f demo-data.json ]; then
+            cp demo-data.json dist/demo-data.json
+            echo "✅ Demo data copied to dist/"
+          else
+            echo "⚠️ demo-data.json not found, skipping"
+          fi
 
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './phase3a-portal/dist'
+          production-branch: main
+          production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Demo Portal - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: ${{ github.event_name == 'pull_request' && format('demo-pr-{0}', github.event.number) || '' }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DEMO_SITE_ID }}
+        timeout-minutes: 8
+
+      - name: Update deployment summary
+        run: |
+          echo "### 🎯 Demo Portal Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  verify-demo:
+    name: Verify Netlify Deployment
+    needs: deploy-demo-portal
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Wait for deployment propagation
+        run: sleep 15
+
+      - name: Test Netlify deployment
+        run: |
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          echo "🧪 Testing $DEPLOY_URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo portal is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Demo portal returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Generate deployment report
+        if: always()
+        run: |
+          echo "## 📊 Demo Portal Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
+          if [ "$DEMO_STATUS" -eq 200 ]; then
+            echo "- ✅ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
