@@ -36,7 +36,7 @@
 #   - Build command: npm run build
 #   - Publish directory: dist
 data "netlify_site" "marketing" {
-  name = "securebase-marketing"
+  name = "securebase-app"
 }
 
 # Environment variables for marketing site
@@ -74,7 +74,7 @@ resource "netlify_environment_variable" "marketing_vite_env" {
 #   - Build command: cd phase3a-portal && npm run build
 #   - Publish directory: phase3a-portal/dist
 data "netlify_site" "portal_demo" {
-  name = "securebase-portal-demo"
+  name = "securebase-demo"
 }
 
 # Environment variables for portal demo site
