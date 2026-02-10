@@ -1,3 +1,8 @@
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Main application styles */
 @import './styles/variables.css';
 @import './styles/tokens.css';
