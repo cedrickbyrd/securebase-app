@@ -117,6 +117,7 @@ jobs:
         run: |
           PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
           echo "🧪 Testing $PRODUCTION_URL..."
+          echo "Testing production URL: $PRODUCTION_URL"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL")
 
           if [ "$STATUS" -eq 200 ]; then
