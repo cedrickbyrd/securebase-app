@@ -60,57 +60,6 @@ jobs:
           path: phase3a-portal/dist/
           retention-days: 30
 
-  deploy:
-    name: Deploy to Production S3
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: http://securebase-fe-prod.s3-website-us-east-1.amazonaws.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4.1.8
-        with:
-          name: phase3a-production-build
-          path: dist/
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-             role-to-assume: arn:aws:iam::<account-id>:role/<role-name>
-             aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Create S3 bucket
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-
-          if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
-            echo "Creating S3 bucket: $BUCKET_NAME"
-            if [ "$REGION" == "us-east-1" ]; then
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION"
-            else
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
-            fi
-          else
-            echo "S3 bucket already exists: $BUCKET_NAME"
-          fi
-
-      - name: Configure S3 static website hosting
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          aws s3 website "s3://$BUCKET_NAME" \
-            --index-document index.html \
-            --error-document index.html
-
-      - name: Set S3 bucket policy
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          cat > bucket-policy.json << POLICY
           {
             "Version": "2012-10-17",
             "Statement": [
@@ -152,65 +101,47 @@ jobs:
           echo "production_url=$PRODUCTION_URL" >> $GITHUB_OUTPUT
         id: deploy
 
-  validate:
-    name: Validate Production Deployment
-    needs: deploy
+  deploy:
+    name: Deploy to Netlify Production
+    needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://securebase-app.netlify.app
+    permissions:
+      contents: read
+      deployments: write
+    outputs:
+      production_url: ${{ steps.deploy.outputs.production_url }}
 
     steps:
-      - name: Wait for propagation
-        run: sleep 30
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Smoke test - Check HTTP status
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: phase3a-production-build
+          path: dist/
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Production Deploy - ${{ github.event.head_commit.message || 'Manual Production Deploy' }}"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+        timeout-minutes: 8
+
+      - name: Output production URL
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL")
-
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Production site is accessible (HTTP $STATUS)"
-          else
-            echo "❌ Production site returned HTTP $STATUS"
-            exit 1
-          fi
-
-      - name: Validate index.html
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
-          if curl -s "$PRODUCTION_URL" | grep -q "SecureBase"; then
-            echo "✅ Index.html contains expected content"
-          else
-            echo "❌ Index.html validation failed"
-            exit 1
-          fi
-
-  notify:
-    name: Send Production Notification
-    needs: [deploy, validate]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Deployment notification
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
-          if [ "${{ needs.validate.result }}" == "success" ]; then
-            echo "✅ Phase 3a deployed successfully to PRODUCTION"
-            echo "🚀 Production URL: $PRODUCTION_URL"
-            echo ""
-            echo "⚠️  PRODUCTION DEPLOYMENT COMPLETE"
-            echo "- Using mock API (VITE_USE_MOCK_API=true)"
-            echo "- Ready for customer access"
-            echo "- Monitor for issues"
-          else
-            echo "❌ Production deployment or validation failed"
-            exit 1
-          fi
+          echo "🚀 Production URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
+          echo "production_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
+        id: deploy
