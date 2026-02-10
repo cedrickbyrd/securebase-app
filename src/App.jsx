@@ -577,7 +577,7 @@ COMPLIANCE:
               className="underline font-medium"
               target="_blank"
               rel="noopener noreferrer"
-            >Open Portal Demo</a>
+            >Open Demo</a>
             <span className="mx-2">·</span>
             Demo mode: sample data only
           </p>
