@@ -6,8 +6,8 @@
 #
 # PREREQUISITES - Sites must be created manually first:
 # 1. Go to https://app.netlify.com and create two sites:
-#    - securebase-marketing (for marketing site)
-#    - securebase-portal-demo (for portal demo)
+#    - securebase-app (for marketing site)
+#    - securebase-demo (for portal demo)
 # 2. Configure each site with:
 #    - Repository: cedrickbyrd/securebase-app
 #    - Branch: main
