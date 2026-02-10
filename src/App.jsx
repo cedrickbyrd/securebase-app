@@ -573,7 +573,7 @@ COMPLIANCE:
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-6 text-center">
           <p className="text-sm text-yellow-800">
             🚀 Try the interactive demo — <a
-              href="https://securebase-portal-demo.netlify.app"
+              href="https://securebase-demo.netlify.app"
               className="underline font-medium"
               target="_blank"
               rel="noopener noreferrer"
