@@ -1,4 +1,4 @@
-name: Deploy Phase 3a to Staging
+name: Deploy Phase 3a to Staging (Netlify)
 
 on:
   push:
@@ -33,10 +33,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: phase3a-portal/package-lock.json
 
@@ -44,7 +44,7 @@ jobs:
         run: npm ci
 
       - name: Run linter
-        run: npm run lint || true  # Allow warnings
+        run: npm run lint || true
 
       - name: Build staging bundle
         run: npm run build:staging
@@ -52,6 +52,8 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.STAGING_API_URL || 'https://staging-api.securebase.com/v1' }}
           VITE_WS_URL: ${{ secrets.STAGING_WS_URL || 'wss://staging-ws.securebase.com' }}
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STAGING_STRIPE_PUBLIC_KEY || 'pk_test_YOUR_TEST_KEY_HERE' }}
+          VITE_ENV: staging
+          VITE_USE_MOCK_API: false
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.3
@@ -61,13 +63,18 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy to S3
+    name: Deploy to Netlify Staging
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment:
       name: staging
-      url: http://securebase-phase3a-staging.s3-website-us-east-1.amazonaws.com
+      url: https://securebase-staging.netlify.app
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -79,79 +86,28 @@ jobs:
           name: phase3a-staging-build
           path: dist/
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Create S3 bucket
-        run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-
-          if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
-            echo "Creating S3 bucket: $BUCKET_NAME"
-            if [ "$REGION" == "us-east-1" ]; then
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION"
-            else
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
-            fi
-          else
-            echo "S3 bucket already exists: $BUCKET_NAME"
-          fi
-
-      - name: Configure S3 static website hosting
-        run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          aws s3 website "s3://$BUCKET_NAME" \
-            --index-document index.html \
-            --error-document index.html
-
-      - name: Set S3 bucket policy
-        run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          cat > bucket-policy.json << EOF
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Sid": "PublicReadGetObject",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
-              }
-            ]
-          }
-          EOF
-          aws s3api put-bucket-policy \
-            --bucket "$BUCKET_NAME" \
-            --policy file://bucket-policy.json
-
-      - name: Sync files to S3
-        run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-
-          # Sync all files except HTML and JSON with long cache
-          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
-            --delete \
-            --cache-control "public,max-age=3600" \
-            --exclude "index.html" \
-            --exclude "*.json"
-
-          # Upload index.html with no-cache
-          aws s3 cp dist/index.html "s3://$BUCKET_NAME/index.html" \
-            --cache-control "public,max-age=0,must-revalidate"
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Staging Deploy - ${{ github.event.head_commit.message || 'Manual Staging Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: staging
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_STAGING_SITE_ID }}
+        timeout-minutes: 8
 
       - name: Output staging URL
         run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          STAGING_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-          echo "Staging URL: $STAGING_URL"
-          echo "staging_url=$STAGING_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Staging URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
+          echo "staging_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
         id: deploy
 
   validate:
@@ -161,14 +117,12 @@ jobs:
 
     steps:
       - name: Wait for propagation
-        run: sleep 30
+        run: sleep 15
 
       - name: Smoke test - Check HTTP status
         run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          STAGING_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
+          echo "🧪 Testing $STAGING_URL..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
 
           if [ "$STATUS" -eq 200 ]; then
@@ -180,10 +134,7 @@ jobs:
 
       - name: Validate index.html
         run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          STAGING_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
           if curl -s "$STAGING_URL" | grep -q "SecureBase"; then
             echo "✅ Index.html contains expected content"
           else
@@ -200,13 +151,15 @@ jobs:
     steps:
       - name: Deployment notification
         run: |
-          BUCKET_NAME="${{ secrets.STAGING_S3_BUCKET || 'securebase-phase3a-staging' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          STAGING_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
 
           if [ "${{ needs.validate.result }}" == "success" ]; then
             echo "✅ Phase 3a deployed successfully to staging"
-            echo "URL: $STAGING_URL"
+            echo "🚀 Staging URL: $STAGING_URL"
+            echo ""
+            echo "**Staging Deployment Complete**"
+            echo "- Platform: Netlify"
+            echo "- Environment: Staging"
           else
             echo "❌ Deployment or validation failed"
             exit 1
