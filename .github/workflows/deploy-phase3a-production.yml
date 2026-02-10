@@ -1,4 +1,4 @@
-name: Deploy Phase 3a to Production
+name: Deploy Phase 3a to Production (Netlify)
 
 on:
   workflow_dispatch:
@@ -34,10 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -48,10 +48,11 @@ jobs:
       - name: Build production bundle
         run: npm run build:production
         env:
-          VITE_USE_MOCK_API: true
+          VITE_USE_MOCK_API: false
           VITE_API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.securebase.com/v1' }}
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
           VITE_ENV: production
+          VITE_ANALYTICS_ENABLED: true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.3
@@ -61,12 +62,16 @@ jobs:
           retention-days: 30
 
   deploy:
-    name: Deploy to Production S3
+    name: Deploy to Netlify Production
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: production
-      url: http://securebase-fe-prod.s3-website-us-east-1.amazonaws.com
+      url: https://securebase-app.netlify.app
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
       - name: Checkout code
@@ -78,78 +83,25 @@ jobs:
           name: phase3a-production-build
           path: dist/
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
         with:
-             role-to-assume: arn:aws:iam::<account-id>:role/<role-name>
-             aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Create S3 bucket
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-
-          if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
-            echo "Creating S3 bucket: $BUCKET_NAME"
-            if [ "$REGION" == "us-east-1" ]; then
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION"
-            else
-              aws s3 mb "s3://$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
-            fi
-          else
-            echo "S3 bucket already exists: $BUCKET_NAME"
-          fi
-
-      - name: Configure S3 static website hosting
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          aws s3 website "s3://$BUCKET_NAME" \
-            --index-document index.html \
-            --error-document index.html
-
-      - name: Set S3 bucket policy
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          cat > bucket-policy.json << POLICY
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Sid": "PublicReadGetObject",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
-              }
-            ]
-          }
-          POLICY
-          aws s3api put-bucket-policy \
-            --bucket "$BUCKET_NAME" \
-            --policy file://bucket-policy.json
-
-      - name: Sync files to S3
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-
-          # Sync all files except HTML with long cache
-          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
-            --delete \
-            --cache-control "public,max-age=31536000,immutable" \
-            --exclude "index.html" \
-            --exclude "*.json"
-
-          # Upload index.html with no-cache
-          aws s3 cp dist/index.html "s3://$BUCKET_NAME/index.html" \
-            --cache-control "public,max-age=0,must-revalidate"
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Production Deploy - ${{ github.event.head_commit.message || 'Manual Production Deploy' }}"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+        timeout-minutes: 8
 
       - name: Output production URL
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-          echo "🚀 Production URL: $PRODUCTION_URL"
-          echo "production_url=$PRODUCTION_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Production URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
+          echo "production_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
         id: deploy
 
   validate:
@@ -159,14 +111,12 @@ jobs:
 
     steps:
       - name: Wait for propagation
-        run: sleep 30
+        run: sleep 15
 
       - name: Smoke test - Check HTTP status
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+          echo "🧪 Testing $PRODUCTION_URL..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL")
 
           if [ "$STATUS" -eq 200 ]; then
@@ -176,12 +126,9 @@ jobs:
             exit 1
           fi
 
-      - name: Validate index.html
+      - name: Validate index.html content
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
           if curl -s "$PRODUCTION_URL" | grep -q "SecureBase"; then
             echo "✅ Index.html contains expected content"
           else
@@ -198,16 +145,15 @@ jobs:
     steps:
       - name: Deployment notification
         run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
 
           if [ "${{ needs.validate.result }}" == "success" ]; then
             echo "✅ Phase 3a deployed successfully to PRODUCTION"
             echo "🚀 Production URL: $PRODUCTION_URL"
             echo ""
             echo "⚠️  PRODUCTION DEPLOYMENT COMPLETE"
-            echo "- Using mock API (VITE_USE_MOCK_API=true)"
+            echo "- Platform: Netlify"
+            echo "- Environment: Production"
             echo "- Ready for customer access"
             echo "- Monitor for issues"
           else
