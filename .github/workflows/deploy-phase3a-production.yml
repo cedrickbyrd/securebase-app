@@ -1,4 +1,4 @@
-name: Deploy Phase 3a to Production
+name: Deploy Phase 3a to Production (Netlify)
 
 on:
   workflow_dispatch:
@@ -34,10 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -48,10 +48,11 @@ jobs:
       - name: Build production bundle
         run: npm run build:production
         env:
-          VITE_USE_MOCK_API: true
+          VITE_USE_MOCK_API: false
           VITE_API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.securebase.com/v1' }}
           VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
           VITE_ENV: production
+          VITE_ANALYTICS_ENABLED: true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.3
@@ -59,47 +60,6 @@ jobs:
           name: phase3a-production-build
           path: phase3a-portal/dist/
           retention-days: 30
-
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Sid": "PublicReadGetObject",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
-              }
-            ]
-          }
-          POLICY
-          aws s3api put-bucket-policy \
-            --bucket "$BUCKET_NAME" \
-            --policy file://bucket-policy.json
-
-      - name: Sync files to S3
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-
-          # Sync all files except HTML with long cache
-          aws s3 sync dist/ "s3://$BUCKET_NAME/" \
-            --delete \
-            --cache-control "public,max-age=31536000,immutable" \
-            --exclude "index.html" \
-            --exclude "*.json"
-
-          # Upload index.html with no-cache
-          aws s3 cp dist/index.html "s3://$BUCKET_NAME/index.html" \
-            --cache-control "public,max-age=0,must-revalidate"
-
-      - name: Output production URL
-        run: |
-          BUCKET_NAME="${{ secrets.PRODUCTION_S3_BUCKET || 'securebase-fe-prod' }}"
-          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
-          PRODUCTION_URL="http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-          echo "🚀 Production URL: $PRODUCTION_URL"
-          echo "production_url=$PRODUCTION_URL" >> $GITHUB_OUTPUT
-        id: deploy
 
   deploy:
     name: Deploy to Netlify Production
@@ -112,8 +72,6 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    outputs:
-      production_url: ${{ steps.deploy.outputs.production_url }}
 
     steps:
       - name: Checkout code
@@ -145,3 +103,61 @@ jobs:
           echo "🚀 Production URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
           echo "production_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
         id: deploy
+
+  validate:
+    name: Validate Production Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 15
+
+      - name: Smoke test - Check HTTP status
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+          echo "🧪 Testing $PRODUCTION_URL..."
+          echo "Testing production URL: $PRODUCTION_URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Production site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Production site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Validate index.html content
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+          if curl -s "$PRODUCTION_URL" | grep -q "SecureBase"; then
+            echo "✅ Index.html contains expected content"
+          else
+            echo "❌ Index.html validation failed"
+            exit 1
+          fi
+
+  notify:
+    name: Send Production Notification
+    needs: [deploy, validate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment notification
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+
+          if [ "${{ needs.validate.result }}" == "success" ]; then
+            echo "✅ Phase 3a deployed successfully to PRODUCTION"
+            echo "🚀 Production URL: $PRODUCTION_URL"
+            echo ""
+            echo "⚠️  PRODUCTION DEPLOYMENT COMPLETE"
+            echo "- Platform: Netlify"
+            echo "- Environment: Production"
+            echo "- Ready for customer access"
+            echo "- Monitor for issues"
+          else
+            echo "❌ Production deployment or validation failed"
+            exit 1
+          fi

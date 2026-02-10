@@ -1,4 +1,4 @@
-name: Deploy Marketing Site (securebase.io)
+name: Deploy Marketing Site (securebase-app.netlify.app)
 
 on:
   push:
@@ -28,7 +28,7 @@ on:
 
 jobs:
   deploy-marketing:
-    name: Deploy to securebase.io
+    name: Deploy to securebase-app.netlify.app
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -78,7 +78,7 @@ jobs:
         run: |
           echo "### 🚀 Marketing Site Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Site**: securebase.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site**: securebase.app" >> $GITHUB_STEP_SUMMARY
           echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
@@ -100,10 +100,10 @@ jobs:
       - name: Test Marketing Site Health
         id: health-check
         run: |
-          echo "🧪 Testing https://securebase.io..."
+          echo "🧪 Testing https://securebase-app.netlify.app..."
 
           # Test HTTP status
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
 
           if [ "$STATUS" -eq 200 ]; then
             echo "✅ Marketing site is accessible (HTTP $STATUS)"
@@ -118,7 +118,7 @@ jobs:
         run: |
           echo "🔐 Checking security headers..."
 
-          HEADERS=$(curl -sI https://securebase.io)
+          HEADERS=$(curl -sI https://securebase-app.netlify.app)
 
           # Check critical security headers
           if echo "$HEADERS" | grep -q "strict-transport-security"; then
@@ -145,11 +145,11 @@ jobs:
           echo "## 📊 Marketing Site Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
           if [ "$STATUS" -eq 200 ]; then
-            echo "- ✅ **Production Site**: https://securebase.io (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ **Production Site**: https://securebase.io (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY

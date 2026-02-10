@@ -1,4 +1,4 @@
-name: Deploy Demo Portal (demo.securebase.io)
+name: Deploy Demo Portal (Netlify)
 
 on:
   push:
@@ -13,51 +13,10 @@ on:
     paths:
       - 'phase3a-portal/**'
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Deploy Marketing Site (securebase.io)"]
-    types:
-      - completed
-    branches:
-      - main
 
 jobs:
-  check-marketing-site:
-    name: Verify Marketing Site Exists
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      marketing-healthy: ${{ steps.check.outputs.healthy }}
-
-    steps:
-      - name: Check if securebase.io is accessible
-        id: check
-        run: |
-          echo "🔍 Checking if https://securebase.io exists..."
-
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io || echo "000")
-
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Marketing site (securebase.io) is healthy (HTTP $STATUS)"
-            echo "healthy=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️ Marketing site returned HTTP $STATUS"
-            echo "healthy=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Marketing site status
-        run: |
-          if [ "${{ steps.check.outputs.healthy }}" == "true" ]; then
-            echo "✅ Proceeding with demo portal deployment"
-          else
-            echo "⚠️ Marketing site not healthy - demo portal deployment may be skipped"
-          fi
-
   deploy-demo-portal:
-    name: Deploy to demo.securebase.io
-    needs: check-marketing-site
-    # Only deploy if marketing site exists OR if manually triggered
-    if: needs.check-marketing-site.outputs.marketing-healthy == 'true' || github.event_name == 'workflow_dispatch'
+    name: Deploy to Netlify
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -120,15 +79,13 @@ jobs:
         run: |
           echo "### 🎯 Demo Portal Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Site**: demo.securebase.io" >> $GITHUB_STEP_SUMMARY
           echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Marketing Site**: ✅ Healthy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
   verify-demo:
-    name: Verify Demo Portal
+    name: Verify Netlify Deployment
     needs: deploy-demo-portal
     runs-on: ubuntu-latest
     permissions:
@@ -139,10 +96,11 @@ jobs:
       - name: Wait for deployment propagation
         run: sleep 15
 
-      - name: Test Demo Portal
+      - name: Test Netlify deployment
         run: |
-          echo "🧪 Testing https://demo.securebase.io..."
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.io)
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          echo "🧪 Testing $DEPLOY_URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
 
           if [ "$STATUS" -eq 200 ]; then
             echo "✅ Demo portal is accessible (HTTP $STATUS)"
@@ -157,11 +115,12 @@ jobs:
           echo "## 📊 Demo Portal Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.io)
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
           if [ "$DEMO_STATUS" -eq 200 ]; then
-            echo "- ✅ **Demo Portal**: https://demo.securebase.io (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ **Demo Portal**: https://demo.securebase.io (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
