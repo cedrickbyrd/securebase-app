@@ -1,1 +1,157 @@
-{"ref":"main"}
+name: Deploy Marketing Site (securebase-app.netlify.app)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'netlify.toml'
+      - '.github/workflows/deploy-marketing-site.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'netlify.toml'
+  workflow_dispatch:
+
+jobs:
+  deploy-marketing:
+    name: Deploy to securebase-app.netlify.app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+    outputs:
+      deployment-url: ${{ steps.netlify-deploy.outputs.deploy-url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build marketing site
+        run: npm run build
+        env:
+          VITE_ENV: production
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Marketing Site - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || '' }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MARKETING_SITE_ID }}
+        timeout-minutes: 8
+
+      - name: Update deployment summary
+        run: |
+          echo "### 🚀 Marketing Site Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site**: securebase.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  verify-production:
+    name: Verify Production Deployment
+    needs: deploy-marketing
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Wait for deployment propagation
+        run: sleep 15
+
+      - name: Test Marketing Site Health
+        id: health-check
+        run: |
+          echo "🧪 Testing https://securebase-app.netlify.app..."
+
+          # Test HTTP status
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Marketing site is accessible (HTTP $STATUS)"
+            echo "healthy=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Marketing site returned HTTP $STATUS"
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Test Security Headers
+        run: |
+          echo "🔐 Checking security headers..."
+
+          HEADERS=$(curl -sI https://securebase-app.netlify.app)
+
+          # Check critical security headers
+          if echo "$HEADERS" | grep -q "strict-transport-security"; then
+            echo "✅ HSTS header present"
+          else
+            echo "⚠️ HSTS header missing"
+          fi
+
+          if echo "$HEADERS" | grep -q "x-frame-options"; then
+            echo "✅ X-Frame-Options header present"
+          else
+            echo "⚠️ X-Frame-Options header missing"
+          fi
+
+          if echo "$HEADERS" | grep -q "x-content-type-options"; then
+            echo "✅ X-Content-Type-Options header present"
+          else
+            echo "⚠️ X-Content-Type-Options header missing"
+          fi
+
+      - name: Generate deployment report
+        if: always()
+        run: |
+          echo "## 📊 Marketing Site Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "- ✅ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
