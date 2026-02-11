@@ -17,6 +17,10 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+// Constants for download flow timing
+const REPORT_GENERATION_DELAY = 15000; // 15 seconds
+const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -85,17 +89,21 @@ export default function Dashboard() {
     // Start download flow
     setIsDownloading(true);
     
-    // Simulate report generation for 15 seconds
+    // Simulate report generation
     setTimeout(() => {
-      // Show success message
-      setIsDownloading(false);
-      setDownloadComplete(true);
-      
-      // After 2 seconds, logout and redirect
-      setTimeout(() => {
-        handleLogout();
-      }, 2000);
-    }, 15000);
+      showSuccessAndLogout();
+    }, REPORT_GENERATION_DELAY);
+  };
+
+  const showSuccessAndLogout = () => {
+    // Show success message
+    setIsDownloading(false);
+    setDownloadComplete(true);
+    
+    // After brief success message, logout and redirect
+    setTimeout(() => {
+      handleLogout();
+    }, SUCCESS_MESSAGE_DELAY);
   };
 
   const handleLogout = () => {
