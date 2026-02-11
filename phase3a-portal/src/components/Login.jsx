@@ -55,7 +55,7 @@ function Login({ setAuth }) {
                 <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="white"/>
               </svg>
             </div>
-            <h1>SecureBase</h1>
+            <h1>SecureBase by TxImhotep LLC</h1>
             <p className="subtitle">Customer Portal</p>
           </div>
 
