@@ -2,7 +2,7 @@
 
 ## 🎯 Demo URL
 
-**Live Demo:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+**Live Demo:** https://demo.securebase.io
 
 *(Bookmark this link!)*
 
@@ -45,7 +45,7 @@ A fully functional, pre-populated version of the SecureBase Customer Portal that
 
 ```
 🖥️ Try SecureBase Demo (no signup required):
-http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+https://demo.securebase.io
 
 • Pre-populated with 5 sample customers
 • Full portal functionality (read-only)

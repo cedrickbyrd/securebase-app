@@ -1,4 +1,4 @@
-name: Deploy Marketing Site (securebase-app.netlify.app)
+name: Deploy Marketing Site (securebase.io)
 
 on:
   push:
@@ -28,7 +28,7 @@ on:
 
 jobs:
   deploy-marketing:
-    name: Deploy to securebase-app.netlify.app
+    name: Deploy to securebase.io
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -100,10 +100,10 @@ jobs:
       - name: Test Marketing Site Health
         id: health-check
         run: |
-          echo "🧪 Testing https://securebase-app.netlify.app..."
+          echo "🧪 Testing https://securebase.io..."
 
           # Test HTTP status
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
 
           if [ "$STATUS" -eq 200 ]; then
             echo "✅ Marketing site is accessible (HTTP $STATUS)"
@@ -118,7 +118,7 @@ jobs:
         run: |
           echo "🔐 Checking security headers..."
 
-          HEADERS=$(curl -sI https://securebase-app.netlify.app)
+          HEADERS=$(curl -sI https://securebase.io)
 
           # Check critical security headers
           if echo "$HEADERS" | grep -q "strict-transport-security"; then
@@ -145,11 +145,11 @@ jobs:
           echo "## 📊 Marketing Site Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io)
           if [ "$STATUS" -eq 200 ]; then
-            echo "- ✅ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Production Site**: https://securebase.io (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ **Production Site**: https://securebase-app.netlify.app (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ **Production Site**: https://securebase.io (HTTP $STATUS)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
