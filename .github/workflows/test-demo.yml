@@ -15,7 +15,7 @@ on:
       demo_url:
         description: 'Demo URL to test'
         required: false
-        default: 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com'
+        default: 'https://demo.securebase.io'
 
   # Run on schedule (daily)
   schedule:
@@ -36,7 +36,7 @@ jobs:
       - name: Run smoke test script
         working-directory: phase3a-portal
         env:
-          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'https://demo.securebase.io' }}
         run: |
           chmod +x test-demo-live.sh
           ./test-demo-live.sh
@@ -84,7 +84,7 @@ jobs:
       - name: Run Playwright E2E tests
         working-directory: phase3a-portal
         env:
-          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'https://demo.securebase.io' }}
         run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload test results
@@ -124,7 +124,7 @@ jobs:
 
       - name: Check demo environment
         env:
-          DEMO_URL: ${{ github.event.inputs.demo_url || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com' }}
+          DEMO_URL: ${{ github.event.inputs.demo_url || 'https://demo.securebase.io' }}
         run: |
           echo "Validating demo environment..."
 
@@ -155,7 +155,7 @@ jobs:
         run: |
           echo "# Live Demo Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Demo URL:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com" >> $GITHUB_STEP_SUMMARY
+          echo "**Demo URL:** https://demo.securebase.io" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.smoke-tests.result }}" == "success" ]; then

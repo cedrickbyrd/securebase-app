@@ -115,8 +115,8 @@ def lambda_handler(event, context):
                 'quantity': 1,
             }],
             'mode': 'subscription',
-            'success_url': f"{os.environ.get('PORTAL_URL')}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            'cancel_url': f"{os.environ.get('PORTAL_URL')}/signup?cancelled=true",
+            'success_url': f'https://demo.securebase.io/success?session_id={{CHECKOUT_SESSION_ID}}',
+            'cancel_url': f'https://demo.securebase.io/signup?cancelled=true',
             'customer_email': customer_email,
             'client_reference_id': customer_email,  # For idempotency
             'metadata': {

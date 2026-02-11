@@ -631,7 +631,7 @@ npm run build
 netlify deploy --prod
 ```
 
-**Result:** `https://securebase-portal-demo.netlify.app` → Interactive portal with mock data
+**Result:** `https://demo.securebase.io` → Interactive portal with mock data
 
 ---
 
@@ -777,8 +777,7 @@ https://securebase-demo.vercel.app
 └─ CTA: "Try Interactive Demo" → links to portal demo
 
 Customer Portal Demo:
-https://portal-demo.securebase.io (custom domain)
-https://securebase-portal-demo.netlify.app (default)
+https://demo.securebase.io (custom domain)
 ├─ Login: Pre-filled demo credentials
 ├─ Dashboard: Mock metrics and charts
 ├─ Invoices: Sample billing data
@@ -893,7 +892,7 @@ https://securebase-portal-demo.netlify.app (default)
 2. **Tier 2: Portal Demo** (2-4 hours)
    - Deploy Phase 3a portal to Netlify
    - Add mock API layer
-   - URL: `securebase-portal-demo.netlify.app`
+   - URL: `demo.securebase.io`
    - **Action:** Follow 8.1 Strategy B implementation steps
 
 ### 11.2 Immediate Action Items

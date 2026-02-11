@@ -4,12 +4,12 @@ import { test, expect } from '@playwright/test';
  * Live Demo Portal E2E Tests
  * 
  * Tests the live demo deployment at:
- * http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+ * https://demo.securebase.io
  * 
  * Based on validation checklist from DEMO_ENVIRONMENT.md (lines 184-198)
  */
 
-const DEMO_URL = process.env.DEMO_URL || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com';
+const DEMO_URL = process.env.DEMO_URL || 'https://demo.securebase.io';
 const DEMO_USERNAME = 'demo';
 const DEMO_PASSWORD = 'demo';
 

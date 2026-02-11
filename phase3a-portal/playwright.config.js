@@ -30,8 +30,8 @@ export default defineConfig({
   ],
   
   use: {
-    // Base URL for tests
-    baseURL: process.env.DEMO_URL || 'http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com',
+    // Updated base URL for custom domain
+    baseURL: process.env.DEMO_URL || 'https://demo.securebase.io',
     
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
