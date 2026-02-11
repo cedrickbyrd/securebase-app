@@ -20,6 +20,7 @@ import {
 // Constants for download flow timing
 const REPORT_GENERATION_DELAY = 15000; // 15 seconds
 const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
+const MARKETING_SITE_URL = 'https://securebase-app.netlify.app';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -35,8 +36,21 @@ export default function Dashboard() {
     pendingTickets: 0,
   });
 
+  // Track timeout IDs for cleanup
+  const timeoutRefs = React.useRef({ generation: null, logout: null });
+
   useEffect(() => {
     loadDashboardData();
+
+    // Cleanup timeouts on unmount
+    return () => {
+      if (timeoutRefs.current.generation) {
+        clearTimeout(timeoutRefs.current.generation);
+      }
+      if (timeoutRefs.current.logout) {
+        clearTimeout(timeoutRefs.current.logout);
+      }
+    };
   }, []);
 
   const loadDashboardData = async () => {
@@ -90,7 +104,7 @@ export default function Dashboard() {
     setIsDownloading(true);
     
     // Simulate report generation
-    setTimeout(() => {
+    timeoutRefs.current.generation = setTimeout(() => {
       showSuccessAndLogout();
     }, REPORT_GENERATION_DELAY);
   };
@@ -101,7 +115,7 @@ export default function Dashboard() {
     setDownloadComplete(true);
     
     // After brief success message, logout and redirect
-    setTimeout(() => {
+    timeoutRefs.current.logout = setTimeout(() => {
       handleLogout();
     }, SUCCESS_MESSAGE_DELAY);
   };
@@ -112,7 +126,7 @@ export default function Dashboard() {
     localStorage.clear();
     
     // Redirect to marketing site
-    window.location.href = 'https://securebase-app.netlify.app';
+    window.location.href = MARKETING_SITE_URL;
   };
 
   if (loading) {
@@ -281,7 +295,11 @@ export default function Dashboard() {
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
-              <button onClick={handleDownloadReport} className="sb-ActionButton sb-ActionButton--blue">
+              <button 
+                onClick={handleDownloadReport} 
+                className="sb-ActionButton sb-ActionButton--blue"
+                aria-label="Download security compliance report"
+              >
                 <Download className="sb-ActionButton__icon" />
                 Download Report
               </button>
