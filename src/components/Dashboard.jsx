@@ -129,10 +129,10 @@ export default function Dashboard() {
   };
 
   const handleDownloadReport = () => {
-    // Start download flow
+    // Start download flow (demo only - no actual file download)
     setIsDownloading(true);
     
-    // Simulate report generation
+    // Simulate report generation for dramatic effect
     timeoutRefs.current.generation = setTimeout(() => {
       showSuccessAndLogout();
     }, REPORT_GENERATION_DELAY);
@@ -150,11 +150,11 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    // Clear all storage
+    // Clear all storage (intentional for demo "ending" - resets entire demo state)
     sessionStorage.clear();
     localStorage.clear();
     
-    // Redirect to marketing site
+    // Redirect to marketing site (demo "money shot" finale)
     window.location.href = MARKETING_SITE_URL;
   };
 
