@@ -15,7 +15,7 @@ jobs:
       - name: Verify site availability
         id: availability_check
         run: |
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://securebase-app.netlify.app/)
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://securebase.io/)
           
           if [ $response_code -eq 200 ]; then
             echo "status=healthy" >> $GITHUB_OUTPUT
@@ -28,8 +28,8 @@ jobs:
       
       - name: Validate SSL configuration
         run: |
-          ssl_expiry=$(echo | openssl s_client -servername securebase-app.netlify.app \
-            -connect securebase-app.netlify.app:443 2>/dev/null | \
+          ssl_expiry=$(echo | openssl s_client -servername securebase.io \
+            -connect securebase.io:443 2>/dev/null | \
             openssl x509 -noout -enddate | cut -d= -f2)
           
           echo "SSL certificate expires: $ssl_expiry"
@@ -48,7 +48,7 @@ jobs:
       - name: Test critical endpoints
         run: |
           echo "Testing primary application endpoint..."
-          curl -f -s https://securebase-app.netlify.app/ > /dev/null
+          curl -f -s https://securebase.io/ > /dev/null
           
           if [ $? -eq 0 ]; then
             echo "Application endpoint responding correctly"
@@ -64,7 +64,7 @@ jobs:
           script: |
             const incidentReport = `## SecureBase Production Health Alert\n\n` +
               `The automated health monitoring system has detected an issue with ` +
-              `the production deployment at https://securebase-app.netlify.app/\n\n` +
+              `the production deployment at https://securebase.io/\n\n` +
               `**Timestamp:** ${new Date().toISOString()}\n` +
               `**Workflow:** ${context.workflow}\n` +
               `**Run ID:** ${context.runId}\n\n` +

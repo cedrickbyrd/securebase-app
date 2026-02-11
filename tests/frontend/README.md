@@ -192,7 +192,7 @@ Then repeat the manual testing checklist above on `http://localhost:5173`.
 ### Marketing Site (Netlify/GitHub Pages)
 The root marketing site is deployed separately from the customer portal.
 
-**Demo URL:** `https://securebase-demo.netlify.app` (or similar)
+**Demo URL:** `https://securebase.io`
 
 #### Test Checklist
 - [ ] Marketing page loads at root URL

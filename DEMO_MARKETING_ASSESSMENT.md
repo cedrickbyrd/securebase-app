@@ -235,7 +235,7 @@ The repository contains **THREE distinct frontend applications**:
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Live: https://securebase-app.netlify.app (production)      │
+│ Live: https://securebase.io (production)                  │
 │ Preview: https://deploy-preview-123--securebase.netlify... │
 └─────────────────────────────────────────────────────────────┘
 ```
