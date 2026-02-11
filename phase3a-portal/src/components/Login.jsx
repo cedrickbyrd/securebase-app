@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import BRANDING from '../config/branding';
 import './Login.css';
 
 function Login({ setAuth }) {
@@ -55,7 +56,7 @@ function Login({ setAuth }) {
                 <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="white"/>
               </svg>
             </div>
-            <h1>SecureBase</h1>
+            <h1>{BRANDING.productName}</h1>
             <p className="subtitle">Customer Portal</p>
           </div>
 
@@ -133,7 +134,7 @@ function Login({ setAuth }) {
 
           {/* Footer */}
           <div className="login-footer">
-            © 2025 SecureBase. All rights reserved. • <a href="#">Privacy</a> • <a href="#">Terms</a>
+            © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. • <a href={BRANDING.privacyPolicyUrl}>Privacy</a> • <a href={BRANDING.termsOfServiceUrl}>Terms</a>
           </div>
         </div>
       </div>
