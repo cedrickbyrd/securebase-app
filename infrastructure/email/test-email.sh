@@ -3,7 +3,8 @@
 
 set -e
 
-QUEUE_URL=$(cd infrastructure/email && terraform output -raw email_queue_url 2>/dev/null || echo "")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+QUEUE_URL=$(cd "$SCRIPT_DIR" && terraform output -raw email_queue_url 2>/dev/null || echo "")
 
 if [ -z "$QUEUE_URL" ]; then
   echo "❌ Error: Email queue not deployed. Run 'terraform apply' first."
