@@ -47,6 +47,12 @@ terraform apply
 
 ### Option 2: Quick Deploy Script
 
+**Note**: Make the script executable first:
+```bash
+chmod +x deploy.sh
+```
+
+Then run:
 ```bash
 cd infrastructure/demo-counter
 ./deploy.sh
