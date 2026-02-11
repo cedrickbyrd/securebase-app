@@ -134,5 +134,12 @@ function validateMessage(message) {
  */
 function stripHtml(html) {
   if (!html) return '';
-  return html.replace(/<[^>]*>/g, '').trim();
+  let previous;
+  let current = html;
+  // Repeatedly remove HTML-like tags until no more are found
+  do {
+    previous = current;
+    current = current.replace(/<[^>]*>/g, '');
+  } while (current !== previous);
+  return current.trim();
 }
