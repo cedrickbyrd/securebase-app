@@ -27,7 +27,7 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL || 'noreply@tximhotep.com';
 const CONFIGURATION_SET = process.env.CONFIGURATION_SET || 'securebase-email-tracking';
 
 /**
- * Main Lambda handler
+ * Main Lambda handler with partial batch failure support
  */
 exports.handler = async (event) => {
   console.log(`Processing ${event.Records.length} email messages`);
@@ -35,7 +35,8 @@ exports.handler = async (event) => {
   const results = {
     succeeded: 0,
     failed: 0,
-    errors: []
+    errors: [],
+    batchItemFailures: []
   };
   
   const batchItemFailures = [];
@@ -45,7 +46,7 @@ exports.handler = async (event) => {
       const message = JSON.parse(record.body);
       await sendEmail(message);
       results.succeeded++;
-      console.log(`✅ Email sent successfully: ${message.type} to ${message.to}`);
+      console.log(`✅ Email sent successfully: ${message.type}`);
     } catch (error) {
       results.failed++;
       
