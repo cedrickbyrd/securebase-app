@@ -2,12 +2,16 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  safelist: [
+    'text-blue-600',
+    'bg-gray-50',
+    'text-gray-900',
   ],
   theme: {
     extend: {
       colors: {
-        // Corporate Blue (Primary)
         blue: {
           50: '#F0F8FF',
           100: '#E6F2FF',
@@ -20,7 +24,6 @@ export default {
           800: '#0052A3',
           900: '#004080',
         },
-        // Slate Gray (Secondary)
         gray: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -33,7 +36,6 @@ export default {
           800: '#1e293b',
           900: '#0f172a',
         },
-        // Success Green
         green: {
           50: '#E6F8F0',
           100: '#CCF0DE',
@@ -46,7 +48,6 @@ export default {
           800: '#007A52',
           900: '#006644',
         },
-        // Warning Orange
         orange: {
           50: '#FFF6ED',
           100: '#FFECDA',
