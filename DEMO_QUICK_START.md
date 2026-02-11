@@ -8,7 +8,7 @@
 
 ## ⚡ Option 1: Marketing Site Only (15 Minutes)
 
-**What you get:** Professional landing page at https://securebase-demo.netlify.app
+**What you get:** Professional landing page at https://securebase.io
 
 ### Steps
 
@@ -22,17 +22,11 @@ npm install
 # 3. Build the application (2 min)
 npm run build
 
-# 4. Deploy to Vercel (5 min)
-npx vercel --prod
+# 4. Deploy to Netlify (5 min)
+# Configured via netlify.toml - custom domain: securebase.io
 
-# 5. Follow Vercel prompts:
-#    - Login/signup to Vercel
-#    - Link to repository
-#    - Confirm deployment settings
-#    - Wait for deployment to complete
-
-# 6. Done! Your demo is live at:
-#    https://securebase-demo.vercel.app
+# 5. Done! Your demo is live at:
+#    https://securebase.io
 ```
 
 ### What's Already Configured
@@ -53,7 +47,7 @@ npx vercel --prod
 
 ## 🎯 Option 2: Full Interactive Demo (2-4 Hours)
 
-**What you get:** Complete customer portal with mock data at https://securebase-portal-demo.netlify.app
+**What you get:** Complete customer portal with mock data at https://demo.securebase.io
 
 ### Prerequisites
 

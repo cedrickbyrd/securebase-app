@@ -4,9 +4,9 @@
 
 The SecureBase demo environment provides a fully functional, pre-populated version of the Phase 3a Customer Portal that prospects can explore without signing up. This is a read-only environment with realistic sample data that showcases the platform's capabilities.
 
-**Demo URL:** [http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com](http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com)
+**Demo URL:** [https://demo.securebase.io](https://demo.securebase.io)
 
-**Custom Domain (when configured):** [https://demo.securebase.io](https://demo.securebase.io)
+> **Note:** Demo portal is accessible at `https://demo.securebase.io` via Netlify with custom domain configuration.
 
 ---
 

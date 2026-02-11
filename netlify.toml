@@ -5,6 +5,27 @@
 [build.environment]
   NODE_VERSION = "22.12.0"
 
+# Redirect Netlify default domain to custom domain
+[[redirects]]
+  from = "https://securebase-app.netlify.app/*"
+  to = "https://securebase.io/:splat"
+  status = 301
+  force = true
+
+# Force HTTPS
+[[redirects]]
+  from = "http://securebase.io/*"
+  to = "https://securebase.io/:splat"
+  status = 301
+  force = true
+
+# Redirect www to apex domain
+[[redirects]]
+  from = "https://www.securebase.io/*"
+  to = "https://securebase.io/:splat"
+  status = 301
+  force = true
+
 # SPA routing - redirect all routes to index.html
 [[redirects]]
   from = "/*"

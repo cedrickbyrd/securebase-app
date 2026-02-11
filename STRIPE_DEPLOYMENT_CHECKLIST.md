@@ -217,7 +217,7 @@ Create a product and price for each of the 4 tiers:
       STRIPE_PRICE_GOVERNMENT=price_YOUR_GOVERNMENT_ID,
       STRIPE_PRICE_STANDARD=price_YOUR_STANDARD_ID,
       STRIPE_PILOT_COUPON=PILOT50,
-      PORTAL_URL=https://your-portal-url.com,
+      PORTAL_URL=https://demo.securebase.io,
       RATE_LIMIT_TABLE=securebase-signup-rate-limits
     }" \
     --region us-east-1
@@ -587,7 +587,7 @@ Create a product and price for each of the 4 tiers:
       STRIPE_PRICE_GOVERNMENT=price_LIVE_GOVERNMENT_ID,
       STRIPE_PRICE_STANDARD=price_LIVE_STANDARD_ID,
       STRIPE_PILOT_COUPON=PILOT50,
-      PORTAL_URL=https://portal.securebase.com
+      PORTAL_URL=https://app.securebase.io
     }" \
     --region us-east-1
   ```

@@ -32,10 +32,10 @@ cd phase3a-portal
 # 1. Run deployment script
 ./deploy-demo.sh
 
-# 2. Wait for S3 sync to complete
+# 2. Wait for deployment to complete
 
 # 3. Verify deployment
-curl -I http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+curl -I https://demo.securebase.io
 ```
 
 ## Deployment Steps (GitHub Actions)
@@ -49,20 +49,20 @@ curl -I http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
 ### HTTP Status Check
 ```bash
 curl -o /dev/null -s -w "%{http_code}\n" \
-  http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+  https://demo.securebase.io
 # Expected: 200
 ```
 
 ### Demo Data Accessibility
 ```bash
 curl -o /dev/null -s -w "%{http_code}\n" \
-  http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com/demo-data.json
-# Expected: 200
+  https://demo.securebase.io/demo-data.json
+# Expected: 200 (or 404 if not using static demo data)
 ```
 
 ### Browser Testing
 
-Visit: http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+Visit: https://demo.securebase.io
 
 **Checklist:**
 - [ ] Page loads successfully
@@ -145,7 +145,7 @@ Subject: 🎯 New Live Demo Available - SecureBase
 Hi Team,
 
 Our live demo environment is now available at:
-http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+https://demo.securebase.io
 
 Features:
 • Auto-login (no signup required)

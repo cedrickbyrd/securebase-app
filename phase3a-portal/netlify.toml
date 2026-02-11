@@ -1,11 +1,29 @@
 [build]
-  base = "demo"
+  base = "phase3a-portal"
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22.12.0"
+  VITE_USE_MOCK_API = "true"
+  VITE_ENV = "demo"
+  VITE_DEMO_MODE = "true"
 
+# Redirect Netlify default domain to custom domain
+[[redirects]]
+  from = "https://securebase-demo.netlify.app/*"
+  to = "https://demo.securebase.io/:splat"
+  status = 301
+  force = true
+
+# Force HTTPS
+[[redirects]]
+  from = "http://demo.securebase.io/*"
+  to = "https://demo.securebase.io/:splat"
+  status = 301
+  force = true
+
+# SPA routing - redirect all routes to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
