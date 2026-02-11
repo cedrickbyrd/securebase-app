@@ -24,6 +24,8 @@ data "aws_route53_zone" "tximhotep" {
 
 data "aws_region" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 # ============================================================================
 # 1. SES Domain Identity & DNS Verification
 # ============================================================================
@@ -236,7 +238,7 @@ resource "aws_iam_role_policy" "lambda_email_policy" {
           "ses:SendRawEmail",
           "ses:SendTemplatedEmail"
         ]
-        Resource = aws_ses_domain_identity.tximhotep.arn
+        Resource = "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:identity/tximhotep.com"
       },
       {
         Effect = "Allow"
