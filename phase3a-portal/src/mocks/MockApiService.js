@@ -12,7 +12,9 @@ import {
   mockSupportTickets,
   mockNotifications,
   mockCostForecast,
-  mockWebhooks
+  mockWebhooks,
+  getDemoCustomerByIndex,
+  getMetricsForCustomer
 } from './mockData';
 
 export class MockApiService {
@@ -20,6 +22,20 @@ export class MockApiService {
     // Simulate network delay (300ms - realistic for API calls)
     this.delay = 300;
     this.demoMode = true;
+  }
+
+  /**
+   * Get current demo customer from session storage
+   * This aligns with the rotation system
+   */
+  getCurrentCustomer() {
+    const storedIndex = sessionStorage.getItem('demoCustomerIndex');
+    if (storedIndex !== null) {
+      const index = parseInt(storedIndex, 10);
+      return getDemoCustomerByIndex(index);
+    }
+    // Fallback to default customer
+    return mockCustomer;
   }
 
   /**
@@ -49,9 +65,10 @@ export class MockApiService {
    */
   async authenticate(apiKey) {
     if (apiKey === 'demo' || apiKey === 'demo-api-key') {
+      const currentCustomer = this.getCurrentCustomer();
       return this.simulateCall({
         session_token: 'demo_session_token_' + Date.now(),
-        customer_id: mockCustomer.id,
+        customer_id: currentCustomer.id,
         expires_in: 3600
       });
     }
@@ -84,15 +101,21 @@ export class MockApiService {
    * Metrics & Usage
    */
   async getMetrics(timeRange = 'month') {
+    const currentCustomer = this.getCurrentCustomer();
+    const customerMetrics = getMetricsForCustomer(currentCustomer);
+    
     return this.simulateCall({
-      data: mockMetrics
+      data: customerMetrics
     });
   }
 
   async getMetricsHistory(months = 12) {
+    const currentCustomer = this.getCurrentCustomer();
+    const customerMetrics = getMetricsForCustomer(currentCustomer);
+    
     return this.simulateCall({
       data: {
-        history: mockMetrics.cost_history,
+        history: customerMetrics.cost_history,
         total_months: months
       }
     });
@@ -102,10 +125,16 @@ export class MockApiService {
    * Invoices
    */
   async getInvoices(params = {}) {
+    const currentCustomer = this.getCurrentCustomer();
+    // Filter invoices for the current demo customer
+    const customerInvoices = mockInvoices.filter(
+      inv => inv.customer_id === currentCustomer.id
+    );
+    
     return this.simulateCall({
-      data: mockInvoices,
+      data: customerInvoices,
       meta: {
-        total: mockInvoices.length,
+        total: customerInvoices.length,
         page: params.page || 1,
         limit: params.limit || 10
       }
@@ -185,8 +214,9 @@ export class MockApiService {
    * Customer Profile
    */
   async getCustomerProfile() {
+    const currentCustomer = this.getCurrentCustomer();
     return this.simulateCall({
-      data: mockCustomer
+      data: currentCustomer
     });
   }
 
