@@ -1,0 +1,66 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Corporate Blue (Primary)
+        blue: {
+          50: '#F0F8FF',
+          100: '#E6F2FF',
+          200: '#CCE5FF',
+          300: '#99CCFF',
+          400: '#66B3FF',
+          500: '#3399FF',
+          600: '#0066CC',
+          700: '#0066CC',
+          800: '#0052A3',
+          900: '#004080',
+        },
+        // Slate Gray (Secondary)
+        gray: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        // Success Green
+        green: {
+          50: '#E6F8F0',
+          100: '#CCF0DE',
+          200: '#99E2CB',
+          300: '#66D4B9',
+          400: '#33C6A6',
+          500: '#00B894',
+          600: '#00A76F',
+          700: '#008F60',
+          800: '#007A52',
+          900: '#006644',
+        },
+        // Warning Orange
+        orange: {
+          50: '#FFF6ED',
+          100: '#FFECDA',
+          200: '#FFD9B5',
+          300: '#FFC68F',
+          400: '#FFB269',
+          500: '#FF9F43',
+          600: '#FF8C1A',
+          700: '#F37F00',
+          800: '#E07300',
+          900: '#CC6600',
+        },
+      },
+    },
+  },
+  plugins: [],
+}
