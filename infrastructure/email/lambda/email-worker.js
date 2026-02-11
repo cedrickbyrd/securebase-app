@@ -44,7 +44,7 @@ exports.handler = async (event) => {
       const message = JSON.parse(record.body);
       await sendEmail(message);
       results.succeeded++;
-      console.log(`✅ Email sent successfully: ${message.type} to ${message.to}`);
+      console.log(`✅ Email sent successfully: ${message.type}`);
     } catch (error) {
       results.failed++;
       
