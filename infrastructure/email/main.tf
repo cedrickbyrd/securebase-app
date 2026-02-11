@@ -24,6 +24,8 @@ data "aws_route53_zone" "tximhotep" {
 
 data "aws_region" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 # ============================================================================
 # 1. SES Domain Identity & DNS Verification
 # ============================================================================
@@ -68,6 +70,7 @@ resource "aws_route53_record" "dkim" {
 # ============================================================================
 
 resource "aws_route53_record" "spf" {
+  count   = var.create_spf_record ? 1 : 0
   zone_id = data.aws_route53_zone.tximhotep.zone_id
   name    = "tximhotep.com"
   type    = "TXT"
@@ -168,7 +171,7 @@ resource "aws_lambda_function" "email_processor" {
   
   environment {
     variables = {
-      SENDER_EMAIL        = "noreply@tximhotep.com"
+      SENDER_EMAIL        = var.sender_email
       SES_REGION          = data.aws_region.current.name
       CONFIGURATION_SET   = aws_ses_configuration_set.main.name
     }
