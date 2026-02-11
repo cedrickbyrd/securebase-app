@@ -27,7 +27,7 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL || 'noreply@tximhotep.com';
 const CONFIGURATION_SET = process.env.CONFIGURATION_SET || 'securebase-email-tracking';
 
 /**
- * Main Lambda handler
+ * Main Lambda handler with partial batch failure support
  */
 exports.handler = async (event) => {
   console.log(`Processing ${event.Records.length} email messages`);
@@ -35,7 +35,8 @@ exports.handler = async (event) => {
   const results = {
     succeeded: 0,
     failed: 0,
-    errors: []
+    errors: [],
+    batchItemFailures: []
   };
   
   for (const record of event.Records) {
@@ -46,24 +47,42 @@ exports.handler = async (event) => {
       console.log(`✅ Email sent successfully: ${message.type} to ${message.to}`);
     } catch (error) {
       results.failed++;
+      
+      // Extract message type without exposing full body
+      let messageType = 'unknown';
+      try {
+        const parsedBody = JSON.parse(record.body);
+        if (parsedBody && typeof parsedBody.type === 'string') {
+          messageType = parsedBody.type;
+        }
+      } catch (e) {
+        // If the body is not valid JSON, keep messageType as 'unknown'
+      }
+      
       results.errors.push({
         messageId: record.messageId,
         error: error.message,
-        body: record.body
+        messageType,
+        bodyRedacted: true
       });
-      console.error(`❌ Failed to send email:`, error);
-      console.error(`   Message body:`, record.body);
       
-      // Re-throw to trigger SQS retry/DLQ
-      throw error;
+      // Log error without PII
+      console.error(`❌ Failed to send email (messageId=${record.messageId}, type=${messageType})`, error.message);
+      console.error(`   Message body omitted from logs to avoid PII exposure.`);
+      
+      // Add to batch item failures for partial retry
+      results.batchItemFailures.push({
+        itemIdentifier: record.messageId
+      });
     }
   }
   
   console.log(`Batch complete: ${results.succeeded} succeeded, ${results.failed} failed`);
   
+  // Return partial batch failures to SQS
+  // Only failed messages will be retried
   return {
-    statusCode: 200,
-    body: JSON.stringify(results)
+    batchItemFailures: results.batchItemFailures
   };
 };
 

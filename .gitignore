@@ -71,3 +71,4 @@ exports/
 
 # Local Netlify folder
 .netlify
+infrastructure/email/*.zip
