@@ -22,6 +22,35 @@ const REPORT_GENERATION_DELAY = 15000; // 15 seconds
 const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
 const MARKETING_SITE_URL = 'https://securebase-app.netlify.app';
 
+// Download modal component
+const DownloadModal = ({ isDownloading, downloadComplete }) => {
+  if (!isDownloading && !downloadComplete) return null;
+
+  return (
+    <div className="sb-Modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className="sb-Modal__backdrop" />
+      <div className="sb-Modal__content">
+        {isDownloading && (
+          <div className="sb-Modal__loading">
+            <div className="sb-Spinner sb-Spinner--large" aria-label="Loading"></div>
+            <h2 id="modal-title" className="sb-Modal__title">Generating Security Report...</h2>
+            <p className="sb-Modal__text">Please wait while we compile your compliance data</p>
+          </div>
+        )}
+        {downloadComplete && (
+          <div className="sb-Modal__success">
+            <div className="sb-Modal__successIcon">
+              <CheckCircle2 size={64} color="#10b981" aria-hidden="true" />
+            </div>
+            <h2 id="modal-title" className="sb-Modal__title">Report Downloaded!</h2>
+            <p className="sb-Modal__text">Your security report has been generated successfully</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -140,39 +169,10 @@ export default function Dashboard() {
     );
   }
 
-  // Download modal component
-  const DownloadModal = () => {
-    if (!isDownloading && !downloadComplete) return null;
-
-    return (
-      <div className="sb-Modal">
-        <div className="sb-Modal__backdrop" />
-        <div className="sb-Modal__content">
-          {isDownloading && (
-            <div className="sb-Modal__loading">
-              <div className="sb-Spinner sb-Spinner--large"></div>
-              <h2 className="sb-Modal__title">Generating Security Report...</h2>
-              <p className="sb-Modal__text">Please wait while we compile your compliance data</p>
-            </div>
-          )}
-          {downloadComplete && (
-            <div className="sb-Modal__success">
-              <div className="sb-Modal__successIcon">
-                <CheckCircle2 size={64} color="#10b981" />
-              </div>
-              <h2 className="sb-Modal__title">Report Downloaded!</h2>
-              <p className="sb-Modal__text">Your security report has been generated successfully</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="sb-Dashboard">
       {/* Download Modal */}
-      <DownloadModal />
+      <DownloadModal isDownloading={isDownloading} downloadComplete={downloadComplete} />
 
       {/* Header */}
       <div className="sb-Dashboard__header">
@@ -299,6 +299,7 @@ export default function Dashboard() {
                 onClick={handleDownloadReport} 
                 className="sb-ActionButton sb-ActionButton--blue"
                 aria-label="Download security compliance report"
+                disabled={isDownloading || downloadComplete}
               >
                 <Download className="sb-ActionButton__icon" />
                 Download Report
