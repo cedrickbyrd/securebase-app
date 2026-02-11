@@ -15,6 +15,8 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const { customer, customerIndex } = useDemoCustomer();
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
   useEffect(() => {
     loadDashboardData();
@@ -89,6 +91,10 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="dashboard-main">
+        {/* Demo Customer Indicator */}
+        {isDemoMode && customer && customerIndex !== null && (
+          <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
+        )}
         {/* Metrics Grid */}
         <section className="metrics-grid">
           <div className="metric-card">
