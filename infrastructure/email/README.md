@@ -14,5 +14,3 @@ Production-ready email system using AWS SES, SQS, and Lambda for transactional e
 
 ## 📁 File Structure
 
-
-'
