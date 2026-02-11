@@ -20,6 +20,8 @@ import {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadComplete, setDownloadComplete] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     monthlyCharge: 0,
     monthlyUsage: {},
@@ -79,6 +81,32 @@ export default function Dashboard() {
     });
   };
 
+  const handleDownloadReport = () => {
+    // Start download flow
+    setIsDownloading(true);
+    
+    // Simulate report generation for 15 seconds
+    setTimeout(() => {
+      // Show success message
+      setIsDownloading(false);
+      setDownloadComplete(true);
+      
+      // After 2 seconds, logout and redirect
+      setTimeout(() => {
+        handleLogout();
+      }, 2000);
+    }, 15000);
+  };
+
+  const handleLogout = () => {
+    // Clear all storage
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Redirect to marketing site
+    window.location.href = 'https://securebase-app.netlify.app';
+  };
+
   if (loading) {
     return (
       <div className="sb-Dashboard__loading">
@@ -90,8 +118,40 @@ export default function Dashboard() {
     );
   }
 
+  // Download modal component
+  const DownloadModal = () => {
+    if (!isDownloading && !downloadComplete) return null;
+
+    return (
+      <div className="sb-Modal">
+        <div className="sb-Modal__backdrop" />
+        <div className="sb-Modal__content">
+          {isDownloading && (
+            <div className="sb-Modal__loading">
+              <div className="sb-Spinner sb-Spinner--large"></div>
+              <h2 className="sb-Modal__title">Generating Security Report...</h2>
+              <p className="sb-Modal__text">Please wait while we compile your compliance data</p>
+            </div>
+          )}
+          {downloadComplete && (
+            <div className="sb-Modal__success">
+              <div className="sb-Modal__successIcon">
+                <CheckCircle2 size={64} color="#10b981" />
+              </div>
+              <h2 className="sb-Modal__title">Report Downloaded!</h2>
+              <p className="sb-Modal__text">Your security report has been generated successfully</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="sb-Dashboard">
+      {/* Download Modal */}
+      <DownloadModal />
+
       {/* Header */}
       <div className="sb-Dashboard__header">
         <div className="sb-Dashboard__headerContent">
@@ -213,10 +273,10 @@ export default function Dashboard() {
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
-              <a href="/invoices/download" className="sb-ActionButton sb-ActionButton--blue">
+              <button onClick={handleDownloadReport} className="sb-ActionButton sb-ActionButton--blue">
                 <Download className="sb-ActionButton__icon" />
-                Download Invoice
-              </a>
+                Download Report
+              </button>
               <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
