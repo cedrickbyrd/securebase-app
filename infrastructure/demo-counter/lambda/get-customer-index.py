@@ -10,7 +10,6 @@ Cost: ~$0.10/month for typical demo traffic
 import json
 import boto3
 import os
-from decimal import Decimal
 
 # Initialize DynamoDB client
 dynamodb = boto3.client('dynamodb')
