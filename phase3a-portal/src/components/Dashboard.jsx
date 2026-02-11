@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
-import DemoCustomerIndicator from './DemoCustomerIndicator';
-import { useDemoCustomer } from '../hooks/useDemoCustomer';
+import BRANDING from '../config/branding';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -79,7 +78,7 @@ function Dashboard() {
         <div className="header-content">
           <div className="header-left">
             <h1>Dashboard</h1>
-            <p>Welcome back to SecureBase</p>
+            <p>Welcome back to {BRANDING.productShortName}</p>
           </div>
           <div className="header-right">
             <NotificationBell onCriticalAlert={handleCriticalAlert} />
