@@ -186,6 +186,8 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   function_name    = aws_lambda_function.email_processor.arn
   batch_size       = 10
   enabled          = true
+  
+  function_response_types = ["ReportBatchItemFailures"]
 }
 
 resource "aws_cloudwatch_log_group" "lambda_email_logs" {
