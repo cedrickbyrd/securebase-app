@@ -39,6 +39,8 @@ exports.handler = async (event) => {
     batchItemFailures: []
   };
   
+  const batchItemFailures = [];
+  
   for (const record of event.Records) {
     try {
       const message = JSON.parse(record.body);
@@ -48,7 +50,7 @@ exports.handler = async (event) => {
     } catch (error) {
       results.failed++;
       
-      // Extract message type without exposing full body
+      // Extract message type for logging without exposing PII
       let messageType = 'unknown';
       try {
         const parsedBody = JSON.parse(record.body);
@@ -65,13 +67,11 @@ exports.handler = async (event) => {
         messageType,
         bodyRedacted: true
       });
-      
-      // Log error without PII
-      console.error(`❌ Failed to send email (messageId=${record.messageId}, type=${messageType})`, error.message);
+      console.error(`❌ Failed to send email (messageId=${record.messageId}, type=${messageType})`, error);
       console.error(`   Message body omitted from logs to avoid PII exposure.`);
       
-      // Add to batch item failures for partial retry
-      results.batchItemFailures.push({
+      // Add to batch failures for partial retry (instead of rethrowing)
+      batchItemFailures.push({
         itemIdentifier: record.messageId
       });
     }
@@ -80,9 +80,8 @@ exports.handler = async (event) => {
   console.log(`Batch complete: ${results.succeeded} succeeded, ${results.failed} failed`);
   
   // Return partial batch failures to SQS
-  // Only failed messages will be retried
   return {
-    batchItemFailures: results.batchItemFailures
+    batchItemFailures
   };
 };
 

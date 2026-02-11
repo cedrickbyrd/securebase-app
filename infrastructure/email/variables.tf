@@ -4,10 +4,16 @@ variable "environment" {
   default     = "prod"
 }
 
-variable "sender_email" {
-  description = "Default sender email address"
-  type        = string
-  default     = "noreply@tximhotep.com"
+variable "enable_inbound_email" {
+  description = "Enable MX record for inbound email (WARNING: This will override existing MX records)"
+  type        = bool
+  default     = false
+}
+
+variable "existing_apex_txt_records" {
+  description = "Existing TXT records at domain apex (to merge with SPF record)"
+  type        = list(string)
+  default     = []
 }
 
 variable "create_mx_record" {

@@ -66,8 +66,7 @@ resource "aws_route53_record" "dkim" {
 
 # ============================================================================
 # 3. SPF Record (Sender Policy Framework)
-# WARNING: This will replace any existing TXT records at the apex domain.
-# Set var.create_spf_record = false if you have existing TXT records.
+# Note: Merges with existing TXT records to avoid clobbering
 # ============================================================================
 
 resource "aws_route53_record" "spf" {
@@ -76,9 +75,10 @@ resource "aws_route53_record" "spf" {
   name    = "tximhotep.com"
   type    = "TXT"
   ttl     = 300
-  records = [
-    "v=spf1 include:amazonses.com ~all"
-  ]
+  records = concat(
+    ["v=spf1 include:amazonses.com ~all"],
+    var.existing_apex_txt_records
+  )
 }
 
 # ============================================================================
@@ -97,12 +97,11 @@ resource "aws_route53_record" "dmarc" {
 
 # ============================================================================
 # 5. MX Records (Optional - to receive email)
-# WARNING: This will override existing MX records for the domain.
-# Set var.create_mx_record = true only if you want SES to handle inbound email.
+# WARNING: This will override existing MX records for the domain
 # ============================================================================
 
 resource "aws_route53_record" "mx" {
-  count   = var.create_mx_record ? 1 : 0
+  count   = var.enable_inbound_email ? 1 : 0
   zone_id = data.aws_route53_zone.tximhotep.zone_id
   name    = "tximhotep.com"
   type    = "MX"
@@ -117,7 +116,7 @@ resource "aws_route53_record" "mx" {
 # ============================================================================
 
 resource "aws_sqs_queue" "email_dlq" {
-  name                      = "securebase-${var.environment}-email-dlq"
+  name                      = "securebase-email-dlq-${var.environment}"
   message_retention_seconds = 1209600 # 14 days
   
   tags = {
@@ -128,7 +127,7 @@ resource "aws_sqs_queue" "email_dlq" {
 }
 
 resource "aws_sqs_queue" "email_queue" {
-  name                       = "securebase-${var.environment}-email-queue"
+  name                       = "securebase-email-queue-${var.environment}"
   message_retention_seconds  = 86400  # 24 hours
   receive_wait_time_seconds  = 20     # Long polling
   visibility_timeout_seconds = 180    # 3 minutes (6x Lambda timeout)
@@ -160,7 +159,7 @@ data "archive_file" "lambda_email_worker" {
 }
 
 resource "aws_lambda_function" "email_processor" {
-  function_name    = "securebase-${var.environment}-email-worker"
+  function_name    = "securebase-email-worker-${var.environment}"
   description      = "Processes email queue and sends via SES"
   role             = aws_iam_role.lambda_email_role.arn
   handler          = "index.handler"
@@ -204,7 +203,7 @@ resource "aws_cloudwatch_log_group" "lambda_email_logs" {
 # ============================================================================
 
 resource "aws_iam_role" "lambda_email_role" {
-  name = "securebase-${var.environment}-lambda-email-role"
+  name = "securebase-lambda-email-role-${var.environment}"
   
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -225,7 +224,7 @@ resource "aws_iam_role" "lambda_email_role" {
 }
 
 resource "aws_iam_role_policy" "lambda_email_policy" {
-  name = "securebase-${var.environment}-lambda-email-policy"
+  name = "securebase-lambda-email-policy-${var.environment}"
   role = aws_iam_role.lambda_email_role.id
   
   policy = jsonencode({
@@ -238,7 +237,7 @@ resource "aws_iam_role_policy" "lambda_email_policy" {
           "ses:SendRawEmail",
           "ses:SendTemplatedEmail"
         ]
-        Resource = "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:identity/tximhotep.com"
+        Resource = aws_ses_domain_identity.tximhotep.arn
       },
       {
         Effect = "Allow"
@@ -267,11 +266,11 @@ resource "aws_iam_role_policy" "lambda_email_policy" {
 # ============================================================================
 
 resource "aws_ses_configuration_set" "main" {
-  name = "securebase-${var.environment}-email-tracking"
+  name = "securebase-email-tracking-${var.environment}"
 }
 
 resource "aws_sns_topic" "email_events" {
-  name = "securebase-${var.environment}-email-events"
+  name = "securebase-email-events-${var.environment}"
   
   tags = {
     Name        = "SecureBase Email Events"
@@ -312,7 +311,7 @@ resource "aws_sns_topic_policy" "email_events" {
 # ============================================================================
 
 resource "aws_cloudwatch_metric_alarm" "email_dlq_messages" {
-  alarm_name          = "securebase-${var.environment}-email-dlq-messages"
+  alarm_name          = "securebase-email-dlq-messages-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -329,7 +328,7 @@ resource "aws_cloudwatch_metric_alarm" "email_dlq_messages" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  alarm_name          = "securebase-${var.environment}-email-worker-errors"
+  alarm_name          = "securebase-email-worker-errors-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"
