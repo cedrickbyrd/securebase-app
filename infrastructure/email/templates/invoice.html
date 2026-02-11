@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice from SecureBase</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #0066CC;">Invoice #{{invoice_id}}</h1>
+        
+        <p>Hi {{customer_name}},</p>
+        
+        <p>Your invoice for SecureBase is now available.</p>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3>Invoice Details</h3>
+            <table style="width: 100%;">
+                <tr>
+                    <td><strong>Invoice Number:</strong></td>
+                    <td>{{invoice_id}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Amount Due:</strong></td>
+                    <td>${{amount}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Due Date:</strong></td>
+                    <td>{{due_date}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <p>
+            <a href="{{invoice_url}}" style="display: inline-block; background: #0066CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View Invoice</a>
+        </p>
+        
+        <p>Questions? Contact billing@tximhotep.com</p>
+        
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+        <p style="font-size: 12px; color: #777;">
+            © 2026 TxImhotep LLC. All rights reserved.
+        </p>
+    </div>
+</body>
+</html>
