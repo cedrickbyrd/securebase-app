@@ -622,7 +622,7 @@ COMPLIANCE:
             <div className="grid md:grid-cols-3 gap-8">
               {features.map((f, i) => (
                 <div key={i} className="p-6 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300 transition">
-                  <f.Icon className="text-blue-600 mb-4 w-10 h-10" />
+                  <f.icon className="text-blue-600 mb-4 w-10 h-10" />
                   <h3 className="text-lg font-bold mb-2 text-gray-900">{f.title}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">{f.description}</p>
                 </div>
