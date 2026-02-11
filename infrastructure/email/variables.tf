@@ -15,3 +15,15 @@ variable "existing_apex_txt_records" {
   type        = list(string)
   default     = []
 }
+
+variable "create_mx_record" {
+  description = "Create MX record for inbound email (WARNING: Will override existing MX records)"
+  type        = bool
+  default     = false
+}
+
+variable "create_spf_record" {
+  description = "Create SPF TXT record (WARNING: Will override existing TXT records at apex)"
+  type        = bool
+  default     = true
+}
