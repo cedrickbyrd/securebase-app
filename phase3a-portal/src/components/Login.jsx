@@ -134,7 +134,7 @@ function Login({ setAuth }) {
 
           {/* Footer */}
           <div className="login-footer">
-            © 2025 SecureBase. All rights reserved. • <a href="#">Privacy</a> • <a href="#">Terms</a>
+            © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. • <a href={BRANDING.privacyPolicyUrl}>Privacy</a> • <a href={BRANDING.termsOfServiceUrl}>Terms</a>
           </div>
         </div>
       </div>
