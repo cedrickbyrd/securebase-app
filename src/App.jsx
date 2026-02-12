@@ -87,12 +87,12 @@ export default function SecureBaseLandingZone() {
   ];
 
   const features = [
-    { icon: Shield, title: 'Audit-Ready', description: 'CIS, SOC2, NIST 800-53, RMF compliant from day one' },
-    { icon: Zap, title: 'Deploy in Hours', description: 'Production Terraform with no Control Tower dependency' },
-    { icon: Lock, title: 'Zero Trust', description: 'No long-lived credentials, MFA enforced, SCPs enabled' },
-    { icon: CheckCircle, title: 'Fintech Grade', description: 'Built for fintech audits and government requirements' },
-    { icon: GitBranch, title: 'Multi-Account', description: 'Opinionated OU structure with blast-radius control' },
-    { icon: Eye, title: 'Break-Glass Ready', description: 'Auditor-approved emergency access with CloudTrail logging' }
+    { Icon: Shield, title: 'Audit-Ready', description: 'CIS, SOC2, NIST 800-53, RMF compliant from day one' },
+    { Icon: Zap, title: 'Deploy in Hours', description: 'Production Terraform with no Control Tower dependency' },
+    { Icon: Lock, title: 'Zero Trust', description: 'No long-lived credentials, MFA enforced, SCPs enabled' },
+    { Icon: CheckCircle, title: 'Fintech Grade', description: 'Built for fintech audits and government requirements' },
+    { Icon: GitBranch, title: 'Multi-Account', description: 'Opinionated OU structure with blast-radius control' },
+    { Icon: Eye, title: 'Break-Glass Ready', description: 'Auditor-approved emergency access with CloudTrail logging' }
   ];
 
   const addLog = (message, type = 'info') => {
@@ -622,7 +622,7 @@ COMPLIANCE:
             <div className="grid md:grid-cols-3 gap-8">
               {features.map((f, i) => (
                 <div key={i} className="p-6 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300 transition">
-                  <f.icon className="text-blue-600 mb-4 w-10 h-10" />
+                  <f.Icon className="text-blue-600 mb-4 w-10 h-10" />
                   <h3 className="text-lg font-bold mb-2 text-gray-900">{f.title}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">{f.description}</p>
                 </div>
