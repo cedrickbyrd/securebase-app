@@ -57,6 +57,16 @@ export const Invoices = () => {
   };
 
   const handleDownload = async (invoiceId) => {
+    // In demo mode, redirect to marketing site to close the loop
+    const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_USE_MOCK_API === 'true';
+    
+    if (isDemoMode) {
+      // Redirect to marketing site - conversion opportunity
+      window.location.href = 'https://tximhotep.com';
+      return;
+    }
+    
+    // Real download for actual customers (production)
     try {
       await apiService.downloadInvoice(invoiceId);
     } catch (err) {
