@@ -262,17 +262,17 @@ terraform output netlify_deployment_summary
 
 Expected output:
 ```
-netlify_marketing_site_url = "securebase-marketing-xyz123.netlify.app"
-netlify_portal_demo_url = "securebase-portal-demo-abc456.netlify.app"
+netlify_marketing_site_url = "securebase-app.netlify.app"
+netlify_portal_demo_url = "securebase-demo.netlify.app"
 netlify_deployment_summary = {
   marketing_site = {
     custom_domain = "securebase.io"
-    netlify_url = "https://securebase-marketing-xyz123.netlify.app"
+    netlify_url = "https://securebase-app.netlify.app"
     site_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
   }
   portal_demo = {
     custom_domain = "portal-demo.securebase.io"
-    netlify_url = "https://securebase-portal-demo-abc456.netlify.app"
+    netlify_url = "https://securebase-demo.netlify.app"
     site_id = "f9e8d7c6-b5a4-3210-9876-543210fedcba"
   }
 }
@@ -282,7 +282,29 @@ netlify_deployment_summary = {
 
 ## Importing Existing Sites
 
-If you already have Netlify sites deployed manually, import them into Terraform state:
+### Importing Existing SecureBase Sites (Quick Method)
+
+The SecureBase project has two existing Netlify sites that need to be imported into Terraform:
+1. **Marketing Site**: `securebase-app.netlify.app`
+2. **Demo Portal**: `securebase-demo.netlify.app`
+
+**Automated Import Script:**
+
+```bash
+./scripts/import-netlify-sites.sh
+```
+
+This script will:
+- ✅ Check prerequisites (Terraform, Netlify CLI, API token)
+- ✅ Prompt for site IDs from Netlify Dashboard
+- ✅ Import environment variable resources
+- ✅ Verify the import with `terraform plan`
+
+For manual import steps, see the [module README](../landing-zone/modules/netlify-sites/README.md#importing-existing-securebase-sites).
+
+### General Netlify Sites Import
+
+If you have other Netlify sites deployed manually, import them into Terraform state:
 
 ### Step 1: Get Site IDs
 
@@ -300,8 +322,8 @@ netlify sites:list
 # ┌─────────────────────────┬──────────────────────────────────────┬─────────────────────────┐
 # │ Site Name               │ Site ID                              │ URL                     │
 # ├─────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
-# │ securebase-marketing    │ a1b2c3d4-e5f6-7890-abcd-ef1234567890 │ securebase.io           │
-# │ securebase-portal-demo  │ f9e8d7c6-b5a4-3210-9876-543210fedcba │ portal-demo.securebase… │
+# │ securebase-app          │ a1b2c3d4-e5f6-7890-abcd-ef1234567890 │ securebase-app.netlif…  │
+# │ securebase-demo         │ f9e8d7c6-b5a4-3210-9876-543210fedcba │ securebase-demo.netlif… │
 # └─────────────────────────┴──────────────────────────────────────┴─────────────────────────┘
 ```
 
@@ -439,7 +461,7 @@ aws route53 change-resource-record-sets \
         "Name": "portal-demo.securebase.io",
         "Type": "CNAME",
         "TTL": 300,
-        "ResourceRecords": [{"Value": "securebase-portal-demo-abc456.netlify.app"}]
+        "ResourceRecords": [{"Value": "securebase-demo.netlify.app"}]
       }
     }]
   }'
@@ -578,7 +600,7 @@ Error: invalid Netlify API token
 
 **Symptoms**:
 ```
-Error: site with name "securebase-marketing" already exists
+Error: site with name "securebase-app" already exists
 ```
 
 **Solutions**:
@@ -586,9 +608,8 @@ Error: site with name "securebase-marketing" already exists
 2. Or rename site in module configuration:
    ```hcl
    # In modules/netlify-sites/main.tf
-   resource "netlify_site" "marketing" {
-     name = "securebase-marketing-v2"  # Change name
-     # ...
+   data "netlify_site" "marketing" {
+     name = "securebase-app-v2"  # Change name
    }
    ```
 
