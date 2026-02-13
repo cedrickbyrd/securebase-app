@@ -19,7 +19,8 @@ export default function SecureBaseLandingZone() {
       security: true,
       logging: true,
       networking: false,
-      monitoring: false
+      monitoring: false,
+      sales: false
     }
   });
 
@@ -930,15 +931,17 @@ COMPLIANCE:
                     {modules.map((m) => (
                       <label
                         key={m.id}
-                        className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition ${
+                        className={`flex items-center gap-3 p-3 rounded border transition ${
+                          m.status === 'coming-soon' ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' :
                           devConfig.enabledModules[m.id]
-                            ? 'bg-blue-50 border-blue-300'
-                            : 'bg-white border-gray-300 hover:border-blue-300'
+                            ? 'bg-blue-50 border-blue-300 cursor-pointer'
+                            : 'bg-white border-gray-300 hover:border-blue-300 cursor-pointer'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={devConfig.enabledModules[m.id]}
+                          disabled={m.status === 'coming-soon'}
                           onChange={(e) => setDevConfig({
                             ...devConfig,
                             enabledModules: {
