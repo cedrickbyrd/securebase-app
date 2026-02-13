@@ -19,70 +19,81 @@ export default function SecureBaseLandingZone() {
       security: true,
       logging: true,
       networking: false,
-      monitoring: false
+      monitoring: false,
+      sales: false
     }
   });
 
   const modules = [
     { 
       id: 'core', 
-      name: 'AWS Organizations', 
+      name: 'Access Controls & Segregation of Duties', 
       icon: Cloud, 
-      description: 'Production-grade org structure with account factory and SCP guardrails', 
+      description: 'SOX2-compliant role separation with account factory and SCP guardrails for access control', 
       resources: ['Organizations', 'OUs', 'Accounts', 'SCPs'], 
       status: 'essential', 
       devCost: '$0/month', 
-      compliance: ['CIS', 'SOC2', 'NIST 800-53'] 
+      compliance: ['SOX2', 'SOC2', 'CIS'] 
     },
     { 
       id: 'identity', 
-      name: 'IAM Identity Center', 
+      name: 'Multi-Factor Authentication & SSO', 
       icon: Users, 
-      description: 'Zero long-lived credentials with SSO, MFA enforcement, and break-glass access', 
+      description: 'Zero long-lived credentials with SSO, MFA enforcement for SOX2 user access controls', 
       resources: ['Identity Center', 'Permission Sets', 'Break-Glass Role', 'Password Policy'], 
       status: 'essential', 
       devCost: '$0/month', 
-      compliance: ['CIS', 'SOC2', 'NIST AC/IA'] 
+      compliance: ['SOX2', 'SOC2', 'NIST AC/IA'] 
     },
     { 
       id: 'security', 
-      name: 'Security & Compliance', 
+      name: 'SOX2 Change Management & Monitoring', 
       icon: Shield, 
-      description: 'GuardDuty, Security Hub, Config Rules, and compliance monitoring', 
+      description: 'Automated change detection, security monitoring, and SOX2-compliant audit controls', 
       resources: ['GuardDuty', 'Security Hub', 'Config', 'CloudTrail', 'KMS'], 
       status: 'essential', 
       devCost: '$10-15/month', 
-      compliance: ['CIS', 'PCI-DSS', 'HIPAA'] 
+      compliance: ['SOX2', 'SOC2', 'PCI-DSS'] 
     },
     { 
       id: 'logging', 
-      name: 'Centralized Logging', 
+      name: 'Audit Trail & Evidence Collection (1-year retention)', 
       icon: Database, 
-      description: 'CloudTrail, VPC Flow Logs, and centralized log aggregation', 
+      description: 'Immutable audit logs for SOX2 compliance with 1-year retention and centralized aggregation', 
       resources: ['CloudTrail', 'CloudWatch', 'S3 Log Buckets', 'VPC Flow Logs'], 
       status: 'essential', 
       devCost: '$5-10/month', 
-      compliance: ['NIST AU', 'SOC2', 'RMF'] 
+      compliance: ['SOX2', 'SOC2', 'NIST AU'] 
     },
     { 
       id: 'networking', 
-      name: 'Network Foundation', 
+      name: 'Data Integrity & Encryption', 
       icon: GitBranch, 
-      description: 'Transit Gateway, VPC setup, and network segmentation', 
+      description: 'Network segmentation and encryption-in-transit for SOX2 data integrity controls', 
       resources: ['Transit Gateway', 'VPCs', 'Subnets', 'Route Tables', 'NACLs'], 
       status: 'recommended', 
       devCost: '$30-40/month', 
-      compliance: ['NIST SC', 'Zero Trust'] 
+      compliance: ['SOX2', 'SOC2', 'Zero Trust'] 
     },
     { 
       id: 'monitoring', 
-      name: 'Monitoring & Alerts', 
+      name: 'Real-Time Financial Controls', 
       icon: Eye, 
-      description: 'CloudWatch dashboards, alarms, and SNS notifications', 
+      description: 'Continuous monitoring and alerting for SOX2 control effectiveness and SOC2 availability', 
       resources: ['CloudWatch Dashboards', 'SNS Topics', 'EventBridge Rules'], 
       status: 'recommended', 
       devCost: '$5-8/month', 
-      compliance: ['NIST SI', 'SOC2'] 
+      compliance: ['SOX2', 'SOC2', 'NIST SI'] 
+    },
+    { 
+      id: 'sales', 
+      name: 'Sales Enablement', 
+      icon: DollarSign, 
+      description: 'Lead tracking, pipeline analytics, and revenue forecasting for fintech platforms', 
+      resources: ['Lead Management', 'Pipeline Analytics', 'Revenue Forecasting', 'CRM Integration'], 
+      status: 'coming-soon', 
+      devCost: 'Coming Q1 2026', 
+      compliance: ['SOX2', 'SOC2'] 
     }
   ];
 
@@ -558,7 +569,7 @@ COMPLIANCE:
           </div>
           <nav className="flex gap-6 items-center">
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
-            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Modules</button>
+            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Fintech Compliance Controls</button>
             <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
             <button onClick={() => setActiveTab('devenv')} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
               <Rocket className="w-4 h-4" />
@@ -587,14 +598,14 @@ COMPLIANCE:
         {activeTab === 'overview' && (
           <div className="space-y-16">
             <section className="text-center space-y-6">
-              <div className="inline-block px-4 py-2 bg-blue-100 border border-blue-300 rounded-full text-blue-700 text-sm mb-4 font-medium">
-                Production-Grade Terraform • CIS Compliant • SOC2 + Gov Ready
+              <div className="inline-block px-4 py-2 bg-purple-100 border border-purple-300 rounded-full text-purple-700 text-sm mb-4 font-medium">
+                SOX2 + SOC2 Ready • Fintech Compliance • Deploy in Hours
               </div>
-              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent leading-tight">
-                Fintech & Gov-Ready<br />AWS Landing Zone
+              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-700 bg-clip-text text-transparent leading-tight">
+                SOX2-Ready Infrastructure<br />for Fintech Platforms
               </h1>
               <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-                Real Terraform modules with zero Control Tower dependency. Built for SOC2, NIST 800-53, RMF, and fintech audits. Deploy in hours with production-grade security controls.
+                Don't spend $300K+ on DIY SOX2 compliance. Deploy production-grade SOX2 + SOC2 controls in hours, not months. Built for neobanks, lending platforms, and payment processors.
               </p>
               
               {/* Stats */}
@@ -604,12 +615,12 @@ COMPLIANCE:
                   <div className="text-sm text-gray-600">Deploy Time</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-blue-600">430+</div>
+                  <div className="text-3xl font-bold text-purple-600">SOX2 + SOC2</div>
                   <div className="text-sm text-gray-600">Controls</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold" style={{color: '#00CEC9'}}>6</div>
-                  <div className="text-sm text-gray-600">Modules</div>
+                  <div className="text-3xl font-bold text-green-600">$204K+</div>
+                  <div className="text-sm text-gray-600">Saved vs. DIY</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
                   <div className="text-3xl font-bold text-blue-600">100%</div>
@@ -617,6 +628,43 @@ COMPLIANCE:
                 </div>
               </div>
             </section>
+            
+            {/* Who This Is For */}
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
+              <h2 className="text-3xl font-bold mb-6 text-gray-900 text-center">Who This Is For</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">🏦</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Neobanks</h3>
+                  <p className="text-gray-600 text-sm">Digital-first banks (e.g., Chime, Current)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">💳</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Lending Platforms</h3>
+                  <p className="text-gray-600 text-sm">Consumer/SMB lenders (e.g., Affirm, Kabbage)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">💰</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Payment Processors</h3>
+                  <p className="text-gray-600 text-sm">B2B payment rails (e.g., Stripe, Plaid)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">🛍️</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Embedded Finance</h3>
+                  <p className="text-gray-600 text-sm">SaaS + payments (e.g., Shopify Capital)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">₿</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Crypto/Web3</h3>
+                  <p className="text-gray-600 text-sm">Digital asset platforms (compliance-ready)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">📊</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Investment Platforms</h3>
+                  <p className="text-gray-600 text-sm">Robo-advisors and trading platforms</p>
+                </div>
+              </div>
+            </div>
             
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-8">
@@ -689,6 +737,69 @@ COMPLIANCE:
                 </div>
               </div>
             </div>
+
+            {/* ROI Comparison */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
+              <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">ROI: SecureBase vs. DIY SOX2 Compliance</h2>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-red-50 rounded-xl p-6 border border-red-200">
+                  <h3 className="text-xl font-bold text-red-700 mb-4">❌ DIY Approach</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Compliance consultant:</span>
+                      <span className="font-bold text-gray-900">$50K-$150K</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Implementation time:</span>
+                      <span className="font-bold text-gray-900">6-12 months</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Ongoing audit prep:</span>
+                      <span className="font-bold text-gray-900">200+ hours/year</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Staff time cost:</span>
+                      <span className="font-bold text-gray-900">$100K+/year</span>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-red-300 flex justify-between">
+                      <span className="text-red-700 font-bold text-lg">Total Year 1 Cost:</span>
+                      <span className="text-red-700 font-bold text-lg">$300K+</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+                  <h3 className="text-xl font-bold text-green-700 mb-4">✅ SecureBase Fintech Tier</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Deploy SOX2 controls:</span>
+                      <span className="font-bold text-gray-900">&lt;10 minutes</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Automated evidence:</span>
+                      <span className="font-bold text-gray-900">24/7</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Quarterly reports:</span>
+                      <span className="font-bold text-gray-900">Included</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Monthly subscription:</span>
+                      <span className="font-bold text-gray-900">$8K/month</span>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-green-300 flex justify-between">
+                      <span className="text-green-700 font-bold text-lg">Total Year 1 Cost:</span>
+                      <span className="text-green-700 font-bold text-lg">$96K</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 text-center bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-6 border border-green-300">
+                <p className="text-2xl font-bold text-gray-900">
+                  💰 Save <span className="text-green-600">$204K+</span> in Year 1
+                </p>
+                <p className="text-gray-600 mt-2">Plus faster time-to-audit and reduced operational overhead</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -696,8 +807,8 @@ COMPLIANCE:
         {activeTab === 'modules' && (
           <div>
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900">Production Modules</h2>
-              <p className="text-gray-600 text-lg">Click any module to view detailed specifications</p>
+              <h2 className="text-4xl font-bold mb-4 text-gray-900">Fintech Compliance Controls</h2>
+              <p className="text-gray-600 text-lg">SOX2 + SOC2 infrastructure controls for financial services platforms</p>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               {modules.map((m) => (
@@ -712,7 +823,9 @@ COMPLIANCE:
                     <m.icon className="text-blue-600" size={32} />
                     <div className="flex gap-2">
                       <span className={`text-xs font-mono px-2 py-1 rounded ${
-                        m.status === 'essential' ? 'bg-orange-100 text-orange-700 border border-orange-300' : 'bg-blue-100 text-blue-700 border border-blue-300'
+                        m.status === 'essential' ? 'bg-orange-100 text-orange-700 border border-orange-300' : 
+                        m.status === 'coming-soon' ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                        'bg-blue-100 text-blue-700 border border-blue-300'
                       }`}>
                         {m.status}
                       </span>
@@ -818,15 +931,17 @@ COMPLIANCE:
                     {modules.map((m) => (
                       <label
                         key={m.id}
-                        className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition ${
+                        className={`flex items-center gap-3 p-3 rounded border transition ${
+                          m.status === 'coming-soon' ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' :
                           devConfig.enabledModules[m.id]
-                            ? 'bg-blue-50 border-blue-300'
-                            : 'bg-white border-gray-300 hover:border-blue-300'
+                            ? 'bg-blue-50 border-blue-300 cursor-pointer'
+                            : 'bg-white border-gray-300 hover:border-blue-300 cursor-pointer'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={devConfig.enabledModules[m.id]}
+                          disabled={m.status === 'coming-soon'}
                           onChange={(e) => setDevConfig({
                             ...devConfig,
                             enabledModules: {
