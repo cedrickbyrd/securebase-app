@@ -278,7 +278,7 @@ Mock API covers:
 ### Short Term (This Week)
 1. **Deploy root marketing site** to Vercel
 2. **Link the two sites** with cross-navigation
-3. **Set up custom domain** (optional): demo.securebase.io
+3. **Set up custom domain** (optional): demo.securebase.tximhotep.com
 4. **Add analytics** (Plausible or Google Analytics)
 
 ### Medium Term (Next Week)

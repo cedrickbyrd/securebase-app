@@ -60,7 +60,7 @@ Choose your deployment method below based on what credentials you have available
 5. **Deploy**
    - Click "Deploy site"
    - Wait 2-3 minutes for build to complete
-   - You'll get a URL like: `https://securebase-demo-abc123.netlify.app`
+   - You'll get a URL like: `https://demo.securebase.tximhotep.com`
 
 6. **Test the Demo**
    - Visit the URL
@@ -86,11 +86,11 @@ Choose your deployment method below based on what credentials you have available
 
 If you own a domain:
 1. Go to Site Settings → Domain management
-2. Add custom domain: `demo.securebase.io`
+2. Add custom domain: `demo.securebase.tximhotep.com`
 3. Follow DNS configuration instructions
 4. Enable HTTPS (automatic with Netlify)
 
-**Result:** `https://demo.securebase.io`
+**Result:** `https://demo.securebase.tximhotep.com`
 
 ---
 
