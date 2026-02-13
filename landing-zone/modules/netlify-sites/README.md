@@ -162,7 +162,7 @@ terraform.tfvars
 
 The SecureBase project has two existing Netlify sites:
 1. **Marketing Site**: tximhotep.com (formerly securebase-app.netlify.app)
-2. **Demo Portal**: portal.securebase.tximhotep.com (formerly securebase-portal-demo.netlify.app)
+2. **Demo Portal**: demo.securebase.tximhotep.com (formerly securebase-demo.netlify.app)
 
 ### Quick Import
 
