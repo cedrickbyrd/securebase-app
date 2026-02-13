@@ -53,8 +53,11 @@ describe('Invoices Component', () => {
     vi.clearAllMocks();
     // Mock window.location
     originalLocation = window.location;
-    delete window.location;
-    window.location = { href: '' };
+    Object.defineProperty(window, 'location', {
+      value: { href: '' },
+      writable: true,
+      configurable: true
+    });
   });
 
   afterEach(() => {
@@ -104,9 +107,9 @@ describe('Invoices Component', () => {
       expect(screen.getByText(/INV-2024-001/i)).toBeInTheDocument();
     });
     
-    // Find and click the first PDF download button
-    const downloadButtons = screen.getAllByText(/PDF/i);
-    fireEvent.click(downloadButtons[0]);
+    // Find and click the download button using test ID
+    const downloadButton = screen.getAllByTestId('download-invoice-button')[0];
+    fireEvent.click(downloadButton);
     
     // Verify redirect to marketing site
     expect(window.location.href).toBe('https://tximhotep.com');
@@ -124,9 +127,9 @@ describe('Invoices Component', () => {
       expect(screen.getByText(/INV-2024-001/i)).toBeInTheDocument();
     });
     
-    // Find and click the first PDF download button
-    const downloadButtons = screen.getAllByText(/PDF/i);
-    fireEvent.click(downloadButtons[0]);
+    // Find and click the download button using test ID
+    const downloadButton = screen.getAllByTestId('download-invoice-button')[0];
+    fireEvent.click(downloadButton);
     
     // Verify redirect to marketing site
     expect(window.location.href).toBe('https://tximhotep.com');
@@ -147,9 +150,9 @@ describe('Invoices Component', () => {
       expect(screen.getByText(/INV-2024-001/i)).toBeInTheDocument();
     });
     
-    // Find and click the first PDF download button
-    const downloadButtons = screen.getAllByText(/PDF/i);
-    fireEvent.click(downloadButtons[0]);
+    // Find and click the download button using test ID
+    const downloadButton = screen.getAllByTestId('download-invoice-button')[0];
+    fireEvent.click(downloadButton);
     
     // Verify API was called instead of redirect
     await waitFor(() => {
