@@ -343,7 +343,7 @@ cd phase3a-portal
 npm install
 npm run build
 netlify deploy --prod
-# Result: https://securebase-portal-demo.netlify.app
+# Result: https://portal.securebase.tximhotep.com
 ```
 
 **Time Estimate:**

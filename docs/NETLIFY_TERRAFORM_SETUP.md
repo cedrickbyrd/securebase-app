@@ -1,7 +1,7 @@
 # Netlify Terraform Setup Guide
 
 ## Overview
-This guide walks you through setting up Terraform management for SecureBase's Netlify deployments, including the marketing site (securebase.io) and customer portal demo (portal-demo.securebase.io).
+This guide walks you through setting up Terraform management for SecureBase's Netlify deployments, including the marketing site (tximhotep.com) and customer portal demo (demo.securebase.tximhotep.com).
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
@@ -285,8 +285,8 @@ netlify_deployment_summary = {
 ### Importing Existing SecureBase Sites (Quick Method)
 
 The SecureBase project has two existing Netlify sites that need to be imported into Terraform:
-1. **Marketing Site**: `securebase-app.netlify.app`
-2. **Demo Portal**: `securebase-demo.netlify.app`
+1. **Marketing Site**: `tximhotep.com` (formerly `securebase-app.netlify.app`)
+2. **Demo Portal**: `demo.securebase.tximhotep.com` (formerly `securebase-demo.netlify.app`)
 
 **Automated Import Script:**
 
@@ -461,7 +461,7 @@ aws route53 change-resource-record-sets \
         "Name": "portal.securebase.tximhotep.com",
         "Type": "CNAME",
         "TTL": 300,
-        "ResourceRecords": [{"Value": "securebase-portal-demo.netlify.app"}]
+        "ResourceRecords": [{"Value": "demo.securebase.tximhotep.com"}]
       }
     }]
   }'
@@ -645,8 +645,8 @@ Error: failed to connect to GitHub repository
 **Solutions**:
 1. Verify DNS records:
    ```bash
-   dig securebase.io
-   dig portal-demo.securebase.io
+   dig tximhotep.com
+   dig demo.securebase.tximhotep.com
    ```
 
 2. Check TTL and wait for propagation (use https://www.whatsmydns.net/)
