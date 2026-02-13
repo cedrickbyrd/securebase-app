@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "22.12.0"
 
+# Redirect product subdomain to main site (until dedicated page is built)
+[[redirects]]
+  from = "https://securebase.tximhotep.com/*"
+  to = "https://tximhotep.com/:splat"
+  status = 301
+  force = true
+
 # SPA routing - redirect all routes to index.html
 [[redirects]]
   from = "/*"
