@@ -320,8 +320,8 @@ export class MockApiService {
 **Problem:** No active deployment found
 
 **Expected URLs (from DEMO_README.md):**
-- Marketing: https://demo.securebase.io
-- Portal: https://portal-demo.securebase.io
+- Marketing: https://tximhotep.com
+- Portal: https://portal.securebase.tximhotep.com
 
 **Current Status:** URLs not accessible (likely not deployed)
 
@@ -496,7 +496,7 @@ npm install
 npm run build
 npx netlify deploy --prod
 
-# Result: https://securebase-portal-demo.netlify.app LIVE
+# Result: https://portal.securebase.tximhotep.com LIVE
 ```
 
 **What You Get:**
