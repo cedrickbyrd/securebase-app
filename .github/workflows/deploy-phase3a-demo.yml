@@ -69,10 +69,10 @@ jobs:
           VITE_AUTO_RESET_ENABLED: true
           VITE_RESET_INTERVAL_HOURS: 24
           VITE_DEMO_SESSION_DURATION_DAYS: 7
-          VITE_DEMO_CTA_TRIAL_URL: https://securebase.io/signup
-          VITE_DEMO_CTA_BOOK_DEMO_URL: https://securebase.io/contact
-          VITE_DEMO_CTA_CONTACT_SALES: mailto:sales@securebase.io
-          VITE_API_BASE_URL: ${{ secrets.DEMO_API_URL || 'https://demo-api.securebase.com/v1' }}
+          VITE_DEMO_CTA_TRIAL_URL: https://tximhotep.com/signup
+          VITE_DEMO_CTA_BOOK_DEMO_URL: https://tximhotep.com/contact
+          VITE_DEMO_CTA_CONTACT_SALES: mailto:sales@tximhotep.com
+          VITE_API_BASE_URL: ${{ secrets.DEMO_API_URL || 'https://securebase-demo.netlify.app/v2' }}
           VITE_USE_MOCK_API: true
 
       - name: Copy demo data
