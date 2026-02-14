@@ -9,7 +9,7 @@ echo "================================="
 echo ""
 
 # Navigate to terraform directory
-cd /workspaces/securebase-app/landing-zone/environments/dev
+cd ~/projects/securebase-terraform/securebase-app/landing-zone/environments/dev
 
 # Backup existing config
 if [ -f terraform.tfvars ]; then
@@ -23,7 +23,7 @@ cp terraform.tfvars.phase2 terraform.tfvars
 
 # Initialize Terraform
 echo "🔧 Initializing Terraform..."
-tf init
+terraform init
 
 # Validate configuration
 echo "✅ Validating configuration..."
@@ -38,7 +38,7 @@ echo "================================="
 echo "✅ Plan created successfully!"
 echo ""
 echo "Review the plan above. To deploy, run:"
-echo "  cd /workspaces/securebase-app/landing-zone/environments/dev"
+echo "  cd ~/projects/securebase-terraform/securebase-app/landing-zone/environments/dev"
 echo "  terraform apply phase2.tfplan"
 echo ""
 echo "Expected deployment time: 15-20 minutes"
