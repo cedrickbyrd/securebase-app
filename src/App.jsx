@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code } from 'lucide-react';
+import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code, ShoppingCart, UserPlus } from 'lucide-react';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 
 export default function SecureBaseLandingZone() {
@@ -571,9 +571,9 @@ COMPLIANCE:
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
             <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Fintech Compliance Controls</button>
             <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
-            <button onClick={() => setActiveTab('devenv')} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
-              <Rocket className="w-4 h-4" />
-              Deploy Dev
+            <button onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
+              <ShoppingCart className="w-4 h-4" />
+              Purchase Now
             </button>
           </nav>
         </div>
@@ -1105,16 +1105,19 @@ COMPLIANCE:
               Get started with SecureBase and have your AWS foundation running in hours
             </p>
             <div className="flex gap-4 justify-center">
-              <button className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
-                <Download className="w-5 h-5" />
-                Download Modules
+              <button 
+                onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/#pilot'}
+                className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md"
+              >
+                <UserPlus className="w-5 h-5" />
+                Sign Up for Pilot
               </button>
               <button 
-                onClick={() => setActiveTab('devenv')}
+                onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'}
                 className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md"
               >
                 <Rocket className="w-5 h-5" />
-                Try Dev Environment
+                Deploy Now
               </button>
             </div>
           </div>
