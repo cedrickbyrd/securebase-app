@@ -3,7 +3,8 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "22.12.0"
+#  NODE_VERSION = "22.12.0"
+  NODE_VERSION = "20.19.0"
 
 # Redirect product subdomain to main site (until dedicated page is built)
 [[redirects]]
