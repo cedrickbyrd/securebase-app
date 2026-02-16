@@ -530,7 +530,7 @@ export default function SecureBaseLandingZone() {
                     </div>
                   </div>
                 </div>
-              </div>
+           #   </div>
               <div className="text-center mt-12">
                 <p className="text-2xl font-bold text-blue-600">
                   🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
