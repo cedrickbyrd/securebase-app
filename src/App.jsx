@@ -262,7 +262,7 @@ export default function SecureBaseLandingZone() {
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
             <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Fintech Compliance Controls</button>
             <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
-            <button onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
+            <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
               <ShoppingCart className="w-4 h-4" />
               Purchase Now
             </button>
@@ -489,9 +489,8 @@ export default function SecureBaseLandingZone() {
             </div>
           </div>
         )}
-
-        {/* Pilot Benefits Tab */}
-        {activeTab === 'pilot-benefits' && (
+{/* Pilot Benefits Tab */}
+        {activeTab === 'modules' && (
           <div className="space-y-16">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4 text-gray-900">Fintech Compliance Controls</h2>
@@ -532,28 +531,6 @@ export default function SecureBaseLandingZone() {
                 </div>
               ))}
             </div>
-<<<<<<< HEAD
-<<<<<<< HEAD
-        <div className="text-center mt-12">
-          <p className="text-2xl font-bold text-blue-600">
-            🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
-          </p>
-          <div className="mt-6">
-            <a 
-              href="/contact" 
-              className="inline-block px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
-            >
-              Contact Us
-            </a>
-          </div>
-        </div>
-      </div>
-    )}
-
-=======
-            {/* ^^^ map properly closed with ))} and grid div closed with </div> */}
-=======
->>>>>>> fix: balance JSX tags in App.jsx and stabilize production build
 
             <div className="text-center mt-12">
               <p className="text-2xl font-bold text-blue-600">
@@ -568,12 +545,10 @@ export default function SecureBaseLandingZone() {
                 </a>
               </div>
             </div>
->>>>>>> fix: resolve final JSX tag imbalances and stabilize build
 
             <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
               <h2 className="text-4xl font-bold text-center mb-6 text-gray-900">Pilot Program Pricing</h2>
               <div className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 border-2 border-blue-500 text-center">
-                 {/* ... Pilot Pricing Content ... */}
                  <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded-full font-bold mb-4">WHITE-GLOVE PILOT</div>
                  <div className="mb-4"><span className="text-6xl font-bold text-gray-900">$4,000</span><span className="text-2xl text-gray-600">/month</span></div>
                  <a href="https://calendly.com/securebase/white-glove-pilot" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition text-white shadow-lg">
@@ -584,61 +559,40 @@ export default function SecureBaseLandingZone() {
           </div>
         )}
 
+        {/* Dev Environment Tab */}
         {activeTab === 'devenv' && (
           <div className="max-w-4xl mx-auto">
-            {/* ... Dev Env Content ... */}
             <div className="text-center mb-8">
               <h2 className="text-4xl font-bold mb-4 text-gray-900">Deploy Development Environment</h2>
+              <p className="text-gray-600 text-lg">Test SecureBase with minimal AWS resources</p>
             </div>
-            {/* Logic for devEnvStep renders here */}
-            {devEnvStep === 'config' && ( <div className="grid md:grid-cols-2 gap-6"> {/* ... */} </div> )}
-            {devEnvStep === 'deploying' && ( <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden"> {/* ... */} </div> )}
-            {devEnvStep === 'complete' && ( <div className="space-y-6"> {/* ... */} </div> )}
+            {/* You can re-insert the specific devEnvStep logic here if needed */}
           </div>
         )}
 
-<<<<<<< HEAD
-        {/* Compliance Tab */
-        {/* 1. Ensure the Compliance Tab is properly closed */}
-=======
->>>>>>> fix: balance JSX tags in App.jsx and stabilize production build
+        {/* Compliance Tab */}
         {activeTab === 'compliance' && (
           <ComplianceScreen />
         )}
-      </main> {/* THIS matches the <main> opened at the start of your layout */}
+      </main>
 
-<<<<<<< HEAD
-      {/* 2. Footer CTA - Outside of <main> */}
-=======
->>>>>>> fix: balance JSX tags in App.jsx and stabilize production build
+      {/* Footer CTA */}
       {activeTab !== 'devenv' && activeTab !== 'compliance' && (
         <footer className="max-w-7xl mx-auto px-6 py-16">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-center shadow-lg">
             <h3 className="text-3xl font-bold mb-4 text-white">Ready to Deploy?</h3>
             <p className="text-blue-100 mb-8 text-lg">Get started with SecureBase and have your AWS foundation running in hours</p>
             <div className="flex gap-4 justify-center">
-              <button onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/#pilot'} className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
-                <UserPlus className="w-5 h-5" /> Sign Up for Pilot
+              <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
+                <UserPlus className="w-4 h-4" /> Sign Up for Pilot
               </button>
-              <button onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'} className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md">
-                <Rocket className="w-5 h-5" /> Deploy Now
+              <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md">
+                <Rocket className="w-4 h-4" /> Deploy Now
               </button>
             </div>
           </div>
         </footer>
       )}
-<<<<<<< HEAD
-    </div> // Closes the root min-h-screen div
-  ); // Closes the return (
-} // Closes the function SecureBaseLandingZone()
-=======
     </div>
   );
 }
-
-
-
-
-
-
->>>>>>> fix: balance JSX tags in App.jsx and stabilize production build
