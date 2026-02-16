@@ -547,7 +547,7 @@ export default function SecureBaseLandingZone() {
         </div>
       </div>
     )}
-  </section>
+
 
             {/* Pilot Pricing */}
             <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md mb-16">
