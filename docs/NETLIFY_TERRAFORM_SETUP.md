@@ -1,7 +1,7 @@
 # Netlify Terraform Setup Guide
 
 ## Overview
-This guide walks you through setting up Terraform management for SecureBase's Netlify deployments, including the marketing site (securebase.io) and customer portal demo (portal-demo.securebase.io).
+This guide walks you through setting up Terraform management for SecureBase's Netlify deployments, including the marketing site (tximhotep.com) and customer portal demo (demo.securebase.tximhotep.com).
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
@@ -262,17 +262,17 @@ terraform output netlify_deployment_summary
 
 Expected output:
 ```
-netlify_marketing_site_url = "securebase-app.netlify.app"
-netlify_portal_demo_url = "securebase-demo.netlify.app"
+netlify_marketing_site_url = "tximhotep.com"
+netlify_portal_demo_url = "portal.securebase.tximhotep.com"
 netlify_deployment_summary = {
   marketing_site = {
-    custom_domain = "securebase.io"
+    custom_domain = "tximhotep.com"
     netlify_url = "https://securebase-app.netlify.app"
     site_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
   }
   portal_demo = {
-    custom_domain = "portal-demo.securebase.io"
-    netlify_url = "https://securebase-demo.netlify.app"
+    custom_domain = "portal.securebase.tximhotep.com"
+    netlify_url = "https://securebase-portal-demo.netlify.app"
     site_id = "f9e8d7c6-b5a4-3210-9876-543210fedcba"
   }
 }
@@ -285,8 +285,8 @@ netlify_deployment_summary = {
 ### Importing Existing SecureBase Sites (Quick Method)
 
 The SecureBase project has two existing Netlify sites that need to be imported into Terraform:
-1. **Marketing Site**: `securebase-app.netlify.app`
-2. **Demo Portal**: `securebase-demo.netlify.app`
+1. **Marketing Site**: `tximhotep.com` (formerly `securebase-app.netlify.app`)
+2. **Demo Portal**: `demo.securebase.tximhotep.com` (formerly `securebase-demo.netlify.app`)
 
 **Automated Import Script:**
 
@@ -322,8 +322,8 @@ netlify sites:list
 # ┌─────────────────────────┬──────────────────────────────────────┬─────────────────────────┐
 # │ Site Name               │ Site ID                              │ URL                     │
 # ├─────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
-# │ securebase-app          │ a1b2c3d4-e5f6-7890-abcd-ef1234567890 │ securebase-app.netlif…  │
-# │ securebase-demo         │ f9e8d7c6-b5a4-3210-9876-543210fedcba │ securebase-demo.netlif… │
+# │ securebase-app          │ a1b2c3d4-e5f6-7890-abcd-ef1234567890 │ tximhotep.com           │
+# │ securebase-demo         │ f9e8d7c6-b5a4-3210-9876-543210fedcba │ portal.securebase.txim… │
 # └─────────────────────────┴──────────────────────────────────────┴─────────────────────────┘
 ```
 
@@ -353,10 +353,10 @@ terraform import 'module.netlify_sites.netlify_build_settings.portal_demo' f9e8d
 
 ```bash
 # Import marketing custom domain
-terraform import 'module.netlify_sites.netlify_site_domain.marketing' a1b2c3d4-e5f6-7890-abcd-ef1234567890:securebase.io
+terraform import 'module.netlify_sites.netlify_site_domain.marketing' a1b2c3d4-e5f6-7890-abcd-ef1234567890:tximhotep.com
 
 # Import portal demo custom domain
-terraform import 'module.netlify_sites.netlify_site_domain.portal_demo' f9e8d7c6-b5a4-3210-9876-543210fedcba:portal-demo.securebase.io
+terraform import 'module.netlify_sites.netlify_site_domain.portal_demo' f9e8d7c6-b5a4-3210-9876-543210fedcba:portal.securebase.tximhotep.com
 ```
 
 ### Step 5: Verify Import
@@ -391,12 +391,12 @@ terraform plan -target=module.netlify_sites
 
 After deploying sites (new or imported), configure DNS for custom domains.
 
-### Marketing Site: securebase.io
+### Marketing Site: tximhotep.com
 
 #### Check Required DNS Records
 
 1. Go to Netlify site settings: https://app.netlify.com/sites/[site-name]/settings/domain
-2. Click on your custom domain `securebase.io`
+2. Click on your custom domain `tximhotep.com`
 3. Note the DNS records shown (usually an ALIAS or A record)
 
 #### Configure DNS (Route 53 Example)
@@ -409,7 +409,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "securebase.io",
+        "Name": "tximhotep.com",
         "Type": "A",
         "TTL": 300,
         "ResourceRecords": [{"Value": "75.2.60.5"}]
@@ -423,12 +423,12 @@ aws route53 change-resource-record-sets \
 ```hcl
 # Add to your terraform configuration
 data "aws_route53_zone" "main" {
-  name = "securebase.io"
+  name = "tximhotep.com"
 }
 
 resource "aws_route53_record" "marketing" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "securebase.io"
+  name    = "tximhotep.com"
   type    = "A"
   ttl     = 300
   records = ["75.2.60.5"]  # Netlify load balancer IP
@@ -440,14 +440,14 @@ resource "aws_route53_record" "marketing" {
 If using another DNS provider (Cloudflare, Namecheap, GoDaddy):
 
 1. Log into your DNS provider
-2. Find DNS settings for `securebase.io`
+2. Find DNS settings for `tximhotep.com`
 3. Add A record:
    - **Type**: A
    - **Name**: @ (or leave blank for root domain)
    - **Value**: 75.2.60.5
    - **TTL**: 300 (or Auto)
 
-### Portal Demo: portal-demo.securebase.io
+### Portal Demo: portal.securebase.tximhotep.com
 
 #### Route 53 Example
 
@@ -458,10 +458,10 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "portal-demo.securebase.io",
+        "Name": "portal.securebase.tximhotep.com",
         "Type": "CNAME",
         "TTL": 300,
-        "ResourceRecords": [{"Value": "securebase-demo.netlify.app"}]
+        "ResourceRecords": [{"Value": "demo.securebase.tximhotep.com"}]
       }
     }]
   }'
@@ -472,7 +472,7 @@ aws route53 change-resource-record-sets \
 ```hcl
 resource "aws_route53_record" "portal_demo" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "portal-demo.securebase.io"
+  name    = "portal.securebase.tximhotep.com"
   type    = "CNAME"
   ttl     = 300
   records = [module.netlify_sites.portal_demo_url]
@@ -484,8 +484,8 @@ resource "aws_route53_record" "portal_demo" {
 1. Log into DNS provider
 2. Add CNAME record:
    - **Type**: CNAME
-   - **Name**: portal-demo
-   - **Value**: [your-netlify-url].netlify.app (from terraform output)
+   - **Name**: portal.securebase
+   - **Value**: [your-netlify-url].tximhotep.com (from terraform output)
    - **TTL**: 300
 
 ### DNS Propagation
@@ -503,11 +503,11 @@ DNS changes can take time to propagate:
 
 ```bash
 # Check marketing site DNS
-dig securebase.io
+dig tximhotep.com
 # Should show A record pointing to 75.2.60.5
 
 # Check portal demo DNS
-dig portal-demo.securebase.io
+dig portal.securebase.tximhotep.com
 # Should show CNAME record pointing to Netlify URL
 ```
 
@@ -519,14 +519,14 @@ Online tools:
 
 ```bash
 # Marketing site
-curl -I https://securebase.io
+curl -I https://tximhotep.com
 
 # Should return:
 # HTTP/2 200
 # And no SSL errors
 
 # Portal demo
-curl -I https://portal-demo.securebase.io
+curl -I https://portal.securebase.tximhotep.com
 
 # Should return:
 # HTTP/2 200
@@ -539,10 +539,10 @@ curl -I https://portal-demo.securebase.io
 
 ```bash
 # Check marketing site loads
-curl -s https://securebase.io | grep -i "<title>"
+curl -s https://tximhotep.com | grep -i "<title>"
 
 # Check portal demo loads
-curl -s https://portal-demo.securebase.io | grep -i "<title>"
+curl -s https://portal.securebase.tximhotep.com | grep -i "<title>"
 ```
 
 ### Step 4: Check Netlify Dashboard
@@ -645,8 +645,8 @@ Error: failed to connect to GitHub repository
 **Solutions**:
 1. Verify DNS records:
    ```bash
-   dig securebase.io
-   dig portal-demo.securebase.io
+   dig tximhotep.com
+   dig demo.securebase.tximhotep.com
    ```
 
 2. Check TTL and wait for propagation (use https://www.whatsmydns.net/)
@@ -770,8 +770,8 @@ module "netlify_sites_dev" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "dev.securebase.io"
-  portal_demo_domain  = "portal-dev.securebase.io"
+  marketing_domain    = "dev.tximhotep.com"
+  portal_demo_domain  = "portal-dev.securebase.tximhotep.com"
 }
 
 # staging environment
@@ -779,8 +779,8 @@ module "netlify_sites_staging" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "staging.securebase.io"
-  portal_demo_domain  = "portal-staging.securebase.io"
+  marketing_domain    = "staging.tximhotep.com"
+  portal_demo_domain  = "portal-staging.securebase.tximhotep.com"
 }
 
 # production environment
@@ -788,8 +788,8 @@ module "netlify_sites_prod" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal.securebase.io"
+  marketing_domain    = "tximhotep.com"
+  portal_demo_domain  = "portal.securebase.tximhotep.com"
 }
 ```
 
@@ -800,13 +800,13 @@ Full automation example:
 ```hcl
 # Data source for existing hosted zone
 data "aws_route53_zone" "main" {
-  name = "securebase.io"
+  name = "tximhotep.com"
 }
 
 # Marketing site A record
 resource "aws_route53_record" "marketing" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "securebase.io"
+  name    = "tximhotep.com"
   type    = "A"
   ttl     = 300
   records = ["75.2.60.5"]  # Netlify IP
@@ -815,7 +815,7 @@ resource "aws_route53_record" "marketing" {
 # Portal demo CNAME
 resource "aws_route53_record" "portal_demo" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "portal-demo.securebase.io"
+  name    = "portal.securebase.tximhotep.com"
   type    = "CNAME"
   ttl     = 300
   records = [module.netlify_sites.portal_demo_url]
@@ -854,7 +854,7 @@ Set up monitoring for Netlify deployments:
 3. **Uptime Monitoring** (external services):
    - https://uptimerobot.com/
    - https://www.pingdom.com/
-   - Set up checks for https://securebase.io and https://portal-demo.securebase.io
+   - Set up checks for https://tximhotep.com and https://portal.securebase.tximhotep.com
 
 ### Backup and Disaster Recovery
 

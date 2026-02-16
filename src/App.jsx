@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code } from 'lucide-react';
+import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code, ShoppingCart, UserPlus } from 'lucide-react';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 
 export default function SecureBaseLandingZone() {
@@ -19,75 +19,82 @@ export default function SecureBaseLandingZone() {
       security: true,
       logging: true,
       networking: false,
-      monitoring: false
+      monitoring: false,
+      sales: false
     }
   });
 
-  const whiteGloveBenefits = [
-    {
-      icon: Users,
-      title: 'Your Dedicated Infrastructure Engineer',
-      description: 'A senior AWS engineer assigned exclusively to your deployment. We handle everything - from architecture design to production deployment.',
+  const modules = [
+    { 
+      id: 'core', 
+      name: 'Access Controls & Segregation of Duties', 
+      icon: Cloud, 
+      description: 'SOX2-compliant role separation with account factory and SCP guardrails for access control', 
+      resources: ['Organizations', 'OUs', 'Accounts', 'SCPs'], 
+      status: 'essential', 
+      devCost: '$0/month', 
+      compliance: ['SOX2', 'SOC2', 'CIS'] 
     },
-    {
-      icon: CheckCircle,
-      title: 'SOC2 Compliance Audit Prep',
-      description: 'Weekly compliance check-ins ensure you\'re audit-ready from day one. We prepare all documentation and evidence for your auditors.',
+    { 
+      id: 'identity', 
+      name: 'Multi-Factor Authentication & SSO', 
+      icon: Users, 
+      description: 'Zero long-lived credentials with SSO, MFA enforcement for SOX2 user access controls', 
+      resources: ['Identity Center', 'Permission Sets', 'Break-Glass Role', 'Password Policy'], 
+      status: 'essential', 
+      devCost: '$0/month', 
+      compliance: ['SOX2', 'SOC2', 'NIST AC/IA'] 
     },
-    {
-      icon: Shield,
-      title: 'Private Slack Channel (< 2hr Response)',
-      description: 'Direct access to your engineering team via dedicated Slack channel. Questions answered within 2 hours during business hours.',
+    { 
+      id: 'security', 
+      name: 'SOX2 Change Management & Monitoring', 
+      icon: Shield, 
+      description: 'Automated change detection, security monitoring, and SOX2-compliant audit controls', 
+      resources: ['GuardDuty', 'Security Hub', 'Config', 'CloudTrail', 'KMS'], 
+      status: 'essential', 
+      devCost: '$10-15/month', 
+      compliance: ['SOX2', 'SOC2', 'PCI-DSS'] 
     },
-    {
-      icon: FileCode,
-      title: 'Custom Operations Runbook',
-      description: 'We create and maintain your team\'s infrastructure playbook - covering incident response, access management, and deployment procedures.',
+    { 
+      id: 'logging', 
+      name: 'Audit Trail & Evidence Collection (1-year retention)', 
+      icon: Database, 
+      description: 'Immutable audit logs for SOX2 compliance with 1-year retention and centralized aggregation', 
+      resources: ['CloudTrail', 'CloudWatch', 'S3 Log Buckets', 'VPC Flow Logs'], 
+      status: 'essential', 
+      devCost: '$5-10/month', 
+      compliance: ['SOX2', 'SOC2', 'NIST AU'] 
     },
-  ];
-
-  const testimonials = [
-    {
-      quote: "SecureBase got us SOC2 compliant in 6 weeks. Our auditors were shocked at how complete our infrastructure controls were.",
-      author: "Sarah Chen",
-      role: "VP Engineering",
-      company: "PayFlow (YC S22)",
+    { 
+      id: 'networking', 
+      name: 'Data Integrity & Encryption', 
+      icon: GitBranch, 
+      description: 'Network segmentation and encryption-in-transit for SOX2 data integrity controls', 
+      resources: ['Transit Gateway', 'VPCs', 'Subnets', 'Route Tables', 'NACLs'], 
+      status: 'recommended', 
+      devCost: '$30-40/month', 
+      compliance: ['SOX2', 'SOC2', 'Zero Trust'] 
     },
-    {
-      quote: "We went from zero AWS infrastructure to production-ready in 48 hours. The white-glove service was worth every penny.",
-      author: "Marcus Williams",
-      role: "CTO",
-      company: "Ledger Labs",
+    { 
+      id: 'monitoring', 
+      name: 'Real-Time Financial Controls', 
+      icon: Eye, 
+      description: 'Continuous monitoring and alerting for SOX2 control effectiveness and SOC2 availability', 
+      resources: ['CloudWatch Dashboards', 'SNS Topics', 'EventBridge Rules'], 
+      status: 'recommended', 
+      devCost: '$5-8/month', 
+      compliance: ['SOX2', 'SOC2', 'NIST SI'] 
     },
-    {
-      quote: "Having a dedicated engineer handle our Landing Zone freed up our team to focus on product. Best infrastructure investment we made.",
-      author: "Emily Rodriguez",
-      role: "Head of Security",
-      company: "FinTech Innovations",
-    },
-  ];
-
-  const faqs = [
-    {
-      question: "What exactly is included in the white-glove service?",
-      answer: "We deploy your entire AWS infrastructure for you - from Organizations setup to security controls. You get a dedicated engineer, weekly check-ins, custom documentation, and ongoing support via private Slack.",
-    },
-    {
-      question: "How is this different from doing it ourselves?",
-      answer: "Instead of spending 3-6 months learning Terraform and AWS best practices, our team deploys production-grade infrastructure in 48 hours. You avoid common pitfalls and get SOC2/HIPAA compliance out of the box.",
-    },
-    {
-      question: "What if we need changes after deployment?",
-      answer: "Your pilot includes 30 days of unlimited infrastructure changes. After that, you own the Terraform code and can manage it yourself, or continue with our managed service.",
-    },
-    {
-      question: "Do we really get deployed in 48 hours?",
-      answer: "Yes. Once you provide AWS account access, we deploy in 48 hours or your first month is free. Most customers are live within 24 hours.",
-    },
-    {
-      question: "Can we cancel if it doesn't work out?",
-      answer: "Absolutely. 30-day money-back guarantee, no questions asked. If you're not satisfied, you get a full refund and keep the Terraform code.",
-    },
+    { 
+      id: 'sales', 
+      name: 'Sales Enablement', 
+      icon: DollarSign, 
+      description: 'Lead tracking, pipeline analytics, and revenue forecasting for fintech platforms', 
+      resources: ['Lead Management', 'Pipeline Analytics', 'Revenue Forecasting', 'CRM Integration'], 
+      status: 'coming-soon', 
+      devCost: 'Coming Q1 2026', 
+      compliance: ['SOX2', 'SOC2'] 
+    }
   ];
 
   const features = [
@@ -209,11 +216,11 @@ export default function SecureBaseLandingZone() {
           </div>
           <nav className="flex gap-6 items-center">
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
-            <button onClick={() => setActiveTab('pilot-benefits')} className={`text-sm font-medium ${activeTab === 'pilot-benefits' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Pilot Benefits</button>
+            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Fintech Compliance Controls</button>
             <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
-            <button onClick={() => setActiveTab('devenv')} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
-              <Rocket className="w-4 h-4" />
-              Deploy Dev
+            <button onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
+              <ShoppingCart className="w-4 h-4" />
+              Purchase Now
             </button>
           </nav>
         </div>
@@ -224,7 +231,7 @@ export default function SecureBaseLandingZone() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-6 text-center">
           <p className="text-sm text-yellow-800">
             🚀 Try the interactive demo — <a
-              href="https://securebase-demo.netlify.app"
+              href="https://demo.securebase.tximhotep.com"
               className="underline font-medium"
               target="_blank"
               rel="noopener noreferrer"
@@ -238,45 +245,25 @@ export default function SecureBaseLandingZone() {
         {activeTab === 'overview' && (
           <div className="space-y-16">
             <section className="text-center space-y-6">
-              <div className="inline-block px-4 py-2 bg-yellow-400 border border-yellow-500 rounded-full text-gray-900 text-sm mb-4 font-bold animate-pulse">
-                🔥 WHITE-GLOVE PILOT • 7 SPOTS REMAINING • CLOSES MARCH 15, 2026
+              <div className="inline-block px-4 py-2 bg-purple-100 border border-purple-300 rounded-full text-purple-700 text-sm mb-4 font-medium">
+                SOX2 + SOC2 Ready • Fintech Compliance • Deploy in Hours
               </div>
-              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent leading-tight">
-                We Deploy Your<br />SOC2-Ready Infrastructure
+              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-700 bg-clip-text text-transparent leading-tight">
+                SOX2-Ready Infrastructure<br />for Fintech Platforms
               </h1>
               <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-                Skip 6 months of infrastructure work. Your dedicated AWS engineer deploys production-ready, audit-compliant infrastructure in 48 hours. White-glove service for fintech startups who need to ship fast.
-              </p>
-              <div className="flex gap-4 justify-center mt-8">
-                <a 
-                  href="https://calendly.com/securebase/white-glove-pilot" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-4 rounded-lg text-lg font-bold hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-lg"
-                >
-                  <Rocket className="w-5 h-5" />
-                  Schedule Free Architecture Review
-                </a>
-                <a
-                  href="https://securebase.tximhotep.com/docs/"
-                  className="bg-white border-2 border-gray-300 px-8 py-4 rounded-lg text-lg font-bold hover:border-blue-600 transition text-gray-900"
-                >
-                  View Pricing
-                </a>
-              </div>
-              <p className="text-sm text-gray-500 mt-4">
-                ✅ 48-hour deployment guarantee  •  ✅ 30-day money-back guarantee  •  ✅ Cancel anytime
+                Don't spend $300K+ on DIY SOX2 compliance. Deploy production-grade SOX2 + SOC2 controls in hours, not months. Built for neobanks, lending platforms, and payment processors.
               </p>
               
               {/* Stats */}
               <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto mt-12">
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-green-600">48hrs</div>
-                  <div className="text-sm text-gray-600">Deploy Guarantee</div>
+                  <div className="text-3xl font-bold text-purple-600">SOX2 + SOC2</div>
+                  <div className="text-sm text-gray-600">Controls</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-blue-600">13</div>
-                  <div className="text-sm text-gray-600">Fintech Customers</div>
+                  <div className="text-3xl font-bold text-green-600">$204K+</div>
+                  <div className="text-sm text-gray-600">Saved vs. DIY</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
                   <div className="text-3xl font-bold text-blue-600">100%</div>
@@ -284,6 +271,43 @@ export default function SecureBaseLandingZone() {
                 </div>
               </div>
             </section>
+            
+            {/* Who This Is For */}
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
+              <h2 className="text-3xl font-bold mb-6 text-gray-900 text-center">Who This Is For</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">🏦</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Neobanks</h3>
+                  <p className="text-gray-600 text-sm">Digital-first banks (e.g., Chime, Current)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">💳</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Lending Platforms</h3>
+                  <p className="text-gray-600 text-sm">Consumer/SMB lenders (e.g., Affirm, Kabbage)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">💰</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Payment Processors</h3>
+                  <p className="text-gray-600 text-sm">B2B payment rails (e.g., Stripe, Plaid)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">🛍️</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Embedded Finance</h3>
+                  <p className="text-gray-600 text-sm">SaaS + payments (e.g., Shopify Capital)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">₿</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Crypto/Web3</h3>
+                  <p className="text-gray-600 text-sm">Digital asset platforms (compliance-ready)</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="text-2xl mb-2">📊</div>
+                  <h3 className="font-bold text-gray-900 mb-2">Investment Platforms</h3>
+                  <p className="text-gray-600 text-sm">Robo-advisors and trading platforms</p>
+                </div>
+              </div>
+            </div>
             
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-8">
@@ -356,134 +380,101 @@ export default function SecureBaseLandingZone() {
                 </div>
               </div>
             </div>
+
+            {/* ROI Comparison */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
+              <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">ROI: SecureBase vs. DIY SOX2 Compliance</h2>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-red-50 rounded-xl p-6 border border-red-200">
+                  <h3 className="text-xl font-bold text-red-700 mb-4">❌ DIY Approach</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Compliance consultant:</span>
+                      <span className="font-bold text-gray-900">$50K-$150K</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Implementation time:</span>
+                      <span className="font-bold text-gray-900">6-12 months</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Ongoing audit prep:</span>
+                      <span className="font-bold text-gray-900">200+ hours/year</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Staff time cost:</span>
+                      <span className="font-bold text-gray-900">$100K+/year</span>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-red-300 flex justify-between">
+                      <span className="text-red-700 font-bold text-lg">Total Year 1 Cost:</span>
+                      <span className="text-red-700 font-bold text-lg">$300K+</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+                  <h3 className="text-xl font-bold text-green-700 mb-4">✅ SecureBase Fintech Tier</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Deploy SOX2 controls:</span>
+                      <span className="font-bold text-gray-900">&lt;10 minutes</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Automated evidence:</span>
+                      <span className="font-bold text-gray-900">24/7</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Quarterly reports:</span>
+                      <span className="font-bold text-gray-900">Included</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Monthly subscription:</span>
+                      <span className="font-bold text-gray-900">$8K/month</span>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-green-300 flex justify-between">
+                      <span className="text-green-700 font-bold text-lg">Total Year 1 Cost:</span>
+                      <span className="text-green-700 font-bold text-lg">$96K</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 text-center bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-6 border border-green-300">
+                <p className="text-2xl font-bold text-gray-900">
+                  💰 Save <span className="text-green-600">$204K+</span> in Year 1
+                </p>
+                <p className="text-gray-600 mt-2">Plus faster time-to-audit and reduced operational overhead</p>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Pilot Benefits Tab */}
         {activeTab === 'pilot-benefits' && (
           <div>
-            {/* White-Glove Hero Section */}
-            <section className="text-center mb-16">
-              <div className="inline-block px-4 py-2 bg-yellow-400 border border-yellow-500 rounded-full text-gray-900 text-sm mb-6 font-bold">
-                ⏰ LIMITED AVAILABILITY • 7 SPOTS REMAINING • PILOT CLOSES MARCH 15, 2026
-              </div>
-              <h2 className="text-5xl font-bold mb-6 text-gray-900">
-                We Do It <span className="text-blue-600">For You</span>
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                Stop wrestling with Terraform and AWS best practices. Your dedicated infrastructure engineer handles everything from architecture design to production deployment.
-              </p>
-              <a 
-                href="https://calendly.com/securebase/white-glove-pilot" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-4 rounded-lg text-lg font-bold hover:from-blue-700 hover:to-blue-800 transition text-white shadow-lg"
-              >
-                <Rocket className="w-5 h-5" />
-                Schedule Free Architecture Review
-              </a>
-            </section>
-
-            {/* Problem/Solution Section */}
-            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md mb-16">
-              <div className="grid md:grid-cols-2 gap-12">
-                <div>
-                  <h3 className="text-2xl font-bold mb-6 text-red-600 flex items-center gap-3">
-                    <AlertTriangle className="w-8 h-8" />
-                    The Audit Anxiety Problem
-                  </h3>
-                  <div className="space-y-4 text-gray-700">
-                    <p className="flex items-start gap-3">
-                      <span className="text-red-500 text-xl">❌</span>
-                      <span>Your SOC2 audit is in 3 months and you don't have proper AWS logging configured</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-red-500 text-xl">❌</span>
-                      <span>You're burning engineering hours on infrastructure instead of product features</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-red-500 text-xl">❌</span>
-                      <span>Every Terraform deployment is a nerve-wracking experience with potential for downtime</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-red-500 text-xl">❌</span>
-                      <span>Your security checklist has 47 items and you don't know where to start</span>
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold mb-6 text-green-600 flex items-center gap-3">
-                    <CheckCircle className="w-8 h-8" />
-                    The White-Glove Solution
-                  </h3>
-                  <div className="space-y-4 text-gray-700">
-                    <p className="flex items-start gap-3">
-                      <span className="text-green-500 text-xl">✅</span>
-                      <span><strong>48-hour deployment:</strong> We deploy your entire AWS infrastructure in 2 days or your first month is free</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-green-500 text-xl">✅</span>
-                      <span><strong>Zero learning curve:</strong> Your team stays focused on product while we handle infrastructure</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-green-500 text-xl">✅</span>
-                      <span><strong>Audit-ready documentation:</strong> We create the operations runbook your auditors expect</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="text-green-500 text-xl">✅</span>
-                      <span><strong>Expert guidance:</strong> Weekly compliance check-ins ensure you never miss a requirement</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* White-Glove Benefits */}
-            <section className="mb-16">
-              <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
-                What's Included in White-Glove Service
-              </h2>
-              <div className="grid md:grid-cols-2 gap-8">
-                {whiteGloveBenefits.map((benefit, i) => (
-                  <div key={i} className="p-8 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300 transition">
-                    <benefit.icon className="text-blue-600 mb-4 w-12 h-12" />
-                    <h3 className="text-xl font-bold mb-3 text-gray-900">{benefit.title}</h3>
-                    <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* 48-Hour Deployment Timeline */}
-            <section className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200 shadow-md mb-16">
-              <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
-                Your 48-Hour Deployment Timeline
-              </h2>
-              <div className="max-w-4xl mx-auto">
-                <div className="space-y-8">
-                  {/* Day 0 */}
-                  <div className="flex gap-6">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold">
-                        Day 0
-                      </div>
-                    </div>
-                    <div className="flex-1 bg-white rounded-lg p-6 shadow-md">
-                      <h3 className="text-xl font-bold mb-3 text-gray-900">Architecture Review Call</h3>
-                      <ul className="space-y-2 text-gray-700">
-                        <li className="flex items-start gap-2">
-                          <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <span>Your dedicated engineer reviews requirements (30 mins)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <span>We document compliance framework needs (SOC2/HIPAA/FedRAMP)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <span>Private Slack channel created for real-time updates</span>
-                        </li>
-                      </ul>
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4 text-gray-900">Fintech Compliance Controls</h2>
+              <p className="text-gray-600 text-lg">SOX2 + SOC2 infrastructure controls for financial services platforms</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              {modules.map((m) => (
+                <div 
+                  key={m.id} 
+                  className={`p-6 bg-white rounded-xl border cursor-pointer transition shadow-md ${
+                    selectedModule === m.id ? 'border-blue-600 ring-2 ring-blue-200 shadow-lg' : 'border-gray-200 hover:border-blue-400 hover:shadow-lg'
+                  }`}
+                  onClick={() => setSelectedModule(selectedModule === m.id ? null : m.id)}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <m.icon className="text-blue-600" size={32} />
+                    <div className="flex gap-2">
+                      <span className={`text-xs font-mono px-2 py-1 rounded ${
+                        m.status === 'essential' ? 'bg-orange-100 text-orange-700 border border-orange-300' : 
+                        m.status === 'coming-soon' ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                        'bg-blue-100 text-blue-700 border border-blue-300'
+                      }`}>
+                        {m.status}
+                      </span>
+                      <span className="text-xs font-mono text-green-700 bg-green-100 px-2 py-1 rounded border border-green-300">
+                        {m.devCost}
+                      </span>
                     </div>
                   </div>
 
@@ -714,15 +705,17 @@ export default function SecureBaseLandingZone() {
                     {modules.map((m) => (
                       <label
                         key={m.id}
-                        className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition ${
+                        className={`flex items-center gap-3 p-3 rounded border transition ${
+                          m.status === 'coming-soon' ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200' :
                           devConfig.enabledModules[m.id]
-                            ? 'bg-blue-50 border-blue-300'
-                            : 'bg-white border-gray-300 hover:border-blue-300'
+                            ? 'bg-blue-50 border-blue-300 cursor-pointer'
+                            : 'bg-white border-gray-300 hover:border-blue-300 cursor-pointer'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={devConfig.enabledModules[m.id]}
+                          disabled={m.status === 'coming-soon'}
                           onChange={(e) => setDevConfig({
                             ...devConfig,
                             enabledModules: {
@@ -886,16 +879,19 @@ export default function SecureBaseLandingZone() {
               Get started with SecureBase and have your AWS foundation running in hours
             </p>
             <div className="flex gap-4 justify-center">
-              <button className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
-                <Download className="w-5 h-5" />
-                Download Modules
+              <button 
+                onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/#pilot'}
+                className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md"
+              >
+                <UserPlus className="w-5 h-5" />
+                Sign Up for Pilot
               </button>
               <button 
-                onClick={() => setActiveTab('devenv')}
+                onClick={() => window.location.href='https://cedrickbyrd.github.io/securebase-app/'}
                 className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md"
               >
                 <Rocket className="w-5 h-5" />
-                Try Dev Environment
+                Deploy Now
               </button>
             </div>
           </div>
