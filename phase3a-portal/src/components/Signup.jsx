@@ -22,9 +22,10 @@ const TIERS = {
     name: 'Fintech',
     price: 8000,
     pilotPrice: 4000,
-    description: 'SOC2 Type II compliant infrastructure',
+    description: 'SOX2 + SOC2 Ready Infrastructure for Financial Services',
     features: [
-      'SOC2 Type II controls',
+      'SOX2 Section 404 controls',
+      'SOC2 Type II (all 5 TSC)',
       'All Standard features',
       'GuardDuty threat detection',
       '1-year log retention',

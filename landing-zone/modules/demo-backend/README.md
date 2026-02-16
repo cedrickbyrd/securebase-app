@@ -317,7 +317,7 @@ CORS is configured in Lambda functions to allow all origins (`*`) for demo purpo
 ```python
 def cors_headers():
     return {
-        "Access-Control-Allow-Origin": "https://your-domain.netlify.app",
+        "Access-Control-Allow-Origin": "https://your-custom-domain.com",
         "Access-Control-Allow-Headers": "Content-Type,Authorization",
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
     }

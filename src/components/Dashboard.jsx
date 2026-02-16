@@ -20,7 +20,7 @@ import {
 // Constants for download flow timing
 const REPORT_GENERATION_DELAY = 15000; // 15 seconds
 const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
-const MARKETING_SITE_URL = 'https://securebase-app.netlify.app';
+const MARKETING_SITE_URL = 'https://tximhotep.com';
 
 // Download modal component
 const DownloadModal = ({ isDownloading, downloadComplete }) => {

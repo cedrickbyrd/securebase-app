@@ -165,7 +165,7 @@ The repository contains **THREE distinct frontend applications**:
 - Deploy **Phase 3a Portal** with mock API to Netlify
 - Create mock data fixtures
 - Add demo mode banner
-- URL: `https://securebase-portal-demo.netlify.app`
+- URL: `https://portal.securebase.tximhotep.com`
 
 ---
 
@@ -235,7 +235,7 @@ The repository contains **THREE distinct frontend applications**:
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Live: https://securebase-app.netlify.app (production)      │
+│ Live: https://tximhotep.com (production)                   │
 │ Preview: https://deploy-preview-123--securebase.netlify... │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -555,8 +555,8 @@ Code → GitHub → Auto-Deploy → GitHub Pages → Live at cedrickbyrd.github.
 
 **Recommended Flow (Long-term):**
 ```
-Marketing:  Code → GitHub → Vercel  → securebase-demo.vercel.app
-Portal Demo: Code → GitHub → Netlify → portal-demo.netlify.app (with mock API)
+Marketing:  Code → GitHub → Netlify  → tximhotep.com
+Portal Demo: Code → GitHub → Netlify → portal.securebase.tximhotep.com (with mock API)
 Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
 ```
 
@@ -751,18 +751,19 @@ Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
 **Steps:**
 
 1. **Purchase/Configure Domains**
-   - `demo.securebase.io` → Marketing site
-   - `portal-demo.securebase.io` → Portal demo
+   - `tximhotep.com` → Marketing site
+   - `demo.securebase.tximhotep.com` → Demo portal
+   - `portal.securebase.tximhotep.com` → Portal demo
 
 2. **DNS Configuration**
    ```
-   demo.securebase.io         CNAME → cedrickbyrd.github.io
-   portal-demo.securebase.io  CNAME → securebase-portal-demo.netlify.app
+   tximhotep.com                      CNAME → [your-site].netlify.app
+   demo.securebase.tximhotep.com      CNAME → [your-demo].netlify.app
+   portal.securebase.tximhotep.com    CNAME → [your-portal].netlify.app
    ```
 
 3. **Platform Configuration**
-   - GitHub Pages: Add `demo.securebase.io` in settings
-   - Netlify: Add custom domain in dashboard
+   - Netlify: Add custom domains in dashboard
 
 4. **Enable HTTPS**
    - Both platforms auto-provision SSL certificates

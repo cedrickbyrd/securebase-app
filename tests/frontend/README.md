@@ -192,7 +192,7 @@ Then repeat the manual testing checklist above on `http://localhost:5173`.
 ### Marketing Site (Netlify/GitHub Pages)
 The root marketing site is deployed separately from the customer portal.
 
-**Demo URL:** `https://securebase-demo.netlify.app` (or similar)
+**Demo URL:** `https://demo.securebase.tximhotep.com` (or similar)
 
 #### Test Checklist
 - [ ] Marketing page loads at root URL
@@ -204,7 +204,7 @@ The root marketing site is deployed separately from the customer portal.
 ### Customer Portal (Netlify)
 The Phase 3a portal is deployed as a separate app.
 
-**Demo URL:** `https://demo.securebase.io` or `https://portal.securebase.io` (check deployment)
+**Demo URL:** `https://demo.securebase.tximhotep.com` or `https://portal.securebase.tximhotep.com` (check deployment)
 
 #### Test Checklist
 - [ ] Portal loads at deployed URL
