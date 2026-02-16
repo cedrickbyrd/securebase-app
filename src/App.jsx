@@ -529,16 +529,21 @@ export default function SecureBaseLandingZone() {
                       </ul>
                     </div>
                   </div>
-                </div>
-              <div className="text-center mt-12">
-                <p className="text-2xl font-bold text-blue-600">
-                  🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
-                </p>
-                <p className="text-gray-600 mt-2">
-                  If we miss the deadline, your first month is free
-                </p>
-              </div>
-            </section>
+                </div>            
+<div className="text-center mt-12">
+          <p className="text-2xl font-bold text-blue-600">
+            🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
+          </p>
+          <div className="mt-6">
+            <a 
+              href="/contact" 
+              className="inline-block px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
+            >
+              Contact Us
+            </a>
+          </div>
+        </div>
+  </section>
 
             {/* Pilot Pricing */}
             <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md mb-16">
