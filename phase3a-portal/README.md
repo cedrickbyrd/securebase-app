@@ -1,4 +1,4 @@
-# SecureBase Customer Portal (Phase 3A)
+# SecureBase by TxImhotep LLC - Customer Portal (Phase 3A)
 
 Production-ready React customer portal for SecureBase multi-tenant PaaS platform.
 
@@ -178,7 +178,7 @@ npm run build
 
 ## License
 
-Proprietary - SecureBase 2026
+Proprietary - TxImhotep LLC 2026
 
 ---
 

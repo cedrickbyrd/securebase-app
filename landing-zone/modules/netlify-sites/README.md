@@ -158,7 +158,86 @@ terraform.tfvars
 
 ## How to Import Existing Netlify Sites
 
-If you already have Netlify sites deployed manually, you can import them into Terraform:
+## Importing Existing SecureBase Sites
+
+The SecureBase project has two existing Netlify sites:
+1. **Marketing Site**: tximhotep.com (formerly securebase-app.netlify.app)
+2. **Demo Portal**: demo.securebase.tximhotep.com (formerly securebase-demo.netlify.app)
+
+### Quick Import
+
+Run the automated import script:
+
+```bash
+./scripts/import-netlify-sites.sh
+```
+
+The script will:
+- Check prerequisites (Terraform, Netlify CLI, API token)
+- Prompt for site IDs from Netlify Dashboard
+- Import environment variable resources
+- Verify the import with `terraform plan`
+
+### Manual Import (Alternative)
+
+If you prefer to import manually:
+
+1. Get Site IDs from Netlify Dashboard:
+   - Marketing: https://app.netlify.com/sites/securebase-app/settings/general
+   - Demo: https://app.netlify.com/sites/securebase-demo/settings/general
+
+2. Navigate to environment directory:
+   ```bash
+   cd landing-zone/environments/dev
+   ```
+
+3. Import environment variables (replace SITE_ID):
+   ```bash
+   # Marketing site
+   terraform import 'module.netlify_sites.netlify_environment_variable.marketing_node_version' 'MARKETING_SITE_ID:NODE_VERSION'
+   terraform import 'module.netlify_sites.netlify_environment_variable.marketing_vite_env' 'MARKETING_SITE_ID:VITE_ENV'
+   
+   # Demo portal
+   terraform import 'module.netlify_sites.netlify_environment_variable.portal_demo_node_version' 'DEMO_SITE_ID:NODE_VERSION'
+   terraform import 'module.netlify_sites.netlify_environment_variable.portal_demo_mock_api' 'DEMO_SITE_ID:VITE_USE_MOCK_API'
+   terraform import 'module.netlify_sites.netlify_environment_variable.portal_demo_vite_env' 'DEMO_SITE_ID:VITE_ENV'
+   terraform import 'module.netlify_sites.netlify_environment_variable.portal_demo_analytics' 'DEMO_SITE_ID:VITE_ANALYTICS_ENABLED'
+   ```
+
+4. Verify:
+   ```bash
+   terraform plan -target=module.netlify_sites
+   ```
+
+### Expected Outcome
+
+After import, `terraform plan` should show:
+- ✅ "No changes" if environment variables already match
+- ⚠️ Resources to create if environment variables don't exist in Netlify
+- ✅ Data sources will reference existing sites automatically (no import needed)
+
+### Verification
+
+Run verification:
+```bash
+terraform state list | grep netlify
+```
+
+Expected output:
+```
+module.netlify_sites.data.netlify_site.marketing
+module.netlify_sites.data.netlify_site.portal_demo
+module.netlify_sites.netlify_environment_variable.marketing_node_version
+module.netlify_sites.netlify_environment_variable.marketing_vite_env
+module.netlify_sites.netlify_environment_variable.portal_demo_analytics
+module.netlify_sites.netlify_environment_variable.portal_demo_mock_api
+module.netlify_sites.netlify_environment_variable.portal_demo_node_version
+module.netlify_sites.netlify_environment_variable.portal_demo_vite_env
+```
+
+## General Netlify Sites Import
+
+If you have other Netlify sites deployed manually (not the SecureBase sites above), you can import them into Terraform:
 
 ### Step 1: Get Site IDs
 ```bash

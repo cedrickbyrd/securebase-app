@@ -69,10 +69,10 @@
 
 **Try the full customer portal with no signup required:**
 
-🖥️ **[Try Live Demo](https://demo.securebase.io)** - Pre-populated with realistic customer data
+🖥️ **[Try Live Demo](https://demo.securebase.tximhotep.com)** - Pre-populated with realistic customer data
 
-> **Note:** Demo portal deploys to `demo.securebase.io` via Netlify. 
-> Marketing site is at `securebase.io`.
+> **Note:** Demo portal deploys to `demo.securebase.tximhotep.com` via Netlify. 
+> Marketing site is at `tximhotep.com`.
 
 **Features:**
 - ✅ Complete dashboard with metrics and charts

@@ -44,20 +44,6 @@ def lambda_handler(event, context):
         # Get client IP for rate limiting
         client_ip = event.get('requestContext', {}).get('identity', {}).get('sourceIp', 'unknown')
         
-        # Check rate limit
-        if not check_rate_limit(client_ip):
-            return {
-                'statusCode': 429,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Retry-After': '3600',
-                },
-                'body': json.dumps({
-                    'error': 'Rate limit exceeded. Maximum 5 signups per hour per IP address.'
-                })
-            }
-        
         # Parse request
         body = json.loads(event['body'])
         tier = body.get('tier', 'standard').lower()
@@ -75,6 +61,37 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Origin': '*',
                 },
                 'body': json.dumps({'error': validation_error})
+            }
+        
+        # Check IP-based rate limit
+        if not check_rate_limit(client_ip):
+            return {
+                'statusCode': 429,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Retry-After': '3600',
+                },
+                'body': json.dumps({
+                    'error': 'Rate limit exceeded. Maximum 5 signups per hour per IP address.'
+                })
+            }
+        
+        # Check email-based rate limit (30-day window)
+        email_rate_limit_result = check_email_rate_limit(customer_email)
+        if not email_rate_limit_result['allowed']:
+            next_signup_date = email_rate_limit_result.get('next_signup_date', 'unknown')
+            return {
+                'statusCode': 429,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Retry-After': str(email_rate_limit_result.get('retry_after_seconds', 86400)),
+                },
+                'body': json.dumps({
+                    'error': f'This email was recently used for signup. You can sign up again on {next_signup_date}.',
+                    'next_signup_date': next_signup_date
+                })
             }
         
         price_id = PRICE_IDS[tier]
@@ -219,6 +236,56 @@ def validate_inputs(tier, email, name):
         return f'Invalid tier: {tier}. Must be one of: {", ".join(PRICE_IDS.keys())}'
     
     return None
+
+
+def check_email_rate_limit(email):
+    """
+    Check if email has been used for signup in the last 30 days
+    Returns dict with 'allowed' boolean and optional 'next_signup_date' string
+    """
+    try:
+        conn = get_db_connection()
+        
+        # Query for recent signups with this email in the last 30 days
+        sql = """
+            SELECT created_at 
+            FROM customers 
+            WHERE LOWER(email) = LOWER(%s)
+            AND created_at > NOW() - INTERVAL '30 days'
+            ORDER BY created_at DESC
+            LIMIT 1
+        """
+        
+        result = execute_query(conn, sql, (email,))
+        conn.close()
+        
+        if result and len(result) > 0:
+            # Email was used recently
+            last_signup = result[0][0]
+            
+            # Calculate when they can sign up again (30 days from last signup)
+            if isinstance(last_signup, str):
+                last_signup = datetime.fromisoformat(last_signup.replace('Z', '+00:00'))
+            
+            next_signup = last_signup + timedelta(days=30)
+            retry_after_seconds = int((next_signup - datetime.utcnow()).total_seconds())
+            
+            # Format next signup date for user-friendly message
+            next_signup_formatted = next_signup.strftime('%B %d, %Y')
+            
+            return {
+                'allowed': False,
+                'next_signup_date': next_signup_formatted,
+                'retry_after_seconds': max(retry_after_seconds, 0)
+            }
+        
+        # Email has not been used recently, allow signup
+        return {'allowed': True}
+        
+    except Exception as e:
+        # If rate limiting check fails, allow the request (fail open)
+        print(f"Email rate limit check failed: {e}")
+        return {'allowed': True}
 
 
 def check_rate_limit(client_ip):
