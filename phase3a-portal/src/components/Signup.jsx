@@ -106,6 +106,14 @@ const Signup = () => {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle rate limiting errors with specific messages
+        if (response.status === 429) {
+          const nextDate = data.next_signup_date;
+          const errorMsg = nextDate 
+            ? `This email was recently used. You can sign up again on ${nextDate}.`
+            : data.error || 'Rate limit exceeded. Please try again later.';
+          throw new Error(errorMsg);
+        }
         throw new Error(data.error || 'Failed to create checkout session');
       }
 

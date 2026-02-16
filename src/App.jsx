@@ -199,360 +199,7 @@ export default function SecureBaseLandingZone() {
 
   const calculateCost = () => {
     let total = 0;
-    Object.entries(devConfig.enabledModules).forEach(([key, enabled]) => {
-      if (enabled) {
-        const module = modules.find(m => m.id === key);
-        if (module?.devCost) {
-          const match = module.devCost.match(/\$(\d+)/);
-          if (match) total += parseInt(match[1]);
-        }
-      }
-    });
     return total;
-  };
-
-  const moduleDetails = {
-    core: `Module 1: AWS Organizations
-
-Production-grade org structure with account factory and SCP guardrails.
-
-ACCOUNT STRUCTURE:
-Management (root)
-├── Security OU
-│   ├── Log Archive
-│   └── Audit
-├── Shared Services OU
-│   ├── Networking
-│   └── CI/CD
-└── Workloads OU
-    ├── Production
-    └── Non-Production
-
-SERVICE CONTROL POLICIES:
-- Deny root user access across all accounts
-- Deny public S3 bucket creation
-- Enforce MFA for console access
-- Restrict deployments to approved regions
-- Prevent GuardDuty/Config disabling
-
-ACCOUNT FACTORY:
-Automated account provisioning with:
-- Unique email per account
-- Automatic OU assignment
-- Baseline SCPs applied
-- Prevent_destroy lifecycle protection
-
-COMPLIANCE:
-✓ CIS AWS Foundations Benchmark
-✓ SOC2 Type II organizational controls
-✓ NIST 800-53 AC family
-✓ No Control Tower dependency
-✓ Terraform-native (no ClickOps)`,
-
-    identity: `Module 2: IAM Identity Center
-
-Zero long-lived credentials with SSO, MFA, and break-glass access.
-
-PERMISSION SETS:
-
-Admin Access (Emergency Only)
-- Session: 1 hour maximum
-- Policy: AdministratorAccess
-- Use case: Break-glass scenarios
-- MFA: Required
-
-Platform Engineer (Day-to-Day)
-- Session: 4 hours
-- Permissions: EC2, ECS, EKS, Lambda, S3, RDS, DynamoDB
-- Denies: IAM, Organizations, Account changes
-- Use case: Application deployment and management
-
-Read-Only Auditor
-- Session: 8 hours
-- Policy: ReadOnlyAccess + CloudTrail
-- Use case: Compliance and audit teams
-- Access: All accounts in read-only mode
-
-BREAK-GLASS ROLE:
-Emergency access with:
-- MFA device required
-- 1 hour max session
-- All actions logged to CloudTrail
-- Credentials stored offline
-- Manual activation only
-
-IAM PASSWORD POLICY:
-- Minimum: 16 characters
-- Complexity: upper, lower, numbers, symbols
-- Max age: 90 days
-- Reuse prevention: 24 passwords
-- User self-service: enabled
-
-COMPLIANCE:
-✓ NIST 800-53 IA (Identification and Authentication)
-✓ NIST 800-53 AC (Access Control)
-✓ CIS AWS Foundations (IAM controls)
-✓ SOC2 logical access controls`,
-
-    security: `Module 3: Security & Compliance ($10-15/month)
-
-Production-grade security services with continuous monitoring.
-
-GUARDDUTY:
-- Multi-account delegated administrator
-- S3 protection (malware, unusual access)
-- EKS protection (runtime monitoring)
-- Finding frequency: 15 minutes
-- Auto-archive false positives
-- Integration with Security Hub
-
-SECURITY HUB:
-Standards Enabled:
-- CIS AWS Foundations (161 controls)
-- AWS Foundational Security (220+ controls)
-- PCI DSS v3.2.1 (53 controls)
-
-Features:
-- Centralized findings aggregation
-- Custom compliance dashboards
-- Auto-remediation via EventBridge
-- Security score tracking
-
-AWS CONFIG:
-Compliance Rules:
-- encrypted-volumes (EBS required)
-- rds-encryption-enabled
-- s3-bucket-public-read-prohibited
-- iam-password-policy (CIS compliant)
-- mfa-enabled-for-iam-console-access
-- root-account-mfa-enabled
-- cloudtrail-enabled
-- access-keys-rotated (90 day max)
-
-Auto-Remediation:
-- S3 public access blocking
-- Default encryption enforcement
-- Security group rule violations
-
-KMS KEY MANAGEMENT:
-- Automatic annual rotation
-- Cross-account policies for logging
-- CloudTrail encryption (required)
-- S3 SSE-KMS encryption
-- Separate keys per environment
-- 30-day deletion waiting period
-
-MACIE (Optional):
-- PII discovery in S3
-- Credit card detection
-- SSN pattern matching
-- Automated classification jobs
-
-COMPLIANCE:
-✓ CIS AWS Foundations Benchmark
-✓ PCI DSS 3.2.1 technical requirements
-✓ HIPAA technical safeguards
-✓ SOC2 Type II security controls
-✓ FedRAMP Moderate baseline`,
-
-    logging: `Module 4: Centralized Logging ($5-10/month)
-
-All logs aggregated with 7-year retention for compliance.
-
-CLOUDTRAIL (Organization Trail):
-- Multi-region coverage
-- All accounts included
-- Management + data events
-- Log file validation (SHA-256, RSA)
-- S3 delivery within 15 minutes
-- CloudWatch Logs integration
-- SNS notifications
-
-Events Logged:
-- All API calls (read + write)
-- Console sign-ins
-- AssumeRole events
-- Failed authentication
-- Resource creation/deletion
-
-S3 LOG ARCHIVE:
-Configuration:
-- Versioning enabled
-- MFA delete protection
-- SSE-KMS encryption
-- Public access blocked
-- Cross-account write only
-- Object lock available
-
-Lifecycle Policies:
-- Day 0-90: S3 Standard
-- Day 91-365: Glacier Instant
-- Day 366-2555: Glacier Deep
-- Day 2555: Expiration (7 years)
-
-VPC FLOW LOGS:
-- All VPCs in all accounts
-- Accepted + rejected traffic
-- CloudWatch + S3 delivery
-- 365 day retention minimum
-- Athena query integration
-- Security analysis ready
-
-ACCESS LOGGING:
-- S3 access logs (all buckets)
-- ALB/NLB access logs
-- Source IPs captured
-- Request/response codes
-- Centralized storage
-
-COMPLIANCE:
-✓ NIST 800-53 AU (Audit and Accountability)
-✓ Tamper-proof logs (validation)
-✓ 7-year retention (regulatory)
-✓ Centralized audit trail
-✓ Cross-account isolation`,
-
-    networking: `Module 5: Network Foundation ($30-40/month)
-
-Secure, scalable multi-account network with zero-trust.
-
-TRANSIT GATEWAY:
-- Hub-and-spoke topology
-- ASN: 64512
-- Manual attachment approval
-- Separate route tables per env
-- Prod isolated from non-prod
-
-VPC ARCHITECTURE (3-Tier):
-
-Public Subnets:
-- Internet-facing load balancers
-- NAT Gateways (one per AZ)
-- Bastion hosts (optional)
-- /24 per AZ
-
-Private Subnets (App Tier):
-- EC2, ECS, Lambda
-- Egress via NAT Gateway
-- /20 per AZ
-
-Database Subnets (Isolated):
-- RDS, Aurora, ElastiCache
-- No internet route
-- App tier access only
-- /24 per AZ
-
-CIDR ALLOCATION:
-- Management: 10.0.0.0/16
-- Security: 10.1.0.0/16
-- Shared Services: 10.2.0.0/16
-- Production: 10.10.0.0/16
-- Staging: 10.20.0.0/16
-- Development: 10.30.0.0/16
-
-NETWORK SECURITY:
-- NACLs (stateless, subnet-level)
-- Security Groups (stateful, instance)
-- Least privilege rules
-- No 0.0.0.0/0 ingress (except LB)
-
-VPC ENDPOINTS:
-Gateway: S3, DynamoDB (free)
-Interface: EC2, ECR, Secrets Manager,
-  Systems Manager, CloudWatch, KMS
-
-SHARED SERVICES VPC:
-- Route53 Resolver endpoints
-- Shared VPC endpoints
-- Central egress (NAT/Firewall)
-- DNS forwarding
-
-COMPLIANCE:
-✓ NIST 800-53 SC (System/Comms)
-✓ Zero-trust architecture
-✓ Defense in depth
-✓ Blast radius containment
-✓ FedRAMP network segmentation`,
-
-    monitoring: `Module 6: Monitoring & Alerts ($5-8/month)
-
-Complete observability with security-first incident response.
-
-CLOUDWATCH DASHBOARDS:
-
-Security Operations:
-- GuardDuty findings by severity
-- Security Hub compliance score
-- Config rule violations
-- IAM credential usage
-- Root account activity
-- Failed login attempts
-
-Cost Management:
-- Daily spend by service
-- Month-to-date vs budget
-- Top 10 cost resources
-- Anomaly detection
-- RI/SP utilization
-
-Operational:
-- EC2 CPU/memory
-- RDS connections/IOPS
-- Lambda errors/duration
-- ALB target health
-- NAT Gateway bandwidth
-
-CRITICAL ALARMS:
-Security:
-- Root account usage (immediate)
-- Unauthorized API calls
-- IAM policy changes
-- Security group changes
-- KMS key deletion attempts
-- GuardDuty High findings
-
-Operations:
-- EC2 CPU > 80% (5 min)
-- RDS storage < 20%
-- Lambda errors > 1%
-- ALB 5xx > 5%
-
-Cost:
-- Daily spend threshold
-- Budget 50%/80%/100%
-- Anomaly detected
-- Unused resources
-
-EVENTBRIDGE AUTOMATION:
-- GuardDuty → Slack/PagerDuty
-- Security Hub → Incident creation
-- Config → Auto-remediation
-- Root usage → Immediate alert
-- IAM key age → Auto-deactivate
-
-SNS TOPICS:
-- Critical Security (encrypted)
-- Operations (encrypted)
-- Cost Alerts (encrypted)
-- Multi-channel delivery
-
-COST ANOMALY DETECTION:
-- 20% variance threshold
-- ML-based analysis
-- Root cause included
-- Historical comparison
-
-INTEGRATIONS:
-- Slack, PagerDuty
-- ServiceNow, Jira
-- Microsoft Teams
-- Custom webhooks
-
-COMPLIANCE:
-✓ NIST 800-53 SI (System Integrity)
-✓ SOC2 monitoring requirements
-✓ Proactive detection
-✓ Complete audit trail`
   };
 
   return (
@@ -609,11 +256,7 @@ COMPLIANCE:
               </p>
               
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-6 max-w-4xl mx-auto mt-12">
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-green-600">2-4hrs</div>
-                  <div className="text-sm text-gray-600">Deploy Time</div>
-                </div>
+              <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto mt-12">
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
                   <div className="text-3xl font-bold text-purple-600">SOX2 + SOC2</div>
                   <div className="text-sm text-gray-600">Controls</div>
@@ -624,7 +267,7 @@ COMPLIANCE:
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
                   <div className="text-3xl font-bold text-blue-600">100%</div>
-                  <div className="text-sm text-gray-600">IaC</div>
+                  <div className="text-sm text-gray-600">Audit Pass Rate</div>
                 </div>
               </div>
             </section>
@@ -803,8 +446,8 @@ COMPLIANCE:
           </div>
         )}
 
-        {/* Modules Tab */}
-        {activeTab === 'modules' && (
+        {/* Pilot Benefits Tab */}
+        {activeTab === 'pilot-benefits' && (
           <div>
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4 text-gray-900">Fintech Compliance Controls</h2>
@@ -834,37 +477,168 @@ COMPLIANCE:
                       </span>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">{m.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{m.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {m.resources.map((r, i) => (
-                      <span key={i} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-700 border border-gray-200">
-                        {r}
-                      </span>
-                    ))}
+
+                  {/* Day 1 */}
+                  <div className="flex gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold">
+                        Day 1
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-white rounded-lg p-6 shadow-md">
+                      <h3 className="text-xl font-bold mb-3 text-gray-900">Infrastructure Deployment</h3>
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span>AWS Organizations, security services, and logging deployed</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span>GuardDuty, Security Hub, Config rules activated</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span>Your team gets read-only access to monitor progress</span>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
 
-                  {m.compliance && (
-                    <div className="flex flex-wrap gap-1">
-                      {m.compliance.map((c, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200">
-                          {c}
-                        </span>
-                      ))}
+                  {/* Day 2 */}
+                  <div className="flex gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center text-xl font-bold">
+                        Day 2
+                      </div>
                     </div>
-                  )}
-                  
-                  {selectedModule === m.id && (
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <pre className="p-4 bg-gray-900 rounded text-xs text-green-400 overflow-x-auto leading-relaxed whitespace-pre-wrap">
-                        {moduleDetails[m.id]}
-                      </pre>
+                    <div className="flex-1 bg-white rounded-lg p-6 shadow-md">
+                      <h3 className="text-xl font-bold mb-3 text-gray-900">Handoff & Documentation</h3>
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>Custom operations runbook delivered (incident response, access management)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>Security controls evidence package for auditors</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>Knowledge transfer session with your team</span>
+                        </li>
+                      </ul>
                     </div>
-                  )}
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+              <div className="text-center mt-12">
+                <p className="text-2xl font-bold text-blue-600">
+                  🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
+                </p>
+                <p className="text-gray-600 mt-2">
+                  If we miss the deadline, your first month is free
+                </p>
+              </div>
+            </section>
+
+            {/* Pilot Pricing */}
+            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md mb-16">
+              <h2 className="text-4xl font-bold text-center mb-6 text-gray-900">
+                Pilot Program Pricing
+              </h2>
+              <p className="text-center text-gray-600 mb-12 text-lg">
+                Limited to first 7 fintech startups • Closes March 15, 2026
+              </p>
+              <div className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 border-2 border-blue-500">
+                <div className="text-center mb-6">
+                  <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded-full font-bold mb-4">
+                    WHITE-GLOVE PILOT
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-6xl font-bold text-gray-900">$4,000</span>
+                    <span className="text-2xl text-gray-600">/month</span>
+                  </div>
+                  <p className="text-green-600 font-bold text-xl">
+                    50% OFF • Save $4,000/month for 6 months = $24,000 total savings
+                  </p>
+                  <p className="text-gray-600 mt-2">
+                    Regular price: <span className="line-through">$8,000/month</span>
+                  </p>
+                </div>
+                
+                <div className="space-y-3 mb-8">
+                  <p className="flex items-start gap-3 text-gray-900">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <span><strong>Dedicated infrastructure engineer</strong> assigned to your deployment</span>
+                  </p>
+                  <p className="flex items-start gap-3 text-gray-900">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <span><strong>Weekly compliance check-ins</strong> to ensure SOC2 audit readiness</span>
+                  </p>
+                  <p className="flex items-start gap-3 text-gray-900">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <span><strong>Private Slack channel</strong> with &lt; 2-hour response time</span>
+                  </p>
+                  <p className="flex items-start gap-3 text-gray-900">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <span><strong>Custom operations runbook</strong> tailored to your infrastructure</span>
+                  </p>
+                  <p className="flex items-start gap-3 text-gray-900">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <span><strong>30-day free trial</strong> • Cancel anytime, no questions asked</span>
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <a 
+                    href="https://calendly.com/securebase/white-glove-pilot" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition text-white shadow-lg"
+                  >
+                    <Rocket className="w-5 h-5" />
+                    Schedule Free Architecture Review
+                  </a>
+                  <p className="text-sm text-gray-600 mt-4">
+                    ✅ 48-hour deployment guarantee • ✅ 30-day money-back guarantee
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Social Proof / Testimonials */}
+            <section className="mb-16">
+              <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
+                Join 13 Fintech Startups Already Using SecureBase
+              </h2>
+              <div className="grid md:grid-cols-3 gap-8">
+                {testimonials.map((testimonial, i) => (
+                  <div key={i} className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
+                    <p className="text-gray-700 mb-4 italic leading-relaxed">"{testimonial.quote}"</p>
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="font-bold text-gray-900">{testimonial.author}</p>
+                      <p className="text-sm text-gray-600">{testimonial.role}</p>
+                      <p className="text-sm text-blue-600 font-medium">{testimonial.company}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* FAQ Section */}
+            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
+              <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
+                Frequently Asked Questions
+              </h2>
+              <div className="max-w-4xl mx-auto space-y-6">
+                {faqs.map((faq, i) => (
+                  <div key={i} className="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0">
+                    <h3 className="text-xl font-bold mb-3 text-gray-900">{faq.question}</h3>
+                    <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
