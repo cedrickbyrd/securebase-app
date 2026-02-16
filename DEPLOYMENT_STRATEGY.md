@@ -106,7 +106,7 @@ SecureBase requires **two distinct Netlify sites** to be configured:
 | Setting | Value |
 |---------|-------|
 | **Site Name** | `securebase` (or custom) |
-| **Domain** | `securebase.io` |
+| **Domain** | `tximhotep.com` |
 | **Repository** | `github.com/cedrickbyrd/securebase-app` |
 | **Base Directory** | `/` (root) |
 | **Build Command** | `npm run build` |
@@ -115,8 +115,8 @@ SecureBase requires **two distinct Netlify sites** to be configured:
 
 **DNS Configuration:**
 ```
-securebase.io        A      75.2.60.5
-www.securebase.io    CNAME  securebase.netlify.app
+tximhotep.com        A      75.2.60.5
+www.tximhotep.com    CNAME  securebase-app.netlify.app
 ```
 
 ---
@@ -126,7 +126,7 @@ www.securebase.io    CNAME  securebase.netlify.app
 | Setting | Value |
 |---------|-------|
 | **Site Name** | `securebase-demo` (or custom) |
-| **Domain** | `demo.securebase.io` |
+| **Domain** | `demo.securebase.tximhotep.com` |
 | **Repository** | `github.com/cedrickbyrd/securebase-app` |
 | **Base Directory** | `phase3a-portal` |
 | **Build Command** | `npm run build` |
@@ -135,7 +135,7 @@ www.securebase.io    CNAME  securebase.netlify.app
 
 **DNS Configuration:**
 ```
-demo.securebase.io   CNAME  securebase-demo.netlify.app
+demo.securebase.tximhotep.com   CNAME  securebase-demo.netlify.app
 ```
 
 **Required Environment Variables:**
@@ -244,8 +244,8 @@ X-Robots-Tag: noindex, nofollow
 **Recommended Tool:** UptimeRobot or Pingdom
 
 **Endpoints to Monitor:**
-- `https://securebase.io` (marketing site)
-- `https://demo.securebase.io` (portal demo)
+- `https://tximhotep.com` (marketing site)
+- `https://demo.securebase.tximhotep.com` (portal demo)
 
 **Check Frequency:** Every 5 minutes  
 **Alert Threshold:** 2 consecutive failures  
@@ -352,7 +352,7 @@ While Netlify is the primary platform, configurations exist for alternatives:
 
 **Configuration:** Can use existing build output  
 **Current Use:** Production environment  
-**URL:** `securebase.io`  
+**URL:** `tximhotep.com`  
 
 **Deploy Command:**
 ```bash
@@ -395,17 +395,17 @@ cd phase3a-portal
 
 | Purpose | URL | Platform | Source |
 |---------|-----|----------|--------|
-| **Marketing Site** | https://securebase.io | Netlify | Root `/` |
-| **Portal Demo** | https://demo.securebase.io | Netlify | `phase3a-portal/` |
-| **Signup** | https://securebase.io/signup | Netlify | Root (future) |
-| **Contact** | https://securebase.io/contact | Netlify | Root (future) |
+| **Marketing Site** | https://tximhotep.com | Netlify | Root `/` |
+| **Portal Demo** | https://demo.securebase.tximhotep.com | Netlify | `phase3a-portal/` |
+| **Signup** | https://tximhotep.com/signup | Netlify | Root (future) |
+| **Contact** | https://tximhotep.com/contact | Netlify | Root (future) |
 
 ### Deprecated/Legacy URLs
 
 | Old URL | New URL | Status |
 |---------|---------|--------|
-| ~~portal.securebase.io/signup~~ | securebase.io/signup | ❌ Deprecated |
-| ~~calendly.com/securebase/demo~~ | securebase.io/contact | ❌ Deprecated |
+| ~~portal.securebase.io/signup~~ | tximhotep.com/signup | ❌ Deprecated |
+| ~~calendly.com/securebase/demo~~ | tximhotep.com/contact | ❌ Deprecated |
 
 **Migration Date:** February 5, 2026  
 **Backward Compatibility:** None required (internal links only)
@@ -422,7 +422,7 @@ Use this checklist for new deployments or major updates:
 - [ ] Verify `dist/` directory created successfully
 - [ ] Check for console errors in browser
 - [ ] Run Lighthouse audit locally
-- [ ] Review security headers: https://securityheaders.com
+- [ ] Review security headers with tools like securityheaders.com
 - [ ] Verify environment variables in Netlify dashboard
 - [ ] Check DNS configuration is correct
 - [ ] Confirm SSL certificates are valid
