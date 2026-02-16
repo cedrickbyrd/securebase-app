@@ -872,13 +872,14 @@ export default function SecureBaseLandingZone() {
           </div>
         )}
 
-        {/* Compliance Tab */}
+        {/* Compliance Tab */
+        {/* 1. Ensure the Compliance Tab is properly closed */}
         {activeTab === 'compliance' && (
           <ComplianceScreen />
         )}
-      </main>
+      </main> {/* THIS matches the <main> opened at the start of your layout */}
 
-      {/* Footer CTA */}
+      {/* 2. Footer CTA - Outside of <main> */}
       {activeTab !== 'devenv' && activeTab !== 'compliance' && (
         <footer className="max-w-7xl mx-auto px-6 py-16">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-center shadow-lg">
@@ -905,6 +906,6 @@ export default function SecureBaseLandingZone() {
           </div>
         </footer>
       )}
-    </div>
-  );
-}
+    </div> // Closes the root min-h-screen div
+  ); // Closes the return (
+} // Closes the function SecureBaseLandingZone()
