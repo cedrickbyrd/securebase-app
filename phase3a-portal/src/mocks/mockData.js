@@ -29,7 +29,8 @@ export const mockCustomers = [
     status: "active",
     monthly_price: 15000,
     accounts: 45,
-    created_at: "2025-11-01T00:00:00Z"
+    created_at: "2025-11-01T00:00:00Z",
+    subscription_status: "active"
   },
   {
     id: "demo-customer-002",
@@ -40,7 +41,8 @@ export const mockCustomers = [
     status: "active",
     monthly_price: 8000,
     accounts: 28,
-    created_at: "2025-12-01T00:00:00Z"
+    created_at: "2025-12-01T00:00:00Z",
+    subscription_status: "active"
   },
   {
     id: "demo-customer-003",
@@ -51,7 +53,8 @@ export const mockCustomers = [
     status: "active",
     monthly_price: 2000,
     accounts: 5,
-    created_at: "2026-01-01T00:00:00Z"
+    created_at: "2026-01-01T00:00:00Z",
+    subscription_status: "active"
   },
   {
     id: "demo-customer-004",
@@ -62,7 +65,8 @@ export const mockCustomers = [
     status: "active",
     monthly_price: 25000,
     accounts: 120,
-    created_at: "2025-10-01T00:00:00Z"
+    created_at: "2025-10-01T00:00:00Z",
+    subscription_status: "active"
   },
   {
     id: "demo-customer-005",
@@ -73,9 +77,23 @@ export const mockCustomers = [
     status: "active",
     monthly_price: 8000,
     accounts: 35,
-    created_at: "2025-11-01T00:00:00Z"
+    created_at: "2025-11-01T00:00:00Z",
+    subscription_status: "active"
   }
 ];
+
+/**
+ * Get demo customer by index (for rotation system)
+ * @param {number} index - Customer index (0-4)
+ * @returns {Object} Customer object
+ */
+export const getDemoCustomerByIndex = (index) => {
+  if (index >= 0 && index < mockCustomers.length) {
+    return mockCustomers[index];
+  }
+  // Default to first customer if index is invalid
+  return mockCustomers[0];
+};
 
 // Generate 30+ invoices across all 5 customers over 6 months
 const generateInvoices = () => {
@@ -496,6 +514,66 @@ export const mockTeamUsers = [
     permissions: ["read"]
   }
 ];
+
+/**
+ * Generate customer-specific metrics based on customer tier and accounts
+ * @param {Object} customer - Customer object
+ * @returns {Object} Metrics object for the customer
+ */
+export const getMetricsForCustomer = (customer) => {
+  if (!customer) {
+    return mockMetrics;
+  }
+
+  // Base metrics vary by tier
+  const tierMultipliers = {
+    healthcare: 1.0,    // Base: HealthCorp
+    fintech: 0.53,      // $8k vs $15k
+    government: 1.67,   // $25k vs $15k
+    standard: 0.13      // $2k vs $15k
+  };
+
+  const multiplier = tierMultipliers[customer.tier] || 1.0;
+  const accountRatio = customer.accounts / 45; // Relative to HealthCorp's 45 accounts
+
+  return {
+    monthly_cost: customer.monthly_price,
+    cost_trend: "+2.3%",
+    cost_change: Math.floor(customer.monthly_price * 0.023),
+    compliance_score: customer.tier === 'government' ? 99 : customer.tier === 'healthcare' ? 98 : 92,
+    compliance_trend: "+1",
+    active_alerts: customer.tier === 'standard' ? 5 : customer.tier === 'government' ? 0 : 3,
+    alerts_trend: "-2",
+    uptime_percentage: customer.tier === 'government' ? 99.99 : 99.87,
+    uptime_trend: "+0.02%",
+    api_calls_month: Math.floor(3450000 * multiplier * accountRatio),
+    api_calls_trend: "+15.2%",
+    api_calls_limit: 10000000,
+    total_customers: 1,
+    account_count: customer.accounts,
+    cloudtrail_events: Math.floor(8245678 * accountRatio),
+    log_storage_gb: Math.floor(1256.7 * accountRatio * 10) / 10,
+    data_transfer_gb: Math.floor(589.3 * accountRatio * 10) / 10,
+    cost_breakdown: {
+      compliance: Math.floor(customer.monthly_price * 0.8),
+      support: Math.floor(customer.monthly_price * 0.2),
+      infrastructure: Math.floor(240 * multiplier)
+    },
+    cost_history: [
+      { month: "Sep", cost: Math.floor(customer.monthly_price * 0.98), date: "2025-09-01" },
+      { month: "Oct", cost: Math.floor(customer.monthly_price * 0.99), date: "2025-10-01" },
+      { month: "Nov", cost: Math.floor(customer.monthly_price * 0.995), date: "2025-11-01" },
+      { month: "Dec", cost: Math.floor(customer.monthly_price * 0.998), date: "2025-12-01" },
+      { month: "Jan", cost: Math.floor(customer.monthly_price * 0.999), date: "2026-01-01" },
+      { month: "Feb", cost: customer.monthly_price, date: "2026-02-01" }
+    ],
+    resource_usage: {
+      compute: customer.tier === 'government' ? 85 : 67,
+      storage: customer.tier === 'standard' ? 25 : 45,
+      network: customer.tier === 'fintech' ? 90 : 82
+    }
+  };
+};
 
 export const mockRoles = [
   {

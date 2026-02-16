@@ -8,7 +8,7 @@
 
 ## ⚡ Option 1: Marketing Site Only (15 Minutes)
 
-**What you get:** Professional landing page at https://securebase-demo.netlify.app
+**What you get:** Professional landing page at https://tximhotep.com
 
 ### Steps
 
@@ -53,7 +53,7 @@ npx vercel --prod
 
 ## 🎯 Option 2: Full Interactive Demo (2-4 Hours)
 
-**What you get:** Complete customer portal with mock data at https://securebase-portal-demo.netlify.app
+**What you get:** Complete customer portal with mock data at https://portal.securebase.tximhotep.com
 
 ### Prerequisites
 
@@ -417,7 +417,7 @@ npx netlify-cli deploy --prod
 #    - Wait for deployment
 
 # 6. Done! Your interactive demo is live at:
-#    https://securebase-portal-demo.netlify.app
+#    https://portal.securebase.tximhotep.com
 ```
 
 ---

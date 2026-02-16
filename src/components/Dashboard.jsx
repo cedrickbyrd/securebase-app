@@ -17,9 +17,45 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+// Constants for download flow timing
+const REPORT_GENERATION_DELAY = 15000; // 15 seconds
+const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
+const MARKETING_SITE_URL = 'https://tximhotep.com';
+
+// Download modal component
+const DownloadModal = ({ isDownloading, downloadComplete }) => {
+  if (!isDownloading && !downloadComplete) return null;
+
+  return (
+    <div className="sb-Modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className="sb-Modal__backdrop" />
+      <div className="sb-Modal__content">
+        {isDownloading && (
+          <div className="sb-Modal__loading">
+            <div className="sb-Spinner sb-Spinner--large" aria-label="Loading"></div>
+            <h2 id="modal-title" className="sb-Modal__title">Generating Security Report...</h2>
+            <p className="sb-Modal__text">Please wait while we compile your compliance data</p>
+          </div>
+        )}
+        {downloadComplete && (
+          <div className="sb-Modal__success">
+            <div className="sb-Modal__successIcon">
+              <CheckCircle2 size={64} color="#10b981" aria-hidden="true" />
+            </div>
+            <h2 id="modal-title" className="sb-Modal__title">Report Downloaded!</h2>
+            <p className="sb-Modal__text">Your security report has been generated successfully</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadComplete, setDownloadComplete] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     monthlyCharge: 0,
     monthlyUsage: {},
@@ -29,8 +65,21 @@ export default function Dashboard() {
     pendingTickets: 0,
   });
 
+  // Track timeout IDs for cleanup
+  const timeoutRefs = React.useRef({ generation: null, logout: null });
+
   useEffect(() => {
     loadDashboardData();
+
+    // Cleanup timeouts on unmount
+    return () => {
+      if (timeoutRefs.current.generation) {
+        clearTimeout(timeoutRefs.current.generation);
+      }
+      if (timeoutRefs.current.logout) {
+        clearTimeout(timeoutRefs.current.logout);
+      }
+    };
   }, []);
 
   const loadDashboardData = async () => {
@@ -79,6 +128,36 @@ export default function Dashboard() {
     });
   };
 
+  const handleDownloadReport = () => {
+    // Start download flow (demo only - no actual file download)
+    setIsDownloading(true);
+    
+    // Simulate report generation for dramatic effect
+    timeoutRefs.current.generation = setTimeout(() => {
+      showSuccessAndLogout();
+    }, REPORT_GENERATION_DELAY);
+  };
+
+  const showSuccessAndLogout = () => {
+    // Show success message
+    setIsDownloading(false);
+    setDownloadComplete(true);
+    
+    // After brief success message, logout and redirect
+    timeoutRefs.current.logout = setTimeout(() => {
+      handleLogout();
+    }, SUCCESS_MESSAGE_DELAY);
+  };
+
+  const handleLogout = () => {
+    // Clear all storage (intentional for demo "ending" - resets entire demo state)
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Redirect to marketing site (demo "money shot" finale)
+    window.location.href = MARKETING_SITE_URL;
+  };
+
   if (loading) {
     return (
       <div className="sb-Dashboard__loading">
@@ -92,6 +171,9 @@ export default function Dashboard() {
 
   return (
     <div className="sb-Dashboard">
+      {/* Download Modal */}
+      <DownloadModal isDownloading={isDownloading} downloadComplete={downloadComplete} />
+
       {/* Header */}
       <div className="sb-Dashboard__header">
         <div className="sb-Dashboard__headerContent">
@@ -213,10 +295,15 @@ export default function Dashboard() {
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
-              <a href="/invoices/download" className="sb-ActionButton sb-ActionButton--blue">
+              <button 
+                onClick={handleDownloadReport} 
+                className="sb-ActionButton sb-ActionButton--blue"
+                aria-label="Download security compliance report"
+                disabled={isDownloading || downloadComplete}
+              >
                 <Download className="sb-ActionButton__icon" />
-                Download Invoice
-              </a>
+                Download Report
+              </button>
               <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
