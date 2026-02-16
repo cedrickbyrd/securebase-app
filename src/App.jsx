@@ -1,268 +1,61 @@
-import React, { useState } from 'react';
-import { Shield, CheckCircle, FileCode, Download, Play, Settings, Lock, Eye, AlertTriangle, Zap, GitBranch, Database, Users, Cloud, Terminal, Rocket, DollarSign, Clock, Code, ShoppingCart, UserPlus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Shield, CheckCircle, Rocket, Lock, Eye, Zap, 
+  GitBranch, Database, Users, Cloud, Terminal, 
+  DollarSign, ShoppingCart, UserPlus, ArrowRight, Activity
+} from 'lucide-react';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 
 export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [deploymentLog, setDeploymentLog] = useState([]);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [devEnvStep, setDevEnvStep] = useState('config');
-  const [devConfig, setDevConfig] = useState({
-    environment: 'development',
-    region: 'us-east-1',
-    orgName: '',
-    email: '',
-    enabledModules: {
-      core: true,
-      identity: true,
-      security: true,
-      logging: true,
-      networking: false,
-      monitoring: false,
-      sales: false
+
+  // Stripe Checkout Logic
+  const handleCheckout = async (priceId) => {
+    try {
+      const response = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const { url } = await response.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error('Checkout failed:', err);
     }
-  });
-
-  const modules = [
-    { 
-      id: 'core', 
-      name: 'Access Controls & Segregation of Duties', 
-      icon: Cloud, 
-      description: 'SOX2-compliant role separation with account factory and SCP guardrails for access control', 
-      resources: ['Organizations', 'OUs', 'Accounts', 'SCPs'], 
-      status: 'essential', 
-      devCost: '$0/month', 
-      compliance: ['SOX2', 'SOC2', 'CIS'] 
-    },
-    { 
-      id: 'identity', 
-      name: 'Multi-Factor Authentication & SSO', 
-      icon: Users, 
-      description: 'Zero long-lived credentials with SSO, MFA enforcement for SOX2 user access controls', 
-      resources: ['Identity Center', 'Permission Sets', 'Break-Glass Role', 'Password Policy'], 
-      status: 'essential', 
-      devCost: '$0/month', 
-      compliance: ['SOX2', 'SOC2', 'NIST AC/IA'] 
-    },
-    { 
-      id: 'security', 
-      name: 'SOX2 Change Management & Monitoring', 
-      icon: Shield, 
-      description: 'Automated change detection, security monitoring, and SOX2-compliant audit controls', 
-      resources: ['GuardDuty', 'Security Hub', 'Config', 'CloudTrail', 'KMS'], 
-      status: 'essential', 
-      devCost: '$10-15/month', 
-      compliance: ['SOX2', 'SOC2', 'PCI-DSS'] 
-    },
-    { 
-      id: 'logging', 
-      name: 'Audit Trail & Evidence Collection (1-year retention)', 
-      icon: Database, 
-      description: 'Immutable audit logs for SOX2 compliance with 1-year retention and centralized aggregation', 
-      resources: ['CloudTrail', 'CloudWatch', 'S3 Log Buckets', 'VPC Flow Logs'], 
-      status: 'essential', 
-      devCost: '$5-10/month', 
-      compliance: ['SOX2', 'SOC2', 'NIST AU'] 
-    },
-    { 
-      id: 'networking', 
-      name: 'Data Integrity & Encryption', 
-      icon: GitBranch, 
-      description: 'Network segmentation and encryption-in-transit for SOX2 data integrity controls', 
-      resources: ['Transit Gateway', 'VPCs', 'Subnets', 'Route Tables', 'NACLs'], 
-      status: 'recommended', 
-      devCost: '$30-40/month', 
-      compliance: ['SOX2', 'SOC2', 'Zero Trust'] 
-    },
-    { 
-      id: 'monitoring', 
-      name: 'Real-Time Financial Controls', 
-      icon: Eye, 
-      description: 'Continuous monitoring and alerting for SOX2 control effectiveness and SOC2 availability', 
-      resources: ['CloudWatch Dashboards', 'SNS Topics', 'EventBridge Rules'], 
-      status: 'recommended', 
-      devCost: '$5-8/month', 
-      compliance: ['SOX2', 'SOC2', 'NIST SI'] 
-    },
-    { 
-      id: 'sales', 
-      name: 'Sales Enablement', 
-      icon: DollarSign, 
-      description: 'Lead tracking, pipeline analytics, and revenue forecasting for fintech platforms', 
-      resources: ['Lead Management', 'Pipeline Analytics', 'Revenue Forecasting', 'CRM Integration'], 
-      status: 'coming-soon', 
-      devCost: 'Coming Q1 2026', 
-      compliance: ['SOX2', 'SOC2'] 
-    }
-  ];
-
-  const features = [
-    { Icon: Shield, title: 'Audit-Ready', description: 'CIS, SOC2, NIST 800-53, RMF compliant from day one' },
-    { Icon: Zap, title: 'Deploy in Hours', description: 'Production Terraform with no Control Tower dependency' },
-    { Icon: Lock, title: 'Zero Trust', description: 'No long-lived credentials, MFA enforced, SCPs enabled' },
-    { Icon: CheckCircle, title: 'Fintech Grade', description: 'Built for fintech audits and government requirements' },
-    { Icon: GitBranch, title: 'Multi-Account', description: 'Opinionated OU structure with blast-radius control' },
-    { Icon: Eye, title: 'Break-Glass Ready', description: 'Auditor-approved emergency access with CloudTrail logging' }
-  ];
-
-  const testimonials = [
-    {
-      quote: "SecureBase cut our SOC2 prep time from 6 months to 3 weeks. The automated evidence collection alone saved us hundreds of hours.",
-      author: "Sarah Chen",
-      role: "CTO",
-      company: "NeoLend Financial"
-    },
-    {
-      quote: "We passed our SOX2 audit on the first try. The auditors were impressed by how complete our controls documentation was.",
-      author: "Marcus Williams",
-      role: "VP Engineering",
-      company: "PayStream Technologies"
-    },
-    {
-      quote: "The 48-hour deployment guarantee sounded too good to be true. It wasn't. We were fully deployed and audit-ready in under 2 days.",
-      author: "Priya Patel",
-      role: "Head of Infrastructure",
-      company: "ClearCredit Corp"
-    }
-  ];
-
-  const faqs = [
-    {
-      question: "How long does the initial deployment actually take?",
-      answer: "Most customers are fully deployed within 48 hours. The Terraform runs in under 15 minutes; the remaining time is configuration review, documentation handoff, and team onboarding."
-    },
-    {
-      question: "Do I need AWS Control Tower?",
-      answer: "No. SecureBase is built specifically to work without Control Tower, giving you the same compliance posture with far less complexity and cost."
-    },
-    {
-      question: "What compliance frameworks does SecureBase cover?",
-      answer: "SecureBase covers SOX2, SOC2 Type II, CIS AWS Foundations Benchmark, NIST 800-53, and PCI-DSS out of the box. Additional frameworks can be layered on."
-    },
-    {
-      question: "What happens after the 6-month pilot?",
-      answer: "You can continue at the standard rate of $8,000/month, or we can transition you to a self-managed model with our full documentation and runbooks."
-    },
-    {
-      question: "Is my data safe during deployment?",
-      answer: "Yes. We deploy infrastructure into your AWS accounts — we never have access to your application data. All credentials are rotated post-deployment."
-    }
-  ];
-
-  const addLog = (message, type = 'info') => {
-    const timestamp = new Date().toLocaleTimeString();
-    setDeploymentLog(prev => [...prev, { timestamp, message, type }]);
-  };
-
-  const simulateDeployment = async () => {
-    if (!devConfig.orgName || !devConfig.email) {
-      alert('Please provide organization name and email');
-      return;
-    }
-
-    setIsDeploying(true);
-    setDeploymentLog([]);
-    setDevEnvStep('deploying');
-    
-    const steps = [
-      { msg: 'Initializing Terraform backend...', delay: 1000 },
-      { msg: 'Validating AWS credentials...', delay: 800 },
-      { msg: `Creating organization: ${devConfig.orgName}`, delay: 600 },
-      { msg: 'Running terraform init...', delay: 1200 },
-      { msg: '✓ Terraform initialized successfully', delay: 500, type: 'success' },
-      { msg: 'Generating deployment plan...', delay: 1500 },
-      { msg: 'Planning to create 23 resources...', delay: 800 },
-    ];
-
-    if (devConfig.enabledModules.core) {
-      steps.push(
-        { msg: '[Core] Creating AWS Organization...', delay: 1000 },
-        { msg: '[Core] Configuring organizational units...', delay: 800 },
-        { msg: '[Core] ✓ Core infrastructure ready', delay: 600, type: 'success' }
-      );
-    }
-
-    if (devConfig.enabledModules.identity) {
-      steps.push(
-        { msg: '[Identity] Setting up IAM Identity Center...', delay: 1000 },
-        { msg: '[Identity] Creating permission sets...', delay: 900 },
-        { msg: '[Identity] ✓ Identity Center configured', delay: 600, type: 'success' }
-      );
-    }
-
-    if (devConfig.enabledModules.security) {
-      steps.push(
-        { msg: '[Security] Enabling GuardDuty...', delay: 1200 },
-        { msg: '[Security] Configuring Security Hub...', delay: 900 },
-        { msg: '[Security] Setting up Config rules...', delay: 800 },
-        { msg: '[Security] ✓ Security services active', delay: 600, type: 'success' }
-      );
-    }
-
-    if (devConfig.enabledModules.logging) {
-      steps.push(
-        { msg: '[Logging] Creating S3 buckets for logs...', delay: 1000 },
-        { msg: '[Logging] Enabling CloudTrail...', delay: 900 },
-        { msg: '[Logging] ✓ Logging infrastructure deployed', delay: 600, type: 'success' }
-      );
-    }
-
-    if (devConfig.enabledModules.networking) {
-      steps.push(
-        { msg: '[Networking] Creating Transit Gateway...', delay: 1200 },
-        { msg: '[Networking] Configuring VPCs...', delay: 1000 },
-        { msg: '[Networking] ✓ Network foundation ready', delay: 600, type: 'success' }
-      );
-    }
-
-    if (devConfig.enabledModules.monitoring) {
-      steps.push(
-        { msg: '[Monitoring] Creating CloudWatch dashboards...', delay: 1000 },
-        { msg: '[Monitoring] Setting up alarms...', delay: 800 },
-        { msg: '[Monitoring] ✓ Monitoring configured', delay: 600, type: 'success' }
-      );
-    }
-
-    steps.push(
-      { msg: '', delay: 500 },
-      { msg: '🎉 Deployment complete!', delay: 1000, type: 'success' },
-      { msg: `Environment: ${devConfig.environment}`, delay: 300, type: 'info' },
-      { msg: `Region: ${devConfig.region}`, delay: 300, type: 'info' },
-      { msg: 'Next: Review resources in AWS Console', delay: 500, type: 'info' }
-    );
-
-    for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, step.delay));
-      addLog(step.msg, step.type || 'info');
-    }
-
-    setIsDeploying(false);
-    setDevEnvStep('complete');
-  };
-
-  const calculateCost = () => {
-    let total = 0;
-    return total;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100">
+      {/* Global Navigation */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Shield className="text-blue-600 w-8 h-8" />
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('overview')}>
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <Shield className="text-white w-6 h-6" />
+            </div>
             <div>
-              <div className="text-2xl font-bold tracking-tight text-gray-900">SecureBase</div>
-              <div className="text-xs text-gray-600">AWS Landing Zone Terraform</div>
+              <div className="text-xl font-bold tracking-tight">SecureBase</div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
             </div>
           </div>
-          <nav className="flex gap-6 items-center">
-            <button onClick={() => setActiveTab('overview')} className={`text-sm font-medium ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Overview</button>
-            <button onClick={() => setActiveTab('modules')} className={`text-sm font-medium ${activeTab === 'modules' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Fintech Compliance Controls</button>
-            <button onClick={() => setActiveTab('compliance')} className={`text-sm font-medium ${activeTab === 'compliance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'} transition pb-1`}>Compliance</button>
-            <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition flex items-center gap-2 text-white shadow-md">
+          
+          <nav className="hidden md:flex items-center gap-8">
+            {['overview', 'compliance', 'pricing'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`text-sm font-semibold capitalize transition-all ${
+                  activeTab === tab ? 'text-blue-600' : 'text-slate-600 hover:text-blue-500'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+            <button 
+              onClick={() => setActiveTab('pricing')}
+              className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-200"
+            >
               <ShoppingCart className="w-4 h-4" />
               Purchase Now
             </button>
@@ -271,328 +64,133 @@ export default function SecureBaseLandingZone() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Demo banner */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-6 text-center">
-          <p className="text-sm text-yellow-800">
-            🚀 Try the interactive demo — <a
-              href="https://demo.securebase.tximhotep.com"
-              className="underline font-medium"
-              target="_blank"
-              rel="noopener noreferrer"
-            >Open Demo</a>
-            <span className="mx-2">·</span>
-            Demo mode: sample data only
-          </p>
-        </div>
-
-        {/* Overview Tab */}
+        
+        {/* TAB: OVERVIEW (Hero & Value Prop) */}
         {activeTab === 'overview' && (
-          <div className="space-y-16">
-            <section className="text-center space-y-6">
-              <div className="inline-block px-4 py-2 bg-purple-100 border border-purple-300 rounded-full text-purple-700 text-sm mb-4 font-medium">
-                SOX2 + SOC2 Ready • Fintech Compliance • Deploy in Hours
+          <div className="space-y-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <section className="text-center pt-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-blue-700 text-xs font-bold mb-8">
+                <Activity className="w-3 h-3" /> v1.0 PRODUCTION READY
               </div>
-              <h1 className="text-6xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-700 bg-clip-text text-transparent leading-tight">
-                SOX2-Ready Infrastructure<br />for Fintech Platforms
+              <h1 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-8">
+                Audit-Ready AWS <br />
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  In Under 48 Hours
+                </span>
               </h1>
-              <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-                Don't spend $300K+ on DIY SOX2 compliance. Deploy production-grade SOX2 + SOC2 controls in hours, not months. Built for neobanks, lending platforms, and payment processors.
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+                Deploy a SOX2/SOC2 compliant Landing Zone without the complexity of Control Tower. 
+                Built for Fintechs that need to pass audits yesterday.
               </p>
-              
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto mt-12">
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-purple-600">SOX2 + SOC2</div>
-                  <div className="text-sm text-gray-600">Controls</div>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-green-600">$204K+</div>
-                  <div className="text-sm text-gray-600">Saved vs. DIY</div>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md hover:shadow-lg transition">
-                  <div className="text-3xl font-bold text-blue-600">100%</div>
-                  <div className="text-sm text-gray-600">Audit Pass Rate</div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  onClick={() => setActiveTab('pricing')}
+                  className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-xl shadow-blue-200"
+                >
+                  Start Your Pilot <ArrowRight className="w-5 h-5" />
+                </button>
+                <button className="px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold text-lg hover:bg-slate-50 transition">
+                  View Architecture
+                </button>
               </div>
             </section>
-            
-            {/* Who This Is For */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900 text-center">Who This Is For</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">🏦</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Neobanks</h3>
-                  <p className="text-gray-600 text-sm">Digital-first banks (e.g., Chime, Current)</p>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">💳</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Lending Platforms</h3>
-                  <p className="text-gray-600 text-sm">Consumer/SMB lenders (e.g., Affirm, Kabbage)</p>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">💰</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Payment Processors</h3>
-                  <p className="text-gray-600 text-sm">B2B payment rails (e.g., Stripe, Plaid)</p>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">🛍️</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Embedded Finance</h3>
-                  <p className="text-gray-600 text-sm">SaaS + payments (e.g., Shopify Capital)</p>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">₿</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Crypto/Web3</h3>
-                  <p className="text-gray-600 text-sm">Digital asset platforms (compliance-ready)</p>
-                </div>
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                  <div className="text-2xl mb-2">📊</div>
-                  <h3 className="font-bold text-gray-900 mb-2">Investment Platforms</h3>
-                  <p className="text-gray-600 text-sm">Robo-advisors and trading platforms</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Features */}
-            <div className="grid md:grid-cols-3 gap-8">
-              {features.map((f, i) => (
-                <div key={i} className="p-6 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300 transition">
-                  <f.Icon className="text-blue-600 mb-4 w-10 h-10" />
-                  <h3 className="text-lg font-bold mb-2 text-gray-900">{f.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{f.description}</p>
+
+            {/* Feature Grid */}
+            <section className="grid md:grid-cols-3 gap-8">
+              {[
+                { icon: Lock, title: "Zero Trust Auth", desc: "MFA enforced, zero long-lived credentials, and centralized Identity Center." },
+                { icon: Terminal, title: "Pure Terraform", desc: "No proprietary lock-in. Full ownership of your infrastructure code from day one." },
+                { icon: Activity, title: "Continuous Drift Detection", desc: "Real-time alerts for configuration changes that could impact your compliance." }
+              ].map((feature, i) => (
+                <div key={i} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                  <feature.icon className="text-blue-600 w-10 h-10 mb-6" />
+                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">{feature.desc}</p>
                 </div>
               ))}
-            </div>
-
-            {/* Architecture Overview */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
-              <h2 className="text-2xl font-bold mb-6 text-gray-900">Account Architecture</h2>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-600 mb-4">Organizational Units</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">Management Account</div>
-                        <div className="text-gray-600">Organization root, billing consolidation</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">Security OU</div>
-                        <div className="text-gray-600">GuardDuty, Security Hub, Log Archive</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">Shared Services OU</div>
-                        <div className="text-gray-600">Networking, CI/CD, shared resources</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">Workloads OU</div>
-                        <div className="text-gray-600">Production, Staging, Development</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-600 mb-4">Security Controls</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">Multi-region CloudTrail with log validation</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">GuardDuty threat detection across all accounts</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">AWS Config with auto-remediation</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">SCPs enforcing security baselines</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ROI Comparison */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
-              <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">ROI: SecureBase vs. DIY SOX2 Compliance</h2>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-red-50 rounded-xl p-6 border border-red-200">
-                  <h3 className="text-xl font-bold text-red-700 mb-4">❌ DIY Approach</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Compliance consultant:</span>
-                      <span className="font-bold text-gray-900">$50K-$150K</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Implementation time:</span>
-                      <span className="font-bold text-gray-900">6-12 months</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Ongoing audit prep:</span>
-                      <span className="font-bold text-gray-900">200+ hours/year</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Staff time cost:</span>
-                      <span className="font-bold text-gray-900">$100K+/year</span>
-                    </div>
-                    <div className="pt-3 mt-3 border-t border-red-300 flex justify-between">
-                      <span className="text-red-700 font-bold text-lg">Total Year 1 Cost:</span>
-                      <span className="text-red-700 font-bold text-lg">$300K+</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-                  <h3 className="text-xl font-bold text-green-700 mb-4">✅ SecureBase Fintech Tier</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Deploy SOX2 controls:</span>
-                      <span className="font-bold text-gray-900">&lt;10 minutes</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Automated evidence:</span>
-                      <span className="font-bold text-gray-900">24/7</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Quarterly reports:</span>
-                      <span className="font-bold text-gray-900">Included</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Monthly subscription:</span>
-                      <span className="font-bold text-gray-900">$8K/month</span>
-                    </div>
-                    <div className="pt-3 mt-3 border-t border-green-300 flex justify-between">
-                      <span className="text-green-700 font-bold text-lg">Total Year 1 Cost:</span>
-                      <span className="text-green-700 font-bold text-lg">$96K</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 text-center bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-6 border border-green-300">
-                <p className="text-2xl font-bold text-gray-900">
-                  💰 Save <span className="text-green-600">$204K+</span> in Year 1
-                </p>
-                <p className="text-gray-600 mt-2">Plus faster time-to-audit and reduced operational overhead</p>
-              </div>
-            </div>
-          </div>
-        )}
-{/* Pilot Benefits Tab */}
-        {activeTab === 'modules' && (
-          <div className="space-y-16">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900">Fintech Compliance Controls</h2>
-              <p className="text-gray-600 text-lg">SOX2 + SOC2 infrastructure controls for financial services platforms</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {modules.map((m) => (
-                <div
-                  key={m.id}
-                  className={`p-6 bg-white rounded-xl border cursor-pointer transition shadow-md ${
-                    selectedModule === m.id ? 'border-blue-600 ring-2 ring-blue-200 shadow-lg' : 'border-gray-200 hover:border-blue-400 hover:shadow-lg'
-                  }`}
-                  onClick={() => setSelectedModule(selectedModule === m.id ? null : m.id)}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <m.icon className="text-blue-600" size={32} />
-                    <div className="flex gap-2">
-                      <span className={`text-xs font-mono px-2 py-1 rounded ${
-                        m.status === 'essential' ? 'bg-orange-100 text-orange-700 border border-orange-300' :
-                        m.status === 'coming-soon' ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
-                        'bg-blue-100 text-blue-700 border border-blue-300'
-                      }`}>
-                        {m.status}
-                      </span>
-                      <span className="text-xs font-mono text-green-700 bg-green-100 px-2 py-1 rounded border border-green-300">
-                        {m.devCost}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{m.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{m.description}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {m.compliance.map((c) => (
-                      <span key={c} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">{c}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center mt-12">
-              <p className="text-2xl font-bold text-blue-600">
-                🚀 Production-Ready Infrastructure in 48 Hours — Guaranteed
-              </p>
-              <div className="mt-6">
-                <a
-                  href="/contact"
-                  className="inline-block px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
-                >
-                  Contact Us
-                </a>
-              </div>
-            </div>
-
-            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-md">
-              <h2 className="text-4xl font-bold text-center mb-6 text-gray-900">Pilot Program Pricing</h2>
-              <div className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 border-2 border-blue-500 text-center">
-                 <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded-full font-bold mb-4">WHITE-GLOVE PILOT</div>
-                 <div className="mb-4"><span className="text-6xl font-bold text-gray-900">$4,000</span><span className="text-2xl text-gray-600">/month</span></div>
-                 <a href="https://calendly.com/securebase/white-glove-pilot" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition text-white shadow-lg">
-                    <Rocket className="w-5 h-5" /> Schedule Free Architecture Review
-                 </a>
-              </div>
             </section>
           </div>
         )}
 
-        {/* Dev Environment Tab */}
-        {activeTab === 'devenv' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900">Deploy Development Environment</h2>
-              <p className="text-gray-600 text-lg">Test SecureBase with minimal AWS resources</p>
-            </div>
-            {/* You can re-insert the specific devEnvStep logic here if needed */}
-          </div>
-        )}
-
-        {/* Compliance Tab */}
+        {/* TAB: COMPLIANCE (Live Signals) */}
         {activeTab === 'compliance' && (
-          <ComplianceScreen />
+          <div className="animate-in fade-in duration-500">
+            <ComplianceScreen />
+          </div>
+        )}
+
+        {/* TAB: PRICING (Stripe Loop) */}
+        {activeTab === 'pricing' && (
+          <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center">
+              <h2 className="text-4xl font-black text-slate-900 mb-4">Predictable Pricing for Scale</h2>
+              <p className="text-slate-600">Select the plan that fits your current compliance audit window.</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 pt-8">
+              {/* Pilot Tier */}
+              <div className="relative bg-white border-2 border-blue-600 rounded-[2rem] p-10 shadow-2xl flex flex-col">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
+                  Early Adopter Pilot
+                </div>
+                <h3 className="text-2xl font-bold">White-Glove Pilot</h3>
+                <div className="my-6">
+                  <span className="text-6xl font-black">$4,000</span>
+                  <span className="text-slate-400 font-bold">/mo</span>
+                </div>
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {['SOX2 + SOC2 Base Controls', 'White-Glove AWS Deployment', 'Quarterly Evidence Reports', 'CIS Benchmark Hardening'].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                      <CheckCircle className="text-green-500 w-5 h-5" /> {item}
+                    </li>
+                  ))}
+                </ul>
+                <button 
+                  onClick={() => handleCheckout('price_PILOT_4000')}
+                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                >
+                  Join the Pilot
+                </button>
+              </div>
+
+              {/* Standard Tier */}
+              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-10 flex flex-col text-white">
+                <h3 className="text-2xl font-bold">Fintech Standard</h3>
+                <div className="my-6">
+                  <span className="text-6xl font-black">$8,000</span>
+                  <span className="text-slate-500 font-bold">/mo</span>
+                </div>
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {['Everything in Pilot', '24/7 Priority Incident Ops', 'Multi-Region Expansion', 'Unlimited Account Vending'].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm font-medium text-slate-300">
+                      <CheckCircle className="text-blue-400 w-5 h-5" /> {item}
+                    </li>
+                  ))}
+                </ul>
+                <button 
+                  onClick={() => handleCheckout('price_FINTECH_8000')}
+                  className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-100 transition shadow-lg"
+                >
+                  Select Standard
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
 
-      {/* Footer CTA */}
-      {activeTab !== 'devenv' && activeTab !== 'compliance' && (
-        <footer className="max-w-7xl mx-auto px-6 py-16">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-center shadow-lg">
-            <h3 className="text-3xl font-bold mb-4 text-white">Ready to Deploy?</h3>
-            <p className="text-blue-100 mb-8 text-lg">Get started with SecureBase and have your AWS foundation running in hours</p>
-            <div className="flex gap-4 justify-center">
-              <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center gap-2 shadow-md">
-                <UserPlus className="w-4 h-4" /> Sign Up for Pilot
-              </button>
-              <button onClick={() => window.location.href='https://securebase.tximhotep.com'} className="px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-md">
-                <Rocket className="w-4 h-4" /> Deploy Now
-              </button>
-            </div>
+      {/* Modern Footer */}
+      <footer className="bg-white border-t border-slate-200 mt-24">
+        <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-3">
+            <Shield className="text-blue-600 w-5 h-5" />
+            <span className="font-bold text-slate-900">SecureBase by TxImhotep LLC</span>
           </div>
-        </footer>
-      )}
+          <div className="text-sm text-slate-500 font-medium">
+            © 2026 TxImhotep LLC. Built for the future of Fintech Compliance.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
