@@ -2,8 +2,8 @@
 
 # Marketing Site Outputs
 output "marketing_site_url" {
-  description = "Marketing site URL (primary Netlify URL)"
-  value       = "${data.netlify_site.marketing.name}.netlify.app"
+  description = "Marketing site URL (custom domain)"
+  value       = "tximhotep.com"
 }
 
 output "marketing_site_id" {
@@ -13,7 +13,7 @@ output "marketing_site_id" {
 
 output "marketing_deploy_url" {
   description = "Latest deploy URL for marketing site"
-  value       = "https://${data.netlify_site.marketing.name}.netlify.app"
+  value       = "https://tximhotep.com"
 }
 
 output "marketing_custom_domain" {
@@ -26,8 +26,8 @@ output "marketing_custom_domain" {
 
 # Portal Demo Site Outputs
 output "portal_demo_url" {
-  description = "Portal demo site URL (primary Netlify URL)"
-  value       = "${data.netlify_site.portal_demo.name}.netlify.app"
+  description = "Portal demo site URL (custom domain)"
+  value       = "demo.securebase.tximhotep.com"
 }
 
 output "portal_demo_site_id" {
@@ -37,7 +37,7 @@ output "portal_demo_site_id" {
 
 output "portal_demo_deploy_url" {
   description = "Latest deploy URL for portal demo site"
-  value       = "https://${data.netlify_site.portal_demo.name}.netlify.app"
+  value       = "https://demo.securebase.tximhotep.com"
 }
 
 output "portal_demo_custom_domain" {
@@ -45,19 +45,31 @@ output "portal_demo_custom_domain" {
   value       = data.netlify_site.portal_demo.custom_domain
 }
 
+# Government Demo (Placeholder - not deployed yet)
+output "portal_demo_gov_url" {
+  description = "Government demo site URL (placeholder - not deployed)"
+  value       = "demo-gov.securebase.tximhotep.com"
+}
+
 # Summary Output
 output "deployment_summary" {
   description = "Summary of Netlify deployments"
   value = {
     marketing_site = {
-      netlify_url   = "https://${data.netlify_site.marketing.name}.netlify.app"
+      netlify_url   = "https://tximhotep.com"
       custom_domain = data.netlify_site.marketing.custom_domain
       site_id       = data.netlify_site.marketing.id
+      # Fallback: securebase-app.netlify.app
     }
     portal_demo = {
-      netlify_url   = "https://${data.netlify_site.portal_demo.name}.netlify.app"
+      netlify_url   = "https://demo.securebase.tximhotep.com"
       custom_domain = data.netlify_site.portal_demo.custom_domain
       site_id       = data.netlify_site.portal_demo.id
+      # Fallback: securebase-demo.netlify.app
+    }
+    portal_demo_gov = {
+      netlify_url   = "https://demo-gov.securebase.tximhotep.com"
+      note          = "Placeholder - not deployed yet"
     }
   }
 }

@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'phase3a-portal/**'
-      - '.github/workflows/deploy-demo-portal.yml'
+      - '.github/workflows/deploy-demo.yml'
   pull_request:
     branches:
       - main
@@ -65,7 +65,7 @@ jobs:
           production-branch: main
           production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Demo Portal - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
+          deploy-message: "Demo  - ${{ github.event.head_commit.message || 'Manual Deploy' }}"
           enable-pull-request-comment: true
           enable-commit-comment: false
           overwrites-pull-request-comment: true
@@ -77,7 +77,7 @@ jobs:
 
       - name: Update deployment summary
         run: |
-          echo "### 🎯 Demo Portal Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Demo Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **URL**: ${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Deployed" >> $GITHUB_STEP_SUMMARY
@@ -86,7 +86,7 @@ jobs:
 
   verify-demo:
     name: Verify Netlify Deployment
-    needs: deploy-demo-portal
+    needs: deploy-demo
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,29 +98,29 @@ jobs:
 
       - name: Test Netlify deployment
         run: |
-          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          DEPLOY_URL="${{ needs.deploy-demo.outputs.deployment-url }}"
           echo "🧪 Testing $DEPLOY_URL..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
 
           if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Demo portal is accessible (HTTP $STATUS)"
+            echo "✅ Demo is accessible (HTTP $STATUS)"
           else
-            echo "❌ Demo portal returned HTTP $STATUS"
+            echo "❌ Demo returned HTTP $STATUS"
             exit 1
           fi
 
       - name: Generate deployment report
         if: always()
         run: |
-          echo "## 📊 Demo Portal Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Demo Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          DEPLOY_URL="${{ needs.deploy-demo.outputs.deployment-url }}"
           DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
           if [ "$DEMO_STATUS" -eq 200 ]; then
-            echo "- ✅ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Demo **: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ **Demo Portal**: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ **Demo **: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY

@@ -57,6 +57,16 @@ export const Invoices = () => {
   };
 
   const handleDownload = async (invoiceId) => {
+    // In demo mode, redirect to marketing site to close the loop
+    const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_USE_MOCK_API === 'true';
+    
+    if (isDemoMode) {
+      // Redirect to marketing site - conversion opportunity
+      window.location.href = 'https://tximhotep.com';
+      return;
+    }
+    
+    // Real download for actual customers (production)
     try {
       await apiService.downloadInvoice(invoiceId);
     } catch (err) {
@@ -220,6 +230,7 @@ export const Invoices = () => {
                           <button
                             onClick={() => handleDownload(invoice.id)}
                             className="text-green-600 hover:text-green-700 font-medium inline-flex items-center"
+                            data-testid="download-invoice-button"
                           >
                             <Download className="w-4 h-4 mr-1" />
                             PDF
@@ -358,6 +369,7 @@ export const Invoices = () => {
                   <button
                     onClick={() => handleDownload(selectedInvoice.id)}
                     className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium inline-flex items-center justify-center"
+                    data-testid="modal-download-invoice-button"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Download PDF

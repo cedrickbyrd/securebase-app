@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
+import BRANDING from '../config/branding';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -14,6 +15,8 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const { customer, customerIndex } = useDemoCustomer();
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
   useEffect(() => {
     loadDashboardData();
@@ -75,7 +78,7 @@ function Dashboard() {
         <div className="header-content">
           <div className="header-left">
             <h1>Dashboard</h1>
-            <p>Welcome back to SecureBase</p>
+            <p>Welcome back to {BRANDING.productShortName}</p>
           </div>
           <div className="header-right">
             <NotificationBell onCriticalAlert={handleCriticalAlert} />
@@ -88,6 +91,10 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="dashboard-main">
+        {/* Demo Customer Indicator */}
+        {isDemoMode && customer && customerIndex !== null && (
+          <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
+        )}
         {/* Metrics Grid */}
         <section className="metrics-grid">
           <div className="metric-card">

@@ -15,6 +15,7 @@ The SecureBase demo environment provides a fully functional, pre-populated versi
 ### ✅ What's Included
 
 - **Auto-Login**: No signup required - visitors are automatically logged in
+- **Customer Rotation**: Each visitor sees a different customer profile (rotates every 15 minutes)
 - **Read-Only Mode**: All write operations are disabled with friendly toast notifications
 - **Sample Data**: 
   - 5 mock customers across all tiers (Healthcare, Fintech, Government, Standard)
@@ -85,6 +86,82 @@ The SecureBase demo environment provides a fully functional, pre-populated versi
 - Mix of statuses: paid, issued, overdue, draft
 - Various line items: base pricing, add-ons, prorated charges
 - Total revenue tracked: ~$400K+
+
+---
+
+## Customer Rotation System
+
+### Overview
+
+The demo environment features an intelligent customer rotation system that provides each visitor with a unique demo experience. Instead of all visitors seeing the same customer, the system rotates through all 5 demo customers to showcase the platform's versatility across different industries and tiers.
+
+### How It Works
+
+**Phase 1: Time-Based Rotation (Current)**
+
+The rotation uses a deterministic time-based algorithm:
+
+```javascript
+customerIndex = Math.floor(Date.now() / (15 * 60 * 1000)) % 5
+```
+
+- **Rotation Interval**: Every 15 minutes
+- **Global Synchronization**: All visitors in the same 15-minute window see the same customer
+- **Session Persistence**: Customer assignment is stored in `sessionStorage` and persists throughout the user's session
+- **No Backend Required**: Works with static S3 hosting
+
+**Rotation Sequence:**
+1. Minute 0-14: HealthCorp Medical Systems (#1)
+2. Minute 15-29: FinTechAI Analytics (#2)
+3. Minute 30-44: StartupMVP Inc (#3)
+4. Minute 45-59: GovContractor Defense Solutions (#4)
+5. Minute 0-14 (next hour): SaaSPlatform Cloud Services (#5)
+6. Then cycles back to #1
+
+### Customer-Specific Data
+
+Each customer sees data tailored to their profile:
+
+- **Invoices**: Filtered to show only that customer's invoices
+- **Metrics**: Adjusted based on tier and account count
+  - Healthcare: $15k/mo, 45 accounts, 98% compliance
+  - Fintech: $8k/mo, 28 accounts, 92% compliance
+  - Government: $25k/mo, 120 accounts, 99% compliance
+  - Standard: $2k/mo, 5 accounts, 92% compliance
+- **Compliance Scores**: Higher for regulated industries (Government, Healthcare)
+- **Resource Usage**: Scaled to customer size
+
+### Visual Indicator
+
+A demo customer indicator badge appears at the top of the dashboard showing:
+- Customer number (1-5)
+- Customer name
+- Tier badge (color-coded)
+- Framework badge
+
+### Phase 2: Backend Counter (Future)
+
+When backend infrastructure is deployed, the system can switch to true sequential counting:
+
+1. **DynamoDB Counter**: Atomic increment on each visit
+2. **Lambda Function**: Returns `visitorNumber % 5`
+3. **API Endpoint**: `GET /demo/customer-index`
+4. **Cost**: ~$0.50-1.00/month for typical demo traffic
+
+**Enable Backend Counter:**
+```env
+VITE_DEMO_COUNTER_ENABLED=true
+VITE_DEMO_COUNTER_API=https://api.securebase.io/demo/customer-index
+```
+
+The frontend gracefully falls back to time-based rotation if the backend is unavailable.
+
+### Implementation Files
+
+- `src/hooks/useDemoCustomer.js` - Rotation logic hook
+- `src/components/DemoCustomerIndicator.jsx` - Visual indicator component
+- `src/mocks/mockData.js` - Customer data and helper functions
+- `src/mocks/MockApiService.js` - Customer-aware API responses
 
 ---
 

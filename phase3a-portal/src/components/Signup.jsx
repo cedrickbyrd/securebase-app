@@ -22,9 +22,10 @@ const TIERS = {
     name: 'Fintech',
     price: 8000,
     pilotPrice: 4000,
-    description: 'SOC2 Type II compliant infrastructure',
+    description: 'SOX2 + SOC2 Ready Infrastructure for Financial Services',
     features: [
-      'SOC2 Type II controls',
+      'SOX2 Section 404 controls',
+      'SOC2 Type II (all 5 TSC)',
       'All Standard features',
       'GuardDuty threat detection',
       '1-year log retention',
@@ -105,6 +106,14 @@ const Signup = () => {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle rate limiting errors with specific messages
+        if (response.status === 429) {
+          const nextDate = data.next_signup_date;
+          const errorMsg = nextDate 
+            ? `This email was recently used. You can sign up again on ${nextDate}.`
+            : data.error || 'Rate limit exceeded. Please try again later.';
+          throw new Error(errorMsg);
+        }
         throw new Error(data.error || 'Failed to create checkout session');
       }
 

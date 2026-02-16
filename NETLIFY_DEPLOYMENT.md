@@ -98,14 +98,14 @@ To manually trigger either workflow:
 3. **Deploy**
    - Click "Deploy site"
    - Wait 2-3 minutes for build
-   - Site will be live at `https://random-name.netlify.app`
+   - Site will be live at `https://tximhotep.com`
 
 4. **Custom Domain (Optional)**
    - Go to Site settings → Domain management
-   - Add custom domain: `demo.securebase.io`
+   - Add custom domain: `tximhotep.com`
    - Configure DNS:
      ```
-     demo.securebase.io  CNAME  random-name.netlify.app
+     tximhotep.com  CNAME  [your-site].netlify.app
      ```
 
 ---
@@ -282,8 +282,8 @@ curl -I https://demo.securebase.io
 **Solution**: DNS propagation delay (up to 48 hours). Check:
 
 ```bash
-dig demo.securebase.io CNAME
-# Should show: demo.securebase.io CNAME random-name.netlify.app
+dig tximhotep.com CNAME
+# Should show: tximhotep.com CNAME [your-site].netlify.app
 ```
 
 ---
