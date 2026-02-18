@@ -4,14 +4,15 @@
   functions = "src/functions"
 
 [functions]
-  node_bundler = "none"
+  node_bundler = "esbuild"
+  directory = "src/functions"
 
-# Redirect all routes to index.html for SPA routing
-#[[redirects]]
-#  from = "/*"
-#  to = "/index.html"
-#  status = 200
-#  force = false 
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
 
 # Security headers
 [[headers]]
