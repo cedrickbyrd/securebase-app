@@ -32,7 +32,7 @@ variable "allowed_regions" {
 variable "tags" {
   description = "Common tags for all SecureBase resources"
   type        = map(string)
-  default     = {
+  default = {
     Project   = "SecureBase"
     ManagedBy = "Terraform"
   }
@@ -41,16 +41,16 @@ variable "tags" {
 variable "clients" {
   description = "Map of customer/client configurations for multi-tenant PaaS deployments"
   type = map(object({
-    tier         = string              # Customer service tier
-    account_id   = string              # AWS account ID (if bringing your own account)
-    prefix       = string              # Resource naming prefix
-    framework    = string              # Compliance framework (soc2, hipaa, fedramp, cis)
-    vpce_id      = optional(string)    # VPC endpoint ID (required for certain tiers)
-    audit_bucket = optional(string)    # Custom audit log bucket name
+    tier         = string                # Customer service tier
+    account_id   = string                # AWS account ID (if bringing your own account)
+    prefix       = string                # Resource naming prefix
+    framework    = string                # Compliance framework (soc2, hipaa, fedramp, cis)
+    vpce_id      = optional(string)      # VPC endpoint ID (required for certain tiers)
+    audit_bucket = optional(string)      # Custom audit log bucket name
     tags         = optional(map(string)) # Client-specific tags
   }))
   default = {}
-  
+
   validation {
     condition = alltrue([
       for client_key, client_config in var.clients :
@@ -58,7 +58,7 @@ variable "clients" {
     ])
     error_message = "All client tiers must be one of: standard, healthcare, fintech, gov-federal"
   }
-  
+
   validation {
     condition = alltrue([
       for client_key, client_config in var.clients :

@@ -32,7 +32,7 @@ git push origin main
   - notify
 
 ### Access Demo Site
-**URL:** https://cedrickbyrd.github.io/securebase-app/
+**URL:** https://demo.securebase.tximhotep.com/
 
 **Test Checklist:**
 - [ ] Site loads without errors
@@ -81,7 +81,7 @@ git push origin main
 
 ## 🔗 Useful Links
 
-- **Demo Site:** https://cedrickbyrd.github.io/securebase-app/
+- **Demo Site:** https://demo.securebase.tximhotep.com/
 - **Workflow:** https://github.com/cedrickbyrd/securebase-app/actions/workflows/deploy-phase3a-demo.yml
 - **Settings:** https://github.com/cedrickbyrd/securebase-app/settings/pages
 - **Full Docs:** See `GITHUB_PAGES_DEPLOYMENT.md`
