@@ -44,9 +44,10 @@ export default function SecureBaseLandingZone() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          priceId : 'price_1SrgoR5bg6XXXrmNXe0tTgki',
-          successUrl: `${window.location.origin}?success=true`,
-          cancelUrl: `${window.location.origin}?canceled=true`
+          customer_email: userEmail, // Ensure this matches the 'customer_email' in your function
+          price_id: priceId,         // Ensure this matches 'price_id'
+          successUrl: `${window.location.origin}/success`,
+          cancelUrl: `${window.location.origin}/cancel`
         }),
       });
       
