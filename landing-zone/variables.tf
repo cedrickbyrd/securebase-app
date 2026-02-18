@@ -137,3 +137,21 @@ variable "enable_phase2" {
   type        = bool
   default     = true
 }
+
+# Fix for the Netlify Provider Error
+variable "netlify_api_token" {
+  description = "Personal access token for Netlify API"
+  type        = string
+  sensitive   = true
+}
+
+# Fix for the Lambda Module Error
+variable "lambda_packages" {
+  description = "Map of lambda names to their zip package paths"
+  type        = map(string)
+}
+
+
+
+
+

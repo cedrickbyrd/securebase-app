@@ -337,3 +337,13 @@ resource "aws_cloudwatch_log_group" "cost_forecasting" {
   retention_in_days = 30
   tags              = var.tags
 }
+
+#
+# MODULES
+#
+module "netlify_sites" {
+  source        = "../../modules/netlify-sites"
+  netlify_token = var.netlify_api_token 
+#  team_slug     = "cedrickbyrd"
+  # ... other variables
+}

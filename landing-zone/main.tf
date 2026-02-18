@@ -6,6 +6,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    # Fix: Explicitly declare the Netlify provider source
+    netlify = {
+      source  = "netlify/netlify"
+      version = "~> 0.4.0" 
+    }
   }
 }
 
@@ -13,16 +18,30 @@ terraform {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-output "api_endpoints" {
-  description = "Map of all API endpoints"
-  value       = try(module.api_gateway.api_endpoints, {})
+# For the Checkout Creator
+data "archive_file" "checkout_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../src/functions/securebase-checkout-api"
+  output_path = "${path.module}/files/checkout.zip"
 }
+
+# For the Webhook Handler
+data "archive_file" "webhook_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../src/functions/securebase-stripe-webhook"
+  output_path = "${path.module}/files/webhook.zip"
+}
+
 
 provider "aws" {
   region = var.target_region
 }
 
-# --- Modules ---
+provider "netlify" {
+  token     = var.netlify_api_token
+  default_team_slug = "cedrickbyrd"
+}
+
 
 module "organization" {
   source   = "./modules/org"
@@ -31,11 +50,6 @@ module "organization" {
   
   depends_on = [aws_organizations_organization.this]
 }
-
-#module "security" {
-# source     = "./modules/security"
-#  depends_on = [module.organization]
-#}
 
 module "central_logging" {
   source             = "./modules/logging"
@@ -322,6 +336,47 @@ resource "aws_organizations_policy_attachment" "guardrails_standard" {
   target_id = aws_organizations_organizational_unit.customer_standard[0].id
 }
 
+resource "aws_lambda_function" "securebase_checkout" {
+  filename         = data.archive_file.checkout_lambda_zip.output_path
+  function_name    = "securebase-checkout-api"
+  role             = aws_iam_role.lambda_exec.arn
+  handler          = "index.handler" # Matches your index.js
+  source_code_hash = data.archive_file.checkout_lambda_zip.output_base64sha256
+  runtime          = "nodejs18.x"
+}
+resource "aws_lambda_function" "securebase_api" {
+  function_name = "${var.environment}-securebase-api"
+  # ... other config ...
+
+  environment {
+    variables = {
+      STRIPE_PUBLIC_KEY = var.stripe_public_key
+      DEPLOY_REGION     = var.target_region
+      NODE_ENV          = var.environment
+    }
+  }
+}
+resource "aws_iam_role" "lambda_exec" {
+  name = "securebase_lambda_exec_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# Attach basic execution rights (logging)
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
 module "security" {
   source = "./modules/security"
 
@@ -342,6 +397,7 @@ module "lambda_functions" {
     billing_worker   = "${path.root}/../phase2-backend/deploy/billing_worker.zip"
     support_tickets  = fileexists("${path.root}/../phase2-backend/deploy/phase3b/support_tickets.zip") ? "${path.root}/../phase2-backend/deploy/phase3b/support_tickets.zip" : "${path.root}/../phase2-backend/deploy/support_tickets.zip"
     cost_forecasting = fileexists("${path.root}/../phase2-backend/deploy/phase3b/cost_forecasting.zip") ? "${path.root}/../phase2-backend/deploy/phase3b/cost_forecasting.zip" : "${path.root}/../phase2-backend/deploy/cost_forecasting.zip"
+health_check     = "${path.root}/../phase2-backend/deploy/health_check.zip"
   }
 
   # Database configuration
@@ -453,3 +509,23 @@ module "rbac" {
 
   depends_on = [module.phase2_database]
 }
+module "netlify_sites" {
+  source        = "./modules/netlify-sites"
+  netlify_token = var.netlify_api_token 
+}
+
+#module "securebase" {
+#  source = "./modules/securebase"
+#
+#  stripe_public_key = var.stripe_public_key
+#  environment       = var.environment
+#  target_region     = var.target_region
+#  netlify_api_token = var.netlify_api_token
+#  lambda_packages   = var.lambda_packages
+#    org_name        = var.org_name
+#    accounts        = var.accounts
+#    allowed_regions = var.allowed_regions
+#    clients         = var.clients
+#    tags            = var.tags
+#
+#}
