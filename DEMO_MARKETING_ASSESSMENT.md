@@ -59,7 +59,7 @@ SecureBase is a **multi-phase, multi-tenant AWS PaaS platform** with distinct de
 
 **Current Status:** Workflow exists but needs to be activated in repository settings.
 
-**Deployment URL (when activated):** `https://cedrickbyrd.github.io/securebase-app/`
+**Deployment URL (when activated):** `https://cedrickbyrd.securebase.tximhotep.com/securebase-app/`
 
 ---
 
@@ -159,7 +159,7 @@ The repository contains **THREE distinct frontend applications**:
 **For Quick Demo (Fastest - 15 minutes):**
 - Deploy **Root Marketing Site** to GitHub Pages (already configured)
 - Activate workflow in repository settings
-- URL: `https://cedrickbyrd.github.io/securebase-app/`
+- URL: `https://securebase.tximhotep.com`
 
 **For Interactive Demo (2-4 hours):**
 - Deploy **Phase 3a Portal** with mock API to Netlify
@@ -203,7 +203,7 @@ The repository contains **THREE distinct frontend applications**:
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Live Site: https://cedrickbyrd.github.io/securebase-app/   │
+│ Live Site: https://securebase.tximhotep.com     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -283,7 +283,7 @@ The repository contains **THREE distinct frontend applications**:
 
 4. **Access Deployed Site**
    ```
-   URL: https://cedrickbyrd.github.io/securebase-app/
+   URL: https://securebase.tximhotep.com
    ```
 
 **Estimated Time:** 5-10 minutes
@@ -453,7 +453,7 @@ phase2-backend/
 
 **Nice-to-Have Gaps:**
 
-5. ⚠️ **Custom Domain Setup Docs** - How to configure portal.securebase.io
+5. ⚠️ **Custom Domain Setup Docs** - How to configure portal.securebase.tximhotep.com
 6. ⚠️ **Demo Data Fixtures** - Sample JSON data for portal demo
 7. ⚠️ **Deployment Comparison Guide** - Which platform to choose
 8. ⚠️ **Cost Analysis** - Estimated monthly hosting costs
@@ -507,7 +507,7 @@ phase2-backend/
 **Root Marketing Site:**
 - **Platform:** GitHub Pages (configured but not activated)
 - **Status:** ✅ **READY TO DEPLOY** (5-10 minutes)
-- **URL (when live):** `https://cedrickbyrd.github.io/securebase-app/`
+- **URL (when live):** `https://cedrickbyrd.securebase.tximhotep.com`
 - **Blockers:** None
 - **Action Required:** Enable Pages in repository settings
 
@@ -550,14 +550,14 @@ Code → GitHub → (Manual: Enable Pages) → GitHub Pages → Live Demo
 
 **Recommended Flow (Short-term):**
 ```
-Code → GitHub → Auto-Deploy → GitHub Pages → Live at cedrickbyrd.github.io
+Code → GitHub → Auto-Deploy → GitHub Pages → Live at securebase.tximhotep.com
 ```
 
 **Recommended Flow (Long-term):**
 ```
 Marketing:  Code → GitHub → Netlify  → tximhotep.com
 Portal Demo: Code → GitHub → Netlify → portal.securebase.tximhotep.com (with mock API)
-Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
+Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.tximhotep.com
 ```
 
 ---
@@ -579,7 +579,7 @@ Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
    - Option B: Actions → "Deploy SecureBase Signup to GitHub Pages" → Run workflow
 
 3. ✅ Verify deployment
-   - URL: `https://cedrickbyrd.github.io/securebase-app/`
+   - URL: `https://securebase.tximhotep.com`
    - Check responsiveness, links, images
 
 4. ✅ Update README.md
@@ -624,7 +624,7 @@ Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
        { "source": "/(.*)", "destination": "/index.html" }
      ],
      "env": {
-       "VITE_API_BASE_URL": "https://demo-api.securebase.io",
+       "VITE_API_BASE_URL": "https://demo.securebase.tximhotep.com",
        "VITE_USE_MOCK_API": "true"
      }
    }
@@ -844,7 +844,7 @@ Production:  Code → GitHub → AWS S3/CloudFront → portal.securebase.io
 
 ### 📋 Do This Month
 
-1. **Set up custom domains** (demo.securebase.io, portal-demo.securebase.io)
+1. **Set up custom domains** (demo.securebase.tximhotep.com, portal-demo.securebase.tximhotep.com)
 2. **Add analytics tracking** (Google Analytics or Plausible)
 3. **Create demo walkthrough video** (3 minutes)
 

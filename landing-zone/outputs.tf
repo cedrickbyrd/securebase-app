@@ -139,3 +139,11 @@ output "phase2_dynamodb_tables" {
     cache   = module.phase2_database.dynamodb_cache_table
   }, {})
 }
+output "api_endpoints" {
+  description = "Map of all API endpoints"
+  value       = try(module.api_gateway.api_endpoints, {})
+}
+
+
+
+

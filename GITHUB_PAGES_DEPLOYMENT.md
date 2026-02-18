@@ -49,7 +49,7 @@ The Phase 3A Demo deployment has been updated to use **GitHub Pages** instead of
 
 After deployment, the demo will be accessible at:
 ```
-https://cedrickbyrd.github.io/securebase-app/
+https://securebase.tximhotep.com 
 ```
 
 ## Prerequisites
@@ -115,7 +115,7 @@ After deployment completes:
 - [ ] Workflow runs without AWS credential errors
 - [ ] All jobs complete successfully (green checkmarks)
 - [ ] Deployment URL is displayed in the notify job
-- [ ] Site is accessible at `https://cedrickbyrd.github.io/securebase-app/`
+- [ ] Site is accessible at `https://securebase.tximhotep.com/`
 - [ ] Demo banner is visible on the site
 - [ ] Login works with demo credentials (demo/demo)
 - [ ] All pages load with mock data
@@ -159,7 +159,7 @@ After deployment completes:
 | **Backend** | Mock data only | Real backend API |
 | **Credentials** | None required | AWS credentials needed |
 | **Cost** | Free | AWS S3 + data transfer |
-| **URL** | github.io subdomain | S3 website endpoint |
+| **URL** | tximhotep.com subdomain | S3 website endpoint |
 | **Use Case** | Sales demos, public preview | Pre-production testing |
 | **Data** | Read-only, resets every 24h | Live staging data |
 
@@ -169,7 +169,7 @@ After deployment completes:
 ✅ **Cost Savings** - GitHub Pages is free for public repositories  
 ✅ **Simplified Workflow** - Fewer steps, easier to maintain
 ✅ **Perfect for Static Sites** - Demo uses only client-side mock data
-✅ **Stable URL** - Persistent github.io URL for sharing
+✅ **Stable URL** - Persistent tximhotep.com URL for sharing
 ✅ **Fast Deployment** - Direct GitHub Actions integration
 
 ## Demo Environment Variables
@@ -197,7 +197,7 @@ These ensure the demo:
 1. **Merge this PR** to apply the changes
 2. **Enable GitHub Pages** in repository settings (if not already enabled)
 3. **Trigger the workflow** manually or push to main
-4. **Verify deployment** at https://cedrickbyrd.github.io/securebase-app/
+4. **Verify deployment** at https://securebase.tximhotep.com/
 5. **Share the URL** with stakeholders for testing
 
 ## Additional Notes
@@ -205,4 +205,4 @@ These ensure the demo:
 - The staging deployment (`.github/workflows/deploy-phase3a-staging.yml`) continues to use S3 as it connects to real backend services
 - Only the demo deployment uses GitHub Pages since it's entirely self-contained with mock data
 - No repository secrets or configuration changes are needed
-- GitHub automatically handles SSL/TLS certificates for github.io domains
+- GitHub automatically handles SSL/TLS certificates for tximhotep.com domains
