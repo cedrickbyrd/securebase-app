@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, CheckCircle, Lock, ShoppingCart, ArrowRight, 
   Activity, AlertCircle, Loader, Check, X, Terminal, 
-  FileText, Rocket
+  FileText, Rocket, ShieldCheck
 } from 'lucide-react';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 
@@ -11,9 +11,10 @@ export default function SecureBaseLandingZone() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
   const [userEmail, setUserEmail] = useState("");
-  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState({ id: null, name: "" });
 
-  // Check for Stripe success/cancel on mount
+  // Sync with Stripe success/cancel
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true' || window.location.pathname === '/success') {
@@ -24,10 +25,9 @@ export default function SecureBaseLandingZone() {
     }
   }, []);
 
-  // Stripe Checkout Logic
-  const handleCheckout = async (priceId) => {
+  const handleCheckout = async () => {
     if (!userEmail || !userEmail.includes('@')) {
-      setCheckoutError("Please enter a valid work email to continue.");
+      setCheckoutError("Valid work email required for AWS provisioning.");
       return;
     }
 
@@ -40,228 +40,147 @@ export default function SecureBaseLandingZone() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           customer_email: userEmail.trim(),
-          price_id: priceId,
+          price_id: selectedPlan.id,
+          plan_name: selectedPlan.name // Added for Stripe metadata
         }),
       });
       
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
+      if (!response.ok) throw new Error(data.error || 'Checkout session failed');
       
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
-      } else {
-        throw new Error('No checkout URL returned');
       }
     } catch (err) {
-      console.error('Checkout failed:', err);
       setCheckoutError(err.message);
-      setIsCheckingOut(false); // Stop the spinner so user can try again
+      setIsCheckingOut(false);
     }
   };
 
+  const initiateCheckout = (id, name) => {
+    setSelectedPlan({ id, name });
+    setShowReview(true);
+    // Scroll to the review card
+    document.getElementById('pricing-anchor')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100">
-      {/* Global Navigation */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 font-sans">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('overview')}>
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Shield className="text-white w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => {setActiveTab('overview'); setShowReview(false);}}>
+            <div className="bg-blue-600 p-2 rounded-lg"><Shield className="text-white w-6 h-6" /></div>
             <div>
               <div className="text-xl font-bold tracking-tight">SecureBase</div>
               <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
             </div>
           </div>
-          
           <nav className="hidden md:flex items-center gap-8">
             {['overview', 'compliance', 'pricing'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`text-sm font-semibold capitalize transition-all ${
-                  activeTab === tab ? 'text-blue-600' : 'text-slate-600 hover:text-blue-500'
-                }`}
-              >
+              <button key={tab} onClick={() => {setActiveTab(tab); setShowReview(false);}}
+                className={`text-sm font-semibold capitalize ${activeTab === tab ? 'text-blue-600' : 'text-slate-600 hover:text-blue-500'}`}>
                 {tab}
               </button>
             ))}
-            <button 
-              onClick={() => setActiveTab('pricing')}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-200"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Purchase Now
-            </button>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        
-        {/* TAB: OVERVIEW */}
+      <main className="max-w-7xl mx-auto px-6 py-12" id="pricing-anchor">
         {activeTab === 'overview' && (
-          <div className="space-y-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <section className="text-center pt-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-blue-700 text-xs font-bold mb-8">
-                <Activity className="w-3 h-3" /> v1.0 PRODUCTION READY
-              </div>
-              <h1 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-8">
-                Audit-Ready AWS <br />
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  In Under 48 Hours
-                </span>
-              </h1>
-              <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-                Deploy a SOX2/SOC2 compliant Landing Zone without the complexity of Control Tower. 
-                Built for Fintechs that need to pass audits yesterday.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button 
-                  onClick={() => setActiveTab('pricing')}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-xl shadow-blue-200"
-                >
-                  Start Your Pilot <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </section>
-
-            <section className="grid md:grid-cols-3 gap-8">
-              {[
-                { icon: Lock, title: "Zero Trust Auth", desc: "MFA enforced, zero long-lived credentials, and centralized Identity Center." },
-                { icon: Terminal, title: "Pure Terraform", desc: "No proprietary lock-in. Full ownership of your infrastructure code from day one." },
-                { icon: Activity, title: "Continuous Drift Detection", desc: "Real-time alerts for configuration changes that could impact your compliance." }
-              ].map((feature, i) => (
-                <div key={i} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition">
-                  <feature.icon className="text-blue-600 w-10 h-10 mb-6" />
-                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed">{feature.desc}</p>
-                </div>
-              ))}
-            </section>
+          <div className="text-center pt-12 animate-in fade-in duration-700">
+            <h1 className="text-5xl md:text-7xl font-black mb-8">Audit-Ready AWS <br /><span className="text-blue-600">In Under 48 Hours</span></h1>
+            <button onClick={() => setActiveTab('pricing')} className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto">
+              Start Your Pilot <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
         )}
 
-        {/* TAB: COMPLIANCE */}
-        {activeTab === 'compliance' && (
-          <div className="animate-in fade-in duration-500">
-            <ComplianceScreen />
-          </div>
-        )}
+        {activeTab === 'compliance' && <ComplianceScreen />}
 
-        {/* TAB: PRICING (Integrated Lead Capture) */}
         {activeTab === 'pricing' && (
-          <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in zoom-in-95 duration-500">
-            <div className="text-center">
-              <h2 className="text-4xl font-black text-slate-900 mb-4">Predictable Pricing for Scale</h2>
-              <p className="text-slate-600">Select the plan that fits your current compliance audit window.</p>
-            </div>
-
-            {checkoutError && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                <div className="flex-1">
-                  <div className="font-semibold text-red-900">Checkout Error</div>
-                  <div className="text-sm text-red-700">{checkoutError}</div>
+          <div className="max-w-4xl mx-auto space-y-12">
+            {!showReview ? (
+              <div className="grid md:grid-cols-2 gap-8 animate-in fade-in zoom-in-95">
+                {/* Pilot Card */}
+                <div className="bg-white border-2 border-blue-600 rounded-3xl p-8 shadow-xl flex flex-col">
+                  <h3 className="text-2xl font-bold mb-4">White-Glove Pilot</h3>
+                  <div className="text-5xl font-black mb-6">$4,000<span className="text-lg text-slate-400">/mo</span></div>
+                  <ul className="space-y-3 mb-8 flex-grow">
+                    <li className="flex items-center gap-2 text-sm"><CheckCircle className="text-green-500 w-4 h-4"/> SOX2 + SOC2 Landing Zone</li>
+                    <li className="flex items-center gap-2 text-sm"><CheckCircle className="text-green-500 w-4 h-4"/> 48hr Full AWS Deployment</li>
+                  </ul>
+                  <button onClick={() => initiateCheckout('price_1SrgoR5bg6XXXrmNXe0tTgki', 'White-Glove Pilot')}
+                    className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
+                    Join the Pilot
+                  </button>
                 </div>
-                <button onClick={() => setCheckoutError(null)}><X className="w-5 h-5 text-red-600" /></button>
+                {/* Standard Card */}
+                <div className="bg-slate-900 text-white rounded-3xl p-8 flex flex-col">
+                  <h3 className="text-2xl font-bold mb-4">Fintech Standard</h3>
+                  <div className="text-5xl font-black mb-6">$8,000<span className="text-lg text-slate-500">/mo</span></div>
+                  <p className="text-slate-400 text-sm mb-8">Scale-ready infrastructure with 24/7 incident response.</p>
+                  <button onClick={() => initiateCheckout('price_1SrgqW5bg6XXXrmNzkk8O5E5', 'Fintech Standard')}
+                    className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-100 transition">
+                    Select Standard
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* THE CONFIDENCE STEP: REVIEW CARD */
+              <div className="bg-white border-2 border-slate-200 rounded-3xl p-10 shadow-2xl animate-in slide-in-from-bottom-4">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-blue-100 p-3 rounded-full"><ShieldCheck className="text-blue-600 w-8 h-8"/></div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Review Your Pilot Onboarding</h2>
+                    <p className="text-slate-500">Confirm your details to proceed to secure checkout.</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Work Email (Required for AWS setup)</label>
+                      <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)}
+                        placeholder="cedrick@tximhotep.com" className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-blue-600 outline-none transition" />
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl space-y-2">
+                      <div className="flex justify-between text-sm font-bold"><span>Selected Plan:</span><span>{selectedPlan.name}</span></div>
+                      <div className="flex justify-between text-sm text-slate-500"><span>Setup Fee:</span><span>Included</span></div>
+                      <div className="flex justify-between text-lg font-black pt-2 border-t border-slate-200"><span>Total Due Now:</span><span className="text-blue-600">{selectedPlan.id.includes('goR5') ? '$4,000' : '$8,000'}</span></div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-sm">Included in your Pilot:</h4>
+                    <ul className="space-y-2 text-sm text-slate-600">
+                      <li className="flex gap-2"><Check className="text-green-500 w-4 h-4"/> Provisioning of multi-account AWS Landing Zone</li>
+                      <li className="flex gap-2"><Check className="text-green-500 w-4 h-4"/> Full SOX2/SOC2 compliance control mapping</li>
+                      <li className="flex gap-2"><Check className="text-green-500 w-4 h-4"/> Dedicated Slack support for 48hr deployment</li>
+                    </ul>
+                    <button onClick={handleCheckout} disabled={isCheckingOut || !userEmail.includes('@')}
+                      className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                      {isCheckingOut ? <Loader className="animate-spin"/> : 'Secure Checkout via Stripe'}
+                    </button>
+                    <button onClick={() => setShowReview(false)} className="w-full text-slate-400 text-sm hover:text-slate-600">Back to plans</button>
+                  </div>
+                </div>
               </div>
             )}
-
-            <div className="grid md:grid-cols-2 gap-8 pt-8">
-              <div className="relative bg-white border-2 border-blue-600 rounded-[2rem] p-10 shadow-2xl flex flex-col">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
-                  Early Adopter Pilot
-                </div>
-                <h3 className="text-2xl font-bold">White-Glove Pilot</h3>
-                <div className="my-6">
-                  <span className="text-6xl font-black">$4,000</span>
-                  <span className="text-slate-400 font-bold">/mo</span>
-                </div>
-                
-                {showEmailCapture ? (
-                  <div className="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2">
-                    <input 
-                      type="email" 
-                      placeholder="Enter work email"
-                      className="w-full px-4 py-3 border-2 border-blue-100 rounded-xl focus:border-blue-600 outline-none transition text-slate-900"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
-                      autoFocus
-                    />
-                    <button 
-                      onClick={() => handleCheckout('price_1SrgoR5bg6XXXrmNXe0tTgki')}
-                      disabled={isCheckingOut || !userEmail.includes('@')}
-                      className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-                    >
-                      {isCheckingOut ? <Loader className="animate-spin" /> : 'Continue to Checkout'}
-                    </button>
-                    <button onClick={() => setShowEmailCapture(false)} className="w-full text-xs text-slate-400">Cancel</button>
-                  </div>
-                ) : (
-                  <>
-                    <ul className="space-y-4 mb-10 flex-grow">
-                      {['SOX2 + SOC2 Base Controls', 'White-Glove AWS Deployment', 'Quarterly Evidence Reports'].map((item) => (
-                        <li key={item} className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                          <CheckCircle className="text-green-500 w-5 h-5" /> {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <button 
-                      onClick={() => setShowEmailCapture(true)}
-                      className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition"
-                    >
-                      Join the Pilot
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Standard Tier */}
-              <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-10 flex flex-col text-white">
-                <h3 className="text-2xl font-bold">Fintech Standard</h3>
-                <div className="my-6">
-                  <span className="text-6xl font-black">$8,000</span>
-                  <span className="text-slate-500 font-bold">/mo</span>
-                </div>
-                <ul className="space-y-4 mb-10 flex-grow text-slate-300">
-                   <li>Everything in Pilot + 24/7 Ops</li>
-                </ul>
-                <button 
-                  onClick={() => setShowEmailCapture(true)}
-                  className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-100 transition"
-                >
-                  Select Standard
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* TAB: SUCCESS */}
+        {/* SUCCESS STATE */}
         {activeTab === 'success' && (
-          <div className="max-w-3xl mx-auto text-center space-y-8 animate-in fade-in zoom-in-95">
-             <div className="bg-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
-               <Check className="text-white w-10 h-10" />
-             </div>
-             <h2 className="text-4xl font-black">You're in the Pilot!</h2>
-             <p className="text-slate-600 text-xl">Check your inbox for your onboarding credentials.</p>
-             <button onClick={() => setActiveTab('overview')} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold">Return Home</button>
+          <div className="text-center py-20 animate-in zoom-in-95">
+            <div className="bg-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><Check className="text-white w-10 h-10"/></div>
+            <h2 className="text-4xl font-black mb-4">You're in the Pilot!</h2>
+            <p className="text-slate-600 mb-8">Onboarding email sent to {userEmail}.</p>
+            <button onClick={() => setActiveTab('overview')} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold">Return Home</button>
           </div>
         )}
       </main>
-
-      <footer className="bg-white border-t border-slate-200 mt-24 py-12">
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <div className="flex items-center gap-3 font-bold">
-            <Shield className="text-blue-600 w-5 h-5" /> SecureBase
-          </div>
-          <div className="text-sm text-slate-500">© 2026 TxImhotep LLC.</div>
-        </div>
-      </footer>
     </div>
   );
 }
