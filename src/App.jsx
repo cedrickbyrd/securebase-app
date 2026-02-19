@@ -11,8 +11,7 @@ export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
-  
-  // Deployment wizard state
+  const [userEmail, setUserEmail] = useState("");
   const [devEnvStep, setDevEnvStep] = useState('config'); // config, deploying, complete
   const [deploymentProgress, setDeploymentProgress] = useState(0);
   const [deploymentConfig, setDeploymentConfig] = useState({
