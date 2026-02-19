@@ -7,7 +7,7 @@ export const handler = async (event) => {
         
         // Validation for the data we just verified
         if (!body.customer_email || !body.price_id) {
-            return { statusCode: 400, body: JSON.stringify({ error: "Missing email or price_id" }) };
+            return { statusCode: 400, body: JSON.stringify({ error: "Missing customer_email or price_id" }) };
         }
 
         const session = await stripe.checkout.sessions.create({
