@@ -69,6 +69,7 @@ jobs:
           enable-commit-comment: false
           overwrites-pull-request-comment: true
           alias: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || '' }}
+        run: npx netlify deploy --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MARKETING_SITE_ID }}
