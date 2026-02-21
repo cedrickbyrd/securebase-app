@@ -1,35 +1,39 @@
 import boto3
 import email
 from email import policy
+import time
+
+# Initialize outside handler for "warm start" performance
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('SecureBase_Inbound_Logs')
 
 def lambda_handler(event, context):
-    print("SecureBase Onboarding Triggered!")
     s3 = boto3.client('s3')
-    
-    # 1. Get the SES metadata from the event
     ses_mail = event['Records'][0]['ses']['mail']
     message_id = ses_mail['messageId']
-    
-    # 2. Fetch the raw email from your specific S3 bucket
     bucket_name = 'ses-inbound-tximhotep-731184206915'
-    
-    try:
-        response = s3.get_object(Bucket=bucket_name, Key=message_id)
-        raw_email = response['Body'].read()
-        
-        # 3. Parse the email using Python's built-in email library
-        msg = email.message_from_bytes(raw_email, policy=policy.default)
-        
-        subject = msg['subject']
-        sender = msg['from']
-        body = msg.get_body(preferencelist=('plain')).get_content()
 
-        print(f"SecureBase Onboarding: New email from {sender}")
-        print(f"Subject: {subject}")
-        print(f"Content: {body[:100]}...") # Log the first 100 chars
+    try:
+        # Fetch and parse as we did before
+        response = s3.get_object(Bucket=bucket_name, Key=message_id)
+        msg = email.message_from_bytes(response['Body'].read(), policy=policy.default)
         
-        # TODO: Add logic to save this to your database for your React frontend
+        subject = msg.get('subject', '(No Subject)')
+        sender = msg.get('from', '(Unknown Sender)')
+        
+        # Log to Database
+        table.put_item(
+            Item={
+                'MessageId': message_id,
+                'Sender': sender,
+                'Subject': subject,
+                'Timestamp': int(time.time()),
+                'Status': 'UNREAD',
+                'S3Path': f"s3://{bucket_name}/{message_id}"
+            }
+        )
+        print(f"Successfully logged {message_id} to DynamoDB")
         
     except Exception as e:
-        print(f"Error processing email {message_id}: {str(e)}")
+        print(f"DB Logging Error: {str(e)}")
         raise e
