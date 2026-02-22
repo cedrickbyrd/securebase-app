@@ -1819,7 +1819,25 @@ class ComplianceOrchestrator:
 
         summary_file = writer.write_summary_txt(summary, meta)
         manifest = write_integrity_manifest(self.output_dir, self.run_id)
+# Existing logic ends...
+        summary_file = writer.write_summary_txt(summary, meta)
+        manifest = write_integrity_manifest(self.output_dir, self.run_id)
 
+        # ──────────────────────────────────────────────────────────────────────
+        # NEW: SECUREBASE VAULTING STEP
+        # ──────────────────────────────────────────────────────────────────────
+        if not self.dry_run:
+            # Replace with your actual Bucket Name and KMS Key ID
+            vault = SecureBaseVault(
+                bucket_name="securebase-evidence-vault-tx-imhotep",
+                region="us-east-1" 
+            )
+            vault.vault_run(
+                output_dir=self.output_dir, 
+                run_id=self.run_id, 
+                kms_key_id="alias/securebase-evidence-key"
+            )
+          
         self._print_summary(summary, all_evidence)
         self.logger.info(f"Integrity manifest: {manifest}")
         self.logger.info(f"Evidence directory: {self.output_dir}")
