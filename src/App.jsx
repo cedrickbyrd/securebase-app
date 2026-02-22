@@ -4,7 +4,7 @@ import {
   Activity, AlertCircle, Loader, Check, X, Terminal, 
   FileText, Rocket, ShieldCheck
 } from 'lucide-react';
-import 'antd/dist/antd.css';
+import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 
 export default function SecureBaseLandingZone() {
