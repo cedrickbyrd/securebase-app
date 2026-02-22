@@ -1,4 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Server, Database, Zap, AlertTriangle,
+  CheckCircle, Activity, TrendingUp, Cloud
+} from 'lucide-react';
+
+const SystemHealth = ({ timeRange, loading: parentLoading }) => {
+  const [healthData, setHealthData] = useState({
+    services: [],
+    regions: [],
+    incidents: []
+  });
+
+  // 1. Wrap the logic in useCallback to prevent "cascading renders"
+  const fetchHealthData = useCallback(() => {
+    // In the future, this is where your fetch('api/health') goes
+    setHealthData({
+      services: [
+        { name: 'API Gateway', status: 'operational', uptime: 99.98, region: 'us-east-1' },
+        { name: 'Lambda Functions', status: 'operational', uptime: 99.95, region: 'us-east-1' },
+        { name: 'DynamoDB', status: 'operational', uptime: 99.99, region: 'us-east-1' },
+        { name: 'Aurora (Primary)', status: 'operational', uptime: 99.97, region: 'us-east-1' },
+        { name: 'CloudFront', status: 'operational', uptime: 100.0, region: 'global' },
+        { name: 'S3 Buckets', status: 'operational', uptime: 99.99, region: 'us-east-1' },
+        { name: 'ElastiCache', status: 'degraded', uptime: 98.50, region: 'us-east-1' },
+        { name: 'SQS Queues', status: 'operational', uptime: 99.96, region: 'us-east-1' }
+      ],
+      regions: [
+        { name: 'us-east-1', status: 'healthy', services: 8, latency: 45 },
+        { name: 'us-west-2', status: 'healthy', services: 8, latency: 52 }
+      ],
+      incidents: [
+        {
+          id: 'INC-001',
+          title: 'ElastiCache intermittent connection timeouts',
+          severity: 'medium',
+          status: 'investigating',
+          startTime: new Date(Date.now() - 3600000).toISOString(),
+          affectedServices: ['ElastiCache', 'API Gateway']
+        }
+      ]
+    });
+  }, []); // Empty dependencies for mock data
+
+  useEffect(() => {
+    fetchHealthData();
+    
+    // 2. Continuous Monitoring: Real SRE dashboards poll for updates
+    const interval = setInterval(fetchHealthData, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [fetchHealthData, timeRange]);
+
+  // ... (Your existing getStatusColor and getStatusIcon functions remain the same)
+
+  return (
+    <div className="space-y-6">
+       {/* ... Your existing JSX rendering logic ... */}
+       {/* (It looks great as is, no changes needed to the UI code) */}
+    </div>
+  );
+};
+
+export default SystemHealth;import React, { useState, useEffect } from 'react';
 import {
   Server, Database, Zap, AlertTriangle,
   CheckCircle, Activity, TrendingUp, Cloud
