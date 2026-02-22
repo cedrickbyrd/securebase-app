@@ -9,6 +9,15 @@ const NotificationBell = ({ onCriticalAlert }) => {
   const [filter, setFilter] = useState('all');
   const dropdownRef = useRef(null);
 
+  const loadNotifications = async () => {
+    try {
+      const data = await mockApiService.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  };
+  
   useEffect(() => {
     loadNotifications();
   }, []);
@@ -41,15 +50,6 @@ const NotificationBell = ({ onCriticalAlert }) => {
       });
     }
   }, [notifications, onCriticalAlert]);
-
-  const loadNotifications = async () => {
-    try {
-      const data = await mockApiService.getNotifications();
-      setNotifications(data);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
 
   const getUnreadCount = () => {
     return notifications.filter(n => !n.read).length;
