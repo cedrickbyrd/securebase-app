@@ -15,12 +15,12 @@ export default function SecureBaseLandingZone() {
   const [userEmail, setUserEmail] = useState("");
   const [showReview, setShowReview] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState({ id: null, name: "" });
-
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+ 
   // Sync with Stripe success/cancel
 useEffect(() => {
     const fetchLatestAudit = async () => {
-      const [report, setReport] = useState(null);
-      const [loading, setLoading] = useState(true);
       const client = new S3Client({
         region: "us-east-1",
         credentials: {
