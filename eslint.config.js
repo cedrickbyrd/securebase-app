@@ -21,5 +21,15 @@ export default [
         ...globals.node,
       },
     },
+  },
+  export default [
+  // ... other configs ...
+  {
+    ignores: [
+      "**/dist/**", 
+      "**/.netlify/**", 
+      "**/build/**", 
+      "node_modules/**"
+    ],
   }
 ];
