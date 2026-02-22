@@ -594,9 +594,9 @@ class SOC2Collector(BaseCollector):
 
         # Package manager history (apt / yum / dnf)
         for cmd, log in [
-            ("grep 'install\|upgrade\|remove' /var/log/dpkg.log 2>/dev/null | tail -20", "/var/log/dpkg.log"),
-            ("grep 'Installed\|Upgraded\|Erased' /var/log/yum.log 2>/dev/null | tail -20", "/var/log/yum.log"),
-            ("grep 'Installed\|Upgraded\|Erased' /var/log/dnf.log 2>/dev/null | tail -20", "/var/log/dnf.log"),
+            r("grep 'install\|upgrade\|remove' /var/log/dpkg.log 2>/dev/null | tail -20", "/var/log/dpkg.log"),
+            r("grep 'Installed\|Upgraded\|Erased' /var/log/yum.log 2>/dev/null | tail -20", "/var/log/yum.log"),
+            r("grep 'Installed\|Upgraded\|Erased' /var/log/dnf.log 2>/dev/null | tail -20", "/var/log/dnf.log"),
         ]:
             rc, out = self._run_cmd(cmd)
             if out.strip():
