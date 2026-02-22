@@ -172,7 +172,6 @@ export default function SecureBaseLandingZone() {
           </div>
         )}
 
-        {/* SUCCESS STATE */}
         {activeTab === 'success' && (
           <div className="text-center py-20 animate-in zoom-in-95">
             <div className="bg-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><Check className="text-white w-10 h-10"/></div>
