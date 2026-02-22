@@ -1660,7 +1660,63 @@ def write_integrity_manifest(output_dir: Path, run_id: str) -> Path:
     manifest_path.write_text(json.dumps(manifest, indent=2))
     return manifest_path
 
+# ... [Keep the previous imports and Collector classes] ...
 
+import boto3
+from botocore.exceptions import ClientError
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECUREBASE ENTERPRISE EXTENSION
+# ──────────────────────────────────────────────────────────────────────────────
+class SecureBaseVault:
+    """
+    Handles the 'Chain of Custody' by vaulting evidence into S3 with 
+    Object Lock and signing the manifest via AWS KMS.
+    """
+    def __init__(self, bucket_name: str, region: str = "us-east-1"):
+        self.bucket = bucket_name
+        self.s3 = boto3.client('s3', region_name=region)
+        self.kms = boto3.client('kms', region_name=region)
+
+    def vault_run(self, output_dir: Path, run_id: str, kms_key_id: str = None):
+        """Uploads all evidence and signs the manifest."""
+        print(f"🔒 Vaulting Evidence to S3: {self.bucket}")
+        
+        # 1. Sign the Manifest if a Key is provided (FedRAMP requirement)
+        manifest_path = output_dir / f"MANIFEST_{run_id}.json"
+        if kms_key_id and manifest_path.exists():
+            self._sign_manifest(manifest_path, kms_key_id)
+
+        # 2. Upload files
+        for file_path in output_dir.iterdir():
+            if file_path.is_file():
+                s_key = f"evidence/{run_id}/{file_path.name}"
+                self.s3.upload_file(
+                    str(file_path), self.bucket, s_key,
+                    ExtraArgs={'Tagging': 'Project=SecureBase&Status=Final'}
+                )
+
+    def _sign_manifest(self, path: Path, key_id: str):
+        """Creates a detached signature for the manifest using KMS."""
+        content = path.read_bytes()
+        response = self.kms.sign(
+            KeyId=key_id,
+            Message=content,
+            MessageType='RAW',
+            SigningAlgorithm='RSASSA_PSS_SHA_256'
+        )
+        sig_path = path.with_suffix(".sig")
+        sig_path.write_bytes(response['Signature'])
+        print(f"✍️  Manifest digitally signed via KMS.")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# REVISED MAIN ORCHESTRATOR
+# ──────────────────────────────────────────────────────────────────────────────
+# Update your ComplianceOrchestrator.run() to include:
+# 
+# if not self.dry_run:
+#     vault = SecureBaseVault(bucket_name="your-s3-bucket-name")
+#     vault.vault_run(self.output_dir, self.run_id)
 # ──────────────────────────────────────────────────────────────────────────────
 # MAIN ORCHESTRATOR
 # ──────────────────────────────────────────────────────────────────────────────
