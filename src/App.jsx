@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
 export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -18,6 +19,8 @@ export default function SecureBaseLandingZone() {
   // Sync with Stripe success/cancel
 useEffect(() => {
     const fetchLatestAudit = async () => {
+      const [report, setReport] = useState(null);
+      const [loading, setLoading] = useState(true);
       const client = new S3Client({
         region: "us-east-1",
         credentials: {
