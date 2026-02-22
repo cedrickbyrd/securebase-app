@@ -1829,7 +1829,7 @@ class ComplianceOrchestrator:
         if not self.dry_run:
             # Replace with your actual Bucket Name and KMS Key ID
             vault = SecureBaseVault(
-                bucket_name="securebase-evidence-vault-tx-imhotep",
+                bucket_name="securebase-evidence-tx-imhotep",
                 region="us-east-1" 
             )
             vault.vault_run(
