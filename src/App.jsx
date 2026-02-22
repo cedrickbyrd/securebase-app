@@ -16,16 +16,53 @@ export default function SecureBaseLandingZone() {
   const [selectedPlan, setSelectedPlan] = useState({ id: null, name: "" });
 
   // Sync with Stripe success/cancel
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true' || window.location.pathname === '/success') {
-      setActiveTab('success');
-    } else if (params.get('canceled') === 'true') {
-      setCheckoutError('Checkout was canceled. Feel free to try again when ready.');
-      setActiveTab('pricing');
-    }
-  }, []);
+useEffect(() => {
+    const fetchLatestAudit = async () => {
+      const client = new S3Client({
+        region: "us-east-1",
+        credentials: {
+          accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY, 
+          secretAccessKey: import.meta.env.VITE_AWS_SECRET_KEY,
+        },
+      });
 
+      try {
+        // 1. List all folders in the evidence/ directory
+        const listCommand = new ListObjectsV2Command({
+          Bucket: "securebase-evidence-tx-imhotep",
+          Prefix: "evidence/",
+        });
+
+        const listResponse = await client.send(listCommand);
+        
+        // 2. Find the object with the most recent LastModified date
+        if (listResponse.Contents) {
+          const latestJson = listResponse.Contents
+            .filter(obj => obj.Key.endsWith('.json'))
+            .sort((a, b) => b.LastModified - a.LastModified)[0];
+
+          if (latestJson) {
+            // 3. Fetch the actual content of that specific latest JSON
+            const getCommand = new GetObjectCommand({
+              Bucket: "securebase-evidence-tx-imhotep",
+              Key: latestJson.Key,
+            });
+
+            const response = await client.send(getCommand);
+            const str = await response.Body.transformToString();
+            setReport(JSON.parse(str));
+          }
+        }
+      } catch (err) {
+        console.error("Vault access error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestAudit();
+  }, []);
+  
   const handleCheckout = async () => {
     if (!userEmail || !userEmail.includes('@')) {
       setCheckoutError("Valid work email required for AWS provisioning.");
