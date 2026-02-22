@@ -1,5 +1,85 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { Zap } from 'lucide-react'; // Adding Zap for the "Active Response" look
+
+const SystemHealth = ({ metrics, incidents, regionStatus }) => {
+  const handleRemediate = async (serviceName) => {
+    console.log(`Triggering remediation for: ${serviceName}`);
+    // In Phase 5, this will call your Netlify function
+    // await MockApiService.remediateService(serviceName);
+    alert(`Remediation request sent for ${serviceName}. Check Audit Logs for status.`);
+  };
+
+  return (
+    <div className="sb-SystemHealth">
+      <header className="sb-SystemHealth__header">
+        <h1>System Health Metrics</h1>
+      </header>
+
+      <section className="sb-SystemHealth__metrics">
+        {metrics.map((metric, index) => (
+          <div key={index} className="sb-HealthMetric p-4 border rounded mb-2">
+            <div className="flex justify-between items-center">
+              <span className="sb-HealthMetric__name font-bold">{metric.name}</span>
+              <span className="sb-HealthMetric__value">{metric.value}</span>
+            </div>
+            {/* Logic: If value indicates an issue, show remediation */}
+            {(metric.value === 'Degraded' || metric.value < 90) && (
+              <button 
+                onClick={() => handleRemediate(metric.name)}
+                className="mt-2 flex items-center text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700"
+              >
+                <Zap className="w-3 h-3 mr-1" /> Remediate
+              </button>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <section className="sb-SystemHealth__incidents">
+        <h2>Incidents</h2>
+        {incidents.length > 0 ? (
+          incidents.map((incident, index) => (
+            <div key={index} className="sb-Incident">
+              <p>{incident.description}</p>
+              <span className={`sb-Incident__status ${incident.status}`}>{incident.status}</span>
+            </div>
+          ))
+        ) : (
+          <p>No incidents reported</p>
+        )}
+      </section>
+
+      <section className="sb-SystemHealth__regionStatus">
+        <h2>Region Status</h2>
+        {regionStatus.map((status, index) => (
+          <div key={index} className="sb-RegionStatus flex justify-between items-center p-2 border-b">
+            <span className="sb-RegionStatus__region">{status.region}</span>
+            <div className="flex items-center gap-4">
+              <span className={`sb-RegionStatus__status ${status.isOperational ? 'operational text-green-600' : 'down text-red-600'}`}>
+                {status.isOperational ? 'Operational' : 'Down'}
+              </span>
+              {/* Show button if region is Down */}
+              {!status.isOperational && (
+                <button 
+                  onClick={() => handleRemediate(status.region)}
+                  className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                >
+                  Force Failover
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+};
+
+// ... (PropTypes stay the same)
+
+export default SystemHealth;import React from 'react';
+import PropTypes from 'prop-types';
 
 const SystemHealth = ({ metrics, incidents, regionStatus }) => {
 const handleRemediate = async (serviceName) => {
