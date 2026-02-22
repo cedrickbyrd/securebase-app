@@ -138,8 +138,12 @@ useEffect(() => {
           </div>
         )}
 
-        {activeTab === 'compliance' && <ComplianceScreen />}
-
+{activeTab === 'compliance' && (
+  <ComplianceScreen 
+    report={report} 
+    loading={loading} 
+  />
+)}
         {activeTab === 'pricing' && (
           <div className="max-w-4xl mx-auto space-y-12">
             {!showReview ? (
