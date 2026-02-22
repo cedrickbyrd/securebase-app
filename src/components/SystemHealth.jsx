@@ -2,6 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 const SystemHealth = ({ metrics, incidents, regionStatus }) => {
+const handleRemediate = async (serviceName) => {
+  console.log(`Triggering remediation for: ${serviceName}`);
+  // In Phase 5, this will call your Netlify function
+  // await MockApiService.remediateService(serviceName);
+  alert(`Remediation request sent for ${serviceName}. Check Audit Logs for status.`);
+};  
   return (
     <div className="sb-SystemHealth">
       <header className="sb-SystemHealth__header">
