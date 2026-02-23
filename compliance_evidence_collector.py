@@ -299,10 +299,11 @@ class SOC2Collector(BaseCollector):
 
     # ── CC2: Communication & Information ─────────────────────────────────────
     def _cc2_communication_and_information(self):
-        # Syslog / rsyslog / journald
-        for svc in ("rsyslog", "syslog", "systemd-journald"):
-            rc, out = self._run_cmd(f"systemctl is-active {svc} 2>/dev/null")
-            if "active" in out:
+        # Hybrid check for Linux (systemctl) and macOS (pgrep)
+        found_logging = False
+        for svc in ("rsyslog", "syslog", "systemd-journald", "logd"):
+            rc, out = self._run_cmd(f"systemctl is-active {svc} 2>/dev/null || pgrep {svc}")
+            if rc == 0:
                 self._add(
                     check_id="SOC2-CC2.1",
                     title=f"System Logging Service Active ({svc})",
@@ -409,24 +410,37 @@ class SOC2Collector(BaseCollector):
             )
 
     # ── CC5: Control Activities ───────────────────────────────────────────────
+# ── CC5: Control Activities ───────────────────────────────────────────────
     def _cc5_control_activities(self):
         # Firewall / iptables
+        found_active_fw = False
         for fw in ("ufw", "firewalld", "iptables"):
+            # Check for Linux firewalls
             rc, out = self._run_cmd(f"systemctl is-active {fw} 2>/dev/null")
-            if "active" in out.lower():
+            
+            # Fallback for macOS: Check socketfilterfw
+            if rc != 0:
+                rc_mac, out_mac = self._run_cmd("/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate")
+                if "enabled" in out_mac.lower():
+                    rc = 0
+                    out = "active (macOS socketfilterfw)"
+
+            if rc == 0 and "active" in out.lower():
                 self._add(
                     check_id="SOC2-CC5.1",
-                    title=f"Host Firewall Active ({fw})",
+                    title=f"Host Firewall Active ({fw if 'macOS' not in out else 'macOS'})",
                     control_ref="CC5.1",
                     category="Control Activities",
                     severity=Severity.HIGH.value,
                     status=Status.PASS.value,
-                    details=f"{fw} is active.",
+                    details=f"Firewall is active: {out}",
                     remediation="N/A",
                     tags=["firewall", "network"],
                 )
-                break
-        else:
+                found_active_fw = True
+                break # Now correctly inside the for loop
+        
+        if not found_active_fw:
             self._add(
                 check_id="SOC2-CC5.1",
                 title="Host Firewall Active",
@@ -435,7 +449,7 @@ class SOC2Collector(BaseCollector):
                 severity=Severity.HIGH.value,
                 status=Status.FAIL.value,
                 details="No active firewall service detected.",
-                remediation="Enable ufw or firewalld and define ingress/egress rules.",
+                remediation="Enable ufw (Linux) or Application Firewall (macOS) and define rules.",
                 tags=["firewall", "network"],
             )
 
@@ -1681,20 +1695,21 @@ class SecureBaseVault:
     def vault_run(self, output_dir: Path, run_id: str, kms_key_id: str = None):
         """Uploads all evidence and signs the manifest."""
         print(f"🔒 Vaulting Evidence to S3: {self.bucket}")
-        
-        # 1. Sign the Manifest if a Key is provided (FedRAMP requirement)
-        manifest_path = output_dir / f"MANIFEST_{run_id}.json"
-        if kms_key_id and manifest_path.exists():
-            self._sign_manifest(manifest_path, kms_key_id)
+        try:
+            # 1. Sign the Manifest
+            manifest_path = output_dir / f"MANIFEST_{run_id}.json"
+            if kms_key_id and manifest_path.exists():
+                self._sign_manifest(manifest_path, kms_key_id)
 
-        # 2. Upload files
-        for file_path in output_dir.iterdir():
-            if file_path.is_file():
-                s_key = f"evidence/{run_id}/{file_path.name}"
-                self.s3.upload_file(
-                    str(file_path), self.bucket, s_key,
-                    ExtraArgs={'Tagging': 'Project=SecureBase&Status=Final'}
-                )
+            # 2. Upload files
+            for file_path in output_dir.iterdir():
+                if file_path.is_file():
+                    s_key = f"evidence/{run_id}/{file_path.name}"
+                    print(f"📤 Uploading: {file_path.name}...", end=" ")
+                    self.s3.upload_file(str(file_path), self.bucket, s_key)
+                    print("✅")
+        except Exception as e:
+            print(f"\n❌ VAULTING FAILED: {str(e)}")
 
     def _sign_manifest(self, path: Path, key_id: str):
         """Creates a detached signature for the manifest using KMS."""
@@ -1708,7 +1723,6 @@ class SecureBaseVault:
         sig_path = path.with_suffix(".sig")
         sig_path.write_bytes(response['Signature'])
         print(f"✍️  Manifest digitally signed via KMS.")
-
 # ──────────────────────────────────────────────────────────────────────────────
 # REVISED MAIN ORCHESTRATOR
 # ──────────────────────────────────────────────────────────────────────────────
