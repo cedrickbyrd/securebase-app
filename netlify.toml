@@ -6,12 +6,19 @@
 [functions]
   node_bundler = "esbuild"
 
+# 1. DOMAIN STEERING: Force generic URL to branded custom domain
+[[redirects]]
+  from = "https://securebase-demo.netlify.app/*"
+  to = "https://demo.securebase.tximhotep.com/:splat"
+  status = 301
+  force = true
+
+# 2. SPA ROUTING: Catch-all for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
-
 
 # Security headers
 [[headers]]
@@ -21,13 +28,14 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    # Added Content-Security-Policy for a "Secure" Base
+    Content-Security-Policy = "upgrade-insecure-requests; block-all-mixed-content;"
 
 # Cache static assets
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
 
 [dev]
   command = "npm run dev"
