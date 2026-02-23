@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Compliance Evidence Report – 7DC03680</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b;margin:0;padding:20px}
+  h1{color:#1e293b} h2{color:#475569}
+  .banner{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:24px;border-radius:12px;margin-bottom:24px}
+  .banner h1{margin:0 0 4px;font-size:1.8rem} .banner p{margin:0;opacity:.85}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+  .card{background:#fff;border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .card .val{font-size:2rem;font-weight:700} .card .lbl{font-size:.8rem;color:#64748b;text-transform:uppercase}
+  .pass{color:#22c55e} .fail{color:#ef4444} .warn{color:#f59e0b} .skip{color:#6b7280}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  th{background:#1e3a5f;color:#fff;padding:10px 12px;text-align:left;font-size:.85rem}
+  td{padding:9px 12px;border-bottom:1px solid #e2e8f0;font-size:.85rem;vertical-align:top}
+  tr:hover{background:#f1f5f9} code{background:#e2e8f0;padding:2px 5px;border-radius:4px;font-size:.8rem}
+  .meta-box{background:#fff;border-radius:8px;padding:16px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:.85rem}
+  .meta-box pre{margin:0;white-space:pre-wrap;color:#475569}
+  footer{text-align:center;color:#94a3b8;font-size:.8rem;margin-top:24px}
+  input#search{width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:.9rem;margin-bottom:12px;box-sizing:border-box}
+</style>
+</head>
+<body>
+<div class="banner">
+  <h1>🛡️ Compliance Evidence Report</h1>
+  <p>Run ID: <code style="background:rgba(255,255,255,.15);padding:2px 6px;border-radius:4px">7DC03680</code> &nbsp;·&nbsp; Host: black.tximhotep.com &nbsp;·&nbsp; 2026-02-22T20:11:33 UTC</p>
+</div>
+
+<div class="summary-grid">
+  <div class="card"><div class="val">20</div><div class="lbl">Total Checks</div></div>
+  <div class="card"><div class="val pass">13</div><div class="lbl">Passed</div></div>
+  <div class="card"><div class="val fail">2</div><div class="lbl">Failed</div></div>
+  <div class="card"><div class="val warn">4</div><div class="lbl">Warnings</div></div>
+  <div class="card"><div class="val skip">1</div><div class="lbl">Skipped</div></div>
+  <div class="card"><div class="val">65.0%</div><div class="lbl">Pass Rate</div></div>
+  <div class="card"><div class="val">1.4s</div><div class="lbl">Duration</div></div>
+</div>
+
+<div class="meta-box">
+  <strong>Environment:</strong>
+  <pre>{
+  "run_id": "7DC03680",
+  "collected_at": "2026-02-22T20:11:33.878169Z",
+  "hostname": "black.tximhotep.com",
+  "fqdn": "host-69-59-89-22.vyvebroadband.net",
+  "ip_addresses": [
+    "69.59.89.22"
+  ],
+  "platform": "macOS-10.15.8-x86_64-i386-64bit",
+  "os": "Darwin 19.6.0",
+  "architecture": "x86_64",
+  "cpu_count": 4,
+  "tool_version": "2.0.0",
+  "total_memory_gb": 8.0,
+  "disk_total_gb": 465.72
+}</pre>
+</div>
+
+<h2>Evidence Items</h2>
+<input id="search" placeholder="🔍 Filter by check ID, title, status, framework…" onkeyup="filterTable()" />
+<table id="evtable">
+  <thead>
+    <tr>
+      <th>Check ID</th><th>Title / Details</th><th>Severity</th><th>Status</th>
+      <th>Framework</th><th>Control</th><th>Remediation</th><th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+            <tr>
+              <td><code>SOC2-CC1.1</code></td>
+              <td><strong>Information Security Policy Exists</strong><br/><small>Policy file found on host.</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC1.1</code></td>
+              <td><small>Maintain a documented Information Security Policy (ISP) and store it in a central location.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC1.2</code></td>
+              <td><strong>Audit Daemon Active (Control Environment)</strong><br/><small>auditd status: inactive</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC1.2</code></td>
+              <td><small>Enable and configure auditd to capture security-relevant events per CISA guidance.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC2.1</code></td>
+              <td><strong>System Logging Service Active</strong><br/><small>No recognized syslog service detected as active.</small></td>
+              <td><span style="color:#f59e0b;font-weight:bold">MEDIUM</span></td>
+              <td style="color:#ef4444;font-weight:bold">FAIL</td>
+              <td>SOC2</td>
+              <td><code>CC2.1</code></td>
+              <td><small>Install and enable rsyslog or journald for centralized log management.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC3.1</code></td>
+              <td><strong>Vulnerability Scanner Present</strong><br/><small>No common vulnerability scanner found in PATH.</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#f59e0b;font-weight:bold">WARN</td>
+              <td>SOC2</td>
+              <td><code>CC3.1</code></td>
+              <td><small>Deploy a vulnerability scanner (e.g., Trivy, Lynis, Nessus) and schedule periodic scans.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC3.2</code></td>
+              <td><strong>Automated Patch Management Configured</strong><br/><small>notfound</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#f59e0b;font-weight:bold">WARN</td>
+              <td>SOC2</td>
+              <td><code>CC3.2</code></td>
+              <td><small>Enable unattended-upgrades (Debian/Ubuntu) or dnf-automatic (RHEL) for automatic security patches.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC4.1</code></td>
+              <td><strong>Log Forwarding / SIEM Agent Present</strong><br/><small>No log forwarding agent detected.</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#f59e0b;font-weight:bold">WARN</td>
+              <td>SOC2</td>
+              <td><code>CC4.1</code></td>
+              <td><small>Deploy a log forwarding agent (Filebeat, Fluentd, Splunk UF) to send logs to a SIEM.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC4.2</code></td>
+              <td><strong>System Uptime Metrics Captured</strong><br/><small>System uptime: 0 days (boot: 2026-02-22T11:43:20).</small></td>
+              <td><span style="color:#6b7280;font-weight:bold">LOW</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC4.2</code></td>
+              <td><small>N/A</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC5.1</code></td>
+              <td><strong>Host Firewall Active</strong><br/><small>No active firewall service detected.</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#ef4444;font-weight:bold">FAIL</td>
+              <td>SOC2</td>
+              <td><code>CC5.1</code></td>
+              <td><small>Enable ufw or firewalld and define ingress/egress rules.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC6.1</code></td>
+              <td><strong>Password Policy (login.defs)</strong><br/><small>/etc/login.defs not found (non-Linux or container environment).</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#6b7280;font-weight:bold">SKIP</td>
+              <td>SOC2</td>
+              <td><code>CC6.1</code></td>
+              <td><small>Ensure OS-level password policies are enforced.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC6.3</code></td>
+              <td><strong>SSH Root Login Disabled</strong><br/><small>PermitRootLogin = no</small></td>
+              <td><span style="color:#991b1b;font-weight:bold">CRITICAL</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC6.3</code></td>
+              <td><small>Set PermitRootLogin no in /etc/ssh/sshd_config and reload sshd.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC6.4</code></td>
+              <td><strong>SSH Protocol Version 2 Only</strong><br/><small>Protocol = 2</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC6.4</code></td>
+              <td><small>Set Protocol 2 in /etc/ssh/sshd_config.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC6.5</code></td>
+              <td><strong>World-Writable Files in /tmp</strong><br/><small>No world-writable files found in /tmp.</small></td>
+              <td><span style="color:#f59e0b;font-weight:bold">MEDIUM</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC6.5</code></td>
+              <td><small>Review and remediate world-writable files. Use sticky bit on shared directories.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC7.2</code></td>
+              <td><strong>Listening Network Services Inventory</strong><br/><small>Network listening services captured for review.</small></td>
+              <td><span style="color:#3b82f6;font-weight:bold">INFO</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC7.2</code></td>
+              <td><small>Disable unnecessary services and ports per principle of least functionality.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC8.1</code></td>
+              <td><strong>Version Control System (git) Available</strong><br/><small>git found in PATH.</small></td>
+              <td><span style="color:#f59e0b;font-weight:bold">MEDIUM</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC8.1</code></td>
+              <td><small>Ensure all infrastructure and application changes are tracked in a version control system.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-CC9.1</code></td>
+              <td><strong>Backup Tooling Present</strong><br/><small>Backup tools found: ['rsync', 'aws', 'gsutil']</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>CC9.1</code></td>
+              <td><small>Implement automated, tested backups and verify restore procedures quarterly.</small></td>
+              <td><small>2026-02-22T20:11:34</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-A1.1</code></td>
+              <td><strong>Disk Usage < 85%</strong><br/><small>disk_pct = 19.3%</small></td>
+              <td><span style="color:#6b7280;font-weight:bold">LOW</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>A1.1</code></td>
+              <td><small>Investigate high disk_pct. Scale resources or archive data.</small></td>
+              <td><small>2026-02-22T20:11:35</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-A1.2</code></td>
+              <td><strong>CPU Usage < 90%</strong><br/><small>cpu_pct = 8.7%</small></td>
+              <td><span style="color:#6b7280;font-weight:bold">LOW</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>A1.1</code></td>
+              <td><small>Investigate high cpu_pct. Scale resources or archive data.</small></td>
+              <td><small>2026-02-22T20:11:35</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-A1.3</code></td>
+              <td><strong>Memory Usage < 90%</strong><br/><small>mem_pct = 60.2%</small></td>
+              <td><span style="color:#6b7280;font-weight:bold">LOW</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>A1.1</code></td>
+              <td><small>Investigate high mem_pct. Scale resources or archive data.</small></td>
+              <td><small>2026-02-22T20:11:35</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-C1.1</code></td>
+              <td><strong>OpenSSL / TLS Tooling Present</strong><br/><small>openssl found in PATH.</small></td>
+              <td><span style="color:#f59e0b;font-weight:bold">MEDIUM</span></td>
+              <td style="color:#22c55e;font-weight:bold">PASS</td>
+              <td>SOC2</td>
+              <td><code>C1.1</code></td>
+              <td><small>Install openssl and enforce TLS ≥ 1.2 for all data-in-transit.</small></td>
+              <td><small>2026-02-22T20:11:35</small></td>
+            </tr>
+            <tr>
+              <td><code>SOC2-C1.2</code></td>
+              <td><strong>Disk Encryption Detected (LUKS/dm-crypt)</strong><br/><small>No LUKS-encrypted volumes detected. Verify encryption at-rest.</small></td>
+              <td><span style="color:#ef4444;font-weight:bold">HIGH</span></td>
+              <td style="color:#f59e0b;font-weight:bold">WARN</td>
+              <td>SOC2</td>
+              <td><code>C1.2</code></td>
+              <td><small>Enable LUKS encryption on all volumes containing sensitive data.</small></td>
+              <td><small>2026-02-22T20:11:35</small></td>
+            </tr></tbody>
+</table>
+
+<footer>Generated by ComplianceEvidenceCollector v2.0.0 &mdash; FOR INTERNAL USE ONLY &mdash; HANDLE PER DATA CLASSIFICATION POLICY</footer>
+
+<script>
+function filterTable(){
+  var q=document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('#evtable tbody tr').forEach(function(r){
+    r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+</script>
+</body>
+</html>

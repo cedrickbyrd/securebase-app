@@ -1,0 +1,467 @@
+{
+  "summary": {
+    "run_id": "49317BF2",
+    "started_at": "2026-02-22T20:17:43.701186Z",
+    "finished_at": "2026-02-22T20:17:44.933371Z",
+    "duration_sec": 1.23,
+    "frameworks": [
+      "soc2"
+    ],
+    "total_checks": 20,
+    "passed": 13,
+    "failed": 2,
+    "warned": 4,
+    "errored": 0,
+    "skipped": 1,
+    "score_pct": 65.0,
+    "host": "black.tximhotep.com",
+    "os_info": "macOS-10.15.8-x86_64-i386-64bit",
+    "python_version": "3.12.8",
+    "output_dir": "vault/evidence_49317BF2"
+  },
+  "metadata": {
+    "run_id": "49317BF2",
+    "collected_at": "2026-02-22T20:17:43.701650Z",
+    "hostname": "black.tximhotep.com",
+    "fqdn": "host-69-59-89-22.vyvebroadband.net",
+    "ip_addresses": [
+      "69.59.89.22"
+    ],
+    "platform": "macOS-10.15.8-x86_64-i386-64bit",
+    "os": "Darwin 19.6.0",
+    "architecture": "x86_64",
+    "python_version": "3.12.8 (v3.12.8:2dc476bcb91, Dec  3 2024, 14:43:20) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "cpu_count": 4,
+    "tool_version": "2.0.0",
+    "total_memory_gb": 8.0,
+    "disk_total_gb": 465.72
+  },
+  "evidence": [
+    {
+      "check_id": "SOC2-CC1.1",
+      "title": "Information Security Policy Exists",
+      "framework": "soc2",
+      "control_ref": "CC1.1",
+      "category": "Organization & Management",
+      "severity": "HIGH",
+      "status": "PASS",
+      "details": "Policy file found on host.",
+      "remediation": "Maintain a documented Information Security Policy (ISP) and store it in a central location.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.753665Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "policy",
+        "governance"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC1.2",
+      "title": "Audit Daemon Active (Control Environment)",
+      "framework": "soc2",
+      "control_ref": "CC1.2",
+      "category": "Organization & Management",
+      "severity": "HIGH",
+      "status": "PASS",
+      "details": "auditd status: inactive",
+      "remediation": "Enable and configure auditd to capture security-relevant events per CISA guidance.",
+      "raw_evidence": "inactive",
+      "timestamp": "2026-02-22T20:17:43.765213Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "audit",
+        "logging"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC2.1",
+      "title": "System Logging Service Active",
+      "framework": "soc2",
+      "control_ref": "CC2.1",
+      "category": "Communication & Information",
+      "severity": "MEDIUM",
+      "status": "FAIL",
+      "details": "No recognized syslog service detected as active.",
+      "remediation": "Install and enable rsyslog or journald for centralized log management.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.786256Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "logging"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC3.1",
+      "title": "Vulnerability Scanner Present",
+      "framework": "soc2",
+      "control_ref": "CC3.1",
+      "category": "Risk Assessment",
+      "severity": "HIGH",
+      "status": "WARN",
+      "details": "No common vulnerability scanner found in PATH.",
+      "remediation": "Deploy a vulnerability scanner (e.g., Trivy, Lynis, Nessus) and schedule periodic scans.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.787657Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "vulnerability-management"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC3.2",
+      "title": "Automated Patch Management Configured",
+      "framework": "soc2",
+      "control_ref": "CC3.2",
+      "category": "Risk Assessment",
+      "severity": "HIGH",
+      "status": "WARN",
+      "details": "notfound",
+      "remediation": "Enable unattended-upgrades (Debian/Ubuntu) or dnf-automatic (RHEL) for automatic security patches.",
+      "raw_evidence": "notfound",
+      "timestamp": "2026-02-22T20:17:43.796602Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "patch-management"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC4.1",
+      "title": "Log Forwarding / SIEM Agent Present",
+      "framework": "soc2",
+      "control_ref": "CC4.1",
+      "category": "Monitoring Activities",
+      "severity": "HIGH",
+      "status": "WARN",
+      "details": "No log forwarding agent detected.",
+      "remediation": "Deploy a log forwarding agent (Filebeat, Fluentd, Splunk UF) to send logs to a SIEM.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.844593Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "siem",
+        "monitoring"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC4.2",
+      "title": "System Uptime Metrics Captured",
+      "framework": "soc2",
+      "control_ref": "CC4.2",
+      "category": "Monitoring Activities",
+      "severity": "LOW",
+      "status": "PASS",
+      "details": "System uptime: 0 days (boot: 2026-02-22T11:43:20).",
+      "remediation": "N/A",
+      "raw_evidence": {
+        "uptime_days": 0,
+        "boot_time": "2026-02-22T11:43:20"
+      },
+      "timestamp": "2026-02-22T20:17:43.845248Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "availability"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC5.1",
+      "title": "Host Firewall Active",
+      "framework": "soc2",
+      "control_ref": "CC5.1",
+      "category": "Control Activities",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "details": "No active firewall service detected.",
+      "remediation": "Enable ufw or firewalld and define ingress/egress rules.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.865642Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "firewall",
+        "network"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC6.1",
+      "title": "Password Policy (login.defs)",
+      "framework": "soc2",
+      "control_ref": "CC6.1",
+      "category": "Logical Access",
+      "severity": "HIGH",
+      "status": "SKIP",
+      "details": "/etc/login.defs not found (non-Linux or container environment).",
+      "remediation": "Ensure OS-level password policies are enforced.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.866207Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "passwords",
+        "iam"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC6.3",
+      "title": "SSH Root Login Disabled",
+      "framework": "soc2",
+      "control_ref": "CC6.3",
+      "category": "Logical Access",
+      "severity": "CRITICAL",
+      "status": "PASS",
+      "details": "PermitRootLogin = no",
+      "remediation": "Set PermitRootLogin no in /etc/ssh/sshd_config and reload sshd.",
+      "raw_evidence": {
+        "PermitRootLogin": "no"
+      },
+      "timestamp": "2026-02-22T20:17:43.867479Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "ssh",
+        "iam"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC6.4",
+      "title": "SSH Protocol Version 2 Only",
+      "framework": "soc2",
+      "control_ref": "CC6.4",
+      "category": "Logical Access",
+      "severity": "HIGH",
+      "status": "PASS",
+      "details": "Protocol = 2",
+      "remediation": "Set Protocol 2 in /etc/ssh/sshd_config.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.867827Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "ssh",
+        "iam"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC6.5",
+      "title": "World-Writable Files in /tmp",
+      "framework": "soc2",
+      "control_ref": "CC6.5",
+      "category": "Logical Access",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "details": "No world-writable files found in /tmp.",
+      "remediation": "Review and remediate world-writable files. Use sticky bit on shared directories.",
+      "raw_evidence": [],
+      "timestamp": "2026-02-22T20:17:43.877270Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "file-permissions"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC7.2",
+      "title": "Listening Network Services Inventory",
+      "framework": "soc2",
+      "control_ref": "CC7.2",
+      "category": "System Operations",
+      "severity": "INFO",
+      "status": "PASS",
+      "details": "Network listening services captured for review.",
+      "remediation": "Disable unnecessary services and ports per principle of least functionality.",
+      "raw_evidence": "",
+      "timestamp": "2026-02-22T20:17:43.889668Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "network",
+        "inventory"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC8.1",
+      "title": "Version Control System (git) Available",
+      "framework": "soc2",
+      "control_ref": "CC8.1",
+      "category": "Change Management",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "details": "git found in PATH.",
+      "remediation": "Ensure all infrastructure and application changes are tracked in a version control system.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.890756Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "change-management",
+        "scm"
+      ]
+    },
+    {
+      "check_id": "SOC2-CC9.1",
+      "title": "Backup Tooling Present",
+      "framework": "soc2",
+      "control_ref": "CC9.1",
+      "category": "Risk Mitigation",
+      "severity": "HIGH",
+      "status": "PASS",
+      "details": "Backup tools found: ['rsync', 'aws', 'gsutil']",
+      "remediation": "Implement automated, tested backups and verify restore procedures quarterly.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:43.920750Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "backup",
+        "bcp"
+      ]
+    },
+    {
+      "check_id": "SOC2-A1.1",
+      "title": "Disk Usage < 85%",
+      "framework": "soc2",
+      "control_ref": "A1.1",
+      "category": "Availability",
+      "severity": "LOW",
+      "status": "PASS",
+      "details": "disk_pct = 19.3%",
+      "remediation": "Investigate high disk_pct. Scale resources or archive data.",
+      "raw_evidence": {
+        "disk_pct": 19.3
+      },
+      "timestamp": "2026-02-22T20:17:44.921608Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "availability",
+        "capacity"
+      ]
+    },
+    {
+      "check_id": "SOC2-A1.2",
+      "title": "CPU Usage < 90%",
+      "framework": "soc2",
+      "control_ref": "A1.1",
+      "category": "Availability",
+      "severity": "LOW",
+      "status": "PASS",
+      "details": "cpu_pct = 6.8%",
+      "remediation": "Investigate high cpu_pct. Scale resources or archive data.",
+      "raw_evidence": {
+        "cpu_pct": 6.8
+      },
+      "timestamp": "2026-02-22T20:17:44.921973Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "availability",
+        "capacity"
+      ]
+    },
+    {
+      "check_id": "SOC2-A1.3",
+      "title": "Memory Usage < 90%",
+      "framework": "soc2",
+      "control_ref": "A1.1",
+      "category": "Availability",
+      "severity": "LOW",
+      "status": "PASS",
+      "details": "mem_pct = 59.9%",
+      "remediation": "Investigate high mem_pct. Scale resources or archive data.",
+      "raw_evidence": {
+        "mem_pct": 59.9
+      },
+      "timestamp": "2026-02-22T20:17:44.922177Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "availability",
+        "capacity"
+      ]
+    },
+    {
+      "check_id": "SOC2-C1.1",
+      "title": "OpenSSL / TLS Tooling Present",
+      "framework": "soc2",
+      "control_ref": "C1.1",
+      "category": "Confidentiality",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "details": "openssl found in PATH.",
+      "remediation": "Install openssl and enforce TLS \u2265 1.2 for all data-in-transit.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:44.922597Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "encryption",
+        "tls"
+      ]
+    },
+    {
+      "check_id": "SOC2-C1.2",
+      "title": "Disk Encryption Detected (LUKS/dm-crypt)",
+      "framework": "soc2",
+      "control_ref": "C1.2",
+      "category": "Confidentiality",
+      "severity": "HIGH",
+      "status": "WARN",
+      "details": "No LUKS-encrypted volumes detected. Verify encryption at-rest.",
+      "remediation": "Enable LUKS encryption on all volumes containing sensitive data.",
+      "raw_evidence": null,
+      "timestamp": "2026-02-22T20:17:44.932742Z",
+      "collector": "ComplianceEvidenceCollector",
+      "version": "2.0.0",
+      "run_id": "49317BF2",
+      "host": "black.tximhotep.com",
+      "tags": [
+        "encryption",
+        "data-at-rest"
+      ]
+    }
+  ]
+}
