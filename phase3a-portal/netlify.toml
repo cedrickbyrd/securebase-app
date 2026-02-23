@@ -57,7 +57,7 @@
     X-Robots-Tag = "noindex, nofollow"
 
     # 4. Permissions Policy
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=()""
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
     # Restrict browser features and APIs
       geolocation=(),
       microphone=(),
