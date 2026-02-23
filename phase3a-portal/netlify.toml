@@ -29,10 +29,6 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    X-XSS-Protection = "1; mode=block"
-    Referrer-Policy = "strict-origin-when-cross-origin"
     X-Environment = "demo"
     X-Robots-Tag = "noindex, nofollow"
     # Keep your custom CSP block here...]
