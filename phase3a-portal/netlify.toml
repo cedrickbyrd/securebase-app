@@ -1,11 +1,20 @@
 [build]
-  base = "demo"
+  # Change 'demo' to '.' if your package.json is in phase3a-portal/
+  base = "." 
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22.12.0"
 
+# 1. Add Domain Steering (The 301 Redirect)
+[[redirects]]
+  from = "https://securebase-demo.netlify.app/*"
+  to = "https://demo.securebase.tximhotep.com/:splat"
+  status = 301
+  force = true
+
+# 2. Standard SPA Routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -16,10 +25,17 @@
   VITE_ENV = "demo"
   VITE_ANALYTICS_ENABLED = "false"
 
-# Security Headers - Applied to all routes
+# Security Headers (Keep your existing robust CSP, it's excellent)
 [[headers]]
   for = "/*"
   [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Environment = "demo"
+    X-Robots-Tag = "noindex, nofollow"
+    # Keep your custom CSP block here...]
     # Content Security Policy - Prevent XSS attacks
     Content-Security-Policy = """
       default-src 'self';
