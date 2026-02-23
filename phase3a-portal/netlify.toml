@@ -30,7 +30,6 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # 1. Content Security Policy
     Content-Security-Policy = """
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net;
@@ -45,18 +44,13 @@
       frame-ancestors 'none';
       upgrade-insecure-requests;
     """
-    # 2. Individual Security Keys (Defined ONCE)
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    
-    # 3. Demo Specific Metadata
     X-Environment = "demo"
     X-Robots-Tag = "noindex, nofollow"
-
-    # 4. Permissions Policy - Use triple quotes for multiline
     Permissions-Policy = """
       geolocation=(),
       microphone=(),
