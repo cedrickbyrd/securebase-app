@@ -38,20 +38,42 @@ exports.handler = async (event, context) => {
       Bucket: "securebase-evidence-tx-imhotep",
       Key: latestReport.Key,
     });
+    // ... (previous S3 setup code) ...
 
     const response = await client.send(getCommand);
     const bodyContents = await response.Body.transformToString();
+    const rawData = JSON.parse(bodyContents);
+
+    // MAPPER: Convert raw collector data to SecureBase Dashboard format
+    const dashboardData = {
+      audit_metadata: {
+        standard: rawData.summary?.frameworks[0]?.toUpperCase() || "SOC 2",
+        status: rawData.summary?.score_pct > 70 ? "In Compliance" : "Action Required",
+        run_id: rawData.summary?.run_id,
+        generated_at: rawData.summary?.finished_at
+      },
+      score: rawData.summary?.score_pct || 0,
+      stats: {
+        passed: rawData.summary?.passed || 0,
+        failed: rawData.summary?.failed || 0,
+        warned: rawData.summary?.warned || 0
+      },
+      // Map "evidence" array to "controls" for the UI
+      controls: (rawData.evidence || []).map(item => ({
+        id: item.control_ref,
+        title: item.title,
+        status: item.status === "PASS" ? "passed" : item.status === "WARN" ? "warning" : "failed",
+        category: item.category,
+        remediation: item.remediation
+      }))
+    };
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: bodyContents
+      body: JSON.stringify(dashboardData)
     };
-  } catch (error) {
-    console.error("S3 Backend Error:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to retrieve vault data" })
-    };
+
+// ... (error handling) ...
   }
 };
