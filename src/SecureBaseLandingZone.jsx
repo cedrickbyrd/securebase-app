@@ -6,7 +6,6 @@ import {
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 import MFAChallenge from './components/MFAChallenge';
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { useMFAStatus } from './lib/useMFAStatus';
 import { supabase } from './lib/supabase';
 
@@ -31,23 +30,28 @@ export default function SecureBaseLandingZone() {
     setShowReview(false);
   };
 
-useEffect(() => {
-  const fetchLatestAudit = async () => {
-    try {
-      // No keys needed here! We call our internal API instead.
-      const response = await fetch('/.netlify/functions/get-audit-report');
-      if (!response.ok) throw new Error("Vault fetch failed");
-      const data = await response.json();
-      setReport(data);
-    } catch (err) {
-      console.error("Vault access error:", err);
-    } finally {
+  useEffect(() => {
+    const fetchLatestAudit = async () => {
+      setLoading(true);
+      try {
+        // Calling the server-side proxy instead of S3 directly
+        const response = await fetch('/.netlify/functions/get-audit-report');
+        if (!response.ok) throw new Error("Vault fetch failed");
+        const data = await response.json();
+        setReport(data);
+      } catch (err) {
+        console.error("Vault access error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (isMFA) {
+      fetchLatestAudit();
+    } else {
       setLoading(false);
     }
-  };
-  
-  if (isMFA) fetchLatestAudit(); // Only fetch if MFA is complete
-}, [isMFA]);
+  }, [isMFA]);
   
   const handleCheckout = async () => {
     if (!userEmail || !userEmail.includes('@')) {
@@ -137,6 +141,7 @@ useEffect(() => {
               <div className="bg-white border-2 border-slate-200 rounded-3xl p-10 shadow-2xl">
                 <h2 className="text-2xl font-bold mb-6">Review Pilot Onboarding</h2>
                 <div className="space-y-6">
+                  {checkoutError && <div className="text-red-500 text-sm font-bold">{checkoutError}</div>}
                   <div>
                     <label className="block text-xs font-black uppercase text-slate-400 mb-2">Work Email</label>
                     <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)}
