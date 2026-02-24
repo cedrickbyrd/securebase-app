@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase'; // Use the client we created
 import { useNavigate } from 'react-router-dom';
+import '../styles/Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
