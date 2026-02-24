@@ -116,25 +116,45 @@ export default function SecureBaseLandingZone() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 font-sans">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleTabChange('overview')}>
-            <div className="bg-blue-600 p-2 rounded-lg"><Shield className="text-white w-6 h-6" /></div>
-            <div>
-              <div className="text-xl font-bold tracking-tight">SecureBase</div>
-              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
-            </div>
+  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleTabChange('overview')}>
+      <div className="bg-blue-600 p-2 rounded-lg"><Shield className="text-white w-6 h-6" /></div>
+      <div>
+        <div className="text-xl font-bold tracking-tight">SecureBase</div>
+        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
+      </div>
+    </div>
+    
+    <nav className="hidden md:flex items-center gap-8">
+      {['overview', 'compliance', 'pricing'].map((tab) => (
+        <button key={tab} onClick={() => handleTabChange(tab)}
+          className={`text-sm font-semibold capitalize ${activeTab === tab || (tab === 'compliance' && activeTab === 'mfa-gate') ? 'text-blue-600' : 'text-slate-600 hover:text-blue-500'}`}>
+          {tab}
+        </button>
+      ))}
+      
+      {/* Dynamic Auth Section */}
+      <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+        {isMFA && (
+          <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-100 rounded-md">
+            <ShieldCheck className="w-3 h-3 text-green-600" />
+            <span className="text-[10px] font-black text-green-700 uppercase">MFA Verified</span>
           </div>
-          <nav className="hidden md:flex items-center gap-8">
-            {['overview', 'compliance', 'pricing'].map((tab) => (
-              <button key={tab} onClick={() => handleTabChange(tab)}
-                className={`text-sm font-semibold capitalize ${activeTab === tab || (tab === 'compliance' && activeTab === 'mfa-gate') ? 'text-blue-600' : 'text-slate-600 hover:text-blue-500'}`}>
-                {tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </header>
-
+        )}
+        
+        <button 
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.reload(); // Refresh to clear state and return to login/aal1
+          }}
+          className="text-xs font-bold text-slate-400 hover:text-red-500 transition uppercase tracking-widest"
+        >
+          Sign Out
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
       <main className="max-w-7xl mx-auto px-6 py-12" id="pricing-anchor">
         {/* Auth Loading State */}
         {authLoading && activeTab === 'compliance' && (
