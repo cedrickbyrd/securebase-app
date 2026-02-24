@@ -17,23 +17,32 @@ export default function SecureBaseLandingZone() {
   // 2. Data Fetcher (Runs on load, ignores MFA status)
   useEffect(() => {
     const fetchLatestAudit = async () => {
-      console.log("SecureBase: Initiating vault fetch...");
-      setLoading(true);
-      try {
-        const response = await fetch('https://tximhotep.com/.netlify/functions/get-audit-report');
-        if (!response.ok) throw new Error("Vault fetch failed");
-        const data = await response.json();
-        console.log("SecureBase: Data loaded successfully", data);
-        setReport(data);
-      } catch (err) {
-        console.error("SecureBase: Vault access error:", err);
-      } finally {
-        setLoading(false);
+  setLoading(true);
+  try {
+    // Get the JWT from the current Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) throw new Error("No active session found");
+
+    const response = await fetch('/.netlify/functions/get-audit-report', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Pass the JWT in the Authorization header
+        'Authorization': `Bearer ${token}`
       }
-    };
-    
-    fetchLatestAudit();
-  }, []);
+    });
+
+    if (!response.ok) throw new Error("Vault fetch failed");
+    const data = await response.json();
+    setReport(data);
+  } catch (err) {
+    console.error("SecureBase: Vault access error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
