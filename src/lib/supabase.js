@@ -3,26 +3,41 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// 1. Initialize the client first
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
 /**
  * verifyMFA
- * @param {string} factorId - The ID returned from the enrollment step
- * @param {string} code - The 6-digit code from the user's authenticator app
+ * This upgrades the session from aal1 to aal2
  */
-const verifyMFA = async (factorId, code) => {
+export const verifyMFA = async (factorId, code) => {
   const { data, error } = await supabase.auth.mfa.challengeAndVerify({
     factorId: factorId,
     code: code
   });
 
   if (error) {
-    // If the code is expired or wrong, this will trigger
     console.error("MFA Verification Failed:", error.message);
     return { success: false, error };
   }
 
-  // Success! The user's session is now upgraded to AAL2 (Level 2)
   console.log("MFA Active:", data);
   return { success: true, data };
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+/**
+ * unenrollMFA
+ * Useful for the "Disable MFA" button in settings
+ */
+export const unenrollMFA = async (factorId) => {
+  const { data, error } = await supabase.auth.mfa.unenroll({
+    factorId: factorId
+  });
+
+  if (error) {
+    console.error("MFA Unenrollment Failed:", error.message);
+    return { success: false, error };
+  }
+
+  return { success: true, data };
+};
