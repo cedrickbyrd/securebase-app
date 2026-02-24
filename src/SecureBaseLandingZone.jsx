@@ -31,46 +31,23 @@ export default function SecureBaseLandingZone() {
     setShowReview(false);
   };
 
-  useEffect(() => {
-    const fetchLatestAudit = async () => {
-      const client = new S3Client({
-        region: "us-east-1",
-        credentials: {
-          accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY, 
-          secretAccessKey: import.meta.env.VITE_AWS_SECRET_KEY,
-        },
-      });
-
-      try {
-        const listCommand = new ListObjectsV2Command({
-          Bucket: "securebase-evidence-tx-imhotep",
-          Prefix: "evidence/",
-        });
-
-        const listResponse = await client.send(listCommand);
-        if (listResponse.Contents) {
-          const latestJson = listResponse.Contents
-            .filter(obj => obj.Key.endsWith('.json'))
-            .sort((a, b) => b.LastModified - a.LastModified)[0];
-
-          if (latestJson) {
-            const getCommand = new GetObjectCommand({
-              Bucket: "securebase-evidence-tx-imhotep",
-              Key: latestJson.Key,
-            });
-            const response = await client.send(getCommand);
-            const str = await response.Body.transformToString();
-            setReport(JSON.parse(str));
-          }
-        }
-      } catch (err) {
-        console.error("Vault access error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLatestAudit();
-  }, []);
+useEffect(() => {
+  const fetchLatestAudit = async () => {
+    try {
+      // No keys needed here! We call our internal API instead.
+      const response = await fetch('/.netlify/functions/get-audit-report');
+      if (!response.ok) throw new Error("Vault fetch failed");
+      const data = await response.json();
+      setReport(data);
+    } catch (err) {
+      console.error("Vault access error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (isMFA) fetchLatestAudit(); // Only fetch if MFA is complete
+}, [isMFA]);
   
   const handleCheckout = async () => {
     if (!userEmail || !userEmail.includes('@')) {
