@@ -21,15 +21,16 @@ export default function SecureBaseLandingZone() {
   
   const { isMFA, isLoading: authLoading } = useMFAStatus();
 
-  const handleTabChange = (tab) => {
-    if (tab === 'compliance' && !isMFA) {
-      setActiveTab('mfa-gate');
-    } else {
-      setActiveTab(tab);
-    }
-    setShowReview(false);
-  };
-
+// Temporarily allow access to compliance without MFA
+const handleTabChange = (tab) => {
+  // Comment out or remove the MFA requirement line below:
+  // if (tab === 'compliance' && !isMFA) { 
+  //   setActiveTab('mfa-gate');
+  // } else {
+    setActiveTab(tab);
+  // }
+  setShowReview(false);
+};
   useEffect(() => {
     const fetchLatestAudit = async () => {
       setLoading(true);
