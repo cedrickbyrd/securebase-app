@@ -1,7 +1,6 @@
 const { S3Client, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
 
 exports.handler = async (event, context) => {
-  // 1. Setup the S3 Client with PRIVATE environment variables
   const client = new S3Client({
     region: process.env.SB_AWS_REGION || "us-east-1",
     credentials: {
@@ -11,7 +10,6 @@ exports.handler = async (event, context) => {
   });
 
   try {
-    // 2. Find the latest JSON in the bucket
     const listCommand = new ListObjectsV2Command({
       Bucket: "securebase-evidence-tx-imhotep",
       Prefix: "evidence/",
@@ -23,14 +21,22 @@ exports.handler = async (event, context) => {
       return { statusCode: 404, body: JSON.stringify({ error: "No audit reports found" }) };
     }
 
-    const latestJson = listResponse.Contents
-      .filter(obj => obj.Key.endsWith('.json'))
-      .sort((a, b) => b.LastModified - a.LastModified)[0];
+    // UPDATED LOGIC: Filter for actual report data, ignoring manifests
+    const reportFiles = listResponse.Contents.filter(obj => {
+      const key = obj.Key.toLowerCase();
+      return key.endsWith('.json') && !key.includes('manifest');
+    });
 
-    // 3. Fetch the actual content
+    if (reportFiles.length === 0) {
+      return { statusCode: 404, body: JSON.stringify({ error: "No valid summary report found" }) };
+    }
+
+    // Sort to get the most recent one
+    const latestReport = reportFiles.sort((a, b) => b.LastModified - a.LastModified)[0];
+
     const getCommand = new GetObjectCommand({
       Bucket: "securebase-evidence-tx-imhotep",
-      Key: latestJson.Key,
+      Key: latestReport.Key,
     });
 
     const response = await client.send(getCommand);
