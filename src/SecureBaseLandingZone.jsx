@@ -20,7 +20,7 @@ export default function SecureBaseLandingZone() {
       console.log("SecureBase: Initiating vault fetch...");
       setLoading(true);
       try {
-        const response = await fetch('/.netlify/functions/get-audit-report');
+        const response = await fetch('https://tximhotep.com/.netlify/functions/get-audit-report');
         if (!response.ok) throw new Error("Vault fetch failed");
         const data = await response.json();
         console.log("SecureBase: Data loaded successfully", data);
