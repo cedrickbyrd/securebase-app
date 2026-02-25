@@ -36,10 +36,28 @@ exports.handler = async (event, context) => {
       .eq("id", user.id)
       .single();
 
-    if (dbError || profile?.role !== "admin") {
-      return { statusCode: 403, body: JSON.stringify({ error: "Forbidden: Admin access required" }) };
-    }
+  // src/functions/get-audit-report/index.cjs (Snippet to add after RBAC check)
+ // ... existing RBAC check code ...
 
+if (profile?.role !== 'admin') {
+  return { statusCode: 403, body: "Unauthorized" };
+}
+
+// NEW: Log the successful access to the Activity Feed
+await supabaseAdmin
+  .from('activity_feed')
+  .insert([
+    { 
+      actor_id: user.id, 
+      action_type: 'VAULT_ACCESS', 
+      metadata: { 
+        resource: 'securebase-evidence-tx-imhotep',
+        standard: 'SOC 2 Type II' 
+      } 
+    }
+  ]);
+
+     // ... proceed to S3 logic ...
     // --- START ORIGINAL S3 LOGIC ---
     const client = new S3Client({
       region: process.env.SB_AWS_REGION || "us-east-1",
