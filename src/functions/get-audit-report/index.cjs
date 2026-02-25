@@ -1,28 +1,66 @@
 const { S3Client, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { createClient } = require("@supabase/supabase-js");
 
 exports.handler = async (event, context) => {
-  const client = new S3Client({
-    region: process.env.SB_AWS_REGION || "us-east-1",
-    credentials: {
-      accessKeyId: process.env.SB_AWS_ACCESS_KEY_ID, 
-      secretAccessKey: process.env.SB_AWS_SECRET_ACCESS_KEY,
-    },
-  });
+  // 1. Initialize Supabase Admin (Bypasses RLS to check roles)
+  const supabaseAdmin = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.SB_SUPABASE_SERVICE_ROLE_KEY, // Service key is required for server-side auth checks
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+
+  // 2. Validate Authorization Header
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized: Missing token" }) };
+  }
+
+  const token = authHeader.replace("Bearer ", "");
 
   try {
+    // 3. Verify JWT & Get User (Safe method: contacts Supabase Auth)
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized: Invalid session" }) };
+    }
+
+    // 4. RBAC Check: Is this user an Admin?
+    const { data: profile, error: dbError } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (dbError || profile?.role !== "admin") {
+      return { statusCode: 403, body: JSON.stringify({ error: "Forbidden: Admin access required" }) };
+    }
+
+    // --- START ORIGINAL S3 LOGIC ---
+    const client = new S3Client({
+      region: process.env.SB_AWS_REGION || "us-east-1",
+      credentials: {
+        accessKeyId: process.env.SB_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.SB_AWS_SECRET_ACCESS_KEY,
+      },
+    });
+
     const listCommand = new ListObjectsV2Command({
       Bucket: "securebase-evidence-tx-imhotep",
       Prefix: "evidence/",
     });
 
     const listResponse = await client.send(listCommand);
-    
-    // Filter for the audit summary JSON, ignoring manifests
     const reportFiles = listResponse.Contents.filter(obj => {
       const key = obj.Key.toLowerCase();
       return key.endsWith('.json') && !key.includes('manifest');
     });
 
+    if (!reportFiles.length) throw new Error("No reports found in S3");
     const latestReport = reportFiles.sort((a, b) => b.LastModified - a.LastModified)[0];
 
     const getCommand = new GetObjectCommand({
@@ -30,8 +68,8 @@ exports.handler = async (event, context) => {
       Key: latestReport.Key,
     });
 
-    const response = await client.send(getCommand);
-    const bodyContents = await response.Body.transformToString();
+    const s3Response = await client.send(getCommand);
+    const bodyContents = await s3Response.Body.transformToString();
     const rawData = JSON.parse(bodyContents);
 
     // MAPPER: Translating raw collector data for the React Dashboard
@@ -48,7 +86,6 @@ exports.handler = async (event, context) => {
         warned: rawData.summary.warned,
         failed: rawData.summary.failed
       },
-      // Transform "evidence" into "controls"
       controls: rawData.evidence.map(item => ({
         id: item.control_ref,
         title: item.title,
@@ -61,11 +98,16 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*" // Adjust if needed for production
+      },
       body: JSON.stringify(dashboardData)
     };
+    // --- END ORIGINAL S3 LOGIC ---
+
   } catch (error) {
-    console.error("Mapping Error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed to map vault data" }) };
+    console.error("SecureBase Guard Error:", error);
+    return { statusCode: 500, body: JSON.stringify({ error: error.message || "Internal server error" }) };
   }
 };
