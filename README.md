@@ -64,6 +64,8 @@ python3 ../projects/securebase-terraform/compliance_evidence_collector.py --fram
 
 Based in Mexia, Texas. Founded by veterans. Built for companies that need compliant AWS infrastructure without the 12-week wait.
 
+"Infrastructure HIPAA-Ready (BAA Active)." 2/26/26
+
 Contact:
 
     Sales: sales@securebase.tximhotep.com
