@@ -1,0 +1,18 @@
+# User-Agent: * allows all search engines (Google, Bing, DuckDuckGo)
+User-agent: *
+
+# Block access to the application dashboard and sensitive logic
+# Assuming your React app uses these paths for the authenticated UI
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /api/
+
+# Allow indexing of public-facing marketing and compliance resources
+Allow: /
+Allow: /features/
+Allow: /compliance-frameworks/
+Allow: /contact/
+
+# Link to your Sitemap to help crawlers find your React routes
+Sitemap: https://securebase.tximhotep.com/sitemap.xml
