@@ -3,6 +3,7 @@ import { Shield, ArrowRight, Loader } from 'lucide-react';
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 import { supabase } from './lib/supabase';
+import MFAEnrollment from './components/auth/MFAEnrollment'; // Import Step 3
 
 // --- Step 2: MFA Challenge Component ---
 const MFAChallenge = ({ onVerifySuccess }) => {
@@ -106,14 +107,23 @@ export default function SecureBaseLandingZone() {
     };
 
     const checkMFAAndFetch = async (session) => {
+      // 1. Check if factors are enrolled
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasMFA = factors?.totp && factors.totp.length > 0;
+
+      if (!hasMFA) {
+        setActiveTab('mfa-enroll');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Check current assurance level
       const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      
       if (error) {
         console.error("MFA Level Check Error:", error);
         return;
       }
 
-      // Gate for MFA Step-up
       if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
         setActiveTab('mfa-challenge');
         setLoading(false);
@@ -164,6 +174,10 @@ export default function SecureBaseLandingZone() {
 
         {activeTab === 'mfa-challenge' && (
           <MFAChallenge onVerifySuccess={() => setActiveTab('compliance')} />
+        )}
+
+        {activeTab === 'mfa-enroll' && (
+          <MFAEnrollment onEnrollSuccess={() => setActiveTab('compliance')} />
         )}
 
         {activeTab === 'compliance' && (
