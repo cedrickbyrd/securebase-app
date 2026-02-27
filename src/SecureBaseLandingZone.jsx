@@ -8,19 +8,11 @@ export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-  if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
-  // Redirect user to MFA entry screen
-  setActiveTab('mfa-challenge');
-}
-
-  // 1. Unified Tab Handler (No MFA Gate for now)
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
 
-  // 2. Data Fetcher (Runs on load, ignores MFA status)
   useEffect(() => {
     const fetchLatestAudit = async (token) => {
       setLoading(true);
@@ -43,14 +35,29 @@ export default function SecureBaseLandingZone() {
       }
     };
 
-    // Listen for the initial session and any changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.access_token) {
+    const checkMFAAndFetch = async (session) => {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      
+      if (error) {
+        console.error("MFA Level Check Error:", error);
+        return;
+      }
+
+      // If MFA is required but not verified (Step-up needed)
+      if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
+        setActiveTab('mfa-challenge');
+        setLoading(false);
+      } else {
+        // User is either AAL2 or doesn't have MFA enabled
         fetchLatestAudit(session.access_token);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        checkMFAAndFetch(session);
       } else {
         setLoading(false);
-        // Optional: Redirect to login if session is null
-        console.warn("SecureBase: No active session found.");
       }
     });
 
@@ -86,12 +93,18 @@ export default function SecureBaseLandingZone() {
           </div>
         )}
 
-        {/* 3. The Render Fix: Removed isMFA requirement */}
+        {activeTab === 'mfa-challenge' && (
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-bold mb-4">Multi-Factor Authentication Required</h2>
+            <p className="text-slate-600 mb-8">Please verify your identity to access the Compliance Vault.</p>
+            {/* You'll put your MFA verification component here */}
+          </div>
+        )}
+
         {activeTab === 'compliance' && (
           <ComplianceScreen report={report} loading={loading} />
         )}
       </main>
     </div>
   );
-}            
-
+}
