@@ -4,6 +4,76 @@ import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 import { supabase } from './lib/supabase';
 
+// --- Step 2: MFA Challenge Component ---
+const MFAChallenge = ({ onVerifySuccess }) => {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+
+      const factor = factors.totp[0]; 
+      if (!factor) throw new Error("No MFA factor found. Please enroll first.");
+
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: factor.id
+      });
+      if (challengeError) throw challengeError;
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: factor.id,
+        challengeId: challenge.id,
+        code: code
+      });
+
+      if (verifyError) throw verifyError;
+      onVerifySuccess();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12 text-center">
+      <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Shield className="w-6 h-6" />
+      </div>
+      <h2 className="text-2xl font-bold text-slate-900">Security Check</h2>
+      <p className="text-slate-500 text-sm mt-2 mb-6">Enter the 6-digit code from your authenticator app.</p>
+      
+      <form onSubmit={handleVerify} className="space-y-4">
+        <input
+          type="text"
+          maxLength="6"
+          placeholder="000000"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          className="w-full text-center text-3xl tracking-[0.5em] font-mono py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
+          required
+        />
+        {error && <p className="text-red-500 text-xs font-semibold">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading || code.length !== 6}
+          className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 disabled:opacity-50 flex justify-center items-center gap-2"
+        >
+          {loading ? <Loader className="w-5 h-5 animate-spin" /> : "Verify & Access Vault"}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// --- Main Component ---
 export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
   const [report, setReport] = useState(null);
@@ -43,12 +113,11 @@ export default function SecureBaseLandingZone() {
         return;
       }
 
-      // If MFA is required but not verified (Step-up needed)
+      // Gate for MFA Step-up
       if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
         setActiveTab('mfa-challenge');
         setLoading(false);
       } else {
-        // User is either AAL2 or doesn't have MFA enabled
         fetchLatestAudit(session.access_token);
       }
     };
@@ -94,11 +163,7 @@ export default function SecureBaseLandingZone() {
         )}
 
         {activeTab === 'mfa-challenge' && (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-bold mb-4">Multi-Factor Authentication Required</h2>
-            <p className="text-slate-600 mb-8">Please verify your identity to access the Compliance Vault.</p>
-            {/* You'll put your MFA verification component here */}
-          </div>
+          <MFAChallenge onVerifySuccess={() => setActiveTab('compliance')} />
         )}
 
         {activeTab === 'compliance' && (
