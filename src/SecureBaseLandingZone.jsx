@@ -8,6 +8,12 @@ export default function SecureBaseLandingZone() {
   const [activeTab, setActiveTab] = useState('overview');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
+  // Redirect user to MFA entry screen
+  setActiveTab('mfa-challenge');
+}
 
   // 1. Unified Tab Handler (No MFA Gate for now)
   const handleTabChange = (tab) => {
