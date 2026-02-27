@@ -44,6 +44,9 @@ export default function SecureBaseLandingZone() {
   }
 };
 
+    fetchLatestAudit(); // <--- You need to call the function here
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
@@ -81,4 +84,4 @@ export default function SecureBaseLandingZone() {
     </div>
   );
 }            
-)
+
