@@ -16,35 +16,39 @@ export default function SecureBaseLandingZone() {
 
   // 2. Data Fetcher (Runs on load, ignores MFA status)
   useEffect(() => {
-    const fetchLatestAudit = async () => {
-  setLoading(true);
-  try {
-    // Get the JWT from the current Supabase session
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
+    const fetchLatestAudit = async (token) => {
+      setLoading(true);
+      try {
+        const response = await fetch('/.netlify/functions/get-audit-report', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-    if (!token) throw new Error("No active session found");
+        if (!response.ok) throw new Error("Vault fetch failed");
+        const data = await response.json();
+        setReport(data);
+      } catch (err) {
+        console.error("SecureBase: Vault access error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const response = await fetch('/.netlify/functions/get-audit-report', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Pass the JWT in the Authorization header
-        'Authorization': `Bearer ${token}`
+    // Listen for the initial session and any changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.access_token) {
+        fetchLatestAudit(session.access_token);
+      } else {
+        setLoading(false);
+        // Optional: Redirect to login if session is null
+        console.warn("SecureBase: No active session found.");
       }
     });
 
-    if (!response.ok) throw new Error("Vault fetch failed");
-    const data = await response.json();
-    setReport(data);
-  } catch (err) {
-    console.error("SecureBase: Vault access error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-    fetchLatestAudit(); // <--- You need to call the function here
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
