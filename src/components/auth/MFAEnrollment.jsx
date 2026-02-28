@@ -95,11 +95,13 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
           
           <div className="bg-white p-4 inline-block border-2 border-slate-100 rounded-2xl mb-6">
 
+/* src/components/auth/MFAEnrollment.jsx */
 <QRCodeSVG 
   value={enrollData.totp.qr_code} 
-  size={256}             // Larger physical size helps density
-  level="L"              // Use the lowest error correction for max data
-  includeMargin={false}  // Removing the margin can help internal calculation
+  size={256}
+  level="L"             // Lowest error correction = maximum data space
+  version={10}          // FORCED VERSION: Prevents auto-calculation crash
+  includeMargin={true}
   imageSettings={{ excavate: true }}
 />
           </div>
