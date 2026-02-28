@@ -11,8 +11,9 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
   const [error, setError] = useState(null);
 
   const startEnrollment = async () => {
-  setLoading(true);
-  setError(null);
+    if (loading) return; // Prevent double-triggering
+    setLoading(true);
+    setError(null);
   
   try {
     // Check if we actually have a session
