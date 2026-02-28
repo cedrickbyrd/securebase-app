@@ -97,10 +97,10 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
 
 /* src/components/auth/MFAEnrollment.jsx */
 <QRCodeSVG 
-  value={enrollData.totp.qr_code} 
+  value={enrollData.totp.uri}
   size={256}
   level="L"             // Lowest error correction = maximum data space
-  version={10}          // FORCED VERSION: Prevents auto-calculation crash
+  
   includeMargin={true}
   imageSettings={{ excavate: true }}
 />
