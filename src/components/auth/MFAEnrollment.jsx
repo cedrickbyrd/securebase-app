@@ -30,11 +30,12 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
     }
 
     const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-      factorType: 'totp',
-      issuer: 'SecureBase',
-      friendlyName: 'Authy'
-    });
+  factorType: 'totp',
+  issuer: 'SB', // Shortened from 'SecureBase' to reduce string length
+  friendlyName: 'Authy'
+});
 
+    
     if (enrollError) throw enrollError;
     
     setEnrollData(data);
