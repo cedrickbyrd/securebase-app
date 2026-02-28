@@ -48,24 +48,31 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
   }
 };
   
-  /* src/components/auth/MFAEnrollment.jsx */
+/* src/components/auth/MFAEnrollment.jsx */
 const handleVerify = async (e) => {
   e.preventDefault();
   setLoading(true);
   setError(null);
   
   try {
-    // LOG THIS to be 100% sure what the SDK is giving you
-    console.log("Enroll Data Structure:", enrollData);
+    // 1. Create a fresh challenge immediately before verifying
+    // This solves "Challenge ID not found" and "undefined" errors.
+    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      factorId: enrollData.id
+    });
 
+    if (challengeError) throw challengeError;
+
+    // 2. Verify using the fresh challenge ID
     const { error: verifyError } = await supabase.auth.mfa.verify({
       factorId: enrollData.id,
-      // FIX: Use the 'challenge' object directly, not 'totp'
-      challengeId: enrollData.challenge.id, 
+      challengeId: challengeData.id, 
       code
     });
 
     if (verifyError) throw verifyError;
+    
+    // Success!
     onEnrollSuccess();
   } catch (err) {
     setError(err.message);
