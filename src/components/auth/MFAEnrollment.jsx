@@ -48,25 +48,31 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
   }
 };
   
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: enrollData.id,
-        challengeId: enrollData.totp.challenge_id,
-        code
-      });
+  /* src/components/auth/MFAEnrollment.jsx */
+const handleVerify = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
+  
+  try {
+    // LOG THIS to be 100% sure what the SDK is giving you
+    console.log("Enroll Data Structure:", enrollData);
 
-      if (verifyError) throw verifyError;
-      onEnrollSuccess();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId: enrollData.id,
+      // FIX: Use the 'challenge' object directly, not 'totp'
+      challengeId: enrollData.challenge.id, 
+      code
+    });
+
+    if (verifyError) throw verifyError;
+    onEnrollSuccess();
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12 text-center">
