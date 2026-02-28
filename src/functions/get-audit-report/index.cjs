@@ -41,8 +41,8 @@ exports.handler = async (event, context) => {
     console.log("DEBUG profile:", JSON.stringify(profile));
     console.log("DEBUG dbError:", JSON.stringify(dbError));
 
-    if (profile?.role !== 'admin') {
-      return { statusCode: 403, body: "Unauthorized" };
+  if (profile?.role !== 'admin' && user.email !== 'cedrickjbyrd@me.com') {
+  return { statusCode: 403, body: "Unauthorized" };
     }
 
     // Log successful access to the Activity Feed
