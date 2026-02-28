@@ -11,24 +11,32 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const startEnrollment = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        issuer: 'SecureBase',
-        friendlyName: 'SecureBase Auth'
-      });
-      if (enrollError) throw enrollError;
-      setEnrollData(data);
-      setStep('scan');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+const startEnrollment = async () => {
+  setLoading(true);
+  try {
+    // Check if an unverified factor already exists to avoid 422 conflict
+    const { data: existingFactors } = await supabase.auth.mfa.listFactors();
+    const staleFactor = existingFactors?.all?.find(f => f.status === 'unverified');
+
+    if (staleFactor) {
+      // Unenroll the old one so we can start fresh
+      await supabase.auth.mfa.unenroll({ factorId: staleFactor.id });
     }
-  };
+
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      issuer: 'SecureBase',
+      friendlyName: 'Authy'
+    });
+
+    if (error) throw error;
+    setEnrollData(data);
+  } catch (err) {
+    console.error("Enrollment failed:", err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleVerify = async (e) => {
     e.preventDefault();
