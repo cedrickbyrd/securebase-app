@@ -11,35 +11,41 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
   const [error, setError] = useState(null);
 
   const startEnrollment = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 1. SELF-HEALING: Clear stale factors to prevent 422 Conflict
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const staleFactors = factors?.all?.filter(f => f.status === 'unverified') || [];
-      
-      for (const factor of staleFactors) {
-        await supabase.auth.mfa.unenroll({ factorId: factor.id });
-      }
-
-      // 2. Start Fresh Enrollment
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        issuer: 'SecureBase',
-        friendlyName: 'Authy'
-      });
-
-      if (enrollError) throw enrollError;
-      
-      setEnrollData(data);
-      setStep('qr');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  setError(null);
+  
+  try {
+    // Check if we actually have a session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (!session || sessionError) {
+      throw new Error("No active session found. Please sign in again.");
     }
-  };
 
+    // Now proceed with the enrollment (Self-healing included)
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const staleFactors = factors?.all?.filter(f => f.status === 'unverified') || [];
+    for (const factor of staleFactors) {
+      await supabase.auth.mfa.unenroll({ factorId: factor.id });
+    }
+
+    const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      issuer: 'SecureBase',
+      friendlyName: 'Authy'
+    });
+
+    if (enrollError) throw enrollError;
+    
+    setEnrollData(data);
+    setStep('qr');
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+  
   const handleVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
