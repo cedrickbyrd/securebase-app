@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Shield, ArrowRight, Loader } from 'lucide-react';
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
+import MFAEnrollment from './components/auth/MFAEnrollment';
 import { supabase } from './lib/supabase';
-import MFAEnrollment from './components/auth/MFAEnrollment'; // Import Step 3
 
 // --- Step 2: MFA Challenge Component ---
 const MFAChallenge = ({ onVerifySuccess }) => {
@@ -30,7 +30,7 @@ const MFAChallenge = ({ onVerifySuccess }) => {
 
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: factor.id,
-        challengeId: challenge.id,
+        challengeId: challenge.data.id,
         code: code
       });
 
@@ -80,81 +80,66 @@ export default function SecureBaseLandingZone() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
+  const fetchLatestAudit = async (token) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/.netlify/functions/get-audit-report', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error("Vault fetch failed");
+      const data = await response.json();
+      setReport(data);
+    } catch (err) {
+      console.error("SecureBase: Vault access error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    const fetchLatestAudit = async (token) => {
-      setLoading(true);
-      try {
-        const response = await fetch('/.netlify/functions/get-audit-report', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) throw new Error("Vault fetch failed");
-        const data = await response.json();
-        setReport(data);
-      } catch (err) {
-        console.error("SecureBase: Vault access error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const checkMFAAndFetch = async (session) => {
+  const checkMFAAndFetch = async (session) => {
     if (!session) {
       setLoading(false);
       return;
     }
 
     try {
-      // 1. Get the current security levels
       const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalError) throw aalError;
 
-      // 2. List enrolled factors
       const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
       if (factorsError) throw factorsError;
 
       const hasMFA = factors.totp && factors.totp.length > 0;
 
-      // LOGIC GATE 1: No MFA Enrolled -> Force Enrollment
       if (!hasMFA) {
-        console.log("SecureBase: No MFA factors found. Redirecting to Enrollment.");
         setActiveTab('mfa-enroll');
         setLoading(false);
         return;
       }
 
-      // LOGIC GATE 2: MFA Enrolled but Session is AAL1 -> Force Challenge
       if (aalData.nextLevel === 'aal2' && aalData.nextLevel !== aalData.currentLevel) {
-        console.log("SecureBase: Step-up required. Redirecting to Challenge.");
         setActiveTab('mfa-challenge');
         setLoading(false);
       } else {
-        // LOGIC GATE 3: All clear (AAL2 or non-enforced AAL1) -> Fetch Data
-        console.log("SecureBase: Security verified. Fetching audit report.");
         fetchLatestAudit(session.access_token);
       }
     } catch (err) {
-      console.error("SecureBase Security Check Error:", err);
+      console.error("MFA Check Error:", err);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Run an immediate check for an existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) checkMFAAndFetch(session);
       else setLoading(false);
     });
 
-    // Listen for any future auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) checkMFAAndFetch(session);
       else {
@@ -165,6 +150,15 @@ export default function SecureBaseLandingZone() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleTabChange = (tab) => {
+    if (tab === 'compliance') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) checkMFAAndFetch(session);
+      });
+    }
+    setActiveTab(tab);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
