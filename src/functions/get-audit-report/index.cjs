@@ -5,7 +5,7 @@ exports.handler = async (event, context) => {
   // 1. Initialize Supabase Admin (Bypasses RLS to check roles)
   const supabaseAdmin = createClient(
     process.env.VITE_SUPABASE_URL,
-    process.env.SB_SUPABASE_SERVICE_ROLE_KEY, // Service key is required for server-side auth checks
+    process.env.SB_SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
         persistSession: false,
@@ -23,7 +23,7 @@ exports.handler = async (event, context) => {
   const token = authHeader.replace("Bearer ", "");
 
   try {
-    // 3. Verify JWT & Get User (Safe method: contacts Supabase Auth)
+    // 3. Verify JWT & Get User
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized: Invalid session" }) };
@@ -36,31 +36,30 @@ exports.handler = async (event, context) => {
       .eq("id", user.id)
       .single();
 
-  // src/functions/get-audit-report/index.cjs (Snippet to add after RBAC check)
- // ... existing RBAC check code ...
+    // ✅ DEBUG LOGS — correctly placed inside the try block, after the query
+    console.log("DEBUG user.id:", user.id);
+    console.log("DEBUG profile:", JSON.stringify(profile));
+    console.log("DEBUG dbError:", JSON.stringify(dbError));
 
-      if (profile?.role !== 'admin') {
-//    if (false) {
-
-  return { statusCode: 403, body: "Unauthorized" };
-}
-
-// NEW: Log the successful access to the Activity Feed
-await supabaseAdmin
-  .from('activity_feed')
-  .insert([
-    { 
-      actor_id: user.id, 
-      action_type: 'VAULT_ACCESS', 
-      metadata: { 
-        resource: 'securebase-evidence-tx-imhotep',
-        standard: 'SOC 2 Type II' 
-      } 
+    if (profile?.role !== 'admin') {
+      return { statusCode: 403, body: "Unauthorized" };
     }
-  ]);
 
-     // ... proceed to S3 logic ...
-    // --- START ORIGINAL S3 LOGIC ---
+    // Log successful access to the Activity Feed
+    await supabaseAdmin
+      .from('activity_feed')
+      .insert([
+        {
+          actor_id: user.id,
+          action_type: 'VAULT_ACCESS',
+          metadata: {
+            resource: 'securebase-evidence-tx-imhotep',
+            standard: 'SOC 2 Type II'
+          }
+        }
+      ]);
+
+    // 5. S3 Logic
     const client = new S3Client({
       region: process.env.SB_AWS_REGION || "us-east-1",
       credentials: {
@@ -92,7 +91,6 @@ await supabaseAdmin
     const bodyContents = await s3Response.Body.transformToString();
     const rawData = JSON.parse(bodyContents);
 
-    // MAPPER: Translating raw collector data for the React Dashboard
     const dashboardData = {
       audit_metadata: {
         standard: "SOC 2 Type II",
@@ -109,7 +107,7 @@ await supabaseAdmin
       controls: rawData.evidence.map(item => ({
         id: item.control_ref,
         title: item.title,
-        status: item.status.toLowerCase() === "pass" ? "passed" : 
+        status: item.status.toLowerCase() === "pass" ? "passed" :
                 item.status.toLowerCase() === "warn" ? "warning" : "failed",
         category: item.category,
         remediation: item.remediation
@@ -118,13 +116,12 @@ await supabaseAdmin
 
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*" // Adjust if needed for production
+        "Access-Control-Allow-Origin": "*"
       },
       body: JSON.stringify(dashboardData)
     };
-    // --- END ORIGINAL S3 LOGIC ---
 
   } catch (error) {
     console.error("SecureBase Guard Error:", error);
