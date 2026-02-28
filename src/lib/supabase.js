@@ -3,12 +3,16 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// 1. Initialize the client first
+// 1. Initialize the client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// 2. EXPOSE TO WINDOW: This fixes your console "ReferenceError"
+if (typeof window !== 'undefined') {
+    window.supabase = supabase;
+}
+
 /**
- * verifyMFA
- * This upgrades the session from aal1 to aal2
+ * verifyMFA - Upgrades session from aal1 to aal2
  */
 export const verifyMFA = async (factorId, code) => {
   const { data, error } = await supabase.auth.mfa.challengeAndVerify({
@@ -21,13 +25,11 @@ export const verifyMFA = async (factorId, code) => {
     return { success: false, error };
   }
 
-  console.log("MFA Active:", data);
   return { success: true, data };
 };
 
 /**
- * unenrollMFA
- * Useful for the "Disable MFA" button in settings
+ * unenrollMFA - Reset for the "Disable MFA" button
  */
 export const unenrollMFA = async (factorId) => {
   const { data, error } = await supabase.auth.mfa.unenroll({
