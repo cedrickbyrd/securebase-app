@@ -107,36 +107,59 @@ export default function SecureBaseLandingZone() {
     };
 
     const checkMFAAndFetch = async (session) => {
-      // 1. Check if factors are enrolled
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasMFA = factors?.totp && factors.totp.length > 0;
+    if (!session) {
+      setLoading(false);
+      return;
+    }
 
+    try {
+      // 1. Get the current security levels
+      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalError) throw aalError;
+
+      // 2. List enrolled factors
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+
+      const hasMFA = factors.totp && factors.totp.length > 0;
+
+      // LOGIC GATE 1: No MFA Enrolled -> Force Enrollment
       if (!hasMFA) {
+        console.log("SecureBase: No MFA factors found. Redirecting to Enrollment.");
         setActiveTab('mfa-enroll');
         setLoading(false);
         return;
       }
 
-      // 2. Check current assurance level
-      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (error) {
-        console.error("MFA Level Check Error:", error);
-        return;
-      }
-
-      if (data.nextLevel === 'aal2' && data.nextLevel !== data.currentLevel) {
+      // LOGIC GATE 2: MFA Enrolled but Session is AAL1 -> Force Challenge
+      if (aalData.nextLevel === 'aal2' && aalData.nextLevel !== aalData.currentLevel) {
+        console.log("SecureBase: Step-up required. Redirecting to Challenge.");
         setActiveTab('mfa-challenge');
         setLoading(false);
       } else {
+        // LOGIC GATE 3: All clear (AAL2 or non-enforced AAL1) -> Fetch Data
+        console.log("SecureBase: Security verified. Fetching audit report.");
         fetchLatestAudit(session.access_token);
       }
-    };
+    } catch (err) {
+      console.error("SecureBase Security Check Error:", err);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Run an immediate check for an existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) checkMFAAndFetch(session);
+      else setLoading(false);
+    });
+
+    // Listen for any future auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        checkMFAAndFetch(session);
-      } else {
+      if (session) checkMFAAndFetch(session);
+      else {
         setLoading(false);
+        setReport(null);
       }
     });
 
