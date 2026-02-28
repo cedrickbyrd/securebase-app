@@ -94,12 +94,12 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
           <p className="text-slate-500 text-sm mb-6">Open Authy and scan this code to link SecureBase.</p>
           
           <div className="bg-white p-4 inline-block border-2 border-slate-100 rounded-2xl mb-6">
-           /* src/components/auth/MFAEnrollment.jsx */
+
 <QRCodeSVG 
   value={enrollData.totp.qr_code} 
-  size={256}             // Increased size helps with scanning
-  level="L"              // CRITICAL: "L" (Low) provides the maximum data capacity
-  includeMargin={false}  // Removing the margin can sometimes help the internal calculation
+  size={256}             // Larger physical size helps density
+  level="L"              // Use the lowest error correction for max data
+  includeMargin={false}  // Removing the margin can help internal calculation
   imageSettings={{ excavate: true }}
 />
           </div>
