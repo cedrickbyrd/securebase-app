@@ -14,15 +14,16 @@ export default function MFAEnrollment({ onEnrollSuccess }) {
 const startEnrollment = async () => {
   setLoading(true);
   try {
-    // Check if an unverified factor already exists to avoid 422 conflict
-    const { data: existingFactors } = await supabase.auth.mfa.listFactors();
-    const staleFactor = existingFactors?.all?.find(f => f.status === 'unverified');
-
-    if (staleFactor) {
-      // Unenroll the old one so we can start fresh
-      await supabase.auth.mfa.unenroll({ factorId: staleFactor.id });
+    // 1. Check for existing unverified factors to prevent conflict
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const staleFactors = factors?.all?.filter(f => f.status === 'unverified') || [];
+    
+    // 2. Clear them out
+    for (const factor of staleFactors) {
+      await supabase.auth.mfa.unenroll({ factorId: factor.id });
     }
 
+    // 3. Now start a fresh enrollment
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'totp',
       issuer: 'SecureBase',
@@ -32,7 +33,7 @@ const startEnrollment = async () => {
     if (error) throw error;
     setEnrollData(data);
   } catch (err) {
-    console.error("Enrollment failed:", err.message);
+    console.error("Enrollment error:", err.message);
   } finally {
     setLoading(false);
   }
