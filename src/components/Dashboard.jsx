@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Ensure Link is imported for SPA navigation
 import {
   CreditCard,
   Key,
@@ -15,7 +16,7 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
-  Lock,
+  Lock, // Phase 5 Icon
 } from 'lucide-react';
 
 // Constants for download flow timing
@@ -305,6 +306,12 @@ export default function Dashboard() {
                 <Download className="sb-ActionButton__icon" />
                 Download Report
               </button>
+              <Link to="/trust" className="sb-ActionButton sb-ActionButton--indigo">
+                <Lock className="sb-ActionButton__icon" />
+                Trust Center
+              </Link>
+
+              
               <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
