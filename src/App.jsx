@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import SecureBaseLandingZone from './SecureBaseLandingZone';
+import TrustCenter from './components/TrustCenter'; // [Step 1: Added Import]
 import { Loader } from 'lucide-react';
 
 function App() {
@@ -24,18 +25,25 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Sales View - No Auth Required for Phase 5 Pitching */}
+        <Route path="/trust" element={<TrustCenter />} />
+
         <Route 
           path="/login" 
           element={!aal || aal === 'none' ? <Login /> : <Navigate to="/" />} 
         />
+        
         <Route 
           path="/" 
           element={aal && aal !== 'none' ? <SecureBaseLandingZone /> : <Navigate to="/login" />} 
         />
+
+        {/* [Step 2: Moved Wildcard to the BOTTOM] */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
 }
 
+export default App;
 export default App;
