@@ -15,6 +15,7 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
 
 // Constants for download flow timing
