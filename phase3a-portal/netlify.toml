@@ -1,33 +1,28 @@
 [build]
   base    = "."
-  # Added your preferred chart.js install before the build
   command = "npm install react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"
   publish = "dist"
+
 [build.environment]
   NODE_VERSION = "22.12.0"
 
-# 1. Add Domain Steering (The 301 Redirect)
+[context.production.environment]
+  VITE_USE_MOCK_API = "false"
+  VITE_ENV = "demo"
+  VITE_ANALYTICS_ENABLED = "false"
+  VITE_API_URL = "https://api.securebase.tximhotep.com"
+
 [[redirects]]
   from = "https://securebase-demo.netlify.app/*"
   to = "https://demo.securebase.tximhotep.com/:splat"
   status = 301
   force = true
 
-# 2. Standard SPA Routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[context.production.environment]
-  VITE_USE_MOCK_API = "false"  # Set to false for live backend
-  VITE_ENV = "demo"
-  VITE_ANALYTICS_ENABLED = "false"
-  # Define the live API endpoint
-  VITE_API_URL = "https://api.securebase.tximhotep.com"
-  
-# Security Headers (Keep your existing robust CSP, it's excellent)
-# Security Headers - Single Consolidated Block
 [[headers]]
   for = "/*"
   [headers.values]
@@ -52,13 +47,8 @@
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     X-Environment = "demo"
     X-Robots-Tag = "noindex, nofollow"
-    Permissions-Policy = """
-      geolocation=(),
-      microphone=(),
-      camera=(),
-      payment=(),
-      usb=()
-    """
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=()"
+    
     # Restrict browser features and APIs
       geolocation=(),
       microphone=(),
