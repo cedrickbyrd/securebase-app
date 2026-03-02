@@ -356,6 +356,14 @@ resource "aws_lambda_function" "securebase_api" {
     }
   }
 }
+resource "aws_lambda_function" "metric_aggregator" {
+  function_name = "sre-metric-aggregator"
+  filename      = "${path.module}/lambda/metric_aggregator.zip"
+  role          = aws_iam_role.lambda_exec_role.arn
+  handler       = "metric_aggregator.handler"
+  runtime       = "python3.11"
+  source_code_hash = filebase64sha256("${path.module}/lambda/metric_aggregator.zip")
+}
 resource "aws_iam_role" "lambda_exec" {
   name = "securebase_lambda_exec_role"
 
@@ -376,6 +384,15 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+resource "aws_sns_topic" "sre_alerts" {
+  name = "sre-alerts"
+}
+resource "aws_api_gateway_rest_api" "sre_dashboard_api" {
+  name        = "sre-dashboard-api"
+  description = "API Gateway for SRE/Operations Dashboard"
+}
+
 
 module "security" {
   source = "./modules/security"
