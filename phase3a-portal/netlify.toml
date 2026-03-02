@@ -20,10 +20,12 @@
   status = 200
 
 [context.production.environment]
-  VITE_USE_MOCK_API = "true"
+  VITE_USE_MOCK_API = "false"  # Set to false for live backend
   VITE_ENV = "demo"
   VITE_ANALYTICS_ENABLED = "false"
-
+  # Define the live API endpoint
+  VITE_API_URL = "https://api.securebase.tximhotep.com"
+  
 # Security Headers (Keep your existing robust CSP, it's excellent)
 # Security Headers - Single Consolidated Block
 [[headers]]
