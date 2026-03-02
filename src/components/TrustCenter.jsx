@@ -9,7 +9,15 @@ const TrustCenter = () => {
         infraHealth: "Verifying...",
         infraHealthChartData: { labels: [], datasets: [] }
     });
-
+const chartOptions = {
+  scales: {
+    y: {
+      min: 99, // Sets a floor so small dips look proportional
+      max: 100,
+    }
+  }
+};
+    
     const fetchMetrics = async () => {
         try {
             // Updated to your Netlify function endpoint for Phase 5
@@ -36,7 +44,10 @@ const TrustCenter = () => {
                 <div className="sb-MetricCard">
                     <h2>Availability & Uptime</h2>
                     {metrics.infraHealthChartData.datasets.length > 0 ? (
-                        <Line data={metrics.infraHealthChartData} />
+                       <Line 
+            data={metrics.infraHealthChartData} 
+            options={chartOptions} // Add this line here
+        />
                     ) : (
                         <p>Loading real-time telemetry...</p>
                     )}
