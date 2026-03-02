@@ -1,9 +1,8 @@
 [build]
-  # Change 'demo' to '.' if your package.json is in phase3a-portal/
-  base = "." 
-  command = "npm run build"
+  base    = "."
+  # Added your preferred chart.js install before the build
+  command = "npm install react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"
   publish = "dist"
-
 [build.environment]
   NODE_VERSION = "22.12.0"
 
