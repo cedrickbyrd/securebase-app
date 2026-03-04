@@ -3,6 +3,14 @@
   publish = "dist"
   functions = "src/functions"
 
+[build.environment]
+  # 🛠️ DEPENDENCY MANAGEMENT
+  # This forces Netlify to apply the legacy-peer-deps flag during the auto-install phase
+  NPM_FLAGS = "--legacy-peer-deps"
+  
+  # Ensure Node version is consistent for Chart.js 2026 standards
+  NODE_VERSION = "20"
+
 [functions]
   node_bundler = "esbuild"
 
