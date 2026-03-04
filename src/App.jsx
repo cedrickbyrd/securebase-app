@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react'; // Added Suspense & lazy
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import SecureBaseLandingZone from './SecureBaseLandingZone';
-import TrustCenter from './components/TrustCenter'; // [Step 1: Added Import]
+import TrustCenter from './components/TrustCenter';
 import { Loader } from 'lucide-react';
+
+// 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <Loader className="animate-spin text-blue-600 w-8 h-8" />
+  </div>
+);
 
 function App() {
   const { aal, isLoading } = useMFAStatus();
@@ -22,25 +31,35 @@ function App() {
     );
   }
 
+  const isAuthenticated = aal && aal !== 'none';
+
   return (
     <Router>
-      <Routes>
-        {/* Public Sales View - No Auth Required for Phase 5 Pitching */}
-        <Route path="/trust" element={<TrustCenter />} />
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          {/* Public Sales View */}
+          <Route path="/trust" element={<TrustCenter />} />
 
-        <Route 
-          path="/login" 
-          element={!aal || aal === 'none' ? <Login /> : <Navigate to="/" />} 
-        />
-        
-        <Route 
-          path="/" 
-          element={aal && aal !== 'none' ? <SecureBaseLandingZone /> : <Navigate to="/login" />} 
-        />
+          <Route 
+            path="/login" 
+            element={!isAuthenticated ? <Login /> : <Navigate to="/" />} 
+          />
+          
+          <Route 
+            path="/" 
+            element={isAuthenticated ? <SecureBaseLandingZone /> : <Navigate to="/login" />} 
+          />
 
-        {/* [Step 2: Moved Wildcard to the BOTTOM] */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          {/* 🔐 Protected Admin Route for Phase 5 Observability */}
+          <Route 
+            path="/admin" 
+            element={isAuthenticated ? <AdminDashboard /> : <Navigate to="/login" />} 
+          />
+
+          {/* Wildcard Catch-all */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
