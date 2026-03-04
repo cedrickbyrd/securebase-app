@@ -68,3 +68,26 @@ const AdminDashboard = () => {
         </div>
 
         {/* Security Distribution */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6">Security Events (24h)</h3>
+          <div className="max-h-[250px] flex justify-center">
+            <Doughnut data={securityThreatData} options={{ maintainAspectRatio: false }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 bg-blue-600 rounded-2xl p-8 text-white flex justify-between items-center shadow-lg shadow-blue-200">
+        <div>
+          <h2 className="text-xl font-bold">VPC Readiness Check</h2>
+          <p className="opacity-80">Secondary region (us-west-2) is healthy and in-sync.</p>
+        </div>
+        <div className="px-4 py-2 bg-white/20 rounded-lg font-mono text-sm">
+          STATUS: ACTIVE
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
+// --- END OF FILE ---
