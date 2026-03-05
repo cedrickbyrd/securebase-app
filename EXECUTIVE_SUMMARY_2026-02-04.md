@@ -374,8 +374,8 @@ Week 4 (Mar 24-31) : Production monitoring, Customer onboarding
 
 ### Q2 2026
 ```
-April-May: Phase 5 planning and start (Observability, Multi-Region DR)
-June:      Scale to 50+ customers, Multi-region deployment
+ASAP: Phase 5 planning and start (Observability, Multi-Region DR)
+ASAP: Scale to 50+ customers, Multi-region deployment
 ```
 
 ---
