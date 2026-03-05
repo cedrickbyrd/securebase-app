@@ -17,13 +17,13 @@
   status = 301
   force = true
 
-# 2. AWS S3 PROXY (Cost Shield)
-# Directs any call to /storage/ to your confirmed prod bucket
+# 2. AWS S3 PROXY (The "S3 Shield")
 [[redirects]]
   from = "/storage/*"
   to = "https://securebase-fe-prod.s3.amazonaws.com/:splat"
   status = 200
-
+  force = true
+  
 # 3. SPA ROUTING
 [[redirects]]
   from = "/*"
