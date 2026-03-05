@@ -4,6 +4,8 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Compliance from './components/Compliance';
+import SREDashboard from './components/SREDashboard';
+import AlertManagement from './components/AlertManagement';
 import './App.css';
 
 function App() {
@@ -26,6 +28,14 @@ function App() {
         <Route 
           path="/compliance" 
           element={isAuthenticated ? <Compliance /> : <Navigate to="/login" />} 
+        />
+        <Route
+          path="/sre-dashboard"
+          element={isAuthenticated ? <SREDashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/alerts"
+          element={isAuthenticated ? <AlertManagement /> : <Navigate to="/login" />}
         />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
