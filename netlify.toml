@@ -4,31 +4,33 @@
   functions = "src/functions"
 
 [build.environment]
-  # 🛠️ DEPENDENCY MANAGEMENT
-  # This forces Netlify to apply the legacy-peer-deps flag during the auto-install phase
   NPM_FLAGS = "--legacy-peer-deps"
-  
-  # Ensure Node version is consistent for Chart.js 2026 standards
   NODE_VERSION = "20"
 
 [functions]
   node_bundler = "esbuild"
 
-# 1. DOMAIN STEERING: Force generic URL to branded custom domain
+# 1. DOMAIN STEERING
 [[redirects]]
   from = "https://securebase-demo.netlify.app/*"
   to = "https://demo.securebase.tximhotep.com/:splat"
   status = 301
   force = true
 
-# 2. SPA ROUTING: Catch-all for React Router
+# 2. AWS S3 PROXY (Cost Shield)
+# Directs any call to /storage/ to your confirmed prod bucket
+[[redirects]]
+  from = "/storage/*"
+  to = "https://securebase-fe-prod.s3.amazonaws.com/:splat"
+  status = 200
+
+# 3. SPA ROUTING
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
 
-# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -38,14 +40,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "upgrade-insecure-requests; block-all-mixed-content;"
 
-# Cache static assets
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[dev]
-  command = "npm run dev"
-  targetPort = 3000
-  port = 8888
-  publish = "dist"
