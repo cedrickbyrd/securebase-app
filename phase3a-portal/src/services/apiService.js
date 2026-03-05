@@ -1,7 +1,11 @@
 // API Service for SecureBase Customer Portal
 import { mockApiService } from './mockApiService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.io';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  console.error("CRITICAL: VITE_API_BASE_URL is not defined in the environment!");
+}
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 class ApiService {
