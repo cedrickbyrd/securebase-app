@@ -4,6 +4,8 @@ import { apiService } from '../services/apiService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
 import BRANDING from '../config/branding';
+import { useDemoCustomer } from '../hooks/useDemoCustomer';
+import DemoCustomerIndicator from './DemoCustomerIndicator';
 import './Dashboard.css';
 
 function Dashboard() {
