@@ -12,16 +12,16 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
-import { Loader, AlertCircle } from 'lucide-react';
+import { Loader, AlertCircle, Bell } from 'lucide-react'; // Added Bell icon
 import { supabase } from '../../lib/supabase';
 
-// Register ChartJS modules
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sendingAlert, setSendingAlert] = useState(false);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -53,6 +53,31 @@ const AdminDashboard = () => {
     fetchMetrics();
   }, []);
 
+  // --- Phase 5.2 Alert Trigger ---
+  const triggerTestAlert = async () => {
+    setSendingAlert(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/.netlify/functions/post-security-alert', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: "WAF_THREAT_DETECTED",
+          severity: "HIGH",
+          message: "Manual test alert triggered from Admin Dashboard for cedrickjbyrd@me.com"
+        })
+      });
+      if (response.ok) alert("🚀 Slack Alert Sent!");
+    } catch (err) {
+      console.error("Alert failed:", err);
+    } finally {
+      setSendingAlert(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
       <Loader className="animate-spin text-blue-600 mb-4" size={40} />
@@ -69,7 +94,6 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Prepare Chart Data from API response
   const latencyChartData = {
     labels: ['T-5h', 'T-4h', 'T-3h', 'T-2h', 'T-1h', 'Now'],
     datasets: [{
@@ -92,15 +116,25 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-8 bg-slate-50 min-h-screen font-sans">
-      <header className="mb-10 flex justify-between items-end">
+    <div className="p-8 bg-slate-50 min-h-screen font-sans animate-in fade-in duration-500">
+      <header className="mb-10 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin Central</h1>
           <p className="text-slate-500 font-medium italic">Live Infrastructure Telemetry</p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Last Pulse</p>
-          <p className="text-xs font-mono text-slate-600">{new Date(metrics.timestamp).toLocaleTimeString()}</p>
+        <div className="flex flex-col items-end gap-3">
+          <button 
+            onClick={triggerTestAlert}
+            disabled={sendingAlert}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all disabled:opacity-50"
+          >
+            {sendingAlert ? <Loader className="animate-spin w-3 h-3" /> : <Bell size={12} />}
+            Test Alert Pipe
+          </button>
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Last Pulse</p>
+            <p className="text-xs font-mono text-slate-600">{new Date(metrics.timestamp).toLocaleTimeString()}</p>
+          </div>
         </div>
       </header>
 
@@ -118,9 +152,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="mt-8 bg-slate-900 rounded-2xl p-8 text-white flex justify-between items-center border border-slate-800">
+      <div className="mt-8 bg-slate-900 rounded-2xl p-8 text-white flex justify-between items-center border border-slate-800 shadow-xl shadow-slate-200">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-white">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Infrastructure Status
           </h2>
