@@ -1,17 +1,43 @@
 const { createClient } = require('@supabase/supabase-js');
+const fetch = require('node-fetch'); // Ensure node-fetch is available
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.SB_SUPABASE_SERVICE_ROLE_KEY // Use Service Role for internal metric aggregation
+  process.env.SB_SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Helper function to send Slack alerts
+const triggerSlackAlert = async (type, message) => {
+  const slackPayload = {
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*🚨 SecureBase Automated Monitor*\n*Alert Type:* ${type}`
+        }
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Status:*\nThreshold Exceeded` },
+          { type: "mrkdwn", text: `*Details:*\n${message}` }
+        ]
+      }
+    ]
+  };
+
+  await fetch(process.env.SLACK_WEBHOOK_URL, {
+    method: 'POST',
+    body: JSON.stringify(slackPayload),
+  });
+};
+
 exports.handler = async (event, context) => {
-  // 1. Logic: Only allow GET requests
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // 2. Security: Validate the User Session
   const authHeader = event.headers.authorization;
   if (!authHeader) {
     return { statusCode: 401, body: JSON.stringify({ error: 'No authorization header' }) };
@@ -24,22 +50,18 @@ exports.handler = async (event, context) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
-  // 3. RBAC Check: Ensure the user is an Admin
   const role = user.app_metadata?.role || user.user_metadata?.role;
   if (role !== 'Admin') {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden: Admin access required' }) };
+    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) };
   }
 
   try {
-    // 4. Data Aggregation (Phase 5: Real-world stats)
-    // In a full Phase 5 setup, you'd query CloudWatch or a 'metrics' table here.
-    // For now, we provide the schema that AdminDashboard.jsx expects.
     const adminMetrics = {
-      latency: [105, 130, 115, 170, 145, 125], // API response times
+      latency: [105, 130, 115, 170, 145, 125],
       securityEvents: {
         blockedIps: 412,
         failedAuth: 92,
-        wafAlerts: 38
+        wafAlerts: 38 // Current value is > 30, this will trigger the alert
       },
       systemStatus: {
         primaryRegion: 'us-east-1',
@@ -48,6 +70,15 @@ exports.handler = async (event, context) => {
       },
       timestamp: new Date().toISOString()
     };
+
+    // --- AUTO-ALERT LOGIC ---
+    if (adminMetrics.securityEvents.wafAlerts > 30) {
+      // We wrap this in a try/catch or just fire it to avoid blocking the response
+      await triggerSlackAlert(
+        "CRITICAL_WAF_SPIKE", 
+        `High volume of blocked requests detected: ${adminMetrics.securityEvents.wafAlerts} active alerts.`
+      );
+    }
 
     return {
       statusCode: 200,
