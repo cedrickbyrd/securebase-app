@@ -136,6 +136,40 @@ function Dashboard() {
               <p className="metric-value">{tickets?.length || 0}</p>
             </div>
           </div>
+
+          <div
+            className="metric-card clickable"
+            onClick={() => navigate('/sre-dashboard')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/sre-dashboard')}
+            aria-label="Navigate to SRE Dashboard"
+          >
+            <div className="metric-icon" style={{ background: '#eff6ff' }}>
+              🖥️
+            </div>
+            <div className="metric-content">
+              <h3>SRE Dashboard</h3>
+              <p className="metric-value">Infrastructure</p>
+            </div>
+          </div>
+
+          <div
+            className="metric-card clickable"
+            onClick={() => navigate('/alerts')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/alerts')}
+            aria-label="Navigate to Alert Management"
+          >
+            <div className="metric-icon" style={{ background: '#fef9c3' }}>
+              🔔
+            </div>
+            <div className="metric-content">
+              <h3>Alert Management</h3>
+              <p className="metric-value">Operations</p>
+            </div>
+          </div>
         </section>
 
         {/* Two Column Layout */}
