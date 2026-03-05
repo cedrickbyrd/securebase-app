@@ -1,7 +1,7 @@
 # Phase 5 Quick Reference
 
 **Phase:** 5 - Observability, Monitoring & Multi-Region DR  
-**Duration:** 6 weeks (May 5 - June 14, 2026)  
+**Duration:** 6 weeks (starting ASAP)  
 **Status:** ✅ Scoped & Ready  
 **Budget:** $75,000 - $135,000
 
@@ -141,15 +141,15 @@ Phase 5 adds **observability, monitoring, and multi-region disaster recovery** t
 
 | Week | Dates | Component | Status |
 |------|-------|-----------|--------|
-| 1 | May 5-9 | Executive Dashboard | Planned |
-| 2 | May 12-16 | Tenant Dashboard | Planned |
-| 3 | May 19-23 | SRE Dashboard + Logging/Alerting | Planned |
-| 4 | May 26-30 | Multi-Region Infrastructure | Planned |
-| 5 | Jun 2-6 | Failover Implementation | Planned |
-| 6 | Jun 9-13 | DR Testing + Cost Optimization | Planned |
+| 1 | Week 1 | Executive Dashboard | Planned |
+| 2 | Week 2 | Tenant Dashboard | Planned |
+| 3 | Week 3 | SRE Dashboard + Logging/Alerting | Planned |
+| 4 | Week 4 | Multi-Region Infrastructure | Planned |
+| 5 | Week 5 | Failover Implementation | Planned |
+| 6 | Week 6 | DR Testing + Cost Optimization | Planned |
 
-**Start Date:** May 5, 2026 (3.5 months from now)  
-**End Date:** June 14, 2026  
+**Start Date:** ASAP  
+**End Date:** 6 weeks after start  
 **Dependencies:** Phase 4 completion (March 17, 2026)
 
 ---
@@ -203,10 +203,10 @@ Phase 5 adds **observability, monitoring, and multi-region disaster recovery** t
 **Phase 5 Status:**
 - ✅ Scope complete and approved
 - ✅ Budget estimated ($75K-$135K)
-- 📅 Team assignment pending (May 2026)
-- 📅 Start date: May 5, 2026
+- 📅 Team assignment pending (ASAP)
+- 📅 Start date: ASAP
 
-**Time Until Phase 5:** 3.5 months
+**Time Until Phase 5:** ASAP
 
 ---
 
