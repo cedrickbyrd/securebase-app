@@ -1,8 +1,7 @@
 [build]
   base = "phase3a-portal"
-  # Change this to 'npm install' so it gets ALL dependencies from package.json
   command = "npm install --legacy-peer-deps && npm run build"
-  publish = "dist""
+  publish = "dist"  # Make sure there is only one quote here!
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
