@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]',
+        entryFileNames: `assets/[name].${timestamp}.js`,
+        chunkFileNames: `assets/[name].${timestamp}.js`,
+        assetFileNames: `assets/[name].${timestamp}.[ext]`,
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'charts-legacy': ['chart.js', 'react-chartjs-2'],
