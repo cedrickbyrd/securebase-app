@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "run_id": "2D8019F5",
+    "started_at": "2026-02-24T22:17:44.168028Z",
+    "finished_at": "2026-02-24T22:17:44.474742Z",
+    "duration_sec": 0.31,
+    "frameworks": [
+      "soc2"
+    ],
+    "total_checks": 0,
+    "passed": 0,
+    "failed": 0,
+    "warned": 0,
+    "errored": 0,
+    "skipped": 0,
+    "score_pct": 0.0,
+    "host": "black.tximhotep.com",
+    "os_info": "macOS-10.15.8-x86_64-i386-64bit",
+    "python_version": "3.12.8",
+    "output_dir": "vault/evidence_2D8019F5"
+  },
+  "metadata": {
+    "run_id": "2D8019F5",
+    "collected_at": "2026-02-24T22:17:44.168485Z",
+    "hostname": "black.tximhotep.com",
+    "fqdn": "black.tximhotep.com.",
+    "ip_addresses": [
+      "69.59.89.22"
+    ],
+    "platform": "macOS-10.15.8-x86_64-i386-64bit",
+    "os": "Darwin 19.6.0",
+    "architecture": "x86_64",
+    "python_version": "3.12.8 (v3.12.8:2dc476bcb91, Dec  3 2024, 14:43:20) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "cpu_count": 4,
+    "tool_version": "2.0.0",
+    "total_memory_gb": 8.0,
+    "disk_total_gb": 465.72
+  },
+  "evidence": []
+}
