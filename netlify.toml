@@ -1,8 +1,8 @@
 [build]
-  # Using 'base' ensures Netlify's caching works for your sub-project
   base = "phase3a-portal"
-  command = "npm install && npm run build"
-  publish = "dist"
+  # Change this to 'npm install' so it gets ALL dependencies from package.json
+  command = "npm install --legacy-peer-deps && npm run build"
+  publish = "dist""
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
