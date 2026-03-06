@@ -60,7 +60,7 @@ const AdminDashboard = () => {
     <div className="admin-dashboard p-6 bg-gray-50 min-h-screen">
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">SecureBase Admin Central</h1>
+          <h1 className="text-3xl font-bold text-gray-800">SecureBase Ops Command</h1>
           <p className="text-gray-600">Phase 5: Observability & Platform Health Monitor</p>
         </div>
         {/* TEST ALERT BUTTON */}
