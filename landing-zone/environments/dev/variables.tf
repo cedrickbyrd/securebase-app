@@ -83,3 +83,17 @@ variable "netlify_token" {
   default     = ""
 }
 
+variable "stripe_public_key" {
+  description = "The public key for Stripe integration"
+  type        = string
+}
+variable "lambda_packages" {
+  type = map(string)
+}
+
+variable "netlify_api_token" {
+  type      = string
+  sensitive = true
+}
+
+
