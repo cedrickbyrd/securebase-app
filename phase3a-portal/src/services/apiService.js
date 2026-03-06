@@ -1,7 +1,10 @@
 // API Service for SecureBase Customer Portal
 import { mockApiService } from './mockApiService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
+const API_BASE = import.meta.env.PROD 
+  ? '/api' 
+  : (import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1'); 
+
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true' || !API_BASE;
 
 class ApiService {
