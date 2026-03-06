@@ -23,7 +23,7 @@ module "securebase" {
   clients         = var.clients
   tags            = var.tags
   stripe_public_key = var.stripe_public_key
-  netlify_api_token = var.netlify_api_token
+  netlify_api_token = var.netlify_token
   lambda_packages   = var.lambda_packages
 }
 

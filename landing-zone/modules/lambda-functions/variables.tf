@@ -52,3 +52,9 @@ variable "lambda_security_group_id" {
   description = "Security group ID for Lambda functions"
   type        = string
 }
+
+variable "netlify_api_token" {
+  description = "Netlify API token for site management"
+  type        = string
+  sensitive   = true
+}

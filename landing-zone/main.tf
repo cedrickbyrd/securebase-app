@@ -31,6 +31,11 @@ data "archive_file" "webhook_lambda_zip" {
   source_dir  = "${path.module}/../src/functions/securebase-stripe-webhook"
   output_path = "${path.module}/files/webhook.zip"
 }
+data "archive_file" "metric_aggregator_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/metric_aggregator.py"
+  output_path = "${path.module}/lambda/metric_aggregator.zip"
+}
 
 
 provider "aws" {
@@ -346,23 +351,29 @@ resource "aws_lambda_function" "securebase_checkout" {
 }
 resource "aws_lambda_function" "securebase_api" {
   function_name = "${var.environment}-securebase-api"
+  role          = aws_iam_role.lambda_exec.arn  
   # ... other config ...
+  filename         = data.archive_file.checkout_lambda_zip.output_path
+  source_code_hash = data.archive_file.checkout_lambda_zip.output_base64sha256
+  handler          = "index.handler"
+  runtime          = "nodejs18.x"
 
   environment {
     variables = {
       STRIPE_PUBLIC_KEY = var.stripe_public_key
       DEPLOY_REGION     = var.target_region
       NODE_ENV          = var.environment
+      netlify_api_token = var.netlify_api_token 
     }
   }
 }
 resource "aws_lambda_function" "metric_aggregator" {
-  function_name = "sre-metric-aggregator"
-  filename      = "${path.module}/lambda/metric_aggregator.zip"
-  role          = aws_iam_role.lambda_exec_role.arn
+  function_name = "metric-aggregator"
+filename         = data.archive_file.metric_aggregator_zip.output_path
+  role          = aws_iam_role.lambda_exec.arn
   handler       = "metric_aggregator.handler"
-  runtime       = "python3.11"
-  source_code_hash = filebase64sha256("${path.module}/lambda/metric_aggregator.zip")
+  runtime       = "python3.9"
+source_code_hash = data.archive_file.metric_aggregator_zip.output_base64sha256 
 }
 resource "aws_iam_role" "lambda_exec" {
   name = "securebase_lambda_exec_role"
@@ -453,6 +464,7 @@ module "lambda_functions" {
 
   environment = var.environment
   aws_region  = var.target_region
+netlify_api_token = var.netlify_api_token
 
   # Lambda packages (ZIP files)
   lambda_packages = {
@@ -535,7 +547,7 @@ module "api_gateway" {
   log_retention_days  = 30
 
   # CORS
-  allowed_origins = ["http://localhost:5173", "https://portal.securebase.com"]
+  allowed_origins = ["http://localhost:5173", "https://portal.securebase.com","https://demo.securebase.tximhotep.com"]
 
   tags = merge(var.tags, {
     Phase = "Phase3-API"
