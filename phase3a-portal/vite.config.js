@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const timestamp = Date.now();
+
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   publicDir: 'public',
