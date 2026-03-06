@@ -10,12 +10,25 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  Filler, // Added here
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
-import { Loader, AlertCircle, Bell } from 'lucide-react'; // Added Bell icon
+import { Loader, AlertCircle, Bell } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
+// Single registration for all components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler // Registering Filler once here
+);
 
 const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(null);
