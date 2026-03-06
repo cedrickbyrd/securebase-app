@@ -3,9 +3,8 @@
  * Main landing page for authenticated customers
  * Shows summary of invoices, API keys, compliance status
  */
-
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // Ensure Link is imported for SPA navigation
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; 
 import {
   CreditCard,
   Key,
@@ -16,12 +15,17 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
-  Lock, // Phase 5 Icon
+  Lock,
 } from 'lucide-react';
 
+// Import your custom hooks and branding
+import { useDemoCustomer } from '../hooks/useDemoCustomer';
+import BRANDING from '../config/branding';
+import './Dashboard.css';
+
 // Constants for download flow timing
-const REPORT_GENERATION_DELAY = 15000; // 15 seconds
-const SUCCESS_MESSAGE_DELAY = 2000; // 2 seconds
+const REPORT_GENERATION_DELAY = 15000;
+const SUCCESS_MESSAGE_DELAY = 2000;
 const MARKETING_SITE_URL = 'https://tximhotep.com';
 
 // Download modal component
@@ -54,6 +58,7 @@ const DownloadModal = ({ isDownloading, downloadComplete }) => {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -68,19 +73,14 @@ export default function Dashboard() {
   });
 
   // Track timeout IDs for cleanup
-  const timeoutRefs = React.useRef({ generation: null, logout: null });
+  const timeoutRefs = useRef({ generation: null, logout: null });
 
   useEffect(() => {
     loadDashboardData();
 
-    // Cleanup timeouts on unmount
     return () => {
-      if (timeoutRefs.current.generation) {
-        clearTimeout(timeoutRefs.current.generation);
-      }
-      if (timeoutRefs.current.logout) {
-        clearTimeout(timeoutRefs.current.logout);
-      }
+      if (timeoutRefs.current.generation) clearTimeout(timeoutRefs.current.generation);
+      if (timeoutRefs.current.logout) clearTimeout(timeoutRefs.current.logout);
     };
   }, []);
 
@@ -98,12 +98,12 @@ export default function Dashboard() {
       ]);
 
       setDashboardData({
-        monthlyCharge: invoices.data[0]?.total_amount || 0,
-        monthlyUsage: metrics.data,
-        recentInvoices: invoices.data,
-        apiKeysCount: apiKeys.data.length,
-        complianceStatus: compliance.data.status,
-        pendingTickets: tickets.data.length,
+        monthlyCharge: invoices.data?.[0]?.total_amount || 0,
+        monthlyUsage: metrics.data || {},
+        recentInvoices: invoices.data || [],
+        apiKeysCount: apiKeys.data?.length || 0,
+        complianceStatus: compliance.data?.status || 'Unknown',
+        pendingTickets: tickets.data?.length || 0,
       });
 
       setError(null);
@@ -131,32 +131,23 @@ export default function Dashboard() {
   };
 
   const handleDownloadReport = () => {
-    // Start download flow (demo only - no actual file download)
     setIsDownloading(true);
-    
-    // Simulate report generation for dramatic effect
     timeoutRefs.current.generation = setTimeout(() => {
       showSuccessAndLogout();
     }, REPORT_GENERATION_DELAY);
   };
 
   const showSuccessAndLogout = () => {
-    // Show success message
     setIsDownloading(false);
     setDownloadComplete(true);
-    
-    // After brief success message, logout and redirect
     timeoutRefs.current.logout = setTimeout(() => {
       handleLogout();
     }, SUCCESS_MESSAGE_DELAY);
   };
 
   const handleLogout = () => {
-    // Clear all storage (intentional for demo "ending" - resets entire demo state)
     sessionStorage.clear();
     localStorage.clear();
-    
-    // Redirect to marketing site (demo "money shot" finale)
     window.location.href = MARKETING_SITE_URL;
   };
 
@@ -173,18 +164,15 @@ export default function Dashboard() {
 
   return (
     <div className="sb-Dashboard">
-      {/* Download Modal */}
       <DownloadModal isDownloading={isDownloading} downloadComplete={downloadComplete} />
 
-      {/* Header */}
       <div className="sb-Dashboard__header">
         <div className="sb-Dashboard__headerContent">
           <h1 className="sb-Dashboard__title">Dashboard</h1>
-          <p className="sb-Dashboard__subtitle">Welcome back to SecureBase</p>
+          <p className="sb-Dashboard__subtitle">Welcome back to {BRANDING.companyName}</p>
         </div>
       </div>
 
-      {/* Error Alert */}
       {error && (
         <div className="sb-Dashboard__errorContainer">
           <div className="sb-Alert sb-Alert--error">
@@ -197,24 +185,18 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Content */}
       <div className="sb-Dashboard__content">
-        {/* Top Stats Grid */}
         <div className="sb-Dashboard__statsGrid">
-          {/* Monthly Charge */}
           <div className="sb-StatCard">
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
                 <p className="sb-StatCard__label">Monthly Charge</p>
-                <p className="sb-StatCard__value">
-                  {formatCurrency(dashboardData.monthlyCharge)}
-                </p>
+                <p className="sb-StatCard__value">{formatCurrency(dashboardData.monthlyCharge)}</p>
               </div>
               <CreditCard className="sb-StatCard__icon sb-StatCard__icon--blue" />
             </div>
           </div>
 
-          {/* API Keys */}
           <div className="sb-StatCard">
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
@@ -225,7 +207,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Compliance Status */}
           <div className="sb-StatCard">
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
@@ -241,7 +222,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Open Tickets */}
           <div className="sb-StatCard">
             <div className="sb-StatCard__content">
               <div className="sb-StatCard__info">
@@ -253,9 +233,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Invoices & Quick Actions */}
         <div className="sb-Dashboard__mainGrid">
-          {/* Recent Invoices */}
           <div className="sb-InvoiceList">
             <div className="sb-InvoiceList__header">
               <h2 className="sb-InvoiceList__title">Recent Invoices</h2>
@@ -267,15 +245,13 @@ export default function Dashboard() {
                     <div className="sb-InvoiceItem__content">
                       <div className="sb-InvoiceItem__info">
                         <p className="sb-InvoiceItem__number">{invoice.invoice_number}</p>
-                        <p className="sb-InvoiceItem__date">
-                          {formatDate(invoice.created_at)}
-                        </p>
+                        <p className="sb-InvoiceItem__date">{formatDate(invoice.created_at)}</p>
                       </div>
                       <div className="sb-InvoiceItem__details">
-                        <p className="sb-InvoiceItem__amount">
-                          {formatCurrency(invoice.total_amount)}
-                        </p>
-                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>{invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</span>
+                        <p className="sb-InvoiceItem__amount">{formatCurrency(invoice.total_amount)}</p>
+                        <span className={`sb-Badge sb-Badge--${invoice.status}`}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -287,20 +263,16 @@ export default function Dashboard() {
               )}
             </div>
             <div className="sb-InvoiceList__footer">
-              <a href="/invoices" className="sb-Link">
-                View all invoices →
-              </a>
+              <Link to="/invoices" className="sb-Link">View all invoices →</Link>
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="sb-QuickActions">
             <h3 className="sb-QuickActions__title">Quick Actions</h3>
             <div className="sb-QuickActions__list">
               <button 
                 onClick={handleDownloadReport} 
                 className="sb-ActionButton sb-ActionButton--blue"
-                aria-label="Download security compliance report"
                 disabled={isDownloading || downloadComplete}
               >
                 <Download className="sb-ActionButton__icon" />
@@ -310,25 +282,22 @@ export default function Dashboard() {
                 <Lock className="sb-ActionButton__icon" />
                 Trust Center
               </Link>
-
-              
-              <a href="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
+              <Link to="/api-keys" className="sb-ActionButton sb-ActionButton--purple">
                 <Plus className="sb-ActionButton__icon" />
                 Create API Key
-              </a>
-              <a href="/compliance" className="sb-ActionButton sb-ActionButton--green">
+              </Link>
+              <Link to="/compliance" className="sb-ActionButton sb-ActionButton--green">
                 <Shield className="sb-ActionButton__icon" />
                 View Compliance
-              </a>
-              <a href="/support" className="sb-ActionButton sb-ActionButton--orange">
+              </Link>
+              <Link to="/support" className="sb-ActionButton sb-ActionButton--orange">
                 <Ticket className="sb-ActionButton__icon" />
                 Submit Ticket
-              </a>
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Usage Trends */}
         <div className="sb-UsageTrends">
           <div className="sb-UsageTrends__header">
             <TrendingUp className="sb-UsageTrends__icon" />
@@ -337,9 +306,7 @@ export default function Dashboard() {
           <div className="sb-UsageTrends__grid">
             <div className="sb-UsageMetric">
               <p className="sb-UsageMetric__label">AWS Accounts</p>
-              <p className="sb-UsageMetric__value">
-                {dashboardData.monthlyUsage.account_count || 0}
-              </p>
+              <p className="sb-UsageMetric__value">{dashboardData.monthlyUsage.account_count || 0}</p>
             </div>
             <div className="sb-UsageMetric">
               <p className="sb-UsageMetric__label">CloudTrail Events</p>
@@ -349,15 +316,11 @@ export default function Dashboard() {
             </div>
             <div className="sb-UsageMetric">
               <p className="sb-UsageMetric__label">Log Storage</p>
-              <p className="sb-UsageMetric__value">
-                {dashboardData.monthlyUsage.log_storage_gb || 0} GB
-              </p>
+              <p className="sb-UsageMetric__value">{dashboardData.monthlyUsage.log_storage_gb || 0} GB</p>
             </div>
             <div className="sb-UsageMetric">
               <p className="sb-UsageMetric__label">Data Transfer</p>
-              <p className="sb-UsageMetric__value">
-                {dashboardData.monthlyUsage.data_transfer_gb || 0} GB
-              </p>
+              <p className="sb-UsageMetric__value">{dashboardData.monthlyUsage.data_transfer_gb || 0} GB</p>
             </div>
           </div>
         </div>
