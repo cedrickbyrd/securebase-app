@@ -1,0 +1,11 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0, "y": 0, "width": 12, "height": 3,
+      "properties": {
+        "markdown": "# SecureBase SRE Dashboard\nInfrastructure is being provisioned."
+      }
+    }
+  ]
+}
