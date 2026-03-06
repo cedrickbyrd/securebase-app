@@ -1,8 +1,9 @@
 [build]
-  # Force Netlify to go into the portal folder to run the build
-  command = "cd phase3a-portal && npm install && npm run build"
-  # Force Netlify to deploy the dist folder from inside the portal
-  publish = "phase3a-portal/dist"
+  # Tell Netlify the 'heart' of the app is here
+  base = "phase3a-portal"
+  # Now the command and publish are relative to 'phase3a-portal'
+  command = "npm install && npm run build"
+  publish = "dist"
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
