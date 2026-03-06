@@ -43,6 +43,7 @@ const AdminDashboard = () => {
       },
     ],
   };
+  const DEPLOY_ID = "v1.1-SRE-GLOW-" + Date.now();
 
   const securityThreatData = {
     labels: ['Blocked IPs', 'Failed Auth', 'WAF Alerts'],
