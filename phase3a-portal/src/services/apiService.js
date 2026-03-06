@@ -6,8 +6,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 // 2. Determine if we should use mocks
 // Force true if API_BASE is empty OR if explicitly requested via env
-const USE_MOCK = !API_BASE || import.meta.env.VITE_USE_MOCK_API === 'true';
 
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true' || !API_BASE;
 if (!API_BASE) {
   console.warn("⚠️ VITE_API_BASE_URL is not defined. SecureBase is running in MOCK MODE.");
 }
