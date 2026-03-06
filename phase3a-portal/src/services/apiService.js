@@ -10,8 +10,12 @@ class ApiService {
     this.useMock = USE_MOCK;
   }
 
-  // 1. Use arrow functions for all methods to preserve 'this' context
+  // --- Core Request Engine ---
   request = async (endpoint, options = {}) => {
+    if (this.useMock) {
+      console.log(`🎭 Mocking request to: ${endpoint}`);
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
@@ -31,42 +35,81 @@ class ApiService {
     }
   };
 
-  // 2. Explicitly define the post method that was missing/unbound
-  post = async (endpoint, data, options = {}) => {
-    return this.request(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  };
+  // --- HTTP Verbs ---
+  get = async (endpoint, options = {}) => this.request(endpoint, { ...options, method: 'GET' });
+  
+  post = async (endpoint, data, options = {}) => this.request(endpoint, {
+    ...options,
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
-  // 3. Define the get method for your metrics calls
-  get = async (endpoint, options = {}) => {
-    return this.request(endpoint, { ...options, method: 'GET' });
-  };
+  put = async (endpoint, data, options = {}) => this.request(endpoint, {
+    ...options,
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 
+  delete = async (endpoint, options = {}) => this.request(endpoint, { ...options, method: 'DELETE' });
+
+  // --- Authentication ---
   authenticate = async (apiKey) => {
     if (this.useMock) return mockApiService.authenticate(apiKey);
     
     try {
-      // Now this.post is guaranteed to be a function!
       const response = await this.post('/auth/login', { api_key: apiKey });
       if (response.token || response.session_token) {
-        const token = response.token || response.session_token;
-        localStorage.setItem('sessionToken', token);
+        localStorage.setItem('sessionToken', response.token || response.session_token);
       }
       return response;
     } catch (error) {
-      throw error;
+      console.error('Authentication failed:', error);
+      throw new Error(error.message.includes('fetch') 
+        ? 'Network error. Check connection.' 
+        : 'Invalid API key.');
     }
   };
 
+  // --- Data Fetching Methods ---
   getMetrics = async () => {
     if (this.useMock) return mockApiService.getMetrics();
     return this.get('/metrics');
   };
 
-  // ... add other methods following the same arrow function pattern
+  getDashboardData = async () => {
+    if (this.useMock) return mockApiService.getDashboardData();
+    return this.get('/dashboard');
+  };
+
+  getUserProfile = async () => {
+    if (this.useMock) return mockApiService.getUserProfile();
+    return this.get('/user/profile');
+  };
+
+  getInvoices = async () => {
+    if (this.useMock) return mockApiService.getInvoices();
+    return this.get('/invoices');
+  };
+
+  getApiKeys = async () => {
+    if (this.useMock) return mockApiService.getApiKeys();
+    return this.get('/api-keys');
+  };
+
+  getComplianceStatus = async () => {
+    if (this.useMock) return mockApiService.getComplianceStatus();
+    return this.get('/compliance/status');
+  };
+
+  getTickets = async (params) => {
+    if (this.useMock) return mockApiService.getTickets(params);
+    return this.get('/tickets', { params });
+  };
+
+  createTicket = async (ticketData) => {
+    if (this.useMock) return mockApiService.createTicket(ticketData);
+    return this.post('/tickets', ticketData);
+  };
 }
 
 export const apiService = new ApiService();
