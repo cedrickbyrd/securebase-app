@@ -1,18 +1,17 @@
-/ API Service for SecureBase Customer Portal
+// API Service for SecureBase Customer Portal
 import { mockApiService } from './mockApiService';
 
 // 1. Define the base URL based on environment
-// In Production: Use the Netlify /api proxy
-// In Development: Use the full URL for local testing
 const API_BASE = import.meta.env.PROD 
   ? '/api' 
   : (import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1');
 
-// 2. Logic to force Mock Mode if explicitly set or if API_BASE is missing
+// 2. Logic to force Mock Mode
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true' || !API_BASE;
 
 if (USE_MOCK) {
   console.log("🎭 SecureBase: Mock Mode Active");
+} // <--- This closing brace was missing!
 
 class ApiService {
   constructor() {
