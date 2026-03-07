@@ -36,7 +36,7 @@
   from = "/api/*"
   to = "https://nwiy9yvr8d.execute-api.us-east-2.amazonaws.com/prod/:splat"
   status = 200
-  force = true # This is critical to bypass the SPA catch-all
+  force = true 
   headers = {X-From = "Netlify"}
 
 # 2. DOMAIN MIGRATION
