@@ -5,8 +5,7 @@ import BRANDING from '../config/branding';
 import './Login.css';
 
 function Login({ setAuth }) {
-  const [username, setUsername] = useState('demo');
-  const [password, setPassword] = useState('demo');
+  const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -17,17 +16,8 @@ function Login({ setAuth }) {
     setLoading(true);
 
     try {
-      // Demo mode: check credentials
-      if (username === 'demo' && password === 'demo') {
-        sessionStorage.setItem('demo_token', 'demo-session-token');
-        sessionStorage.setItem('demo_user', JSON.stringify({ username: 'demo', name: 'Demo User' }));
-        setAuth(true);
-        navigate('/dashboard');
-        return;
-      }
-
-      // API authentication
-      const response = await apiService.authenticate(username);
+      // API authentication using the API key
+      const response = await apiService.authenticate(apiKey);
       
       if (response.token || response.session_token) {
         setAuth(true);
@@ -41,8 +31,6 @@ function Login({ setAuth }) {
       setLoading(false);
     }
   };
-
-  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_USE_MOCK_API === 'true';
 
   return (
     <div className="login-page">
@@ -60,14 +48,6 @@ function Login({ setAuth }) {
             <p className="subtitle">Customer Portal</p>
           </div>
 
-          {/* Demo Mode Banner */}
-          {demoMode && (
-            <div className="demo-banner">
-              <span className="demo-icon">🎯</span>
-              <strong>Demo Mode Active</strong>
-            </div>
-          )}
-
           {/* Sign In Form */}
           <form onSubmit={handleLogin} className="login-form">
             <h2>Sign In</h2>
@@ -80,57 +60,22 @@ function Login({ setAuth }) {
             )}
 
             <div className="form-group">
-              <label htmlFor="username">Username</label>
+              <label htmlFor="apiKey">API Key</label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                id="apiKey"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your API key"
                 disabled={loading}
                 required
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-input">
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  disabled={loading}
-                  required
-                />
-                <button type="button" className="password-toggle" aria-label="Toggle password visibility">
-                  👁️
-                </button>
-              </div>
-            </div>
-
-            {demoMode && (
-              <div className="demo-credentials">
-                Demo credentials: username <code>demo</code> / password <code>demo</code>
-              </div>
-            )}
-
             <button type="submit" className="login-button" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          {/* Demo Mode Info */}
-          {demoMode && (
-            <div className="demo-info">
-              <p>
-                This is a demonstration environment. Use the credentials{' '}
-                <strong>demo/demo</strong> to explore the portal. Demo mode does not
-                connect to real backend services or expose any sensitive data.
-              </p>
-            </div>
-          )}
 
           {/* Footer */}
           <div className="login-footer">

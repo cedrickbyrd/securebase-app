@@ -11,9 +11,8 @@ import './App.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
     // Check if user has a valid session on mount
-    const demoToken = sessionStorage.getItem('demo_token');
     const sessionToken = localStorage.getItem('sessionToken');
-    return !!(demoToken || sessionToken);
+    return !!sessionToken;
   });
 
   return (
