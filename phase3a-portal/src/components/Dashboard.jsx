@@ -47,8 +47,7 @@ function Dashboard() {
   };
 
   const handleLogout = () => {
-    sessionStorage.clear();
-    localStorage.clear();
+    localStorage.removeItem('sessionToken');
     navigate('/login');
   };
 
