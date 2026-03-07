@@ -1,8 +1,9 @@
 [build]
   base = "phase3a-portal"
-  command = "npm install --legacy-peer-deps && npm run build"
+  # Go up one level to install root dependencies, then come back and build
+  command = "cd .. && npm install --legacy-peer-deps && cd phase3a-portal && npm install react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"
   publish = "dist"
-
+  
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_VERSION = "20"
