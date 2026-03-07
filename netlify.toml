@@ -1,8 +1,7 @@
 [build]
   base = "phase3a-portal"
   # No more 'cd ..' hacks needed!
-  command = "npm install --legacy-peer-deps && npm run build"
-  publish = "dist"
+command = "npm install --legacy-peer-deps && npm install react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
