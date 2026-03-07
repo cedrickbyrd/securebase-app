@@ -55,3 +55,7 @@ output "api_endpoints" {
     forecasting = "${aws_api_gateway_stage.main.invoke_url}/forecasting"
   }
 }
+output "auth_resource_id" {
+  description = "ID of the auth resource for CORS attachment"
+  value       = aws_api_gateway_resource.auth.id
+}
