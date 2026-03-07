@@ -25,26 +25,28 @@
   directory = "src/functions"
   node_bundler = "esbuild"
 
-# REDIRECTS (Ordered from most specific to least specific)
-[[redirects]]
-  from = "https://securebase-demo.netlify.app/*"
-  to = "https://demo.securebase.tximhotep.com/:splat"
-  status = 301
-  force = true
-
 [[redirects]]
   from = "/storage/*"
   to = "https://securebase-fe-prod.s3.amazonaws.com/:splat"
   status = 200
   force = true
 
+# 1. API PROXY (Highest Priority)
 [[redirects]]
   from = "/api/*"
   to = "https://nwiy9yvr8d.execute-api.us-east-2.amazonaws.com/prod/:splat"
   status = 200
-  force = true
+  force = true # This is critical to bypass the SPA catch-all
   headers = {X-From = "Netlify"}
 
+# 2. DOMAIN MIGRATION
+[[redirects]]
+  from = "https://securebase-demo.netlify.app/*"
+  to = "https://demo.securebase.tximhotep.com/:splat"
+  status = 301
+  force = true
+
+# 3. SPA CATCH-ALL (Lowest Priority)
 [[redirects]]
   from = "/*"
   to = "/index.html"
