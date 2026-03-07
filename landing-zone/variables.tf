@@ -152,7 +152,15 @@ variable "lambda_packages" {
 }
 
 variable "stripe_public_key" {
-  description = "The public key for Stripe integration"
-  type        = string
+  type      = string
+  sensitive = true
+  description = "Live Stripe public key for SecureBase"
+  default   = "pk_live_51SrfvJ5bg6XXXrmNrXuAY0aNgBMe20PDcXVpv86x4ZBUL5ysRA1oNAN2THoxymRls1veb0WJF0yVqgd2aGAaF04900QhrVHUH8"
+}
+
+variable "api_base_url" {
+  type    = string
+  description = "API BASE URL"
+  default = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod"
 }
 
