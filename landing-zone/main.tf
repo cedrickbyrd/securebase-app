@@ -404,12 +404,12 @@ resource "aws_api_gateway_rest_api" "sre_dashboard_api" {
   description = "API Gateway for SRE/Operations Dashboard"
 }
 # Resource to handle the OPTIONS method for CORS preflight
-resource "aws_api_gateway_method" "options_method" {
-  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
-  resource_id   = aws_api_gateway_resource.my_resource.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
+#resource "aws_api_gateway_method" "options_method" {
+#  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+#  resource_id   = aws_api_gateway_resource.my_resource.id
+#  http_method   = "OPTIONS"
+#  authorization = "NONE"
+#}
 
 resource "aws_api_gateway_method_response" "options_200" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
