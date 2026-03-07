@@ -1,6 +1,11 @@
 variable "org_name" {
   description = "The name of the AWS Organization"
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.org_name))
+    error_message = "Organization name must be lowercase, numbers, or hyphens only (DNS-compliant)."
+  }
 }
 
 variable "target_region" {
@@ -162,5 +167,11 @@ variable "api_base_url" {
   type    = string
   description = "API BASE URL"
   default = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod"
+}
+
+variable "stripe_secret_key" {
+  type      = string
+  sensitive = true
+  description = "Secret key for Stripe API communications"
 }
 

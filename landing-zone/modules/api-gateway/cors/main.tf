@@ -84,6 +84,13 @@ resource "aws_api_gateway_integration_response" "options" {
 
   depends_on = [aws_api_gateway_integration.options]
 }
+module "cors_billing" {
+  source      = "../modules/api-gateway/cors"
+  api_id      = var.api_id
+  resource_id = aws_api_gateway_resource.billing.id
+  # Update this to your verified TXImhotep domain
+  allowed_origins = ["https://demo.securebase.tximhotep.com"] 
+}
 
 output "cors_enabled" {
   value = true

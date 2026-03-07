@@ -404,53 +404,56 @@ resource "aws_api_gateway_rest_api" "sre_dashboard_api" {
   description = "API Gateway for SRE/Operations Dashboard"
 }
 
-resource "aws_api_gateway_method" "options_method" {
-  # Point to the MODULE'S output, not a local resource
-  rest_api_id = module.api_gateway.rest_api_id 
-  resource_id = module.api_gateway.resource_id
-  
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
+#resource "aws_api_gateway_method" "options_method" {
+#  # Map to the module's specific output name
+#  rest_api_id = module.api_gateway.api_gateway_id 
+#  
+#  # Note: You still need to export the resource_id (e.g., 'auth') 
+#  # from the module if you want to attach things to it from the root.
+#  resource_id = module.api_gateway.auth_resource_id 
+#  
+#  http_method   = "OPTIONS"
+#  authorization = "NONE"
+#}
 
-resource "aws_api_gateway_method_response" "options_200" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  resource_id = aws_api_gateway_resource.my_resource.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  status_code = "200"
+#resource "aws_api_gateway_method_response" "options_200" {
+#  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+#  resource_id = aws_api_gateway_resource.my_resource.id
+#  http_method = aws_api_gateway_method.options_method.http_method
+#  status_code = "200"
+#
+#  response_parameters = {
+#    "method.response.header.Access-Control-Allow-Headers" = true
+#    "method.response.header.Access-Control-Allow-Methods" = true
+#    "method.response.header.Access-Control-Allow-Origin"  = true
+#  }
+#}
 
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true
-    "method.response.header.Access-Control-Allow-Methods" = true
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-}
+#resource "aws_api_gateway_integration" "options_integration" {
+#  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+#  resource_id = aws_api_gateway_resource.my_resource.id
+#  http_method = aws_api_gateway_method.options_method.http_method
+#  type        = "MOCK"
+#
+#  request_templates = {
+#    "application/json" = "{\"statusCode\": 200}"
+#  }
+#}
 
-resource "aws_api_gateway_integration" "options_integration" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  resource_id = aws_api_gateway_resource.my_resource.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  type        = "MOCK"
-
-  request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
-  }
-}
-
-resource "aws_api_gateway_integration_response" "options_integration_response" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  resource_id = aws_api_gateway_resource.my_resource.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  status_code = aws_api_gateway_method_response.options_200.status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'https://demo.securebase.tximhotep.com'"
-  }
-
-  depends_on = [aws_api_gateway_integration.options_integration]
-}
+#resource "aws_api_gateway_integration_response" "options_integration_response" {
+#  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+#  resource_id = aws_api_gateway_resource.my_resource.id
+#  http_method = aws_api_gateway_method.options_method.http_method
+#  status_code = aws_api_gateway_method_response.options_200.status_code
+#
+#  response_parameters = {
+#    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'"
+#    "method.response.header.Access-Control-Allow-Origin"  = "'https://demo.securebase.tximhotep.com'"
+#  }
+#
+#  depends_on = [aws_api_gateway_integration.options_integration]
+#}
 
 resource "aws_secretsmanager_secret" "stripe_keys" {
   name        = "securebase/stripe/api_keys"
