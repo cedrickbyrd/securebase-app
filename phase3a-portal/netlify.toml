@@ -8,9 +8,10 @@
 
 [context.production.environment]
   VITE_USE_MOCK_API = "false"
-  VITE_ENV = "demo"
+  VITE_ENV = "production"
+  VITE_DEMO_MODE = "false"
   VITE_ANALYTICS_ENABLED = "false"
-  VITE_API_URL = "https://api.securebase.tximhotep.com"
+  VITE_API_BASE_URL = "https://api.securebase.tximhotep.com/v1"
 
 [[redirects]]
   from = "https://securebase-demo.netlify.app/*"

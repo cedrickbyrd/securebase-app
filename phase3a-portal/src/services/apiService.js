@@ -1,32 +1,21 @@
 // API Service for SecureBase Customer Portal
-import { mockApiService } from './mockApiService';
 
-// 1. Define the base URL — /api is proxied by Netlify to the real backend
+// Define the base URL — /api is proxied by Netlify to the real backend
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-
-// 2. Logic to force Mock Mode
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true' || !API_BASE;
-
-if (USE_MOCK) {
-  console.log("🎭 SecureBase: Mock Mode Active");
-} // <--- This closing brace was missing!
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE;
-    this.useMock = USE_MOCK;
   }
 
   // --- Core Request Engine ---
   request = async (endpoint, options = {}) => {
-    if (this.useMock) {
-      console.log(`🎭 Mocking request to: ${endpoint}`);
-    }
-
+    const sessionToken = localStorage.getItem('sessionToken');
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
         ...options.headers,
       },
       ...options,
@@ -34,6 +23,14 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      if (response.status === 401) {
+        if (sessionToken) {
+          localStorage.removeItem('sessionToken');
+          window.location.href = '/login';
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -61,8 +58,6 @@ class ApiService {
 
   // --- Authentication ---
   authenticate = async (apiKey) => {
-    if (this.useMock) return mockApiService.authenticate(apiKey);
-    
     try {
       const response = await this.post('/auth/login', { api_key: apiKey });
       if (response.token || response.session_token) {
@@ -72,51 +67,27 @@ class ApiService {
     } catch (error) {
       console.error('Authentication failed:', error);
       throw new Error(error.message.includes('fetch') 
-        ? 'Network error. Check connection.' 
-        : 'Invalid API key.');
+        ? 'Network error. Please check your connection and try again.' 
+        : 'Invalid API key. Please check your credentials.');
     }
   };
 
   // --- Data Fetching Methods ---
-  getMetrics = async () => {
-    if (this.useMock) return mockApiService.getMetrics();
-    return this.get('/billing/metrics');
-  };
+  getMetrics = async () => this.get('/billing/metrics');
 
-  getDashboardData = async () => {
-    if (this.useMock) return mockApiService.getDashboardData();
-    return this.get('/billing/dashboard');
-  };
+  getDashboardData = async () => this.get('/billing/dashboard');
 
-  getUserProfile = async () => {
-    if (this.useMock) return mockApiService.getUserProfile();
-    return this.get('/user/profile');
-  };
+  getUserProfile = async () => this.get('/user/profile');
 
-  getInvoices = async () => {
-    if (this.useMock) return mockApiService.getInvoices();
-    return this.get('/billing/invoices');
-  };
+  getInvoices = async () => this.get('/billing/invoices');
 
-  getApiKeys = async () => {
-    if (this.useMock) return mockApiService.getApiKeys();
-    return this.get('/api-keys');
-  };
+  getApiKeys = async () => this.get('/api-keys');
 
-  getComplianceStatus = async () => {
-    if (this.useMock) return mockApiService.getComplianceStatus();
-    return this.get('/compliance/status');
-  };
+  getComplianceStatus = async () => this.get('/compliance/status');
 
-  getTickets = async (params) => {
-    if (this.useMock) return mockApiService.getTickets(params);
-    return this.get('/tickets', { params });
-  };
+  getTickets = async (params) => this.get('/tickets', { params });
 
-  createTicket = async (ticketData) => {
-    if (this.useMock) return mockApiService.createTicket(ticketData);
-    return this.post('/tickets', ticketData);
-  };
+  createTicket = async (ticketData) => this.post('/tickets', ticketData);
 }
 
 export const apiService = new ApiService();
