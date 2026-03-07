@@ -450,7 +450,18 @@ resource "aws_api_gateway_integration_response" "options_integration_response" {
   depends_on = [aws_api_gateway_integration.options_integration]
 }
 
+resource "aws_secretsmanager_secret" "stripe_keys" {
+  name        = "securebase/stripe/api_keys"
+  description = "Stripe API keys for SecureBase Phase 4"
+}
 
+resource "aws_secretsmanager_secret_version" "stripe_keys_val" {
+  secret_id     = aws_secretsmanager_secret.stripe_keys.id
+  secret_string = jsonencode({
+    public_key = var.stripe_public_key
+    # Manually add the secret key in the console after creation for maximum security
+  })
+}
 
 module "security" {
   source = "./modules/security"
