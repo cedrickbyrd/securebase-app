@@ -1,7 +1,41 @@
-🛡️ SecureBase by TxImhotep LLC
-Automated AWS Compliance & Continuous Audit for Fintech & Healthcare
+# SecureBase
 
-SecureBase deploys production-ready, SOC 2/HIPAA-aligned infrastructure in minutes and provides a cryptographically verified audit trail that satisfies enterprise-grade due diligence.
+### Sovereign AI Infrastructure & Security Orchestration
+**Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com)  
+**Developer:** [Cedrick J. Byrd / TxImhotep LLC](https://tximhotep.com)
+
+---
+
+## ## Overview
+**SecureBase** is a security-first orchestration platform designed for the next generation of sovereign infrastructure. Originally conceived as an AWS landing zone orchestrator, SecureBase has evolved into a comprehensive suite for **AI Agent Authentication**, **Non-Human Identity Management (IAM)**, and **Regulatory Compliance Automation**.
+
+In an era where AI agents and autonomous systems interact with critical infrastructure, SecureBase provides the "Source of Truth" for security posture, asset discovery, and audit readiness.
+
+## ## Key Capabilities (2026 Roadmap)
+* **Sovereign Identity:** Advanced IAM protocols for non-human identities and AI agents.
+* **Compliance Drift Monitoring:** Real-time visualization of infrastructure status against NERC CIP and NIST standards.
+* **AI-Native Orchestration:** Security-hardened landing zones optimized for LLM inference and agentic workloads.
+* **Executive Insights:** High-fidelity data visualization for regulatory reporting and risk assessment.
+
+## ## Tech Stack
+* **Frontend:** React 18+ (Vite)
+* **Data Visualization:** Chart.js with `react-chartjs-2`
+* **Cloud Infrastructure:** AWS (Terraform/IaC)
+* **Deployment:** Netlify
+
+## ## Getting Started
+
+### Prerequisites
+* Node.js (LTS)
+* npm
+
+### Installation
+Clone the repository and install dependencies. To ensure environment stability with our visualization suite, use the legacy peer dependency flag:
+
+```bash
+git clone [https://github.com/cedrickbyrd/securebase-app.git](https://github.com/cedrickbyrd/securebase-app.git)
+cd securebase-app
+npm install react-chartjs-2 chart.js --save --legacy-peer-deps
 
 🚀 Book a Demo | 📞 Sales Inquiries
 🌐 The Two Portals
