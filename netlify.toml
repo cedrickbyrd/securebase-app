@@ -1,7 +1,7 @@
 [build]
   base = "phase3a-portal"
-  # Go up one level to install root dependencies, then come back and build
-  command = "cd .. && npm install --legacy-peer-deps && cd phase3a-portal && npm install react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"
+  # We add tailwindcss and its friends directly to the install command to fix the PostCSS error
+  command = "npm install tailwindcss postcss autoprefixer react-chartjs-2 chart.js --save --legacy-peer-deps && npm run build"
   publish = "dist"
   
 [build.environment]
