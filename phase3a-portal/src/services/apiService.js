@@ -1,10 +1,8 @@
 // API Service for SecureBase Customer Portal
 import { mockApiService } from './mockApiService';
 
-// 1. Define the base URL based on environment
-const API_BASE = import.meta.env.PROD 
-  ? '/api' 
-  : (import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1');
+// 1. Define the base URL — /api is proxied by Netlify to the real backend
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // 2. Logic to force Mock Mode
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true' || !API_BASE;
@@ -82,12 +80,12 @@ class ApiService {
   // --- Data Fetching Methods ---
   getMetrics = async () => {
     if (this.useMock) return mockApiService.getMetrics();
-    return this.get('/metrics');
+    return this.get('/billing/metrics');
   };
 
   getDashboardData = async () => {
     if (this.useMock) return mockApiService.getDashboardData();
-    return this.get('/dashboard');
+    return this.get('/billing/dashboard');
   };
 
   getUserProfile = async () => {
@@ -97,7 +95,7 @@ class ApiService {
 
   getInvoices = async () => {
     if (this.useMock) return mockApiService.getInvoices();
-    return this.get('/invoices');
+    return this.get('/billing/invoices');
   };
 
   getApiKeys = async () => {
