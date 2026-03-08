@@ -1,7 +1,7 @@
 // API Service for SecureBase Customer Portal
 
 // Define the base URL — /api is proxied by Netlify to the real backend
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.tximhotep.com';
 
 class ApiService {
   constructor() {
