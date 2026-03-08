@@ -5,7 +5,7 @@ const LIVE_STRIPE_PUBLIC_KEY = 'pk_live_YOUR_KEY_HERE'; // Replace with your act
 const stripePromise = loadStripe(LIVE_STRIPE_PUBLIC_KEY);
 
 // API Configuration for production
-const API_BASE_URL = 'https://api.securebase.com/v1';
+const API_BASE_URL = 'https://api.securebase.tximhotep.com';
 
 // Pricing configuration (live mode)
 const PRICING_TIERS = {
