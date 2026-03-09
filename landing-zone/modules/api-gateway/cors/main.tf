@@ -76,22 +76,14 @@ resource "aws_api_gateway_integration_response" "options" {
   status_code = aws_api_gateway_method_response.options.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'${join(",", var.allowed_headers)}'"
-    "method.response.header.Access-Control-Allow-Methods" = "'${join(",", var.allowed_methods)}'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'${join(",", var.allowed_origins)}'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT,DELETE'"
+    # Change the line below from join() to a single origin or '*'
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Max-Age"       = "'7200'"
   }
 
   depends_on = [aws_api_gateway_integration.options]
 }
-module "cors_billing" {
-  source      = "../modules/api-gateway/cors"
-  api_id      = var.api_id
-  resource_id = aws_api_gateway_resource.billing.id
-  # Update this to your verified TXImhotep domain
-  allowed_origins = ["https://demo.securebase.tximhotep.com"] 
-}
 
-output "cors_enabled" {
-  value = true
-}
+

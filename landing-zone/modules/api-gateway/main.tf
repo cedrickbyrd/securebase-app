@@ -772,7 +772,6 @@ module "cors_activity" {
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.activity[0].id
 }
-
 # ============================================================================
 # Deployment and Stage
 # ============================================================================
@@ -780,38 +779,35 @@ module "cors_activity" {
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
-  # Force new deployment on any resource change
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_rest_api.securebase_api.body,
-      aws_api_gateway_resource.auth.id,
-      aws_api_gateway_resource.webhooks.id,
-      aws_api_gateway_resource.invoices.id,
-      aws_api_gateway_resource.tickets.id,
-      aws_api_gateway_resource.forecasting.id,
-      aws_api_gateway_method.auth_post.id,
-      aws_api_gateway_method.webhooks_get.id,
-      aws_api_gateway_method.webhooks_post.id,
-      aws_api_gateway_method.invoices_get.id,
-      aws_api_gateway_method.tickets_get.id,
-      aws_api_gateway_method.tickets_post.id,
-      aws_api_gateway_method.forecasting_get.id,
-    ]))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
+  # Ensure all integrations and CORS modules are ready before deploying
   depends_on = [
     aws_api_gateway_integration.auth_lambda,
+    aws_api_gateway_integration.health_lambda,
     aws_api_gateway_integration.webhooks_get,
     aws_api_gateway_integration.webhooks_post,
     aws_api_gateway_integration.invoices_get,
     aws_api_gateway_integration.tickets_get,
     aws_api_gateway_integration.tickets_post,
     aws_api_gateway_integration.forecasting_get,
+    aws_api_gateway_integration.analytics_get,
+    aws_api_gateway_integration.auth_login_post,
+    aws_api_gateway_integration.auth_mfa_post,
+    module.cors_auth,
+    module.cors_webhooks,
+    module.cors_invoices,
+    module.cors_tickets,
+    module.cors_forecasting,
+    module.cors_auth_login
   ]
+
+  # This forces a new deployment whenever any part of the API changes
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.securebase_api.body))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_api_gateway_stage" "main" {
@@ -819,78 +815,51 @@ resource "aws_api_gateway_stage" "main" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   stage_name    = var.environment
 
-  # Enable X-Ray tracing for distributed tracing
-  xray_tracing_enabled = true
-
-  # Access logging configuration
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      caller         = "$context.identity.caller"
-      user           = "$context.identity.user"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
+    format          = jsonencode({
+      requestId      = "$context.requestId",
+      ip             = "$context.identity.sourceIp",
+      caller         = "$context.identity.caller",
+      user           = "$context.identity.user",
+      requestTime    = "$context.requestTime",
+      httpMethod     = "$context.httpMethod",
+      resourcePath   = "$context.resourcePath",
+      status         = "$context.status",
+      protocol       = "$context.protocol",
       responseLength = "$context.responseLength"
-      error          = "$context.error.message"
-      integrationError = "$context.integrationErrorMessage"
     })
   }
-
-  # Global throttling settings (can be overridden per method)
-
-  tags = merge(var.tags, {
-    Name = "securebase-${var.environment}-stage"
-  })
 }
 
-# Enable detailed CloudWatch metrics
-resource "aws_api_gateway_method_settings" "all" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  stage_name  = aws_api_gateway_stage.main.stage_name
-  method_path = "*/*"
-
-  settings {
-    metrics_enabled        = true
-    logging_level          = "INFO"
-    data_trace_enabled     = var.environment != "prod"  # Disable in prod for performance
-    throttling_rate_limit  = var.default_rate_limit
-    throttling_burst_limit = var.default_burst_limit
-  }
+# Output the Invoke URL for the frontend
+output "base_url" {
+  value = "${aws_api_gateway_stage.main.invoke_url}"
 }
 
 # ============================================================================
 # API Gateway Response Headers (Security)
 # ============================================================================
 
-resource "aws_api_gateway_gateway_response" "default_4xx" {
+resource "aws_api_gateway_gateway_response" "cors_4xx" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   response_type = "DEFAULT_4XX"
 
   response_parameters = {
-    "gatewayresponse.header.X-Content-Type-Options" = "'nosniff'"
-    "gatewayresponse.header.X-Frame-Options"        = "'DENY'"
-    "gatewayresponse.header.X-XSS-Protection"       = "'1; mode=block'"
-    "gatewayresponse.header.Strict-Transport-Security" = "'max-age=31536000; includeSubDomains'"
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'"
   }
 }
 
-resource "aws_api_gateway_gateway_response" "default_5xx" {
+resource "aws_api_gateway_gateway_response" "cors_5xx" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   response_type = "DEFAULT_5XX"
 
   response_parameters = {
-    "gatewayresponse.header.X-Content-Type-Options" = "'nosniff'"
-    "gatewayresponse.header.X-Frame-Options"        = "'DENY'"
-    "gatewayresponse.header.X-XSS-Protection"       = "'1; mode=block'"
-    "gatewayresponse.header.Strict-Transport-Security" = "'max-age=31536000; includeSubDomains'"
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
   }
 }
-
 # ============================================================================
 # CloudWatch Alarms for API Monitoring
 # ============================================================================
@@ -953,4 +922,77 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
   }
 
   tags = var.tags
+}
+
+
+resource "aws_api_gateway_deployment" "main" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.securebase_api))
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ============================================================================
+# Deployment and Stage
+# ============================================================================
+
+# ============================================================================
+# Deployment and Stage
+# ============================================================================
+
+resource "aws_api_gateway_deployment" "main" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+
+  # Triggers redeployment when any resource changes
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.auth,
+      aws_api_gateway_method.auth_post,
+      aws_api_gateway_integration.auth_lambda,
+      # Add other resources/methods here to ensure they trigger updates
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "prod" {
+  deployment_id = aws_api_gateway_deployment.main.id
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  stage_name    = var.environment
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format          = jsonencode({
+      requestId      = "$context.requestId"
+      ip             = "$context.identity.sourceIp"
+      caller         = "$context.identity.caller"
+      user           = "$context.identity.user"
+      requestTime    = "$context.requestTime"
+      httpMethod     = "$context.httpMethod"
+      resourcePath   = "$context.resourcePath"
+      status         = "$context.status"
+      protocol       = "$context.protocol"
+      responseLength = "$context.responseLength"
+    })
+  }
+}
+
+resource "aws_api_gateway_method_settings" "all" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  stage_name  = aws_api_gateway_stage.prod.stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled    = true
+    logging_level      = "INFO"
+    data_trace_enabled = false
+    throttling_burst_limit = 500
+    throttling_rate_limit  = 1000
+  }
 }
