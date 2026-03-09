@@ -65,6 +65,39 @@ output "lambda_role_arn" {
   value       = aws_iam_role.lambda_execution.arn
 }
 
+# Shorthand alias outputs (auth_arn, billing_arn, support_arn, etc.)
+# These provide a stable, simplified naming convention consumed by api_gateway.
+
+output "auth_arn" {
+  description = "ARN of the auth Lambda function (alias for auth_v2_arn)"
+  value       = aws_lambda_function.auth_v2.arn
+}
+
+output "auth_name" {
+  description = "Name of the auth Lambda function (alias for auth_v2_name)"
+  value       = aws_lambda_function.auth_v2.function_name
+}
+
+output "billing_arn" {
+  description = "ARN of the billing Lambda function (alias for billing_worker_arn)"
+  value       = aws_lambda_function.billing_worker.arn
+}
+
+output "billing_name" {
+  description = "Name of the billing Lambda function (alias for billing_worker_name)"
+  value       = aws_lambda_function.billing_worker.function_name
+}
+
+output "support_arn" {
+  description = "ARN of the support Lambda function (alias for support_tickets_arn)"
+  value       = aws_lambda_function.support_tickets.arn
+}
+
+output "support_name" {
+  description = "Name of the support Lambda function (alias for support_tickets_name)"
+  value       = aws_lambda_function.support_tickets.function_name
+}
+
 output "all_lambda_arns" {
   description = "Map of all Lambda function ARNs"
   value = {
