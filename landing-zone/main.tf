@@ -144,11 +144,18 @@ module "phase2_database" {
 
 # --- Multi-Tenant Account Creation ---
 resource "aws_organizations_organization" "this" {
-  feature_set = "ALL"
+  feature_set          = "ALL"
   enabled_policy_types = ["SERVICE_CONTROL_POLICY"]
-  aws_service_access_principals = ["cloudtrail.amazonaws.com", "config.amazonaws.com", "guardduty.amazonaws.com", "securityhub.amazonaws.com", "sso.amazonaws.com"]
+  
+  aws_service_access_principals = [
+    "cloudtrail.amazonaws.com",
+    "config.amazonaws.com",
+    "guardduty.amazonaws.com",
+    "iam.amazonaws.com",        # Re-enables IAM service access
+    "securityhub.amazonaws.com",
+    "sso.amazonaws.com"
+  ]
 }
-
 resource "aws_organizations_account" "clients" {
   for_each = var.clients
   name     = each.value.prefix
