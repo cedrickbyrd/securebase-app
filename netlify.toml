@@ -1,9 +1,9 @@
 [build]
-  base = "phase3a-portal"
-  command = "npm install --legacy-peer-deps && npm run build:production"
-  publish = "dist"
-  functions = "../netlify/functions" # Points back to the root functions folder
-  
+  # Remove the 'base' line if this is at the root, or keep it but change pathing
+  command = "cd phase3a-portal && npm install --legacy-peer-deps && npm run build:production"
+  publish = "phase3a-portal/dist"
+  functions = "netlify/functions" # Now relative to the root
+
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
