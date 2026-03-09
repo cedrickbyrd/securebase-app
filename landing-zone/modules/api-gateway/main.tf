@@ -800,9 +800,31 @@ resource "aws_api_gateway_deployment" "main" {
     module.cors_auth_login
   ]
 
-  # This forces a new deployment whenever any part of the API changes
+  # Forces a new deployment whenever methods, integrations, or Lambda permissions change
   triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.securebase_api.body))
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_method.auth_post.id,
+      aws_api_gateway_integration.auth_lambda.id,
+      aws_api_gateway_method.health_get.id,
+      aws_api_gateway_integration.health_lambda.id,
+      aws_api_gateway_method.webhooks_get.id,
+      aws_api_gateway_integration.webhooks_get.id,
+      aws_api_gateway_method.webhooks_post.id,
+      aws_api_gateway_integration.webhooks_post.id,
+      aws_api_gateway_method.invoices_get.id,
+      aws_api_gateway_integration.invoices_get.id,
+      aws_api_gateway_method.tickets_get.id,
+      aws_api_gateway_integration.tickets_get.id,
+      aws_api_gateway_method.tickets_post.id,
+      aws_api_gateway_integration.tickets_post.id,
+      aws_api_gateway_method.forecasting_get.id,
+      aws_api_gateway_integration.forecasting_get.id,
+      aws_api_gateway_method.analytics_get.id,
+      aws_api_gateway_integration.analytics_get.id,
+      aws_api_gateway_method.auth_login_post.id,
+      aws_api_gateway_integration.auth_login_post.id,
+      aws_lambda_permission.session_management_api_gateway[*].id,
+    ]))
   }
 
   lifecycle {
@@ -925,67 +947,9 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
 }
 
 
-resource "aws_api_gateway_deployment" "main" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.securebase_api))
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-# ============================================================================
-# Deployment and Stage
-# ============================================================================
-
-# ============================================================================
-# Deployment and Stage
-# ============================================================================
-
-resource "aws_api_gateway_deployment" "main" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-
-  # Triggers redeployment when any resource changes
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.auth,
-      aws_api_gateway_method.auth_post,
-      aws_api_gateway_integration.auth_lambda,
-      # Add other resources/methods here to ensure they trigger updates
-    ]))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_api_gateway_stage" "prod" {
-  deployment_id = aws_api_gateway_deployment.main.id
-  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
-  stage_name    = var.environment
-
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format          = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      caller         = "$context.identity.caller"
-      user           = "$context.identity.user"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
-      responseLength = "$context.responseLength"
-    })
-  }
-}
-
 resource "aws_api_gateway_method_settings" "all" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  stage_name  = aws_api_gateway_stage.prod.stage_name
+  stage_name  = aws_api_gateway_stage.main.stage_name
   method_path = "*/*"
 
   settings {
