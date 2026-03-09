@@ -165,6 +165,24 @@ resource "aws_organizations_account" "clients" {
   tags = merge(var.tags, each.value.tags)
 }
 
+# --- Lambda Functions (Phase 2 Backend) ---
+module "lambda_functions" {
+  source      = "./modules/lambda-functions"
+  environment = var.environment
+  aws_region  = var.target_region
+  tags        = var.tags
+
+  lambda_packages          = var.lambda_packages
+  jwt_secret_arn           = module.phase2_database.jwt_secret_arn
+  dynamodb_table_name      = module.phase2_database.customers_table_name
+  rds_proxy_endpoint       = module.phase2_database.rds_proxy_endpoint
+  private_subnet_ids       = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
+  lambda_security_group_id = module.phase2_database.lambda_security_group_id
+  netlify_api_token        = var.netlify_api_token
+
+  depends_on = [module.phase2_database]
+}
+
 # --- API & Analytics (Phases 3 & 4) ---
 module "api_gateway" {
   source = "./modules/api-gateway"
