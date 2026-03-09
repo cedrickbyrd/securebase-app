@@ -2,6 +2,7 @@
   base = "phase3a-portal"
   command = "npm install --legacy-peer-deps && npm run build:production"
   publish = "dist"
+  functions = "../netlify/functions" # Points back to the root functions folder
   
 [build.environment]
   NODE_VERSION = "20"
