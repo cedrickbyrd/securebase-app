@@ -24,3 +24,13 @@ resource "aws_api_gateway_method" "login_post" {
   http_method   = "POST"
   authorization = "NONE"
 }
+
+# Lambda proxy integration for POST /auth/login
+resource "aws_api_gateway_integration" "login_integration" {
+  rest_api_id             = "9xyetu7zq3"
+  resource_id             = aws_api_gateway_resource.login.id
+  http_method             = aws_api_gateway_method.login_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:731184206915:function:prod-securebase-api/invocations"
+}
