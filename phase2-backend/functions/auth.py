@@ -314,7 +314,10 @@ def success_response(data):
     return {
         'statusCode': 200,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
         },
         'body': json.dumps(data)
     }
@@ -325,7 +328,46 @@ def error_response(message, status_code):
     return {
         'statusCode': status_code,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
         },
         'body': json.dumps({'error': message})
     }
+
+
+def lambda_handler(event, context):
+    """
+    Main Lambda entry point for authentication requests.
+
+    Routes:
+      - OPTIONS *             -> CORS preflight response
+      - POST /auth/login      -> authenticate_user_session (email + MFA)
+      - Any request with Authorization: Bearer -> authenticate_api_key
+    """
+    # Handle CORS preflight
+    if event.get('httpMethod') == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+            },
+            'body': ''
+        }
+
+    path = event.get('path', '')
+    method = event.get('httpMethod', 'POST')
+    auth_header = event.get('headers', {}).get('Authorization', '')
+
+    # POST /auth/login -> session-based login (email + MFA)
+    if method == 'POST' and path in ('/auth/login', '/login'):
+        return authenticate_user_session(event, context)
+
+    # Requests carrying an API key -> validate and exchange for session token
+    if auth_header.startswith('Bearer '):
+        return authenticate_api_key(event, context)
+
+    return error_response('Unsupported request: missing route or Authorization header', 400)
