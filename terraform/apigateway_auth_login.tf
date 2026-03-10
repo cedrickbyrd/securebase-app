@@ -2,6 +2,41 @@
 #
 # Restructures the resource path so the frontend's expected route
 # (/auth/login) matches the actual API Gateway resource hierarchy.
+#
+# Terraform 1.5+ import blocks: bring existing AWS resources under IaC
+# management without recreating them.
+#
+# IDs are in the format <rest_api_id>/<resource_id> (and
+# <rest_api_id>/<resource_id>/<http_method> for methods/integrations),
+# obtained from the AWS Console for REST API 9xyetu7zq3.
+#
+# NOTE: These import blocks are only needed for the initial `terraform apply`
+# that adopts the existing resources into state. Once the apply succeeds,
+# these blocks can be removed from the configuration.
+
+# /auth parent resource (resource ID: sfrsaw)
+import {
+  to = aws_api_gateway_resource.auth
+  id = "9xyetu7zq3/sfrsaw"
+}
+
+# /login child resource (resource ID: ogsr28)
+import {
+  to = aws_api_gateway_resource.login
+  id = "9xyetu7zq3/ogsr28"
+}
+
+# POST method on /login
+import {
+  to = aws_api_gateway_method.login_post
+  id = "9xyetu7zq3/ogsr28/POST"
+}
+
+# Lambda proxy integration for POST /auth/login
+import {
+  to = aws_api_gateway_integration.login_integration
+  id = "9xyetu7zq3/ogsr28/POST"
+}
 
 # /auth parent resource
 resource "aws_api_gateway_resource" "auth" {
