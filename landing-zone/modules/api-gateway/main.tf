@@ -821,8 +821,8 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_integration.forecasting_get.id,
       aws_api_gateway_method.analytics_get.id,
       aws_api_gateway_integration.analytics_get.id,
-      aws_api_gateway_method.auth_login_post.id,
-      aws_api_gateway_integration.auth_login_post.id,
+      aws_api_gateway_method.auth_login_post[*].id,
+      aws_api_gateway_integration.auth_login_post[*].id,
       aws_lambda_permission.session_management_api_gateway[*].id,
     ]))
   }
