@@ -282,6 +282,14 @@ def validate_session_token(token: str) -> Dict:
         raise AuthenticationError("Invalid session token")
 
 
+_CORS_HEADERS = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+}
+
+
 def lambda_handler(event, context) -> Dict:
     """
     Lambda handler for authentication requests.
@@ -295,6 +303,14 @@ def lambda_handler(event, context) -> Dict:
       - 401: {"error": "Invalid credentials", "request_id": "..."}
       - 500: {"error": "Internal server error", "request_id": "..."}
     """
+    # Handle CORS preflight
+    if event.get('httpMethod') == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': _CORS_HEADERS,
+            'body': ''
+        }
+
     request_id = event.get('requestContext', {}).get('requestId', str(uuid.uuid4()))
     
     try:
@@ -304,7 +320,7 @@ def lambda_handler(event, context) -> Dict:
             logger.warning(f"Missing Authorization header [{request_id}]")
             return {
                 'statusCode': 401,
-                'headers': {'Content-Type': 'application/json'},
+                'headers': _CORS_HEADERS,
                 'body': json.dumps({
                     'error': 'Missing or invalid Authorization header',
                     'request_id': request_id
@@ -341,7 +357,7 @@ def lambda_handler(event, context) -> Dict:
             
             return {
                 'statusCode': 200,
-                'headers': {'Content-Type': 'application/json'},
+                'headers': _CORS_HEADERS,
                 'body': json.dumps({
                     'session_token': session_token,
                     'customer_id': auth_result['customer_id'],
@@ -357,7 +373,7 @@ def lambda_handler(event, context) -> Dict:
                 claims = validate_session_token(api_key_or_token)
                 return {
                     'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json'},
+                    'headers': _CORS_HEADERS,
                     'body': json.dumps({
                         'customer_id': claims['sub'],
                         'customer_name': claims['name'],
@@ -372,7 +388,7 @@ def lambda_handler(event, context) -> Dict:
         logger.warning(f"Authentication failed [{request_id}]: {str(e)}")
         return {
             'statusCode': 401,
-            'headers': {'Content-Type': 'application/json'},
+            'headers': _CORS_HEADERS,
             'body': json.dumps({
                 'error': str(e),
                 'request_id': request_id
@@ -383,7 +399,7 @@ def lambda_handler(event, context) -> Dict:
         logger.error(f"Unexpected error [{request_id}]: {str(e)}", exc_info=True)
         return {
             'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
+            'headers': _CORS_HEADERS,
             'body': json.dumps({
                 'error': 'Internal server error',
                 'request_id': request_id
