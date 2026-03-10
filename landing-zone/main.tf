@@ -204,7 +204,33 @@ module "api_gateway" {
   depends_on = [module.lambda_functions]
 }
 
-# [Omitted logic for customer OUs and legacy accounts for brevity, but they should remain in your final file]
+resource "aws_organizations_organizational_unit" "customer_healthcare" {
+  count     = 1
+  name      = "Customers-Healthcare"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "healthcare" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_fintech" {
+  count     = 1
+  name      = "Customers-Fintech"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "fintech" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_govfed" {
+  count     = 1
+  name      = "Customers-GovFederal"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "gov-federal" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_standard" {
+  count     = 1
+  name      = "Customers-Standard"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "standard" })
+}
 
 locals {
   tier_to_ou_id = {
