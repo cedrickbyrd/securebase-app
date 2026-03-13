@@ -28,15 +28,19 @@ Event format (API Gateway):
     }
   }
 
-Response format:
+Response format (API Gateway Proxy Integration):
   {
     "statusCode": 200,
-    "body": {
-      "session_token": "eyJ...",
-      "customer_id": "uuid",
-      "expires_in": 86400
-    }
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "isBase64Encoded": false,
+    "body": "{\"session_token\": \"eyJ...\", \"customer_id\": \"uuid\", \"expires_in\": 86400}"
   }
+
+  NOTE: `body` MUST be a JSON-serialised string (json.dumps), NOT a dict.
+  Returning a raw dict causes a 502 Bad Gateway from API Gateway.
 """
 
 import os
