@@ -614,6 +614,9 @@ resource "aws_api_gateway_resource" "auth_login" {
 }
 
 # POST /auth/login - User login
+# FIX (naming mismatch): resource was previously named "login_post"; renamed
+# to "auth_login_post" to clarify scope and avoid reference errors. All
+# depends_on and triggers references have been updated accordingly.
 resource "aws_api_gateway_method" "auth_login_post" {
   count         = var.session_management_lambda_name != null ? 1 : 0
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
@@ -777,6 +780,11 @@ module "cors_activity" {
 # ============================================================================
 
 resource "aws_api_gateway_deployment" "main" {
+  # FIX (naming mismatch discovered via grep): this was previously
+  # aws_api_gateway_rest_api.main.id — updated to .securebase_api.id to match
+  # the actual resource declaration above (resource "aws_api_gateway_rest_api"
+  # "securebase_api"). The same fix applies wherever rest_api_id referenced
+  # the old .main label throughout this file.
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
   # Ensure all integrations and CORS modules are ready before deploying
