@@ -252,11 +252,37 @@ resource "aws_organizations_organizational_unit" "customer_standard" {
   tags      = merge(var.tags, { Tier = "standard" })
 }
 
+# Sales OU — dedicated to self-service demo environments for the sales team.
+# Accounts placed here receive the golden dataset and demo RBAC roles.
+resource "aws_organizations_organizational_unit" "customer_sales" {
+  count     = 1
+  name      = "Customers-Sales"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "sales", Purpose = "demo" })
+}
+
+# Demo sales account — pre-provisioned for self-serve sales demos.
+# Use scripts/onboard-demo-sales.sh to load golden data and assign roles.
+resource "aws_organizations_account" "demo_sales" {
+  name      = "securebase-demo-sales"
+  email     = "demo.sales@securebase.io"
+  parent_id = aws_organizations_organizational_unit.customer_sales[0].id
+
+  # Shared demo infrastructure — do not delete during Terraform operations.
+  lifecycle { prevent_destroy = true }
+
+  tags = merge(var.tags, {
+    Tier    = "sales"
+    Purpose = "demo"
+  })
+}
+
 locals {
   tier_to_ou_id = {
     healthcare   = try(aws_organizations_organizational_unit.customer_healthcare[0].id, null)
     fintech      = try(aws_organizations_organizational_unit.customer_fintech[0].id, null)
     gov-federal  = try(aws_organizations_organizational_unit.customer_govfed[0].id, null)
     standard     = try(aws_organizations_organizational_unit.customer_standard[0].id, null)
+    sales        = try(aws_organizations_organizational_unit.customer_sales[0].id, null)
   }
 }
