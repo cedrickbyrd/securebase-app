@@ -34,6 +34,12 @@ resource "aws_organizations_organizational_unit" "workloads" {
   name      = "Workloads"
   parent_id = var.org_root_id
 }
+
+# Sales OU — dedicated to internal demo environments for the sales team
+resource "aws_organizations_organizational_unit" "sales" {
+  name      = "Sales"
+  parent_id = var.org_root_id
+}
 # SCP: Deny actions that bypass security or use the Root User
 resource "aws_organizations_policy" "security_guardrails" {
   name        = "SecurityGuardrails"
