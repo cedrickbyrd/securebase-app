@@ -866,13 +866,13 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.auth_login_post[*].id,
       aws_api_gateway_integration.auth_login_post[*].id,
       aws_lambda_permission.session_management_api_gateway[*].id
-    ]))
-  }
+    ])) # <--- LIST, JSONENCODE, and SHA1 all closed here
+  } # <--- This closes the 'triggers' block
 
   lifecycle {
     create_before_destroy = true
   }
-}
+} # <--- This closes the 'resource' block
 
 resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
