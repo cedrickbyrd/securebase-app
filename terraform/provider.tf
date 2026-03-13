@@ -42,3 +42,25 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "auth_lambda_arn" {
+  description = "ARN of the authentication Lambda function"
+  type        = string
+}
+
+variable "auth_lambda_name" {
+  description = "Name of the authentication Lambda function"
+  type        = string
+}
+
+variable "rest_api_id" {
+  description = "ID of the existing API Gateway REST API (from landing-zone workspace output)"
+  type        = string
+  default     = "9xyetu7zq3"
+}
+
+variable "auth_parent_resource_id" {
+  description = "Resource ID of the existing /auth API Gateway resource"
+  type        = string
+  default     = "7q9sggej19"
+}
