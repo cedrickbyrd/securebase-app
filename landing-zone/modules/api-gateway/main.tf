@@ -812,39 +812,11 @@ resource "aws_api_gateway_model" "login_model" {
 # ============================================================================
 
 resource "aws_api_gateway_deployment" "main" {
-  # FIX (naming mismatch discovered via grep): this was previously
-  # aws_api_gateway_rest_api.main.id — updated to .securebase_api.id to match
-  # the actual resource declaration above (resource "aws_api_gateway_rest_api"
-  # "securebase_api"). The same fix applies wherever rest_api_id referenced
-  # the old .main label throughout this file.
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
-  # Ensure all integrations and CORS modules are ready before deploying
-  depends_on = [
-    aws_api_gateway_integration.auth_lambda,
-    aws_api_gateway_integration.health_lambda,
-    aws_api_gateway_integration.webhooks_get,
-    aws_api_gateway_integration.webhooks_post,
-    aws_api_gateway_integration.invoices_get,
-    aws_api_gateway_integration.tickets_get,
-    aws_api_gateway_integration.tickets_post,
-    aws_api_gateway_integration.forecasting_get,
-    aws_api_gateway_integration.analytics_get,
-    aws_api_gateway_integration.auth_login_post,
-    aws_api_gateway_integration.auth_mfa_post,
-    aws_api_gateway_integration.users_post,
-    module.cors_auth,
-    module.cors_webhooks,
-    module.cors_invoices,
-    module.cors_tickets,
-    module.cors_forecasting,
-    module.cors_auth_login
-  ]
-
-  # Forces a new deployment whenever methods, integrations, or Lambda permissions change
   triggers = {
+    # This combines your redeployment logic and the trigger comment
     redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.auth.id,
       aws_api_gateway_method.auth_post.id,
       aws_api_gateway_integration.auth_lambda.id,
       aws_api_gateway_method.health_get.id,
@@ -866,13 +838,20 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.auth_login_post[*].id,
       aws_api_gateway_integration.auth_login_post[*].id,
       aws_lambda_permission.session_management_api_gateway[*].id
-    ])) # <--- LIST, JSONENCODE, and SHA1 all closed here
-  } # <--- This closes the 'triggers' block
+    ]))
+  }
 
   lifecycle {
     create_before_destroy = true
   }
-} # <--- This closes the 'resource' block
+
+  # auth_login_post resources use count and must be explicitly listed to ensure
+  # correct ordering when they are conditionally created
+  depends_on = [
+    aws_api_gateway_method.auth_login_post,
+    aws_api_gateway_integration.auth_login_post
+  ]
+}
 
 resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
