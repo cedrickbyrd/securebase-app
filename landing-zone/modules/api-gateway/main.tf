@@ -819,7 +819,6 @@ resource "aws_api_gateway_deployment" "main" {
   # the old .main label throughout this file.
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
-<<<<<<< Updated upstream
   # Ensure all integrations and CORS modules are ready before deploying
   depends_on = [
     aws_api_gateway_integration.auth_lambda,
@@ -864,28 +863,13 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_integration.analytics_get.id,
       aws_api_gateway_method.auth_login_post[*].id,
       aws_api_gateway_integration.auth_login_post[*].id,
-      aws_lambda_permission.session_management_api_gateway[*].id,
-=======
-  # This trigger ensures Terraform redeploys the stage when logic changes
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.auth.id,
-      aws_api_gateway_method.auth_post.id,
-      aws_api_gateway_integration.auth_lambda.id,
-      # Add other resource IDs here as you expand
->>>>>>> Stashed changes
+      aws_lambda_permission.session_management_api_gateway[*].id
     ]))
   }
 
   lifecycle {
     create_before_destroy = true
   }
-
-  depends_on = [
-    aws_api_gateway_integration.auth_login_post,
-    aws_api_gateway_integration.analytics_get,
-    aws_api_gateway_integration.users_post
-  ]
 }
 
 resource "aws_api_gateway_stage" "main" {
