@@ -1,4 +1,347 @@
-# SecureBase Demo - Quick Reference for Sales Team
+# SecureBase Demo — Golden Sales Path Guide
+
+> **Last Updated:** March 2026 | **Status:** ✅ Live | **Version:** 2.0
+
+This guide covers both the **always-on shared demo** (no setup needed) and the
+**Golden Sales Path** — a self-service workflow that provisions a fully
+interactive, data-rich demo environment in minutes.
+
+---
+
+## Quick Reference
+
+| Path | Setup Time | Best For |
+|------|-----------|----------|
+| [Shared Demo URL](#shared-demo-link) | 0 min | Early-stage exploration, email campaigns |
+| [Golden Sales Path](#golden-sales-path-self-serve) | ~5 min | Live calls, evaluations, custom walkthroughs |
+
+---
+
+## Shared Demo Link
+
+**Live Demo:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+
+*(Bookmark this link!)*
+
+### What's Inside
+
+- ✅ Auto-login (no credentials needed)
+- ✅ Real portal UI
+- ✅ 5 sample customers across all tiers
+- ✅ $363K+ in sample invoices
+- ✅ Compliance dashboards
+- ✅ Read-only (safe for prospects to click around)
+
+### When to Use
+
+**✅ Perfect for:**
+- **"Can I see it first?" requests** — share the link immediately
+- **Early-stage leads** — let them explore before booking a call
+- **Technical evaluators** — hands-on experience without setup
+- **Conference booth visitors** — QR code to demo
+- **Email campaigns** — include as "Try Demo" CTA
+
+**❌ Not ideal for:**
+- Live sales calls that need real-time interaction
+- Enterprise deals needing a tailored walkthrough
+- Post-trial support conversations
+
+---
+
+## Golden Sales Path (Self-Serve)
+
+The Golden Sales Path gives a sales rep a **fully provisioned, interactive
+demo environment** — complete with a pre-loaded dataset, assigned RBAC roles,
+and demo API keys — without requiring engineering support.
+
+### Infrastructure Overview
+
+```
+AWS Organization (management account)
+└── Customers-Sales OU            ← dedicated to demo environments
+    └── securebase-demo-sales     ← shared demo AWS account
+        ├── Golden dataset        ← loaded by onboard-demo-sales.sh
+        ├── SalesManagerDemo      ← IAM Identity Center permission set
+        └── SalesRepDemo          ← IAM Identity Center permission set
+```
+
+The Terraform resources for this infrastructure live in:
+- `landing-zone/main.tf` — `aws_organizations_organizational_unit.customer_sales`
+  and `aws_organizations_account.demo_sales`
+- `landing-zone/modules/org/main.tf` — `aws_organizations_organizational_unit.sales`
+
+---
+
+### Prerequisites (One-Time Setup)
+
+Perform these steps once. After that, any rep can self-serve.
+
+1. **Apply Terraform** (run as platform engineer from the env directory):
+
+   ```bash
+   cd landing-zone/environments/dev
+   terraform init
+   terraform apply
+   ```
+
+   This creates:
+   - The `Customers-Sales` OU under your AWS Organization root
+   - The `securebase-demo-sales` AWS account (`demo.sales@securebase.io`)
+
+2. **Enable IAM Identity Center** in the AWS Console (if not already active).
+
+3. **Add sales reps** as users in IAM Identity Center so they can be assigned
+   to the demo account.
+
+---
+
+### Step-by-Step: Provision a New Demo Session
+
+Run the onboarding script from the repository root:
+
+```bash
+./scripts/onboard-demo-sales.sh \
+  --rep-name  "Jane Smith" \
+  --rep-email jane@acme.com \
+  --demo-tag  jane-acme-$(date +%Y%m%d)
+```
+
+**What the script does automatically:**
+
+| Step | Action |
+|------|--------|
+| 1 | Verifies AWS credentials and locates the Sales OU + demo account |
+| 2 | Generates and applies the golden dataset SQL (5 customers, invoices, metrics, API keys) |
+| 3 | Creates `SalesManagerDemo` / `SalesRepDemo` permission sets if they don't exist |
+| 4 | Assigns the rep's IAM Identity Center user to the demo account |
+| 5 | Prints a full summary (portal URL, credentials, teardown instructions) |
+
+**Dry run (shows all steps without making any changes):**
+
+```bash
+./scripts/onboard-demo-sales.sh --rep-name "Jane Smith" --rep-email jane@acme.com --dry-run
+```
+
+---
+
+### Golden Dataset — What's Loaded
+
+#### Sample Customers (5)
+
+| Name | Tier | Framework | Monthly Spend |
+|------|------|-----------|--------------|
+| HealthCorp Medical Systems | Healthcare | HIPAA | $15,000 |
+| FinTechAI Analytics | Fintech | SOC 2 | $8,000 |
+| GovContractor Defense Solutions | Gov-Federal | FedRAMP | $25,000 |
+| StartupMVP Inc | Standard | CIS | $2,000 |
+| SaaSPlatform Cloud Services | Fintech | SOC 2 | $8,000 |
+
+**Total demo revenue: ~$58K/month**
+
+#### Pre-Loaded Items
+
+- 5 invoices (one per customer, prior month, status: paid)
+- 5 usage-metric rows (current month)
+- 3 demo API keys (HealthCorp, FinTech, GovContractor)
+
+All rows are tagged `DemoTag: <session-tag>` so teardown is scoped and safe.
+
+---
+
+### RBAC Roles
+
+| Role | Permission Set | Session Duration | Access |
+|------|---------------|-----------------|--------|
+| Sales Manager | `SalesManagerDemo` | 8 hours | Full read across all demo customers |
+| Sales Rep | `SalesRepDemo` | 4 hours | Standard read (invoices, metrics) |
+
+Both roles are **read-only** — prospects and reps cannot modify data.
+
+---
+
+### Teardown (Clean Up After a Demo)
+
+Run teardown with the same demo tag you used at creation:
+
+```bash
+./scripts/onboard-demo-sales.sh \
+  --teardown \
+  --demo-tag  jane-acme-20260313 \
+  --rep-email jane@acme.com
+```
+
+The script:
+1. Deletes all database rows tagged with that demo tag
+2. Removes the rep's IAM Identity Center assignment from the demo account
+
+The `Customers-Sales` OU and `securebase-demo-sales` account are **not
+deleted** — they are shared infrastructure. Only per-session data is removed.
+
+---
+
+### Manual Teardown (if script is unavailable)
+
+Connect to the Aurora cluster and run:
+
+```sql
+DELETE FROM usage_metrics WHERE customer_id IN
+  (SELECT id FROM customers WHERE tags->>'DemoTag' = 'jane-acme-20260313');
+DELETE FROM api_keys  WHERE tags->>'DemoTag' = 'jane-acme-20260313';
+DELETE FROM invoices  WHERE tags->>'DemoTag' = 'jane-acme-20260313';
+DELETE FROM customers WHERE tags->>'DemoTag' = 'jane-acme-20260313';
+```
+
+Then remove the IAM Identity Center account assignment via the AWS Console.
+
+---
+
+## Email Templates
+
+### Quick Share (Copy-Paste)
+
+```
+🖥️ Try SecureBase Demo (no signup required):
+http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
+
+• Pre-populated with 5 sample customers
+• Full portal functionality (read-only)
+• Explore at your own pace
+
+Ready to deploy your own? Start free trial: https://securebase.io/signup
+```
+
+### Invite to Live Demo Session
+
+```
+Subject: Personalized SecureBase Demo — Ready for You
+
+Hi [Name],
+
+I've set up a live demo environment tailored for your evaluation.
+
+🎯 Portal: https://portal-demo.securebase.io
+📧 Login:  [their email]
+
+What's inside:
+✓ 5 sample customers across Healthcare, Fintech, and Government tiers
+✓ Real-time dashboard with cost and compliance metrics
+✓ Invoice management, API key rotation, and audit trail
+✓ Your account is already provisioned — no setup needed
+
+The environment is yours for the next [X] hours.
+
+Questions? Reply here or book a call: [Calendly link]
+
+[Your name]
+```
+
+### Follow-Up After Demo
+
+```
+Hi [Name],
+
+I saw you explored the demo — what did you think?
+
+A few things I'd love to know:
+1. Which features stood out most?
+2. Questions about how it maps to [their use case]?
+3. Ready for a free trial with your own AWS account?
+
+Happy to hop on a call: [Calendly link]
+
+[Your name]
+```
+
+---
+
+## Demo Talking Points
+
+**Opening:**
+> "I've pre-loaded a live environment with five sample customers — healthcare,
+> fintech, government, and standard. Everything you see is real data flowing
+> through the actual portal. Let me walk you through it."
+
+**On the read-only limitation:**
+> "Today's session is scoped to read access — you can explore every screen
+> without worrying about changing anything. When you're ready to go hands-on
+> with your own infrastructure, the free trial gives you full control."
+
+**Transitioning to trial:**
+> "The demo shows you the portal. The free trial deploys SecureBase into your
+> own AWS account in under ten minutes — so you see your organization, your
+> accounts, your compliance posture."
+
+---
+
+## Conversion Playbook
+
+| Stage | Action |
+|-------|--------|
+| Before demo | Send shared demo link in email / LinkedIn |
+| During call | Use Golden Sales Path for interactive walkthrough |
+| After 24 h | Send follow-up email (template above) |
+| 3-day follow-up | Offer free trial link |
+| 7-day follow-up | Share relevant case study or pricing |
+
+**Target:** 30–50% of demo visitors should book a call or start a trial.
+
+---
+
+## Portal Pages Available in the Demo
+
+| Page | Contents |
+|------|----------|
+| ✅ Dashboard | Metrics cards, cost trend, compliance score |
+| ✅ Invoices | 30+ sample invoices with PDF download CTA |
+| ✅ Cost Forecasting | 12-month projection, tier breakdown |
+| ✅ API Keys | 3 sample keys with rotation controls |
+| ✅ Compliance | 4 frameworks (HIPAA, SOC 2, FedRAMP, CIS) |
+| ✅ Webhooks | 3 configured endpoints |
+| ✅ Support Tickets | 3 sample tickets |
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Script reports "Sales OU not found" | Run `terraform apply` from `landing-zone/environments/dev/` first |
+| Script reports "Demo account not found" | Same as above — Terraform provisions the account |
+| Golden dataset not loading | Set `DB_CONNECTION_STRING` env var or apply the SQL manually |
+| IAM Identity Center user not found | Add the user in the IAM Identity Center console, then re-run |
+| Demo not loading in browser | Prospect may be on a VPN that blocks S3; try the portal URL instead |
+
+---
+
+## TODO (Future Enhancements)
+
+- [ ] **One-click web UI** — a simple form on `https://demo.securebase.io/new`
+  where a sales rep enters their name and email, clicks "Create Demo", and
+  receives a portal link — no CLI required.
+  *(Planned in Phase 6; tracked in [issue tracker])*
+- [ ] Slack bot integration — `/securebase-demo @jane` provisions a session
+  and posts the portal URL in-channel.
+- [ ] Automatic session expiry (TTL-based teardown via EventBridge cron).
+
+---
+
+## Resources
+
+| Resource | Link |
+|----------|------|
+| Onboarding script | `scripts/onboard-demo-sales.sh` |
+| Terraform Sales OU | `landing-zone/main.tf` (aws_organizations_organizational_unit.customer_sales) |
+| Demo backend module | `landing-zone/modules/demo-backend/` |
+| Portal source | `phase3a-portal/` |
+| Pricing sheet | `PRICING.md` |
+| FAQ | `FAQ.md` |
+| Platform docs | `docs/PAAS_ARCHITECTURE.md` |
+
+**Contacts:**
+- Demo technical issues: dev-team@securebase.io
+- Sales questions: sales@securebase.io
+- Slack: #sales-enablement
+
 
 ## 🎯 Demo URL
 
