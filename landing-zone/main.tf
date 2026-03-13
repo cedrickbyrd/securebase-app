@@ -204,30 +204,50 @@ module "api_gateway" {
   depends_on = [module.lambda_functions]
 }
 
+# ============================================================================
+# Organizational Units (Tier OUs)
+# FIX: These blocks were missing from main.tf after a failed merge. They were
+# restored by cross-referencing the terraform.tfstate backup file, where each
+# OU already existed. The parent_id references aws_organizations_organization
+# "this" (the resource name used in THIS root module — not "main", which is
+# only the label inside modules/org/main.tf).
+#
+# ⚠️  IMPORTANT — IMPORT BEFORE APPLY:
+#   Because these OUs already exist in AWS, Terraform will attempt to CREATE
+#   new OUs (causing duplication or an error) if you do not import them first.
+#   Run the following terraform import commands using the OU IDs from your
+#   state backup / AWS console before running terraform plan/apply:
+#
+#     terraform import 'aws_organizations_organizational_unit.customer_healthcare[0]' <OU_ID_healthcare>
+#     terraform import 'aws_organizations_organizational_unit.customer_fintech[0]'    <OU_ID_fintech>
+#     terraform import 'aws_organizations_organizational_unit.customer_govfed[0]'     <OU_ID_govfed>
+#     terraform import 'aws_organizations_organizational_unit.customer_standard[0]'   <OU_ID_standard>
+# ============================================================================
+
 resource "aws_organizations_organizational_unit" "customer_healthcare" {
   count     = 1
-  name      = "Customers-Healthcare"
+  name      = "Healthcare"
   parent_id = aws_organizations_organization.this.roots[0].id
   tags      = merge(var.tags, { Tier = "healthcare" })
 }
 
 resource "aws_organizations_organizational_unit" "customer_fintech" {
   count     = 1
-  name      = "Customers-Fintech"
+  name      = "Fintech"
   parent_id = aws_organizations_organization.this.roots[0].id
   tags      = merge(var.tags, { Tier = "fintech" })
 }
 
 resource "aws_organizations_organizational_unit" "customer_govfed" {
   count     = 1
-  name      = "Customers-GovFederal"
+  name      = "GovFederal"
   parent_id = aws_organizations_organization.this.roots[0].id
   tags      = merge(var.tags, { Tier = "gov-federal" })
 }
 
 resource "aws_organizations_organizational_unit" "customer_standard" {
   count     = 1
-  name      = "Customers-Standard"
+  name      = "Standard"
   parent_id = aws_organizations_organization.this.roots[0].id
   tags      = merge(var.tags, { Tier = "standard" })
 }
