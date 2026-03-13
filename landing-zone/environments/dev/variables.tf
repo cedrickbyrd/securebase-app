@@ -54,9 +54,9 @@ variable "clients" {
   validation {
     condition = alltrue([
       for client_key, client_config in var.clients :
-      contains(["standard", "healthcare", "fintech", "gov-federal"], client_config.tier)
+      contains(["standard", "healthcare", "fintech", "gov-federal", "sales"], client_config.tier)
     ])
-    error_message = "All client tiers must be one of: standard, healthcare, fintech, gov-federal"
+    error_message = "All client tiers must be one of: standard, healthcare, fintech, gov-federal, sales"
   }
 
   validation {

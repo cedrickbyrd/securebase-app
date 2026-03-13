@@ -1,6 +1,7 @@
 output "workloads_ou_id" { value = aws_organizations_organizational_unit.workloads.id }
 output "shared_ou_id"    { value = aws_organizations_organizational_unit.shared.id }
 output "security_ou_id"  { value = aws_organizations_organizational_unit.security.id }
+output "sales_ou_id"     { value = aws_organizations_organizational_unit.sales.id }
 output "guardrails_policy_id" {
   value = aws_organizations_policy.security_guardrails.id
 }
