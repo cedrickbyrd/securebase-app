@@ -810,7 +810,6 @@ resource "aws_api_gateway_model" "login_model" {
 # ============================================================================
 # Deployment and Stage (Consolidated)
 # ============================================================================
-
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
