@@ -808,8 +808,9 @@ resource "aws_api_gateway_model" "login_model" {
 }
 
 # ============================================================================
-# Deployment and Stage (Consolidated)
+# Deployment and Stage 
 # ============================================================================
+
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
@@ -817,53 +818,71 @@ resource "aws_api_gateway_deployment" "main" {
     redeployment = sha1(jsonencode([
       aws_api_gateway_method.auth_post.id,
       aws_api_gateway_integration.auth_lambda.id,
-      aws_api_gateway_method.health_get.id,
-      aws_api_gateway_integration.health_lambda.id,
-      aws_api_gateway_method.webhooks_get.id,
-      aws_api_gateway_integration.webhooks_get.id,
-      aws_api_gateway_method.webhooks_post.id,
-      aws_api_gateway_integration.webhooks_post.id,
-      aws_api_gateway_method.invoices_get.id,
-      aws_api_gateway_integration.invoices_get.id,
-      aws_api_gateway_method.tickets_get.id,
-      aws_api_gateway_integration.tickets_get.id,
-      aws_api_gateway_method.tickets_post.id,
-      aws_api_gateway_integration.tickets_post.id,
-      aws_api_gateway_method.forecasting_get.id,
-      aws_api_gateway_integration.forecasting_get.id,
-      aws_api_gateway_method.analytics_get.id,
-      aws_api_gateway_integration.analytics_get.id,
-      aws_api_gateway_method.auth_login_post[*].id,
-      aws_api_gateway_integration.auth_login_post[*].id,
-      aws_lambda_permission.session_management_api_gateway[*].id
+      aws_api_gateway_method.auth_login_post[0].id,
+      aws_api_gateway_integration.auth_login_post[0].id,
+      aws_lambda_permission.session_management_api_gateway[0].id,
+      # Add any other methods/integrations here to trigger a fresh deploy on change
     ]))
   }
 
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    aws_api_gateway_integration.auth_login_post,
+    aws_api_gateway_integration.auth_lambda
+  ]
 }
 
-resource "aws_api_gateway_stage" "main" {
+resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   stage_name    = var.environment
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format          = "$context.identity.sourceIp $context.authorizer.principalId $context.httpMethod $context.resourcePath $context.status $context.protocol $context.responseLength $context.requestId"
+    format          = jsonencode({
+      requestId = "$context.requestId",
+      ip        = "$context.identity.sourceIp",
+      caller    = "$context.identity.caller",
+      user      = "$context.identity.user",
+      requestTime = "$context.requestTime",
+      httpMethod = "$context.httpMethod",
+      resourcePath = "$context.resourcePath",
+      status = "$context.status",
+      protocol = "$context.protocol",
+      responseLength = "$context.responseLength"
+    })
   }
 }
 
+# ============================================================================
+# Request Validation
+# ============================================================================
 
-
-
-
-# Output the Invoke URL for the frontend
-output "base_url" {
-  value = "${aws_api_gateway_stage.main.invoke_url}"
+resource "aws_api_gateway_request_validator" "full_validator" {
+  name                        = "full-validator"
+  rest_api_id                 = aws_api_gateway_rest_api.securebase_api.id
+  validate_request_body       = true
+  validate_request_parameters = true
 }
 
+resource "aws_api_gateway_model" "login_model" {
+  rest_api_id  = aws_api_gateway_rest_api.securebase_api.id
+  name         = "LoginModel"
+  description  = "Login request schema"
+  content_type = "application/json"
+
+  schema = jsonencode({
+    type = "object"
+    required = ["email", "password"]
+    properties = {
+      email    = { type = "string" }
+      password = { type = "string" }
+    }
+  })
+}
 # ============================================================================
 # API Gateway Response Headers (Security)
 # ============================================================================
@@ -950,12 +969,6 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
 
   tags = var.tags
 }
-
-
-
-# ============================================================================
-# Deployment and Stage
-# ============================================================================
 
 resource "aws_api_gateway_method_settings" "all" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
