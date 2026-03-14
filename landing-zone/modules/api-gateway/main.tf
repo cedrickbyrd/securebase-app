@@ -815,7 +815,6 @@ resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
   triggers = {
-    # This combines your redeployment logic and the trigger comment
     redeployment = sha1(jsonencode([
       aws_api_gateway_method.auth_post.id,
       aws_api_gateway_integration.auth_lambda.id,
@@ -844,13 +843,6 @@ resource "aws_api_gateway_deployment" "main" {
   lifecycle {
     create_before_destroy = true
   }
-
-  # auth_login_post resources use count and must be explicitly listed to ensure
-  # correct ordering when they are conditionally created
-  depends_on = [
-    aws_api_gateway_method.auth_login_post,
-    aws_api_gateway_integration.auth_login_post
-  ]
 }
 
 resource "aws_api_gateway_stage" "main" {
