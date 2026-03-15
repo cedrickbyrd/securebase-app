@@ -1,0 +1,180 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'landing-zone/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'landing-zone/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+env:
+  TF_WORKING_DIR: landing-zone/environments/dev
+  TF_VERSION: "1.7.5"
+
+jobs:
+  # ── 1. Auto-scaffold ─────────────────────────────────────────────────────────
+  scaffold:
+    name: Auto-scaffold resources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect and scaffold new modules
+        run: |
+          # Add any scaffold scripts here — e.g. a python/bash script that
+          # reads a manifest or PR body and appends resource/variable/output
+          # blocks to the appropriate .tf files before plan runs.
+          echo "Scaffold step — add your generator script here"
+
+      - name: Commit scaffolded files (if any)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet && echo "No changes to commit" || \
+            (git add . && git commit -m "chore: scaffold terraform resources [skip ci]" && git push)
+
+  # ── 2. Frontend dependency drift check ───────────────────────────────────────
+  frontend-dependency-check:
+    name: Frontend Dependency Drift Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase3a-portal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check react-chartjs-2 dependency
+        run: |
+          echo "## react-chartjs-2 dependency tree" >> $GITHUB_STEP_SUMMARY
+          RESULT=$(npm ls react-chartjs-2 2>&1)
+          echo "$RESULT" | tee -a $GITHUB_STEP_SUMMARY
+          if echo "$RESULT" | grep -q "UNMET DEPENDENCY\|react-chartjs-2 \.\.\. MISSING"; then
+            echo "::error::react-chartjs-2 dependency drift detected. Run 'npm install' to resolve."
+            exit 1
+          fi
+          echo "react-chartjs-2 dependency is satisfied."
+
+  # ── 3. Init, Validate, Plan ───────────────────────────────────────────────────
+  plan:
+    name: Init → Validate → Plan
+    runs-on: ubuntu-latest
+    needs: [scaffold, frontend-dependency-check]
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -reconfigure
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        env:
+          TF_VAR_netlify_api_token: ${{ secrets.NETLIFY_API_TOKEN }}
+          TF_VAR_stripe_public_key: ${{ secrets.STRIPE_PUBLIC_KEY }}
+        run: |
+          terraform plan \
+            -out=tfplan.binary 2>&1 | tee plan.txt
+          terraform show -no-color tfplan.binary >> plan.txt
+          sha256sum tfplan.binary > tfplan.sha256
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.run_id }}
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan.binary
+            ${{ env.TF_WORKING_DIR }}/plan.txt
+            ${{ env.TF_WORKING_DIR }}/tfplan.sha256
+          retention-days: 7
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan.txt', 'utf8');
+            const truncated = plan.length > 60000 ? plan.slice(0, 60000) + '\n...(truncated)' : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan\n\`\`\`hcl\n${truncated}\n\`\`\``
+            });
+
+  # ── 4. Apply (manual approval gate) ──────────────────────────────────────────
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production   # configure required reviewers in GitHub Settings → Environments
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.run_id }}
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform init
+        run: terraform init -reconfigure
+
+      - name: Verify plan artifact integrity
+        run: sha256sum -c tfplan.sha256
+
+      - name: Terraform apply
+        run: terraform apply tfplan.binary
