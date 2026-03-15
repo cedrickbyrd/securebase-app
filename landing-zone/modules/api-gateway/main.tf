@@ -858,32 +858,6 @@ resource "aws_api_gateway_stage" "prod" {
 }
 
 # ============================================================================
-# Request Validation
-# ============================================================================
-
-resource "aws_api_gateway_request_validator" "full_validator" {
-  name                        = "full-validator"
-  rest_api_id                 = aws_api_gateway_rest_api.securebase_api.id
-  validate_request_body       = true
-  validate_request_parameters = true
-}
-
-resource "aws_api_gateway_model" "login_model" {
-  rest_api_id  = aws_api_gateway_rest_api.securebase_api.id
-  name         = "LoginModel"
-  description  = "Login request schema"
-  content_type = "application/json"
-
-  schema = jsonencode({
-    type = "object"
-    required = ["email", "password"]
-    properties = {
-      email    = { type = "string" }
-      password = { type = "string" }
-    }
-  })
-}
-# ============================================================================
 # API Gateway Response Headers (Security)
 # ============================================================================
 
