@@ -16,6 +16,7 @@ terraform {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 data "aws_availability_zones" "available" { state = "available" }
+data "aws_ssoadmin_instances" "this" {}
 
 # --- Lambda Archives (Existing) ---
 data "archive_file" "checkout_lambda_zip" {
@@ -57,8 +58,9 @@ module "central_logging" {
 }
 
 module "identity" {
-  source                = "./modules/iam"
-  management_account_id = data.aws_caller_identity.current.account_id
+  source           = "./modules/identity"
+  sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  tags             = var.tags
 }
 
 # --- Phase 5: Observability Sensors (New) ---
