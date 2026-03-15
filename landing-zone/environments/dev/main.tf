@@ -23,6 +23,7 @@ module "securebase" {
   clients         = var.clients
   tags            = var.tags
   stripe_public_key    = var.stripe_public_key
+  stripe_secret_key    = var.stripe_secret_key
   netlify_api_token    = var.netlify_token
   lambda_packages      = var.lambda_packages
   default_vpc_id       = var.default_vpc_id
@@ -52,6 +53,11 @@ module "netlify_sites" {
   marketing_domain   = "securebase.io"
   portal_demo_domain = "portal-demo.securebase.io"
   tags               = var.tags
+}
+module "identity" {
+  source           = "../../modules/identity"
+  sso_instance_arn = var.sso_instance_arn
+  # ... other vars
 }
 
 terraform {

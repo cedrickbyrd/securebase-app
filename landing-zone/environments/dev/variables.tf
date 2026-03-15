@@ -144,3 +144,7 @@ variable "enable_vpc" {
   description = "Enable per-customer VPC creation"
   default     = false
 }
+variable "stripe_secret_key" {
+  type      = string
+  sensitive = true
+}
