@@ -19,6 +19,21 @@ variable "tags" {
   }
 }
 
+variable "accounts" {
+  type        = map(object({
+    email = string
+    ou_id = string
+  }))
+  description = "Map of AWS accounts for the organization"
+  default     = {}
+}
+
+variable "allowed_regions" {
+  type        = list(string)
+  description = "List of regions permitted for deployment"
+  default     = ["us-east-1"]
+}
+
 # --- Multi-Tenant & Phase 2/3 Core ---
 variable "clients" {
   type    = map(any)
