@@ -87,6 +87,7 @@ variable "stripe_public_key" {
   description = "The public key for Stripe integration"
   type        = string
 }
+
 variable "lambda_packages" {
   type = map(string)
 }
@@ -96,4 +97,50 @@ variable "netlify_api_token" {
   sensitive = true
 }
 
+variable "default_vpc_id" {
+  type        = string
+  description = "The ID of the default VPC for existing resources"
+  default     = null
+}
 
+variable "lambda_subnets" {
+  type        = list(string)
+  description = "Subnets used for Lambda execution"
+  default     = null
+}
+
+variable "database_subnets" {
+  type        = list(string)
+  description = "Subnets used for database resources"
+  default     = null
+}
+
+variable "max_aurora_capacity" {
+  type        = number
+  description = "Maximum Aurora Serverless v2 capacity units"
+  default     = 4
+}
+
+variable "min_aurora_capacity" {
+  type        = number
+  description = "Minimum Aurora Serverless v2 capacity units"
+  default     = 0.5
+}
+
+variable "rds_backup_retention" {
+  type        = number
+  description = "Number of days to retain RDS backups"
+  default     = 35
+}
+
+variable "enable_phase2" {
+  type        = bool
+  description = "Enable Phase 2 database and Lambda infrastructure"
+  default     = false
+}
+
+variable "enable_vpc" {
+  type        = bool
+  description = "Enable per-customer VPC creation"
+  default     = false
+}
