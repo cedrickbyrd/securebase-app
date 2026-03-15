@@ -8,6 +8,25 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
 
+[[redirects]] 
+  from = "/api/login"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
+  status = 200
+  force = true
+
+[[redirects]]
+  # Phase 5 Checkout API
+  from = "/api/checkout"
+  to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+  status = 200
+  force = true
+
+[[redirects]]
+  # SPA Fallback for React
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "https://nwiy9yvr8d.execute-api.us-east-2.amazonaws.com/prod/:splat"
