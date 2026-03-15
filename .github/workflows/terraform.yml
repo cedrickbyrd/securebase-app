@@ -106,8 +106,8 @@ jobs:
       - name: Terraform plan
         id: plan
         env:
-          TF_VAR_netlify_api_token: ${{ secrets.NETLIFY_API_TOKEN }}
-          TF_VAR_stripe_public_key: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          TF_VAR_netlify_api_token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          TF_VAR_stripe_public_key: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
         run: |
           terraform plan \
             -out=tfplan.binary 2>&1 | tee plan.txt
