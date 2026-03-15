@@ -80,3 +80,7 @@ variable "enable_observability" {
   type    = bool
   default = true
 }
+
+variable "accounts" {}
+variable "allowed_regions" {}
+variable "sso_instance_arn" {}
