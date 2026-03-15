@@ -84,8 +84,9 @@ variable "netlify_token" {
 }
 
 variable "stripe_public_key" {
-  description = "The public key for Stripe integration"
+  description = "The Stripe publishable key for frontend integration. Marked sensitive to prevent exposure in Terraform state and plan output."
   type        = string
+  sensitive   = true
 }
 
 variable "lambda_packages" {
