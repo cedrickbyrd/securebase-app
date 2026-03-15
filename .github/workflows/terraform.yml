@@ -95,7 +95,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1 # Hardcoded for CI consistency and clarity during onboarding
 
       - name: Terraform init
         run: terraform init -reconfigure
@@ -162,7 +162,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1 # Hardcoded for CI consistency and clarity during onboarding
 
       - name: Download plan artifact
         uses: actions/download-artifact@v4
