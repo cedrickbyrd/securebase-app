@@ -1,0 +1,402 @@
+/**
+ * SignupForm Styles – SecureBase multi-step signup
+ */
+
+/* ── Page layout ─────────────────────────────── */
+.signup-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1f36 0%, #2d3561 100%);
+  padding: 2rem 1rem;
+}
+
+.signup-container {
+  width: 100%;
+  max-width: 640px;
+}
+
+/* ── Branding header ─────────────────────────── */
+.signup-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.signup-logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.signup-tagline {
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+/* ── Card ────────────────────────────────────── */
+.signup-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  padding: 2.5rem;
+  animation: fadeUp 0.35s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Step indicator ──────────────────────────── */
+.signup-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 0;
+}
+
+.signup-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 70px;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.signup-step.active .step-circle {
+  border-color: #4f46e5;
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.signup-step.completed .step-circle {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: #fff;
+}
+
+.step-check { font-size: 1rem; }
+
+.step-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.signup-step.active .step-label,
+.signup-step.completed .step-label {
+  color: #4f46e5;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  margin-bottom: 1.2rem;
+  transition: background 0.2s;
+  min-width: 20px;
+}
+
+.step-connector.completed { background: #4f46e5; }
+
+/* ── Step content ────────────────────────────── */
+.signup-step-content { animation: fadeUp 0.25s ease-out; }
+
+.step-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.35rem;
+}
+
+.step-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Form elements ───────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.6rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.form-group input.input-error,
+.form-group select.input-error {
+  border-color: #ef4444;
+}
+
+.field-error {
+  font-size: 0.78rem;
+  color: #ef4444;
+}
+
+/* ── Toggle (checkbox) ───────────────────────── */
+.toggle-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.toggle-group input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #4f46e5;
+}
+
+/* ── Tier grid (step 3) ──────────────────────── */
+.tier-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.tier-card {
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tier-card:hover { border-color: #a5b4fc; }
+
+.tier-card.selected {
+  border-color: #4f46e5;
+  background: #f5f3ff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.tier-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.tier-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tier-desc {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.tier-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.tier-price span {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.tier-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tier-features li {
+  font-size: 0.75rem;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.2rem;
+}
+
+.feature-check {
+  color: #22c55e;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+/* ── Region / config row ─────────────────────── */
+.config-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+/* ── Verify step ─────────────────────────────── */
+.verify-step {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.verify-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.verify-note {
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin-top: 1rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ── Buttons ─────────────────────────────────── */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.btn-primary {
+  padding: 0.65rem 1.5rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) { background: #4338ca; }
+.btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.btn-secondary {
+  padding: 0.65rem 1.5rem;
+  background: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: #f3f4f6; }
+
+/* ── Error message ───────────────────────────── */
+.submit-error {
+  margin-top: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.9rem;
+}
+
+/* ── Footer link ─────────────────────────────── */
+.signup-login-link {
+  text-align: center;
+  margin-top: 1.25rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.signup-login-link a {
+  color: #a5b4fc;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signup-login-link a:hover { text-decoration: underline; }
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 520px) {
+  .signup-card { padding: 1.5rem 1rem; }
+  .tier-grid { grid-template-columns: 1fr; }
+  .form-row  { grid-template-columns: 1fr; }
+  .config-row { grid-template-columns: 1fr; }
+}

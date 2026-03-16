@@ -1,24 +1,20 @@
-// API Service for SecureBase Customer Portal
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.tximhotep.com';
 
 class ApiService {
-  constructor() {
-    this.baseURL = API_BASE;
-  }
+  constructor() { this.baseURL = API_BASE; }
 
   request = async (endpoint, options = {}) => {
     const sessionToken = localStorage.getItem('sessionToken');
-    const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+        ...(sessionToken && { Authorization: `Bearer ${sessionToken}` }),
         ...options.headers,
       },
       ...options,
     };
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(`${this.baseURL}${endpoint}`, config);
       if (response.status === 401) {
         if (sessionToken) {
           localStorage.removeItem('sessionToken');
@@ -40,11 +36,10 @@ class ApiService {
   put    = async (endpoint, data, options = {}) => this.request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(data) });
   delete = async (endpoint, options = {}) => this.request(endpoint, { ...options, method: 'DELETE' });
 
-  // --- Authentication ---
   authenticate = async (email, password, totp_code = null) => {
+    const payload = { email, password };
+    if (totp_code) payload.totp_code = totp_code;
     try {
-      const payload = { email, password };
-      if (totp_code) payload.totp_code = totp_code;
       const response = await this.post('/auth/login', payload);
       if (response.token) {
         localStorage.setItem('sessionToken', response.token);
@@ -53,10 +48,11 @@ class ApiService {
       }
       return response;
     } catch (error) {
-      console.error('Authentication failed:', error);
-      throw new Error(error.message.includes('fetch')
-        ? 'Network error. Please check your connection and try again.'
-        : 'Invalid credentials. Please check your email and password.');
+      throw new Error(
+        error.message.includes('fetch')
+          ? 'Network error. Please check your connection and try again.'
+          : 'Invalid credentials. Please check your email and password.'
+      );
     }
   };
 
@@ -64,15 +60,20 @@ class ApiService {
   setupMFA  = async (email) => this.post('/auth/mfa/setup', { email });
   verifyMFA = async (email, totp_code) => this.post('/auth/mfa/verify', { email, totp_code });
 
-  // --- Data Fetching ---
-  getMetrics         = async () => this.get('/billing/metrics');
-  getDashboardData   = async () => this.get('/billing/dashboard');
-  getUserProfile     = async () => this.get('/user/profile');
-  getInvoices        = async () => this.get('/billing/invoices');
-  getApiKeys         = async () => this.get('/api-keys');
+  getMetrics          = async () => this.get('/billing/metrics');
+  getDashboardData    = async () => this.get('/billing/dashboard');
+  getUserProfile      = async () => this.get('/user/profile');
+  getInvoices         = async () => this.get('/billing/invoices');
+  getApiKeys          = async () => this.get('/api-keys');
   getComplianceStatus = async () => this.get('/compliance/status');
-  getTickets         = async (params) => this.get('/tickets', { params });
-  createTicket       = async (ticketData) => this.post('/tickets', ticketData);
+  getTickets          = async (params) => this.get('/tickets', { params });
+  createTicket        = async (ticketData) => this.post('/tickets', ticketData);
+
+  // Signup & Onboarding — FIX: getOnboardingStatus now uses jobId not customer_id
+  signup              = async (payload) => this.post('/signup', payload);
+  verifyEmail         = async (token, email) => this.post('/verify-email', { token, email });
+  getOnboardingStatus = async (jobId) => this.get(`/onboarding/status?jobId=${encodeURIComponent(jobId)}`);
+  resendVerification  = async (email) => this.post('/signup/resend-verification', { email });
 }
 
 export const apiService = new ApiService();
