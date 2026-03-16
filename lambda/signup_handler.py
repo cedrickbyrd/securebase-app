@@ -1,56 +1,294 @@
-import json, logging, os, re, uuid
-from datetime import datetime, timezone
+"""
+signup_handler.py – SecureBase self-service signup Lambda.
+
+Endpoint: POST /signup
+
+Validates the incoming payload, prevents duplicate email registrations,
+stores a new customer record in Aurora, creates a Cognito user, sends a
+SES email-verification link, and asynchronously triggers the account
+provisioner Lambda.
+
+Environment variables (resolved from SSM/Secrets Manager at init):
+  DB_SECRET_ARN       – Secrets Manager ARN for Aurora credentials
+  COGNITO_USER_POOL   – Cognito User Pool ID
+  SES_SENDER_EMAIL    – Verified SES sender address
+  PROVISIONER_FUNCTION – Lambda function name for account_provisioner
+  PORTAL_URL          – Base URL for email verification links
+  LOG_LEVEL           – (optional) DEBUG|INFO|WARNING|ERROR
+"""
+
+import json
+import logging
+import os
+import re
+import uuid
+from datetime import datetime
+
 import boto3
+import psycopg2
 from botocore.exceptions import ClientError
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-ssm=boto3.client("ssm"); ses=boto3.client("ses",region_name=os.environ.get("AWS_REGION","us-east-1"))
-cognito=boto3.client("cognito-idp"); lambda_=boto3.client("lambda"); rds=boto3.client("rds-data")
+# ── Logging ───────────────────────────────────────────────────────────────
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
+logger = logging.getLogger(__name__)
 
-def get_param(name,decrypt=True): return ssm.get_parameter(Name=name,WithDecryption=decrypt)["Parameter"]["Value"]
-def cors_response(status,body):
-    return{"statusCode":status,"headers":{"Content-Type":"application/json","Access-Control-Allow-Origin":os.environ.get("ALLOWED_ORIGIN","https://securebase.tximhotep.com")},"body":json.dumps(body)}
-def validate_payload(body):
-    errors=[]
-    for f in ["firstName","lastName","email","password","orgName","orgSize","industry","awsRegion"]:
-        if not body.get(f,"").strip(): errors.append(f"{f} is required.")
-    if body.get("email") and not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$",body["email"]): errors.append("Invalid email.")
-    if len(body.get("password",""))<12: errors.append("Password must be at least 12 characters.")
-    if body.get("awsRegion") not in ["us-east-1","us-west-2","eu-west-1","ap-southeast-1","ap-northeast-1"]: errors.append("Invalid AWS region.")
+# ── AWS clients (module-level for Lambda reuse) ───────────────────────────
+secrets_client = boto3.client("secretsmanager")
+cognito_client  = boto3.client("cognito-idp")
+ses_client      = boto3.client("ses")
+lambda_client   = boto3.client("lambda")
+
+# ── Constants ─────────────────────────────────────────────────────────────
+VALID_TIERS    = {"standard", "fintech", "healthcare", "government"}
+VALID_REGIONS  = {
+    "us-east-1", "us-east-2", "us-west-1", "us-west-2",
+    "eu-west-1", "eu-central-1", "ap-southeast-1",
+}
+MIN_PASSWORD_LEN = 12
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+CORS_HEADERS = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+}
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────
+
+def _resp(status: int, body: dict) -> dict:
+    return {
+        "statusCode": status,
+        "headers": CORS_HEADERS,
+        "body": json.dumps(body),
+    }
+
+
+def _get_db_credentials() -> dict:
+    """Fetch Aurora credentials from Secrets Manager."""
+    secret_arn = os.environ["DB_SECRET_ARN"]
+    secret = secrets_client.get_secret_value(SecretId=secret_arn)
+    return json.loads(secret["SecretString"])
+
+
+def _get_db_connection():
+    creds = _get_db_credentials()
+    return psycopg2.connect(
+        host=creds["host"],
+        port=int(creds.get("port", 5432)),
+        dbname=creds["dbname"],
+        user=creds["username"],
+        password=creds["password"],
+        connect_timeout=5,
+        sslmode="require",
+    )
+
+
+def _validate_payload(body: dict) -> list[str]:
+    """Return a list of validation error messages (empty = valid)."""
+    errors = []
+    for field in ("first_name", "last_name", "email", "password", "company_name"):
+        if not body.get(field, "").strip():
+            errors.append(f"{field} is required.")
+
+    email = body.get("email", "")
+    if email and not EMAIL_RE.match(email):
+        errors.append("email is not a valid email address.")
+
+    password = body.get("password", "")
+    if password and len(password) < MIN_PASSWORD_LEN:
+        errors.append(f"password must be at least {MIN_PASSWORD_LEN} characters.")
+
+    tier = body.get("tier", "standard")
+    if tier not in VALID_TIERS:
+        errors.append(f"tier must be one of: {', '.join(sorted(VALID_TIERS))}.")
+
+    region = body.get("region", "us-east-1")
+    if region not in VALID_REGIONS:
+        errors.append(f"region '{region}' is not supported.")
+
     return errors
 
-def handler(event,context):
-    if event.get("httpMethod")=="OPTIONS": return cors_response(200,{})
-    try: body=json.loads(event.get("body") or "{}")
-    except json.JSONDecodeError: return cors_response(400,{"message":"Invalid JSON."})
-    errors=validate_payload(body)
-    if errors: return cors_response(400,{"message":errors[0],"errors":errors})
-    email=body["email"].strip().lower(); job_id=str(uuid.uuid4()); customer_id=str(uuid.uuid4()); now=datetime.now(timezone.utc).isoformat()
+
+def _email_exists(conn, email: str) -> bool:
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM customers WHERE email = %s LIMIT 1", (email,))
+        return cur.fetchone() is not None
+
+
+def _create_customer_record(conn, customer_id: str, body: dict) -> None:
+    """Insert a new customer row (pending_verification status)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO customers (
+                id, first_name, last_name, email, company_name, company_size,
+                industry, phone, tier, aws_region, mfa_required, status, created_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, 'pending_verification', NOW()
+            )
+            """,
+            (
+                customer_id,
+                body["first_name"].strip(),
+                body["last_name"].strip(),
+                body["email"].strip().lower(),
+                body["company_name"].strip(),
+                body.get("company_size", ""),
+                body.get("industry", ""),
+                body.get("phone", ""),
+                body.get("tier", "standard"),
+                body.get("region", "us-east-1"),
+                bool(body.get("mfa_required", True)),
+            ),
+        )
+    conn.commit()
+
+
+def _create_cognito_user(email: str, password: str, customer_id: str) -> None:
+    user_pool_id = os.environ["COGNITO_USER_POOL"]
+    cognito_client.admin_create_user(
+        UserPoolId=user_pool_id,
+        Username=email,
+        TemporaryPassword=password,
+        UserAttributes=[
+            {"Name": "email", "Value": email},
+            {"Name": "email_verified", "Value": "false"},
+            {"Name": "custom:customer_id", "Value": customer_id},
+        ],
+        MessageAction="SUPPRESS",  # we send our own email
+    )
+    # Force password so the user doesn't need to change it on first login
+    cognito_client.admin_set_user_password(
+        UserPoolId=user_pool_id,
+        Username=email,
+        Password=password,
+        Permanent=True,
+    )
+
+
+def _send_verification_email(email: str, first_name: str, customer_id: str) -> None:
+    portal_url   = os.environ.get("PORTAL_URL", "https://portal.securebase.io")
+    sender_email = os.environ["SES_SENDER_EMAIL"]
+    verify_url   = f"{portal_url}/verify-email?customer_id={customer_id}&email={email}"
+
+    ses_client.send_email(
+        Source=sender_email,
+        Destination={"ToAddresses": [email]},
+        Message={
+            "Subject": {"Data": "Verify your SecureBase account"},
+            "Body": {
+                "Html": {
+                    "Data": f"""
+                    <p>Hi {first_name},</p>
+                    <p>Thanks for signing up for SecureBase. Please verify your email address to
+                    start your environment provisioning.</p>
+                    <p><a href="{verify_url}" style="background:#4f46e5;color:#fff;
+                    padding:12px 24px;border-radius:6px;text-decoration:none;">
+                    Verify Email Address</a></p>
+                    <p>If you didn't create this account, you can safely ignore this email.</p>
+                    <p>— The SecureBase Team</p>
+                    """
+                },
+                "Text": {
+                    "Data": (
+                        f"Hi {first_name},\n\n"
+                        "Verify your SecureBase account by visiting:\n"
+                        f"{verify_url}\n\n"
+                        "— The SecureBase Team"
+                    )
+                },
+            },
+        },
+    )
+
+
+def _trigger_provisioner_async(customer_id: str, payload: dict) -> None:
+    """Invoke the provisioner Lambda asynchronously (Event invocation type)."""
+    provisioner_fn = os.environ.get("PROVISIONER_FUNCTION", "securebase-account-provisioner")
+    lambda_client.invoke(
+        FunctionName=provisioner_fn,
+        InvocationType="Event",
+        Payload=json.dumps({
+            "customer_id": customer_id,
+            "email": payload["email"].strip().lower(),
+            "first_name": payload["first_name"].strip(),
+            "last_name": payload["last_name"].strip(),
+            "company_name": payload["company_name"].strip(),
+            "tier": payload.get("tier", "standard"),
+            "region": payload.get("region", "us-east-1"),
+            "mfa_required": bool(payload.get("mfa_required", True)),
+        }),
+    )
+
+
+# ── Handler ───────────────────────────────────────────────────────────────
+
+def lambda_handler(event, context):
+    """
+    POST /signup handler.
+
+    Accepts JSON body with customer sign-up details, validates, persists,
+    sends verification email, and asynchronously triggers provisioning.
+    """
+    logger.info("signup_handler invoked: requestId=%s", context.aws_request_id)
+
+    # Handle OPTIONS pre-flight
+    if event.get("httpMethod") == "OPTIONS":
+        return _resp(204, {})
+
     try:
-        db_resource_arn=get_param("/securebase/db/resource_arn"); db_secret_arn=get_param("/securebase/db/secret_arn")
-        db_name=get_param("/securebase/db/name"); ses_sender=get_param("/securebase/ses/from_address")
-        user_pool_id=get_param("/securebase/cognito/user_pool_id"); provisioner_fn=get_param("/securebase/provisioner/function")
-    except ClientError as e: logger.error("SSM error: %s",e); return cors_response(500,{"message":"Configuration error."})
+        body = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return _resp(400, {"error": "Request body must be valid JSON."})
+
+    # Validate payload
+    errors = _validate_payload(body)
+    if errors:
+        return _resp(422, {"errors": errors})
+
+    customer_id = str(uuid.uuid4())
+    email       = body["email"].strip().lower()
+    first_name  = body["first_name"].strip()
+
+    conn = None
     try:
-        dup=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id FROM customers WHERE email=:email LIMIT 1",parameters=[{"name":"email","value":{"stringValue":email}}])
-        if dup["records"]: return cors_response(409,{"message":"An account with this email already exists."})
-    except ClientError as e: return cors_response(500,{"message":"Database error."})
-    try:
-        cognito.admin_create_user(UserPoolId=user_pool_id,Username=email,UserAttributes=[{"Name":"email","Value":email},{"Name":"given_name","Value":body["firstName"]},{"Name":"family_name","Value":body["lastName"]},{"Name":"custom:org_name","Value":body["orgName"]},{"Name":"custom:job_id","Value":job_id}],TemporaryPassword=body["password"],MessageAction="SUPPRESS")
-    except cognito.exceptions.UsernameExistsException: return cors_response(409,{"message":"An account with this email already exists."})
-    except ClientError as e: return cors_response(500,{"message":"Failed to create account."})
-    try:
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO customers(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",parameters=[{"name":"id","value":{"stringValue":customer_id}},{"name":"email","value":{"stringValue":email}},{"name":"fn","value":{"stringValue":body["firstName"]}},{"name":"ln","value":{"stringValue":body["lastName"]}},{"name":"org","value":{"stringValue":body["orgName"]}},{"name":"sz","value":{"stringValue":body["orgSize"]}},{"name":"ind","value":{"stringValue":body["industry"]}},{"name":"reg","value":{"stringValue":body["awsRegion"]}},{"name":"mfa","value":{"booleanValue":bool(body.get("mfaEnabled",True))}},{"name":"gl","value":{"stringValue":body.get("guardrailsLevel","standard")}},{"name":"ca","value":{"stringValue":now}}])
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",parameters=[{"name":"id","value":{"stringValue":job_id}},{"name":"cid","value":{"stringValue":customer_id}},{"name":"ca","value":{"stringValue":now}}])
-    except ClientError as e:
-        try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)
-        except ClientError: pass
-        return cors_response(500,{"message":"Failed to save account data."})
-    verify_url=f"https://securebase.tximhotep.com/verify-email?token={job_id}&email={email}"
-    try: ses.send_email(Source=ses_sender,Destination={"ToAddresses":[email]},Message={"Subject":{"Data":"Verify your SecureBase account"},"Body":{"Text":{"Data":f"Hi {body['firstName']},\n\nVerify your email: {verify_url}\n\n— SecureBase"}}})
-    except ClientError as e: logger.error("SES error: %s",e)
-    try: lambda_.invoke(FunctionName=provisioner_fn,InvocationType="Event",Payload=json.dumps({"jobId":job_id,"customerId":customer_id,"email":email,"orgName":body["orgName"],"awsRegion":body["awsRegion"],"mfaEnabled":bool(body.get("mfaEnabled",True)),"guardrailsLevel":body.get("guardrailsLevel","standard")}))
-    except ClientError as e: logger.error("Provisioner invoke error: %s",e)
-    logger.info("Signup: customer=%s job=%s",customer_id,job_id)
-    return cors_response(201,{"message":"Account created. Please verify your email.","jobId":job_id})
+        conn = _get_db_connection()
+
+        if _email_exists(conn, email):
+            return _resp(409, {"error": "An account with this email already exists."})
+
+        _create_customer_record(conn, customer_id, body)
+
+        try:
+            _create_cognito_user(email, body["password"], customer_id)
+        except ClientError as err:
+            code = err.response["Error"]["Code"]
+            if code == "UsernameExistsException":
+                return _resp(409, {"error": "An account with this email already exists."})
+            logger.error("Cognito error: %s", err)
+            raise
+
+        _send_verification_email(email, first_name, customer_id)
+
+        # Trigger provisioner (best-effort; don't fail the signup on Lambda invoke error)
+        try:
+            _trigger_provisioner_async(customer_id, body)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Could not invoke provisioner (non-fatal): %s", exc)
+
+        logger.info("Signup complete: customer_id=%s email=%s", customer_id, email)
+        return _resp(201, {
+            "message": "Account created. Please verify your email to continue.",
+            "customer_id": customer_id,
+        })
+
+    except Exception as exc:
+        logger.exception("Unexpected error in signup_handler: %s", exc)
+        return _resp(500, {"error": "Internal server error. Please try again later."})
+    finally:
+        if conn:
+            conn.close()
