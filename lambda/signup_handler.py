@@ -45,7 +45,7 @@ def handler(event,context):
         rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",parameters=[{"name":"id","value":{"stringValue":job_id}},{"name":"cid","value":{"stringValue":customer_id}},{"name":"ca","value":{"stringValue":now}}])
     except ClientError as e:
         try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)
-        except: pass
+        except ClientError: pass
         return cors_response(500,{"message":"Failed to save account data."})
     verify_url=f"https://securebase.tximhotep.com/verify-email?token={job_id}&email={email}"
     try: ses.send_email(Source=ses_sender,Destination={"ToAddresses":[email]},Message={"Subject":{"Data":"Verify your SecureBase account"},"Body":{"Text":{"Data":f"Hi {body['firstName']},\n\nVerify your email: {verify_url}\n\n— SecureBase"}}})
