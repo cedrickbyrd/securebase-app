@@ -5,21 +5,23 @@ import BRANDING from '../config/branding';
 import './Login.css';
 
 function Login({ setAuth }) {
-  const [apiKey, setApiKey] = useState('');
+  const [step, setStep] = useState('credentials'); // 'credentials' | 'mfa'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleCredentials = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      // API authentication using the API key
-      const response = await apiService.authenticate(apiKey);
-      
-      if (response.token || response.session_token) {
+      const response = await apiService.authenticate(email, password);
+      if (response.mfa_required) {
+        setStep('mfa');
+      } else if (response.token) {
         setAuth(true);
         navigate('/dashboard');
       } else {
@@ -27,6 +29,25 @@ function Login({ setAuth }) {
       }
     } catch (err) {
       setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMFA = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const response = await apiService.authenticate(email, password, totpCode);
+      if (response.token) {
+        setAuth(true);
+        navigate('/dashboard');
+      } else {
+        setError('Invalid TOTP code');
+      }
+    } catch (err) {
+      setError(err.message || 'MFA verification failed');
     } finally {
       setLoading(false);
     }
@@ -48,38 +69,91 @@ function Login({ setAuth }) {
             <p className="subtitle">Customer Portal</p>
           </div>
 
-          {/* Sign In Form */}
-          <form onSubmit={handleLogin} className="login-form">
-            <h2>Sign In</h2>
-
-            {error && (
-              <div className="error-message">
-                <span className="error-icon">⚠️</span>
-                {error}
+          {/* Credentials Form */}
+          {step === 'credentials' && (
+            <form onSubmit={handleCredentials} className="login-form">
+              <h2>Sign In</h2>
+              {error && (
+                <div className="error-message">
+                  <span className="error-icon">⚠️</span>
+                  {error}
+                </div>
+              )}
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={loading}
+                  required
+                />
               </div>
-            )}
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  disabled={loading}
+                  required
+                />
+              </div>
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          )}
 
-            <div className="form-group">
-              <label htmlFor="apiKey">API Key</label>
-              <input
-                id="apiKey"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your API key"
-                disabled={loading}
-                required
-              />
-            </div>
-
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
+          {/* MFA Form */}
+          {step === 'mfa' && (
+            <form onSubmit={handleMFA} className="login-form">
+              <h2>Two-Factor Authentication</h2>
+              <p className="mfa-instructions">
+                Enter the 6-digit code from your authenticator app.
+              </p>
+              {error && (
+                <div className="error-message">
+                  <span className="error-icon">⚠️</span>
+                  {error}
+                </div>
+              )}
+              <div className="form-group">
+                <label htmlFor="totpCode">Authenticator Code</label>
+                <input
+                  id="totpCode"
+                  type="text"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value)}
+                  placeholder="000000"
+                  maxLength={6}
+                  disabled={loading}
+                  autoFocus
+                  required
+                />
+              </div>
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? 'Verifying...' : 'Verify'}
+              </button>
+              <button
+                type="button"
+                className="back-button"
+                onClick={() => { setStep('credentials'); setError(''); setTotpCode(''); }}
+              >
+                ← Back
+              </button>
+            </form>
+          )}
 
           {/* Footer */}
           <div className="login-footer">
-            © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. • <a href={BRANDING.privacyPolicyUrl}>Privacy</a> • <a href={BRANDING.termsOfServiceUrl}>Terms</a>
+            © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. •{' '}
+            <a href={BRANDING.privacyPolicyUrl}>Privacy</a> •{' '}
+            <a href={BRANDING.termsOfServiceUrl}>Terms</a>
           </div>
         </div>
       </div>
