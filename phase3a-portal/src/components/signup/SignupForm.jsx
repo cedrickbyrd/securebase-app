@@ -196,7 +196,7 @@ export default function SignupForm({ onSuccess }) {
               <div className="field">
                 <label className="checkbox-label">
                   <input type="checkbox" checked={form.agreeToTerms} onChange={set("agreeToTerms")} />
-                  <span>I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a></span>
+                  <span>I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></span>
                 </label>
               </div>
             </div>
