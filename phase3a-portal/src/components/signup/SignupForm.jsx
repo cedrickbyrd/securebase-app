@@ -58,7 +58,7 @@ export default function SignupForm({ onSuccess }) {
     if (err) { setError(err); return; }
     setLoading(true); setError("");
     try {
-      const res = await fetch(`${API_BASE}/api/signup`, {
+      const res = await fetch(`/api/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +79,7 @@ export default function SignupForm({ onSuccess }) {
   const resendVerification = async () => {
     setLoading(true);
     try {
-      await fetch(`${API_BASE}/api/signup/resend-verification`, {
+      await fetch(`/api/signup/resend-verification`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email }),
       });
@@ -188,9 +188,15 @@ export default function SignupForm({ onSuccess }) {
               <div className="field">
                 <label className="toggle-label">
                   <span>Enforce MFA on all IAM users</span>
-                  <div className={`toggle ${form.mfaEnabled ? "on" : ""}`} onClick={() => setForm(f => ({ ...f, mfaEnabled: !f.mfaEnabled }))}>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={form.mfaEnabled}
+                    className={`toggle ${form.mfaEnabled ? "on" : ""}`}
+                    onClick={() => setForm(f => ({ ...f, mfaEnabled: !f.mfaEnabled }))}
+                  >
                     <div className="toggle-thumb" />
-                  </div>
+                  </button>
                 </label>
               </div>
               <div className="field">
