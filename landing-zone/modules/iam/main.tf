@@ -114,3 +114,5 @@ resource "aws_ssoadmin_managed_policy_attachment" "auditor_read_only" {
   permission_set_arn = aws_ssoadmin_permission_set.auditor.arn
   managed_policy_arn = "arn:aws:iam::aws:policy/SecurityAudit"
 }
+
+
