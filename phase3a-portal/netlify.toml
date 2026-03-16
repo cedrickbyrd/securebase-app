@@ -11,7 +11,7 @@
   VITE_ENV = "production"
   VITE_DEMO_MODE = "false"
   VITE_ANALYTICS_ENABLED = "false"
-  VITE_API_BASE_URL = "https://api.securebase.tximhotep.com/v1"
+  VITE_API_BASE_URL = "https://api.securebase.tximhotep.com"
 
 [[redirects]]
   from = "https://securebase-demo.netlify.app/*"

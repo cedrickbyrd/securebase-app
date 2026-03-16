@@ -10,10 +10,15 @@ provider "aws" {
 provider "netlify" {
   token = var.netlify_token
 }
+data "aws_ssoadmin_instances" "this" {}
+
+
 
 # Call the root module
 module "securebase" {
   source = "../.."
+  sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]  # ← dynamic
+# sso_instance_arn = "arn:aws:sso:::instance/ssoins-7223295e77f4f12d"
 
   org_name        = var.org_name
   target_region   = var.target_region
@@ -50,14 +55,22 @@ module "netlify_sites" {
   netlify_token      = var.netlify_token
   github_owner       = "cedrickbyrd"
   github_repo        = "securebase-app"
-  marketing_domain   = "securebase.io"
-  portal_demo_domain = "portal-demo.securebase.io"
+  marketing_domain   = "securebase.tximhotep.com"
+  portal_demo_domain = "demo.securebase.tximhotep.com"
   tags               = var.tags
 }
-module "identity" {
-  source           = "../../modules/identity"
-  sso_instance_arn = var.sso_instance_arn
-  # ... other vars
+
+module "phase2_database" {
+  source = "../../modules/phase2-database"
+
+  environment          = var.environment
+  vpc_id               = var.default_vpc_id
+  database_subnets     = var.database_subnets
+  lambda_subnets       = var.lambda_subnets
+  max_aurora_capacity  = var.max_aurora_capacity
+  min_aurora_capacity  = var.min_aurora_capacity
+  rds_backup_retention = var.rds_backup_retention
+  tags                 = var.tags
 }
 
 terraform {
