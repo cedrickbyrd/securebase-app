@@ -49,6 +49,7 @@ cognito_client   = boto3.client("cognito-idp")
 orgs_client      = boto3.client("organizations")
 codebuild_client = boto3.client("codebuild")
 ses_client       = boto3.client("ses")
+sqs_client       = boto3.client("sqs")
 
 # ── Constants ─────────────────────────────────────────────────────────────
 ACCOUNT_ACTIVE_POLL_INTERVAL = 20   # seconds between polls
@@ -276,22 +277,55 @@ def _move_account_to_ou(account_id: str, tier: str) -> None:
 
 
 def _trigger_terraform(customer_id: str, account_id: str, tier: str,
-                        region: str, mfa_required: bool) -> str:
+                        region: str, mfa_required: bool,
+                        customer_name: str = "") -> str:
     """Start a CodeBuild build that runs the customer-baseline Terraform module."""
-    project_name = os.environ.get("CODEBUILD_PROJECT", "securebase-customer-baseline")
+    project_name       = os.environ.get("CODEBUILD_PROJECT", "securebase-customer-baseline")
+    management_acct_id = os.environ.get("MANAGEMENT_ACCOUNT_ID", "")
     resp = codebuild_client.start_build(
         projectName=project_name,
         environmentVariablesOverride=[
-            {"name": "CUSTOMER_ID",     "value": customer_id,         "type": "PLAINTEXT"},
-            {"name": "AWS_ACCOUNT_ID",  "value": account_id,          "type": "PLAINTEXT"},
-            {"name": "CUSTOMER_TIER",   "value": tier,                 "type": "PLAINTEXT"},
-            {"name": "AWS_REGION",      "value": region,               "type": "PLAINTEXT"},
-            {"name": "MFA_REQUIRED",    "value": str(mfa_required).lower(), "type": "PLAINTEXT"},
+            # TF_VAR_* variables are consumed directly by Terraform
+            {"name": "TF_VAR_customer_id",          "value": customer_id,              "type": "PLAINTEXT"},
+            {"name": "TF_VAR_customer_name",         "value": customer_name,            "type": "PLAINTEXT"},
+            {"name": "TF_VAR_tier",                  "value": tier,                     "type": "PLAINTEXT"},
+            {"name": "TF_VAR_aws_region",            "value": region,                   "type": "PLAINTEXT"},
+            {"name": "TF_VAR_mfa_required",          "value": str(mfa_required).lower(), "type": "PLAINTEXT"},
+            {"name": "TF_VAR_management_account_id", "value": management_acct_id,       "type": "PLAINTEXT"},
+            # Plain vars for CodeBuild script usage (e.g. assume-role, tagging)
+            {"name": "CUSTOMER_ID",                  "value": customer_id,              "type": "PLAINTEXT"},
+            {"name": "AWS_ACCOUNT_ID",               "value": account_id,               "type": "PLAINTEXT"},
         ],
     )
     build_id = resp["build"]["id"]
     logger.info("CodeBuild build started: %s", build_id)
     return build_id
+
+
+def _schedule_provisioner_retry(event: dict, delay_seconds: int = 300) -> None:
+    """
+    Queue a delayed re-invocation via SQS so provisioning resumes after the
+    customer verifies their email.  Requires RETRY_QUEUE_URL env var pointing
+    to an SQS queue with the provisioner Lambda as a trigger.
+    SQS max DelaySeconds is 900 (15 min); we cap at that.
+    """
+    retry_queue_url = os.environ.get("RETRY_QUEUE_URL")
+    if not retry_queue_url:
+        logger.warning(
+            "RETRY_QUEUE_URL not configured; provisioner retry will not be scheduled "
+            "for customer %s. Configure the env var to enable automatic retry.",
+            event.get("customer_id"),
+        )
+        return
+    sqs_client.send_message(
+        QueueUrl=retry_queue_url,
+        MessageBody=json.dumps(event),
+        DelaySeconds=min(delay_seconds, 900),
+    )
+    logger.info(
+        "Queued provisioner retry for customer %s (delay=%ds)",
+        event.get("customer_id"), min(delay_seconds, 900),
+    )
 
 
 def _send_welcome_email(email: str, first_name: str, tier: str) -> None:
@@ -366,10 +400,11 @@ def lambda_handler(event, context):
         # ── Step 1: Verify email ──────────────────────────────────────
         _update_step(conn, job_id, "email_verified", "in_progress")
         if not _check_email_verified(email):
-            _update_step(conn, job_id, "email_verified", "failed",
-                         "Email address has not been verified in Cognito.")
+            _update_step(conn, job_id, "email_verified", "pending",
+                         "Waiting for email verification.")
             _set_job_status(conn, job_id, "waiting_for_email")
-            logger.info("customer %s: email not yet verified – halting provisioner.", customer_id)
+            logger.info("customer %s: email not yet verified – scheduling retry.", customer_id)
+            _schedule_provisioner_retry(event)
             return {"statusCode": 202, "body": "Waiting for email verification."}
         _update_step(conn, job_id, "email_verified", "complete")
 
@@ -391,7 +426,8 @@ def lambda_handler(event, context):
 
         # ── Step 5: Run Terraform ─────────────────────────────────────
         _update_step(conn, job_id, "terraform_running", "in_progress")
-        build_id = _trigger_terraform(customer_id, aws_account_id, tier, region, mfa_required)
+        build_id = _trigger_terraform(customer_id, aws_account_id, tier, region, mfa_required,
+                                      customer_name=company_name)
         _update_step(conn, job_id, "terraform_running", "complete")
 
         # ── Step 6: Guardrails (recorded when Terraform completes) ────

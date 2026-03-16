@@ -22,13 +22,13 @@
 # 3. SIGNUP / ONBOARDING API (new - points to your API Gateway)
 [[redirects]]
   from = "/api/signup"
-  to = "https://YOUR_API_GW_URL.execute-api.us-east-1.amazonaws.com/prod/signup"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/signup"
   status = 200
   force = true
   headers = {X-From = "Netlify-SecureBase"}
 [[redirects]]
   from = "/api/onboarding/*"
-  to = "https://YOUR_API_GW_URL.execute-api.us-east-1.amazonaws.com/prod/onboarding/:splat"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/onboarding/:splat"
   status = 200
   force = true
   headers = {X-From = "Netlify-SecureBase"}
