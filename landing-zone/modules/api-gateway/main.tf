@@ -835,7 +835,7 @@ resource "aws_api_gateway_deployment" "main" {
   ]
 }
 
-resource "aws_api_gateway_stage" "prod" {
+resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   stage_name    = var.environment
@@ -958,33 +958,38 @@ resource "aws_api_gateway_method_settings" "all" {
   }
 }
 
-resource "aws_api_gateway_rest_api_policy" "netlify_only" {
-  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "execute-api:Invoke"
-        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-      },
-      {
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "execute-api:Invoke"
-        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-        Condition = {
-          StringNotEquals = {
-            "aws:Referer" = "Netlify" # Maps to your X-From header if passed correctly
-            # OR use custom header validation if your Gateway is behind a WAF
-          }
-        }
-      }
-    ]
-  })
-}
+#
+#resource "aws_api_gateway_rest_api_policy" "netlify_only" {
+#  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+#
+#  policy = jsonencode({
+#    Version = "2012-10-17"
+#    Statement = [
+#      {
+#        Effect    = "Allow"
+#        Principal = "*"
+#        Action    = "execute-api:Invoke"
+#        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+#      },
+#      {
+#        Effect    = "Deny"
+#        Principal = "*"
+#        Action    = "execute-api:Invoke"
+#        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+#        Condition = {
+#          StringNotEquals = {
+#            "aws:Referer" = "Netlify" # Maps to your X-From header if passed correctly
+#            # OR use custom header validation if your Gateway is behind a WAF
+#          }
+#        }
+#      }
+#    ]
+#  })
+#}
+###############
+# ============================================================================
+# Consolidated API Resource Policy
+# ============================================================================
 
 resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -993,26 +998,22 @@ resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        # 1. ALLOW everything so the Deny below can act as a filter
         Effect    = "Allow"
         Principal = "*"
         Action    = "execute-api:Invoke"
         Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
       },
       {
-        # 2. DENY everything that ISN'T from Netlify...
         Effect    = "Deny"
         Principal = "*"
         Action    = "execute-api:Invoke"
         Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
         Condition = {
           StringNotEquals = {
-            "aws:Referer" = "Netlify" 
+            "aws:Referer" = "Netlify"
           }
-          # ...BUT EXEMPT the OPTIONS method from this Deny rule
-          StringNotEquals = {
-            "aws:SourceVpce" = "method.request.header.X-Forwarded-For" # Placeholder logic
-            # Use this cleaner approach:
+          # This ensures CORS preflight (OPTIONS) isn't blocked by the Netlify filter
+          StringNotLike = {
             "aws:Method" = "OPTIONS"
           }
         }
@@ -1020,5 +1021,4 @@ resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
     ]
   })
 }
-
 
