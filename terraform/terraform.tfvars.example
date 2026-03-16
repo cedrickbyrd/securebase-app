@@ -1,0 +1,34 @@
+# =============================================================================
+# terraform.tfvars.example
+# Copy to terraform.tfvars and fill in all values before running:
+#   terraform init && terraform apply
+#
+# Get values from:
+#   rest_api_id             — AWS Console > API Gateway > SecureBase API > ID
+#   root_resource_id        — AWS Console > API Gateway > Resources > click "/" > ID shown in URL
+#   auth_parent_resource_id — AWS Console > API Gateway > Resources > click "/auth" > ID in URL
+#   Lambda ARNs             — output of scripts/deploy_lambdas.sh
+# =============================================================================
+
+# ── Existing API Gateway ──────────────────────────────────────────────────────
+aws_region              = "us-east-1"
+rest_api_id             = "9xyetu7zq3"
+api_stage_name          = "prod"
+root_resource_id        = "REPLACE_WITH_ROOT_RESOURCE_ID"
+auth_parent_resource_id = "7q9sggej19"
+
+# ── Existing auth Lambda (already deployed) ───────────────────────────────────
+auth_lambda_arn         = "arn:aws:lambda:us-east-1:ACCOUNT_ID:function:securebase-auth"
+auth_lambda_name        = "securebase-auth"
+
+# ── New signup Lambda ─────────────────────────────────────────────────────────
+signup_lambda_arn       = "arn:aws:lambda:us-east-1:ACCOUNT_ID:function:securebase-signup-handler"
+signup_lambda_name      = "securebase-signup-handler"
+
+# ── New verify-email Lambda ───────────────────────────────────────────────────
+verify_email_lambda_arn  = "arn:aws:lambda:us-east-1:ACCOUNT_ID:function:securebase-verify-email"
+verify_email_lambda_name = "securebase-verify-email"
+
+# ── New onboarding-status Lambda ──────────────────────────────────────────────
+onboarding_lambda_arn   = "arn:aws:lambda:us-east-1:ACCOUNT_ID:function:securebase-onboarding-status"
+onboarding_lambda_name  = "securebase-onboarding-status"
