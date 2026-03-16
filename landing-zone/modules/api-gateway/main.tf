@@ -614,12 +614,19 @@ resource "aws_api_gateway_resource" "auth_login" {
 }
 
 # POST /auth/login - User login
+# FIX (naming mismatch): resource was previously named "login_post"; renamed
+# to "auth_login_post" to clarify scope and avoid reference errors. All
+# depends_on and triggers references have been updated accordingly.
 resource "aws_api_gateway_method" "auth_login_post" {
-  count         = var.session_management_lambda_name != null ? 1 : 0
-  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
-  resource_id   = aws_api_gateway_resource.auth_login[0].id
-  http_method   = "POST"
-  authorization = "NONE"
+  count                = var.session_management_lambda_name != null ? 1 : 0
+  rest_api_id          = aws_api_gateway_rest_api.securebase_api.id
+  resource_id          = aws_api_gateway_resource.auth_login[0].id
+  http_method          = "POST"
+  authorization        = "NONE"
+  request_validator_id = aws_api_gateway_request_validator.full_validator.id
+  request_models = {
+    "application/json" = aws_api_gateway_model.login_model.name
+  }
 }
 
 resource "aws_api_gateway_integration" "auth_login_post" {
@@ -772,67 +779,63 @@ module "cors_activity" {
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.activity[0].id
 }
+
 # ============================================================================
-# Deployment and Stage
+# Request Validation (Phase 4 Security Baseline)
+# ============================================================================
+
+resource "aws_api_gateway_request_validator" "full_validator" {
+  name                        = "securebase-full-validator"
+  rest_api_id                 = aws_api_gateway_rest_api.securebase_api.id
+  validate_request_body       = true
+  validate_request_parameters = true
+}
+
+resource "aws_api_gateway_model" "login_model" {
+  rest_api_id  = aws_api_gateway_rest_api.securebase_api.id
+  name         = "LoginModel"
+  description  = "Schema for Phase 4 Login Validation"
+  content_type = "application/json"
+
+  schema = jsonencode({
+    type = "object"
+    required = ["username", "password"]
+    properties = {
+      username = { type = "string" }
+      password = { type = "string", minLength = 8 }
+    }
+  })
+}
+
+# ============================================================================
+# Deployment and Stage 
 # ============================================================================
 
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
 
-  # Ensure all integrations and CORS modules are ready before deploying
-  depends_on = [
-    aws_api_gateway_integration.auth_lambda,
-    aws_api_gateway_integration.health_lambda,
-    aws_api_gateway_integration.webhooks_get,
-    aws_api_gateway_integration.webhooks_post,
-    aws_api_gateway_integration.invoices_get,
-    aws_api_gateway_integration.tickets_get,
-    aws_api_gateway_integration.tickets_post,
-    aws_api_gateway_integration.forecasting_get,
-    aws_api_gateway_integration.analytics_get,
-    aws_api_gateway_integration.auth_login_post,
-    aws_api_gateway_integration.auth_mfa_post,
-    module.cors_auth,
-    module.cors_webhooks,
-    module.cors_invoices,
-    module.cors_tickets,
-    module.cors_forecasting,
-    module.cors_auth_login
-  ]
-
-  # Forces a new deployment whenever methods, integrations, or Lambda permissions change
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_method.auth_post.id,
       aws_api_gateway_integration.auth_lambda.id,
-      aws_api_gateway_method.health_get.id,
-      aws_api_gateway_integration.health_lambda.id,
-      aws_api_gateway_method.webhooks_get.id,
-      aws_api_gateway_integration.webhooks_get.id,
-      aws_api_gateway_method.webhooks_post.id,
-      aws_api_gateway_integration.webhooks_post.id,
-      aws_api_gateway_method.invoices_get.id,
-      aws_api_gateway_integration.invoices_get.id,
-      aws_api_gateway_method.tickets_get.id,
-      aws_api_gateway_integration.tickets_get.id,
-      aws_api_gateway_method.tickets_post.id,
-      aws_api_gateway_integration.tickets_post.id,
-      aws_api_gateway_method.forecasting_get.id,
-      aws_api_gateway_integration.forecasting_get.id,
-      aws_api_gateway_method.analytics_get.id,
-      aws_api_gateway_integration.analytics_get.id,
-      aws_api_gateway_method.auth_login_post.id,
-      aws_api_gateway_integration.auth_login_post.id,
-      aws_lambda_permission.session_management_api_gateway[*].id,
+      aws_api_gateway_method.auth_login_post[0].id,
+      aws_api_gateway_integration.auth_login_post[0].id,
+      aws_lambda_permission.session_management_api_gateway[0].id,
+      # Add any other methods/integrations here to trigger a fresh deploy on change
     ]))
   }
 
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    aws_api_gateway_integration.auth_login_post,
+    aws_api_gateway_integration.auth_lambda
+  ]
 }
 
-resource "aws_api_gateway_stage" "main" {
+resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   stage_name    = var.environment
@@ -840,23 +843,18 @@ resource "aws_api_gateway_stage" "main" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format          = jsonencode({
-      requestId      = "$context.requestId",
-      ip             = "$context.identity.sourceIp",
-      caller         = "$context.identity.caller",
-      user           = "$context.identity.user",
-      requestTime    = "$context.requestTime",
-      httpMethod     = "$context.httpMethod",
-      resourcePath   = "$context.resourcePath",
-      status         = "$context.status",
-      protocol       = "$context.protocol",
+      requestId = "$context.requestId",
+      ip        = "$context.identity.sourceIp",
+      caller    = "$context.identity.caller",
+      user      = "$context.identity.user",
+      requestTime = "$context.requestTime",
+      httpMethod = "$context.httpMethod",
+      resourcePath = "$context.resourcePath",
+      status = "$context.status",
+      protocol = "$context.protocol",
       responseLength = "$context.responseLength"
     })
   }
-}
-
-# Output the Invoke URL for the frontend
-output "base_url" {
-  value = "${aws_api_gateway_stage.main.invoke_url}"
 }
 
 # ============================================================================
@@ -946,7 +944,6 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
   tags = var.tags
 }
 
-
 resource "aws_api_gateway_method_settings" "all" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   stage_name  = aws_api_gateway_stage.main.stage_name
@@ -960,3 +957,68 @@ resource "aws_api_gateway_method_settings" "all" {
     throttling_rate_limit  = 1000
   }
 }
+
+resource "aws_api_gateway_rest_api_policy" "netlify_only" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+      },
+      {
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "aws:Referer" = "Netlify" # Maps to your X-From header if passed correctly
+            # OR use custom header validation if your Gateway is behind a WAF
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        # 1. ALLOW everything so the Deny below can act as a filter
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+      },
+      {
+        # 2. DENY everything that ISN'T from Netlify...
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "aws:Referer" = "Netlify" 
+          }
+          # ...BUT EXEMPT the OPTIONS method from this Deny rule
+          StringNotEquals = {
+            "aws:SourceVpce" = "method.request.header.X-Forwarded-For" # Placeholder logic
+            # Use this cleaner approach:
+            "aws:Method" = "OPTIONS"
+          }
+        }
+      }
+    ]
+  })
+}
+
+

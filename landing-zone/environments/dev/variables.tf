@@ -54,9 +54,9 @@ variable "clients" {
   validation {
     condition = alltrue([
       for client_key, client_config in var.clients :
-      contains(["standard", "healthcare", "fintech", "gov-federal"], client_config.tier)
+      contains(["standard", "healthcare", "fintech", "gov-federal", "sales"], client_config.tier)
     ])
-    error_message = "All client tiers must be one of: standard, healthcare, fintech, gov-federal"
+    error_message = "All client tiers must be one of: standard, healthcare, fintech, gov-federal, sales"
   }
 
   validation {
@@ -84,9 +84,11 @@ variable "netlify_token" {
 }
 
 variable "stripe_public_key" {
-  description = "The public key for Stripe integration"
+  description = "The Stripe publishable key for frontend integration. Marked sensitive to prevent exposure in Terraform state and plan output."
   type        = string
+  sensitive   = true
 }
+
 variable "lambda_packages" {
   type = map(string)
 }
@@ -96,4 +98,54 @@ variable "netlify_api_token" {
   sensitive = true
 }
 
+variable "default_vpc_id" {
+  type        = string
+  description = "The ID of the default VPC for existing resources"
+  default     = null
+}
 
+variable "lambda_subnets" {
+  type        = list(string)
+  description = "Subnets used for Lambda execution"
+  default     = null
+}
+
+variable "database_subnets" {
+  type        = list(string)
+  description = "Subnets used for database resources"
+  default     = null
+}
+
+variable "max_aurora_capacity" {
+  type        = number
+  description = "Maximum Aurora Serverless v2 capacity units"
+  default     = 4
+}
+
+variable "min_aurora_capacity" {
+  type        = number
+  description = "Minimum Aurora Serverless v2 capacity units"
+  default     = 0.5
+}
+
+variable "rds_backup_retention" {
+  type        = number
+  description = "Number of days to retain RDS backups"
+  default     = 35
+}
+
+variable "enable_phase2" {
+  type        = bool
+  description = "Enable Phase 2 database and Lambda infrastructure"
+  default     = false
+}
+
+variable "enable_vpc" {
+  type        = bool
+  description = "Enable per-customer VPC creation"
+  default     = false
+}
+variable "stripe_secret_key" {
+  type      = string
+  sensitive = true
+}
