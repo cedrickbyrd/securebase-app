@@ -8,7 +8,7 @@ STEP_KEYS=["email_verified","account_created","org_linked","terraform_applied","
 
 def get_param(name): return ssm.get_parameter(Name=name,WithDecryption=True)["Parameter"]["Value"]
 def cors_response(status,body):
-    return{"statusCode":status,"headers":{"Content-Type":"application/json","Cache-Control":"no-store","Access-Control-Allow-Origin":os.environ.get("ALLOWED_ORIGIN","https://securebase.tximhotep.com")},"body":json.dumps(body)}
+    return{"statusCode":status,"headers":{"Content-Type":"application/json","Cache-Control":"no-store","Access-Control-Allow-Origin":os.environ.get("ALLOWED_ORIGIN","https://securebase.tximhotep.com"),"Access-Control-Allow-Methods":"GET,OPTIONS","Access-Control-Allow-Headers":"Content-Type,Authorization"},"body":json.dumps(body)}
 
 def handler(event,context):
     if event.get("httpMethod")=="OPTIONS": return cors_response(200,{})

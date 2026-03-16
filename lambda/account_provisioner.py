@@ -79,15 +79,17 @@ def move_to_workloads_ou(account_id):
     orgs.move_account(AccountId=account_id, SourceParentId=root_id, DestinationParentId=ou["Id"])
 
 def trigger_terraform(payload, project):
+    control_plane_role_arn = get_param("/securebase/iam/control_plane_role_arn")
     resp = codebuild.start_build(
         projectName=project,
         environmentVariablesOverride=[
-            {"name":"TF_VAR_customer_account_id","value":payload["awsAccountId"],       "type":"PLAINTEXT"},
-            {"name":"TF_VAR_customer_name",      "value":payload["orgName"],            "type":"PLAINTEXT"},
-            {"name":"TF_VAR_aws_region",         "value":payload["awsRegion"],          "type":"PLAINTEXT"},
-            {"name":"TF_VAR_mfa_enabled",        "value":str(payload["mfaEnabled"]).lower(),"type":"PLAINTEXT"},
-            {"name":"TF_VAR_guardrails_level",   "value":payload["guardrailsLevel"],    "type":"PLAINTEXT"},
-            {"name":"TF_VAR_job_id",             "value":payload["jobId"],              "type":"PLAINTEXT"},
+            {"name":"TF_VAR_customer_account_id",              "value":payload["awsAccountId"],                  "type":"PLAINTEXT"},
+            {"name":"TF_VAR_customer_name",                    "value":payload["orgName"],                       "type":"PLAINTEXT"},
+            {"name":"TF_VAR_aws_region",                       "value":payload["awsRegion"],                     "type":"PLAINTEXT"},
+            {"name":"TF_VAR_mfa_enabled",                      "value":str(payload["mfaEnabled"]).lower(),       "type":"PLAINTEXT"},
+            {"name":"TF_VAR_guardrails_level",                 "value":payload["guardrailsLevel"],               "type":"PLAINTEXT"},
+            {"name":"TF_VAR_job_id",                           "value":payload["jobId"],                         "type":"PLAINTEXT"},
+            {"name":"TF_VAR_securebase_control_plane_role_arn","value":control_plane_role_arn,                   "type":"PLAINTEXT"},
         ]
     )
     return resp["build"]["id"]
