@@ -60,19 +60,6 @@ module "netlify_sites" {
   tags               = var.tags
 }
 
-module "phase2_database" {
-  source = "../../modules/phase2-database"
-
-  environment          = var.environment
-  vpc_id               = var.default_vpc_id
-  database_subnets     = var.database_subnets
-  lambda_subnets       = var.lambda_subnets
-  max_aurora_capacity  = var.max_aurora_capacity
-  min_aurora_capacity  = var.min_aurora_capacity
-  rds_backup_retention = var.rds_backup_retention
-  tags                 = var.tags
-}
-
 terraform {
   required_version = ">= 1.5.0"
 
