@@ -1,3 +1,13 @@
+output "organization_id" {
+  description = "The ID of the AWS Organization"
+  value       = aws_organizations_organization.main.id
+}
+
+output "organization_arn" {
+  description = "The ARN of the AWS Organization"
+  value       = aws_organizations_organization.main.arn
+}
+
 output "workloads_ou_id" { value = aws_organizations_organizational_unit.workloads.id }
 output "shared_ou_id"    { value = aws_organizations_organizational_unit.shared.id }
 output "security_ou_id"  { value = aws_organizations_organizational_unit.security.id }
@@ -18,10 +28,4 @@ output "console_login_url" {
   value       = "https://${aws_iam_account_alias.management.account_alias}.signin.aws.amazon.com/console"
 }
 
-# Your existing outputs remain below...
-output "organization_id" {
-  description = "The ID of the AWS Organization"
-  value       = aws_organizations_organization.main.id
-}
 
-# ... rest of existing outputs ...
