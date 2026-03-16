@@ -73,6 +73,11 @@ class ApiService {
   getComplianceStatus = async () => this.get('/compliance/status');
   getTickets         = async (params) => this.get('/tickets', { params });
   createTicket       = async (ticketData) => this.post('/tickets', ticketData);
+
+  // --- Signup & Onboarding ---
+  signup               = async (payload) => this.post('/signup', payload);
+  verifyEmail          = async (token) => this.post('/verify-email', { token });
+  getOnboardingStatus  = async (customerId) => this.get(`/onboarding/status?customer_id=${encodeURIComponent(customerId)}`);
 }
 
 export const apiService = new ApiService();
