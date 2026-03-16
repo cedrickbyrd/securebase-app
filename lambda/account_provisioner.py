@@ -1,4 +1,4 @@
-import json, logging, os, time
+import logging, os, time
 from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
