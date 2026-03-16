@@ -21,7 +21,7 @@ export default function OnboardingProgress({ jobId, email, compact = false }) {
   const fetchStatus = useCallback(async () => {
     if (!jobId) return;
     try {
-      const res = await fetch(`${API_BASE}/api/onboarding/status?jobId=${encodeURIComponent(jobId)}`);
+      const res = await fetch(`/api/onboarding/status?jobId=${encodeURIComponent(jobId)}`);
       if (!res.ok) throw new Error("Failed to fetch status");
       const data = await res.json();
       setStatus(data);
