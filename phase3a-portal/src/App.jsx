@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import SignupForm from './components/SignupForm';
+import OnboardingProgress from './components/OnboardingProgress';
 import Compliance from './components/Compliance';
 import SREDashboard from './components/SREDashboard';
 import AlertManagement from './components/AlertManagement';
@@ -20,6 +22,11 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/register" element={<SignupForm />} />
+        <Route
+          path="/onboarding"
+          element={isAuthenticated ? <OnboardingProgress /> : <Navigate to="/login" />}
+        />
         <Route 
           path="/dashboard" 
           element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 

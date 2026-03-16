@@ -16,6 +16,7 @@ terraform {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 data "aws_availability_zones" "available" { state = "available" }
+data "aws_ssoadmin_instances" "this" {}
 
 # --- Lambda Archives (Existing) ---
 data "archive_file" "checkout_lambda_zip" {
@@ -57,8 +58,9 @@ module "central_logging" {
 }
 
 module "identity" {
-  source                = "./modules/iam"
-  management_account_id = data.aws_caller_identity.current.account_id
+  source           = "./modules/identity"
+  sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  tags             = var.tags
 }
 
 # --- Phase 5: Observability Sensors (New) ---
@@ -204,7 +206,78 @@ module "api_gateway" {
   depends_on = [module.lambda_functions]
 }
 
-# [Omitted logic for customer OUs and legacy accounts for brevity, but they should remain in your final file]
+# ============================================================================
+# Organizational Units (Tier OUs)
+# FIX: These blocks were missing from main.tf after a failed merge. They were
+# restored by cross-referencing the terraform.tfstate backup file, where each
+# OU already existed. The parent_id references aws_organizations_organization
+# "this" (the resource name used in THIS root module — not "main", which is
+# only the label inside modules/org/main.tf).
+#
+# ⚠️  IMPORTANT — IMPORT BEFORE APPLY:
+#   Because these OUs already exist in AWS, Terraform will attempt to CREATE
+#   new OUs (causing duplication or an error) if you do not import them first.
+#   Run the following terraform import commands using the OU IDs from your
+#   state backup / AWS console before running terraform plan/apply:
+#
+#     terraform import 'aws_organizations_organizational_unit.customer_healthcare[0]' <OU_ID_healthcare>
+#     terraform import 'aws_organizations_organizational_unit.customer_fintech[0]'    <OU_ID_fintech>
+#     terraform import 'aws_organizations_organizational_unit.customer_govfed[0]'     <OU_ID_govfed>
+#     terraform import 'aws_organizations_organizational_unit.customer_standard[0]'   <OU_ID_standard>
+# ============================================================================
+
+resource "aws_organizations_organizational_unit" "customer_healthcare" {
+  count     = 1
+  name      = "Healthcare"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "healthcare" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_fintech" {
+  count     = 1
+  name      = "Fintech"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "fintech" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_govfed" {
+  count     = 1
+  name      = "GovFederal"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "gov-federal" })
+}
+
+resource "aws_organizations_organizational_unit" "customer_standard" {
+  count     = 1
+  name      = "Standard"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "standard" })
+}
+
+# Sales OU — dedicated to self-service demo environments for the sales team.
+# Accounts placed here receive the golden dataset and demo RBAC roles.
+resource "aws_organizations_organizational_unit" "customer_sales" {
+  count     = 1
+  name      = "Customers-Sales"
+  parent_id = aws_organizations_organization.this.roots[0].id
+  tags      = merge(var.tags, { Tier = "sales", Purpose = "demo" })
+}
+
+# Demo sales account — pre-provisioned for self-serve sales demos.
+# Use scripts/onboard-demo-sales.sh to load golden data and assign roles.
+resource "aws_organizations_account" "demo_sales" {
+  name      = "securebase-demo-sales"
+  email     = "demo.sales@securebase.io"
+  parent_id = aws_organizations_organizational_unit.customer_sales[0].id
+
+  # Shared demo infrastructure — do not delete during Terraform operations.
+  lifecycle { prevent_destroy = true }
+
+  tags = merge(var.tags, {
+    Tier    = "sales"
+    Purpose = "demo"
+  })
+}
 
 locals {
   tier_to_ou_id = {
@@ -212,5 +285,6 @@ locals {
     fintech      = try(aws_organizations_organizational_unit.customer_fintech[0].id, null)
     gov-federal  = try(aws_organizations_organizational_unit.customer_govfed[0].id, null)
     standard     = try(aws_organizations_organizational_unit.customer_standard[0].id, null)
+    sales        = try(aws_organizations_organizational_unit.customer_sales[0].id, null)
   }
 }

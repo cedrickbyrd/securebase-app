@@ -1,20 +1,29 @@
 [build]
-  # Remove the 'base' line if this is at the root, or keep it but change pathing
   command = "cd phase3a-portal && npm install --legacy-peer-deps && npm run build:production"
   publish = "phase3a-portal/dist"
-  functions = "netlify/functions" # Now relative to the root
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
 
+# 1. AUTH REDIRECT (Phase 2 API - us-east-1)
 [[redirects]]
-  from = "/api/*"
-  to = "https://nwiy9yvr8d.execute-api.us-east-2.amazonaws.com/prod/:splat"
+  from = "/api/login"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
   status = 200
   force = true
-  headers = {X-From = "Netlify"}
+  headers = {X-From = "Netlify-SecureBase"}
 
+# 2. CHECKOUT REDIRECT (Phase 5 API - us-east-1)
+[[redirects]]
+  from = "/api/checkout"
+  to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify-SecureBase"}
+
+# 3. SPA FALLBACK (Catch-all for React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"

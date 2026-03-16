@@ -21,18 +21,19 @@ Event format (API Gateway):
     "path": "/health"
   }
 
-Response format:
+Response format (API Gateway Proxy Integration):
   {
     "statusCode": 200,
-    "body": {
-      "status": "healthy",
-      "timestamp": "2026-02-05T14:30:00Z",
-      "version": "2.0.0",
-      "checks": {
-        "database": "healthy"
-      }
-    }
+    "headers": {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "isBase64Encoded": false,
+    "body": "{\"status\": \"healthy\", \"timestamp\": \"2026-02-05T14:30:00Z\", \"version\": \"2.0.0\", \"checks\": {\"database\": \"healthy\"}}"
   }
+
+  NOTE: `body` MUST be a JSON-serialised string (json.dumps), NOT a dict.
+  Returning a raw dict causes a 502 Bad Gateway from API Gateway.
 """
 
 import os

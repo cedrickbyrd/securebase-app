@@ -22,9 +22,16 @@ module "securebase" {
   allowed_regions = var.allowed_regions
   clients         = var.clients
   tags            = var.tags
-  stripe_public_key = var.stripe_public_key
-  netlify_api_token = var.netlify_token
-  lambda_packages   = var.lambda_packages
+  stripe_public_key    = var.stripe_public_key
+  stripe_secret_key    = var.stripe_secret_key
+  netlify_api_token    = var.netlify_token
+  lambda_packages      = var.lambda_packages
+  default_vpc_id       = var.default_vpc_id
+  lambda_subnets       = var.lambda_subnets
+  database_subnets     = var.database_subnets
+  max_aurora_capacity  = var.max_aurora_capacity
+  min_aurora_capacity  = var.min_aurora_capacity
+  rds_backup_retention = var.rds_backup_retention
 }
 
 # Phase 4: Advanced Analytics & Reporting Module
@@ -46,6 +53,11 @@ module "netlify_sites" {
   marketing_domain   = "securebase.io"
   portal_demo_domain = "portal-demo.securebase.io"
   tags               = var.tags
+}
+module "identity" {
+  source           = "../../modules/identity"
+  sso_instance_arn = var.sso_instance_arn
+  # ... other vars
 }
 
 terraform {
