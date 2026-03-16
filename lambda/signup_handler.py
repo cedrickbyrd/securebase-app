@@ -23,7 +23,7 @@ def validate_payload(body):
 def handler(event,context):
     if event.get("httpMethod")=="OPTIONS": return cors_response(200,{})
     try: body=json.loads(event.get("body") or "{}")
-    except: return cors_response(400,{"message":"Invalid JSON."})
+    except json.JSONDecodeError: return cors_response(400,{"message":"Invalid JSON."})
     errors=validate_payload(body)
     if errors: return cors_response(400,{"message":errors[0],"errors":errors})
     email=body["email"].strip().lower(); job_id=str(uuid.uuid4()); customer_id=str(uuid.uuid4()); now=datetime.now(timezone.utc).isoformat()
