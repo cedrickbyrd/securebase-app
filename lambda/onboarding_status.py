@@ -26,7 +26,7 @@ def handler(event,context):
     row=rows[0]; overall_status=row[0]["stringValue"]; aws_account_id=None if row[1].get("isNull") else row[1].get("stringValue"); created_at=row[2]["stringValue"]
     try:
         step_rows=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT step_key,status,error_message,updated_at FROM onboarding_steps WHERE job_id=:id",parameters=[{"name":"id","value":{"stringValue":job_id}}])["records"]
-    except: step_rows=[]
+    except ClientError: step_rows=[]
     steps={k:"pending" for k in STEP_KEYS}; timestamps={}; errors={}
     for r in step_rows:
         k=r[0]["stringValue"]; s=r[1]["stringValue"]; err=None if r[2].get("isNull") else r[2].get("stringValue"); ts=r[3]["stringValue"]
