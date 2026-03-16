@@ -96,6 +96,8 @@ variable "enable_observability" {
   default = true
 }
 
-variable "accounts" {}
-variable "allowed_regions" {}
-variable "sso_instance_arn" {}
+variable "sso_instance_arn" {
+  description = "The ARN of the IAM Identity Center instance"
+  type        = string
+  default     = "arn:aws:sso:::instance/ssoins-7223295e77f4f12d"
+}
