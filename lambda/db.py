@@ -33,6 +33,6 @@ def execute_write(sql, params=None):
     conn = _conn()
     try:
         conn.run(sql, **params) if params else conn.run(sql)
-        conn.commit()
+        # pg8000.native auto-commits DDL/DML — no explicit commit needed
     finally:
         conn.close()
