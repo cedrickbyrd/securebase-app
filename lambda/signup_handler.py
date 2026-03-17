@@ -25,7 +25,7 @@ def invoke_provisioner(provisioner_fn, job_id, customer_id, email, org_name, aws
     lambda_.invoke(FunctionName=provisioner_fn,InvocationType="Event",Payload=json.dumps({"jobId":job_id,"customerId":customer_id,"email":email,"orgName":org_name,"awsRegion":aws_region,"mfaEnabled":mfa_enabled,"guardrailsLevel":guardrails_level}))
 
 def verify_email_handler(event,provisioner_fn):
-    """Called when user clicks the email verification link. Marks email verified and re-triggers provisioner."""
+    """Handle email verification link. Validates token ownership, marks verified, re-triggers provisioner."""
     params=event.get("queryStringParameters") or {}
     job_id=params.get("token","").strip(); email=params.get("email","").strip().lower()
     if not job_id or not email: return cors_response(400,{"message":"token and email are required."})
@@ -35,15 +35,29 @@ def verify_email_handler(event,provisioner_fn):
         db_resource_arn=get_param("/securebase/db/resource_arn"); db_secret_arn=get_param("/securebase/db/secret_arn"); db_name=get_param("/securebase/db/name")
     except ClientError: return cors_response(500,{"message":"Configuration error."})
     try:
+        # Validate the job belongs to this email and is still active before doing anything.
+        # Use LOWER() on sr.email for consistent case-insensitive matching (matches the index).
+        rows=rds.execute_statement(
+            resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,
+            sql=("SELECT sr.id, sr.org_name, sr.aws_region, sr.mfa_enabled, sr.guardrails_level "
+                 "FROM onboarding_jobs oj "
+                 "JOIN signup_requests sr ON sr.id = oj.customer_id "
+                 "WHERE oj.id = :job_id AND LOWER(sr.email) = :email "
+                 "AND oj.overall_status IN ('pending','in_progress') LIMIT 1"),
+            parameters=[{"name":"job_id","value":{"stringValue":job_id}},{"name":"email","value":{"stringValue":email}}]
+        )["records"]
+    except ClientError as e: return cors_response(500,{"message":"Database error."})
+    if not rows: return cors_response(404,{"message":"Verification token not found or already processed."})
+    # Column order matches SELECT: id, org_name, aws_region, mfa_enabled, guardrails_level
+    customer_id=rows[0][0]["stringValue"]; org_name=rows[0][1]["stringValue"]; aws_region=rows[0][2]["stringValue"]
+    mfa_enabled=rows[0][3]["booleanValue"]; guardrails_level=rows[0][4]["stringValue"]
+    try:
         cognito.admin_update_user_attributes(UserPoolId=user_pool_id,Username=email,UserAttributes=[{"Name":"email_verified","Value":"true"}])
     except ClientError as e: logger.error("Cognito verify error: %s",e); return cors_response(500,{"message":"Failed to verify email."})
     try:
-        rows=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id,org_name,aws_region,mfa_enabled,guardrails_level FROM customers WHERE email=:e LIMIT 1",parameters=[{"name":"e","value":{"stringValue":email}}])["records"]
-        if not rows: return cors_response(404,{"message":"Account not found."})
-        # Column order matches SELECT: id, org_name, aws_region, mfa_enabled, guardrails_level
-        customer_id=rows[0][0]["stringValue"]; org_name=rows[0][1]["stringValue"]; aws_region=rows[0][2]["stringValue"]
-        mfa_enabled=rows[0][3]["booleanValue"]; guardrails_level=rows[0][4]["stringValue"]
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="UPDATE customers SET email_verified=TRUE,email_verified_at=NOW() WHERE email=:e",parameters=[{"name":"e","value":{"stringValue":email}}])
+        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,
+                              sql="UPDATE signup_requests SET email_verified=TRUE,email_verified_at=NOW() WHERE id=:cid",
+                              parameters=[{"name":"cid","value":{"stringValue":customer_id}}])
     except ClientError as e: return cors_response(500,{"message":"Database error."})
     try: invoke_provisioner(provisioner_fn,job_id,customer_id,email,org_name,aws_region,mfa_enabled,guardrails_level)
     except ClientError as e: logger.error("Provisioner re-invoke error: %s",e)
@@ -69,7 +83,7 @@ def handler(event,context):
         user_pool_id=get_param("/securebase/cognito/user_pool_id"); provisioner_fn=get_param("/securebase/provisioner/function")
     except ClientError as e: logger.error("SSM error: %s",e); return cors_response(500,{"message":"Configuration error."})
     try:
-        dup=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id FROM customers WHERE email=:email LIMIT 1",parameters=[{"name":"email","value":{"stringValue":email}}])
+        dup=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id FROM signup_requests WHERE LOWER(email)=:email LIMIT 1",parameters=[{"name":"email","value":{"stringValue":email}}])
         if dup["records"]: return cors_response(409,{"message":"An account with this email already exists."})
     except ClientError as e: return cors_response(500,{"message":"Database error."})
     try:
@@ -77,7 +91,7 @@ def handler(event,context):
     except cognito.exceptions.UsernameExistsException: return cors_response(409,{"message":"An account with this email already exists."})
     except ClientError as e: return cors_response(500,{"message":"Failed to create account."})
     try:
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO customers(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",parameters=[{"name":"id","value":{"stringValue":customer_id}},{"name":"email","value":{"stringValue":email}},{"name":"fn","value":{"stringValue":body["firstName"]}},{"name":"ln","value":{"stringValue":body["lastName"]}},{"name":"org","value":{"stringValue":body["orgName"]}},{"name":"sz","value":{"stringValue":body["orgSize"]}},{"name":"ind","value":{"stringValue":body["industry"]}},{"name":"reg","value":{"stringValue":body["awsRegion"]}},{"name":"mfa","value":{"booleanValue":bool(body.get("mfaEnabled",True))}},{"name":"gl","value":{"stringValue":body.get("guardrailsLevel","standard")}},{"name":"ca","value":{"stringValue":now}}])
+        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO signup_requests(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",parameters=[{"name":"id","value":{"stringValue":customer_id}},{"name":"email","value":{"stringValue":email}},{"name":"fn","value":{"stringValue":body["firstName"]}},{"name":"ln","value":{"stringValue":body["lastName"]}},{"name":"org","value":{"stringValue":body["orgName"]}},{"name":"sz","value":{"stringValue":body["orgSize"]}},{"name":"ind","value":{"stringValue":body["industry"]}},{"name":"reg","value":{"stringValue":body["awsRegion"]}},{"name":"mfa","value":{"booleanValue":bool(body.get("mfaEnabled",True))}},{"name":"gl","value":{"stringValue":body.get("guardrailsLevel","standard")}},{"name":"ca","value":{"stringValue":now}}])
         rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",parameters=[{"name":"id","value":{"stringValue":job_id}},{"name":"cid","value":{"stringValue":customer_id}},{"name":"ca","value":{"stringValue":now}}])
     except ClientError as e:
         try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)

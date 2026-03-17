@@ -11,8 +11,6 @@ const REGIONS = [
   { value: "ap-northeast-1", label: "Asia Pacific (Tokyo)" },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-
 export default function SignupForm({ onSuccess }) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
