@@ -38,12 +38,12 @@ def verify_email_handler(event,provisioner_fn):
         # Validate the job belongs to this email and is still active before doing anything.
         # Use LOWER() on sr.email for consistent case-insensitive matching (matches the index).
         rows=rds.execute_statement(
-            resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,
+        rows=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id,name,aws_region,mfa_enabled,guardrails_level FROM customers WHERE billing_email=:e LIMIT 1",parameters=[{"name":"e","value":{"stringValue":email}}])["records"]
             sql=("SELECT sr.id, sr.org_name, sr.aws_region, sr.mfa_enabled, sr.guardrails_level "
-                 "FROM onboarding_jobs oj "
+        # Column order matches SELECT: id, name (org_name), aws_region, mfa_enabled, guardrails_level
                  "JOIN signup_requests sr ON sr.id = oj.customer_id "
                  "WHERE oj.id = :job_id AND LOWER(sr.email) = :email "
-                 "AND oj.overall_status IN ('pending','in_progress') LIMIT 1"),
+        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="UPDATE customers SET email_verified=TRUE,email_verified_at=NOW() WHERE billing_email=:e",parameters=[{"name":"e","value":{"stringValue":email}}])
             parameters=[{"name":"job_id","value":{"stringValue":job_id}},{"name":"email","value":{"stringValue":email}}]
         )["records"]
     except ClientError as e: return cors_response(500,{"message":"Database error."})
