@@ -167,7 +167,7 @@ def handler(event, context):
         return {"status":"failed","step":"org_linked","error":str(e)}
     update_step(job_id, "org_linked", "completed", None, *db_args)
     update_job(job_id, "in_progress", aws_account_id, *db_args)
-    db_exec("UPDATE customers SET aws_account_id=:a WHERE id=:c",
+    db_exec("UPDATE signup_requests SET aws_account_id=:a WHERE id=:c",
             [{"name":"a","value":{"stringValue":aws_account_id}},{"name":"c","value":{"stringValue":customer_id}}],
             *db_args)
 
@@ -187,7 +187,7 @@ def handler(event, context):
     # Step 7: welcome email
     update_step(job_id, "welcome_sent", "in_progress", None, *db_args)
     try:
-        row = db_exec("SELECT first_name FROM customers WHERE id=:c",
+        row = db_exec("SELECT first_name FROM signup_requests WHERE id=:c",
                       [{"name":"c","value":{"stringValue":customer_id}}], *db_args)
         first_name = row["records"][0][0]["stringValue"] if row["records"] else "there"
         send_welcome(email, first_name, org_name, aws_account_id, sender)
@@ -196,7 +196,7 @@ def handler(event, context):
     update_step(job_id, "welcome_sent", "completed", None, *db_args)
 
     update_job(job_id, "completed", aws_account_id, *db_args)
-    db_exec("UPDATE customers SET onboarding_status='completed' WHERE id=:c",
+    db_exec("UPDATE signup_requests SET onboarding_status='completed' WHERE id=:c",
             [{"name":"c","value":{"stringValue":customer_id}}], *db_args)
 
     logger.info("Provisioning complete: job=%s account=%s", job_id, aws_account_id)
