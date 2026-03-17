@@ -46,6 +46,7 @@ def handler(event,context):
         db.execute_write("INSERT INTO customers(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",{"id":customer_id,"email":email,"fn":body["firstName"],"ln":body["lastName"],"org":body["orgName"],"sz":body["orgSize"],"ind":body["industry"],"reg":body["awsRegion"],"mfa":bool(body.get("mfaEnabled",True)),"gl":body.get("guardrailsLevel","standard"),"ca":now})
         db.execute_write("INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",{"id":job_id,"cid":customer_id,"ca":now})
     except Exception as e:
+        logger.error("DB write error: %s", str(e), exc_info=True)
         try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)
         except: pass
         return cors(500,{"message":"Failed to save account data."})
