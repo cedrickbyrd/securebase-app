@@ -306,8 +306,8 @@ After Phase 2 goes live:
 
 ## Resources
 
-- **Docs:** [docs.securebase.io](https://docs.securebase.io)
-- **Status:** [status.securebase.io](https://status.securebase.io)
+- **Docs:** [docs.securebase.tximhotep.com](https://docs.securebase.tximhotep.com)
+- **Status:** [status.securebase.tximhotep.com](https://status.securebase.tximhotep.com)
 - **API Ref:** [API_REFERENCE.md](API_REFERENCE.md)
 - **Deployment:** [PHASE2_DEPLOYMENT_DETAILED.md](PHASE2_DEPLOYMENT_DETAILED.md)
 - **Quickstart:** Run `./PHASE2_QUICK_START.sh`

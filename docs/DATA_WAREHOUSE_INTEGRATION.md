@@ -607,8 +607,8 @@ const exportToWarehouse = async (customerId, dateRange) => {
 
 ## Support
 
-**Documentation:** https://docs.securebase.io/data-warehouse  
-**Email:** warehouse-support@securebase.io  
+**Documentation:** https://docs.securebase.tximhotep.com/data-warehouse  
+**Email:** warehouse-support@securebase.tximhotep.com  
 **Slack:** #data-warehouse-help
 
 ---

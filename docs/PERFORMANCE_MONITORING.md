@@ -321,7 +321,7 @@ import time
 import statistics
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-API_BASE = "https://api.securebase.io/v1"
+API_BASE = "https://api.securebase.tximhotep.com/v1"
 API_KEY = "your-api-key"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
@@ -391,7 +391,7 @@ if __name__ == '__main__':
 #!/bin/bash
 # Test PDF export performance
 
-API_BASE="https://api.securebase.io/v1"
+API_BASE="https://api.securebase.tximhotep.com/v1"
 API_KEY="your-api-key"
 
 echo "Testing PDF export performance..."

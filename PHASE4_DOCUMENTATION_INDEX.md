@@ -245,8 +245,8 @@ Then: [Troubleshooting Guides](#troubleshooting), [Common Issues](#faq)
 ### Support Channels
 - **Email:** support@securebase.com
 - **Slack:** #phase4-support
-- **Status Page:** https://status.securebase.io
-- **Documentation:** https://docs.securebase.io
+- **Status Page:** https://status.securebase.tximhotep.com
+- **Documentation:** https://docs.securebase.tximhotep.com
 
 ---
 

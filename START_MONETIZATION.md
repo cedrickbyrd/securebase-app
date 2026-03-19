@@ -106,7 +106,7 @@ Before deploying, ensure you have:
 
 **Optional (can add later):**
 - [ ] Stripe account (https://dashboard.stripe.com/register)
-- [ ] Domain name for portal (portal.securebase.io)
+- [ ] Domain name for portal (portal.securebase.tximhotep.com)
 - [ ] Email service for notifications
 
 ---

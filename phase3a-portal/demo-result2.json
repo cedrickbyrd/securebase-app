@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"error\": \"{'S': 'ERROR', 'V': 'ERROR', 'C': '22P02', 'M': 'invalid input syntax for type uuid: \\\"demo-user-001\\\"', 'P': '158', 'F': 'uuid.c', 'L': '133', 'R': 'string_to_uuid'}\"}"}

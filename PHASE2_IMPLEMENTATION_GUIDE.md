@@ -267,12 +267,12 @@ Start Date: {date}
 Billing Period: Monthly, on the 1st
 Invoice Delivery: Automatic email to {billing_email}
 
-API Documentation: https://docs.securebase.io/api
+API Documentation: https://docs.securebase.tximhotep.com/api
 
 Your API Key (save securely):
 sk_live_{customer_id}_{random_suffix}
 
-Questions? Reply to this email or contact support@securebase.io
+Questions? Reply to this email or contact support@securebase.tximhotep.com
 ```
 
 ### **Portal Feature: Billing Dashboard**

@@ -6,7 +6,7 @@ The SecureBase demo environment provides a fully functional, pre-populated versi
 
 **Demo URL:** [http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com](http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com)
 
-**Custom Domain (when configured):** [https://demo.securebase.io](https://demo.securebase.io)
+**Custom Domain (when configured):** [https://demo.securebase.tximhotep.com](https://demo.securebase.tximhotep.com)
 
 ---
 
@@ -151,7 +151,7 @@ When backend infrastructure is deployed, the system can switch to true sequentia
 **Enable Backend Counter:**
 ```env
 VITE_DEMO_COUNTER_ENABLED=true
-VITE_DEMO_COUNTER_API=https://api.securebase.io/demo/customer-index
+VITE_DEMO_COUNTER_API=https://api.securebase.tximhotep.com/demo/customer-index
 ```
 
 The frontend gracefully falls back to time-based rotation if the backend is unavailable.
@@ -233,9 +233,9 @@ VITE_RESET_INTERVAL_HOURS=24
 VITE_DEMO_SESSION_DURATION_DAYS=7
 
 # CTAs
-VITE_DEMO_CTA_TRIAL_URL=https://securebase.io/signup
-VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.io/contact
-VITE_DEMO_CTA_CONTACT_SALES=mailto:sales@securebase.io
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/signup
+VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.tximhotep.com/contact
+VITE_DEMO_CTA_CONTACT_SALES=mailto:sales@securebase.tximhotep.com
 ```
 
 ### Customizing Demo Data
@@ -501,7 +501,7 @@ aws s3api put-bucket-logging \
 - [ ] **Live Chat**: Embedded support chat for questions
 - [ ] **Video Tutorials**: Context-aware help videos
 - [ ] **Comparison Mode**: Side-by-side tier comparison
-- [ ] **Custom Domain**: demo.securebase.io with SSL
+- [ ] **Custom Domain**: demo.securebase.tximhotep.com with SSL
 
 ### Nice-to-Have
 
@@ -515,8 +515,8 @@ aws s3api put-bucket-logging \
 ## Support
 
 **Questions about the demo?**
-- Technical issues: dev-team@securebase.io
-- Sales/marketing: sales@securebase.io
+- Technical issues: dev-team@securebase.tximhotep.com
+- Sales/marketing: sales@securebase.tximhotep.com
 - Documentation: [PHASE3A_DEPLOYMENT_GUIDE.md](./PHASE3A_DEPLOYMENT_GUIDE.md)
 
 **Want to contribute?**

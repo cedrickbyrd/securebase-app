@@ -241,7 +241,7 @@ Explore Now → Analytics
 
 ### Email Delivery
 
-**From:** notifications@securebase.io  
+**From:** notifications@securebase.tximhotep.com  
 **Subject Line:** Includes priority and summary
 
 **HTML Format:**
@@ -263,7 +263,7 @@ Explore Now → Analytics
 ```
 [CRITICAL] SecureBase Alert:
 Unauthorized access detected from IP 192.168.1.1
-Details: https://app.securebase.io/alerts/123
+Details: https://app.securebase.tximhotep.com/alerts/123
 ```
 
 **Character Limit:** 160 characters (message truncated with "...")
@@ -324,7 +324,7 @@ def verify_signature(payload, signature, secret):
 
 ### Security Considerations
 
-1. **Verify Sources**: Emails from `notifications@securebase.io` only
+1. **Verify Sources**: Emails from `notifications@securebase.tximhotep.com` only
 2. **Beware of Phishing**: Never click suspicious links
 3. **Webhook Security**: Always validate HMAC signatures
 4. **SMS Spoofing**: Verify sender number matches documentation
@@ -368,7 +368,7 @@ Informational: Disabled
 1. Check spam/junk folder
 2. Verify email address in Settings
 3. Ensure email is verified (check for verification email)
-4. Whitelist `notifications@securebase.io`
+4. Whitelist `notifications@securebase.tximhotep.com`
 
 **SMS:**
 1. Verify phone number format (+1XXXXXXXXXX)
@@ -405,8 +405,8 @@ Informational: Disabled
 
 - **Documentation**: [NOTIFICATION_API.md](./NOTIFICATION_API.md)
 - **Technical Issues**: [NOTIFICATION_TROUBLESHOOTING.md](./NOTIFICATION_TROUBLESHOOTING.md)
-- **Support**: support@securebase.io
-- **Emergency**: security@securebase.io (security alerts only)
+- **Support**: support@securebase.tximhotep.com
+- **Emergency**: security@securebase.tximhotep.com (security alerts only)
 
 ---
 

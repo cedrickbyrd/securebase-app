@@ -1,7 +1,9 @@
-import json, os
+import json, os, logging
 import boto3
 import pg8000.native
+from pg8000.exceptions import DatabaseError
 
+logger = logging.getLogger()
 _sm = boto3.client("secretsmanager")
 _creds_cache = {}
 
@@ -23,23 +25,24 @@ def _conn():
     )
 
 def execute(sql, params=None):
-    """
-    Execute a SELECT query.
-    Pass params as a list: execute("SELECT ... WHERE id=$1", [my_id])
-    """
     conn = _conn()
     try:
-        return conn.run(sql, *params) if params else conn.run(sql)
+        result = conn.run(sql, **params) if params else conn.run(sql)
+        logger.debug(f"Query executed successfully")
+        return result
+    except DatabaseError as e:
+        logger.error(f"Database error: {e}")
+        raise
     finally:
         conn.close()
 
 def execute_write(sql, params=None):
-    """
-    Execute an INSERT/UPDATE/DELETE.
-    Pass params as a list: execute_write("INSERT ... VALUES($1,$2)", [val1, val2])
-    """
     conn = _conn()
     try:
-        conn.run(sql, *params) if params else conn.run(sql)
+        conn.run(sql, **params) if params else conn.run(sql)
+        logger.debug(f"Write executed successfully")
+    except DatabaseError as e:
+        logger.error(f"Database error: {e}")
+        raise
     finally:
         conn.close()

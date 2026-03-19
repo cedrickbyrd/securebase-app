@@ -1,8 +1,8 @@
-# PR Summary: Add Netlify Deployment for demo.securebase.io
+# PR Summary: Add Netlify Deployment for demo.securebase.tximhotep.com
 
 ## Overview
 
-This PR adds Netlify as a deployment option for the SecureBase marketing site, enabling deployment to demo.securebase.io with a single click.
+This PR adds Netlify as a deployment option for the SecureBase marketing site, enabling deployment to demo.securebase.tximhotep.com with a single click.
 
 ## Files Changed (6 total)
 
@@ -76,7 +76,7 @@ The marketing site can now be deployed to:
 
 ## Next Steps
 
-To deploy to demo.securebase.io:
+To deploy to demo.securebase.tximhotep.com:
 
 1. Connect repository to Netlify
 2. Netlify auto-detects `netlify.toml`
