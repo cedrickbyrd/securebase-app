@@ -23,16 +23,23 @@ def _conn():
     )
 
 def execute(sql, params=None):
+    """
+    Execute a SELECT query.
+    Pass params as a list: execute("SELECT ... WHERE id=$1", [my_id])
+    """
     conn = _conn()
     try:
-        return conn.run(sql, **params) if params else conn.run(sql)
+        return conn.run(sql, *params) if params else conn.run(sql)
     finally:
         conn.close()
 
 def execute_write(sql, params=None):
+    """
+    Execute an INSERT/UPDATE/DELETE.
+    Pass params as a list: execute_write("INSERT ... VALUES($1,$2)", [val1, val2])
+    """
     conn = _conn()
     try:
-        conn.run(sql, **params) if params else conn.run(sql)
-        # pg8000.native auto-commits DDL/DML — no explicit commit needed
+        conn.run(sql, *params) if params else conn.run(sql)
     finally:
         conn.close()

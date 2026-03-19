@@ -13,11 +13,11 @@ def get_param(n): return ssm.get_parameter(Name=n,WithDecryption=True)["Paramete
 
 def update_step(job_id,step,status,error=None):
     now=datetime.now(timezone.utc).isoformat()
-    db.execute_write("INSERT INTO onboarding_steps(job_id,step_key,status,error_message,updated_at) VALUES(:j,:k,:s,:e,:t) ON CONFLICT(job_id,step_key) DO UPDATE SET status=EXCLUDED.status,error_message=EXCLUDED.error_message,updated_at=EXCLUDED.updated_at",{"j":job_id,"k":step,"s":status,"e":error,"t":now})
+    db.execute_write("INSERT INTO onboarding_steps(job_id,step_key,status,error_message,updated_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(job_id,step_key) DO UPDATE SET status=EXCLUDED.status,error_message=EXCLUDED.error_message,updated_at=EXCLUDED.updated_at",[job_id,step,status,error,now])
 
 def update_job(job_id,status,account_id=None):
     now=datetime.now(timezone.utc).isoformat()
-    db.execute_write("UPDATE onboarding_jobs SET overall_status=:s,aws_account_id=:a,updated_at=:t WHERE id=:j",{"j":job_id,"s":status,"a":account_id,"t":now})
+    db.execute_write("UPDATE onboarding_jobs SET overall_status=$1,aws_account_id=$2,updated_at=$3 WHERE id=$4",[status,account_id,now,job_id])
 
 def email_verified(email,pool_id):
     try:
@@ -93,7 +93,7 @@ def handler(event,context):
         return{"status":"failed","step":"org_linked","error":str(e)}
     update_step(job_id,"org_linked","completed")
     update_job(job_id,"in_progress",aws_account_id)
-    db.execute_write("UPDATE customers SET aws_account_id=:a WHERE id=:c",{"a":aws_account_id,"c":customer_id})
+    db.execute_write("UPDATE customers SET aws_account_id=$1 WHERE id=$2",[aws_account_id,customer_id])
     update_step(job_id,"terraform_applied","in_progress")
     try:
         build_id=trigger_terraform({"awsAccountId":aws_account_id,"orgName":org_name,"awsRegion":aws_region,"mfaEnabled":mfa_enabled,"guardrailsLevel":guardrails_level,"jobId":job_id},cb_project)
@@ -106,12 +106,12 @@ def handler(event,context):
     update_step(job_id,"iam_roles_created","completed")
     update_step(job_id,"welcome_sent","in_progress")
     try:
-        rows=db.execute("SELECT first_name FROM customers WHERE id=:c",{"c":customer_id})
+        rows=db.execute("SELECT first_name FROM customers WHERE id=$1",[customer_id])
         first_name=rows[0][0] if rows else "there"
         send_welcome(email,first_name,org_name,aws_account_id,ses_sender)
     except Exception as e: logger.warning("Welcome email (non-fatal): %s",e)
     update_step(job_id,"welcome_sent","completed")
     update_job(job_id,"completed",aws_account_id)
-    db.execute_write("UPDATE customers SET onboarding_status='completed' WHERE id=:c",{"c":customer_id})
+    db.execute_write("UPDATE customers SET onboarding_status='completed' WHERE id=$1",[customer_id])
     logger.info("Complete: job=%s account=%s",job_id,aws_account_id)
     return{"status":"completed","awsAccountId":aws_account_id}
