@@ -35,7 +35,7 @@ def handler(event,context):
         provisioner_fn=get_param("/securebase/provisioner/function")
     except ClientError as e: logger.error("SSM: %s",e); return cors(500,{"message":"Configuration error."})
     try:
-        rows=db.execute("SELECT id FROM customers WHERE email=:email LIMIT 1",{"email":email})
+        rows=db.execute("SELECT id FROM customers WHERE LOWER(email)=$1 LIMIT 1",[email])
         if rows: return cors(409,{"message":"An account with this email already exists."})
     except Exception as e: logger.error("DB: %s",e); return cors(500,{"message":"Database error."})
     try:
@@ -43,8 +43,8 @@ def handler(event,context):
     except cognito.exceptions.UsernameExistsException: return cors(409,{"message":"An account with this email already exists."})
     except ClientError as e: return cors(500,{"message":"Failed to create account."})
     try:
-        db.execute_write("INSERT INTO customers(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",{"id":customer_id,"email":email,"fn":body["firstName"],"ln":body["lastName"],"org":body["orgName"],"sz":body["orgSize"],"ind":body["industry"],"reg":body["awsRegion"],"mfa":bool(body.get("mfaEnabled",True)),"gl":body.get("guardrailsLevel","standard"),"ca":now})
-        db.execute_write("INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",{"id":job_id,"cid":customer_id,"ca":now})
+        db.execute_write("INSERT INTO customers(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',$11)",[customer_id,email,body["firstName"],body["lastName"],body["orgName"],body["orgSize"],body["industry"],body["awsRegion"],bool(body.get("mfaEnabled",True)),body.get("guardrailsLevel","standard"),now])
+        db.execute_write("INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES($1,$2,'pending',$3,$3)",[job_id,customer_id,now])
     except Exception as e:
         logger.error("DB write error: %s", str(e), exc_info=True)
         try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)

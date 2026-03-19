@@ -15,11 +15,11 @@ def handler(event,context):
     if not job_id: return cors(400,{"message":"jobId is required."})
     if not re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",job_id): return cors(400,{"message":"Invalid jobId."})
     try:
-        rows=db.execute("SELECT overall_status,aws_account_id,created_at FROM onboarding_jobs WHERE id=:id",{"id":job_id})
+        rows=db.execute("SELECT overall_status,aws_account_id,created_at FROM onboarding_jobs WHERE id=$1",[job_id])
     except Exception as e: logger.error("DB: %s",e); return cors(500,{"message":"Database error."})
     if not rows: return cors(404,{"message":"Job not found."})
     overall_status=rows[0][0]; aws_account_id=rows[0][1]; created_at=str(rows[0][2])
-    try: step_rows=db.execute("SELECT step_key,status,error_message,updated_at FROM onboarding_steps WHERE job_id=:id",{"id":job_id})
+    try: step_rows=db.execute("SELECT step_key,status,error_message,updated_at FROM onboarding_steps WHERE job_id=$1",[job_id])
     except: step_rows=[]
     steps={k:"pending" for k in STEP_KEYS}; timestamps={}; errors={}
     for r in step_rows:

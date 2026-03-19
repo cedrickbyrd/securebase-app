@@ -25,7 +25,7 @@ def lambda_handler(event,context):
         pool_id=get_param("/securebase/cognito/user_pool_id"); provisioner=get_param("/securebase/provisioner/function")
     except ClientError: return resp(500,{"error":"Configuration error."})
     try:
-        rows=db.execute("SELECT j.id,j.customer_id,c.email,c.first_name,c.org_name,c.aws_region,c.mfa_enabled,c.guardrails_level FROM onboarding_jobs j JOIN customers c ON c.id=j.customer_id WHERE j.id=:job_id AND LOWER(c.email)=:email LIMIT 1",{"job_id":job_id,"email":email})
+        rows=db.execute("SELECT j.id,j.customer_id,c.email,c.first_name,c.org_name,c.aws_region,c.mfa_enabled,c.guardrails_level FROM onboarding_jobs j JOIN customers c ON c.id=j.customer_id WHERE j.id=$1 AND LOWER(c.email)=$2 LIMIT 1",[job_id,email])
     except Exception as e: logger.error("DB: %s",e); return resp(500,{"error":"Database error."})
     if not rows: return resp(404,{"error":"Token not found or email mismatch."})
     r=rows[0]; customer_id=r[1]; db_email=r[2]; org_name=r[4]; aws_region=r[5]; mfa_enabled=r[6]; guardrails=r[7]
@@ -33,7 +33,7 @@ def lambda_handler(event,context):
         cognito.admin_update_user_attributes(UserPoolId=pool_id,Username=db_email,UserAttributes=[{"Name":"email_verified","Value":"true"}])
     except ClientError as e: logger.error("Cognito: %s",e); return resp(500,{"error":"Failed to verify email."})
     now=datetime.now(timezone.utc).isoformat()
-    try: db.execute_write("UPDATE customers SET email_verified=TRUE,email_verified_at=:ts WHERE id=:cid",{"ts":now,"cid":customer_id})
+    try: db.execute_write("UPDATE customers SET email_verified=TRUE,email_verified_at=$1 WHERE id=$2",[now,customer_id])
     except Exception as e: logger.error("DB update: %s",e)
     try: lambda_.invoke(FunctionName=provisioner,InvocationType="Event",Payload=json.dumps({"jobId":job_id,"customerId":customer_id,"email":db_email,"orgName":org_name,"awsRegion":aws_region,"mfaEnabled":mfa_enabled,"guardrailsLevel":guardrails}))
     except Exception as e: logger.warning("Provisioner (non-fatal): %s",e)
