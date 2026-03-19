@@ -1002,21 +1002,6 @@ resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
         Principal = "*"
         Action    = "execute-api:Invoke"
         Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-      },
-      {
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "execute-api:Invoke"
-        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-        Condition = {
-          StringNotEquals = {
-            "aws:Referer" = "Netlify"
-          }
-          # This ensures CORS preflight (OPTIONS) isn't blocked by the Netlify filter
-          StringNotLike = {
-            "aws:Method" = "OPTIONS"
-          }
-        }
       }
     ]
   })

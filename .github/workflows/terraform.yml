@@ -98,13 +98,13 @@ jobs:
           aws-region: us-east-1
           audience: sts.amazonaws.com
 
-- name: Terraform init
-  run: |
-    terraform init -reconfigure \
-      -backend-config="bucket=YOUR_S3_BUCKET_NAME" \
-      -backend-config="key=landing-zone/dev/terraform.tfstate" \
-      -backend-config="region=us-east-1" \
-      -backend-config="dynamodb_table=YOUR_DYNAMODB_TABLE"  # if using state locking
+      - name: Terraform init
+        run: |
+          terraform init -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/dev/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
 
       - name: Terraform validate
         run: terraform validate
