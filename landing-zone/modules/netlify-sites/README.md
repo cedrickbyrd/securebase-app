@@ -8,8 +8,8 @@ This Terraform module manages Netlify deployments for SecureBase's marketing sit
 ## Features
 
 ### ✅ Automated Site Management
-- **Marketing Site**: Production marketing site at securebase.io
-- **Portal Demo**: Customer portal demo at portal-demo.securebase.io
+- **Marketing Site**: Production marketing site at securebase.tximhotep.com
+- **Portal Demo**: Customer portal demo at portal-demo.securebase.tximhotep.com
 - **GitHub Integration**: Automatic deployments on push to main branch
 - **Build Configuration**: Declarative build commands, environment variables, and publish directories
 
@@ -42,8 +42,8 @@ This Terraform module manages Netlify deployments for SecureBase's marketing sit
 | `netlify_token` | string | (required) | Netlify API token - **SENSITIVE** |
 | `github_owner` | string | `"cedrickbyrd"` | GitHub repository owner |
 | `github_repo` | string | `"securebase-app"` | GitHub repository name |
-| `marketing_domain` | string | `"securebase.io"` | Custom domain for marketing site |
-| `portal_demo_domain` | string | `"portal-demo.securebase.io"` | Custom domain for portal demo |
+| `marketing_domain` | string | `"securebase.tximhotep.com"` | Custom domain for marketing site |
+| `portal_demo_domain` | string | `"portal-demo.securebase.tximhotep.com"` | Custom domain for portal demo |
 | `tags` | map(string) | `{}` | Common tags for resources |
 
 ### Variable Validation
@@ -84,8 +84,8 @@ module "netlify_sites" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
   
   tags = {
     Project     = "SecureBase"
@@ -322,37 +322,37 @@ If migration fails:
 
 After deploying sites with custom domains, configure DNS:
 
-### Marketing Site (securebase.io)
+### Marketing Site (securebase.tximhotep.com)
 ```
 # Add to your DNS provider (e.g., Route53, Cloudflare, Namecheap)
 
 # Option 1: ALIAS/ANAME record (recommended)
-securebase.io.  ALIAS   <netlify-site-url>
+securebase.tximhotep.com.  ALIAS   <netlify-site-url>
 
 # Option 2: A record to Netlify load balancer
-securebase.io.  A       75.2.60.5
+securebase.tximhotep.com.  A       75.2.60.5
 
 # HTTPS Certificate
 # Netlify auto-provisions Let's Encrypt certificates after DNS verification
 ```
 
-### Portal Demo (portal-demo.securebase.io)
+### Portal Demo (portal-demo.securebase.tximhotep.com)
 ```
 # Add to your DNS provider
 
 # CNAME record
-portal-demo.securebase.io.  CNAME   <netlify-demo-url>
+portal-demo.securebase.tximhotep.com.  CNAME   <netlify-demo-url>
 ```
 
 ### Verification
 ```bash
 # Check DNS propagation
-dig securebase.io
-dig portal-demo.securebase.io
+dig securebase.tximhotep.com
+dig portal-demo.securebase.tximhotep.com
 
 # Verify HTTPS
-curl -I https://securebase.io
-curl -I https://portal-demo.securebase.io
+curl -I https://securebase.tximhotep.com
+curl -I https://portal-demo.securebase.tximhotep.com
 ```
 
 **Note**: DNS propagation can take 24-48 hours. Netlify will automatically provision SSL certificates once DNS is verified.

@@ -22,10 +22,10 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Define namespace UUID for deterministic generation
--- Using DNS namespace + 'securebase.io' for repeatability
+-- Using DNS namespace + 'securebase.tximhotep.com' for repeatability
 DO $$ 
 DECLARE
-  securebase_namespace UUID := uuid_generate_v5(uuid_ns_dns(), 'securebase.io');
+  securebase_namespace UUID := uuid_generate_v5(uuid_ns_dns(), 'securebase.tximhotep.com');
 BEGIN
   -- Store in temporary table for reuse
   CREATE TEMP TABLE IF NOT EXISTS namespace (uuid UUID);
@@ -500,7 +500,7 @@ INSERT INTO support_tickets (
     'resolved',
     'security',
     'security@acmehealthcare.example.com',
-    'support-tier2@securebase.io',
+    'support-tier2@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '45 days',
     CURRENT_TIMESTAMP - INTERVAL '43 days',
     CURRENT_TIMESTAMP - INTERVAL '43 days'
@@ -515,7 +515,7 @@ INSERT INTO support_tickets (
     'resolved',
     'compliance',
     'compliance@acmehealthcare.example.com',
-    'support-tier3@securebase.io',
+    'support-tier3@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '32 days',
     CURRENT_TIMESTAMP - INTERVAL '30 days',
     CURRENT_TIMESTAMP - INTERVAL '30 days'
@@ -530,7 +530,7 @@ INSERT INTO support_tickets (
     'in_progress',
     'account_management',
     'admin@acmehealthcare.example.com',
-    'support-tier2@securebase.io',
+    'support-tier2@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '5 days',
     CURRENT_TIMESTAMP - INTERVAL '1 day',
     NULL
@@ -547,7 +547,7 @@ INSERT INTO support_tickets (
     'resolved',
     'compliance',
     'audit@techflowfin.example.com',
-    'support-compliance@securebase.io',
+    'support-compliance@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '28 days',
     CURRENT_TIMESTAMP - INTERVAL '26 days',
     CURRENT_TIMESTAMP - INTERVAL '26 days'
@@ -562,7 +562,7 @@ INSERT INTO support_tickets (
     'open',
     'capacity',
     'devops@techflowfin.example.com',
-    'support-tier2@securebase.io',
+    'support-tier2@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '3 days',
     CURRENT_TIMESTAMP - INTERVAL '2 days',
     NULL
@@ -579,7 +579,7 @@ INSERT INTO support_tickets (
     'resolved',
     'compliance',
     'cloudadmin@energy.gov.example.com',
-    'support-fedramp@securebase.io',
+    'support-fedramp@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '68 days',
     CURRENT_TIMESTAMP - INTERVAL '65 days',
     CURRENT_TIMESTAMP - INTERVAL '65 days'
@@ -594,7 +594,7 @@ INSERT INTO support_tickets (
     'resolved',
     'security',
     'security@energy.gov.example.com',
-    'support-tier3@securebase.io',
+    'support-tier3@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '52 days',
     CURRENT_TIMESTAMP - INTERVAL '48 days',
     CURRENT_TIMESTAMP - INTERVAL '48 days'
@@ -611,7 +611,7 @@ INSERT INTO support_tickets (
     'open',
     'billing',
     'founder@startupco.example.com',
-    'support-sales@securebase.io',
+    'support-sales@securebase.tximhotep.com',
     CURRENT_TIMESTAMP - INTERVAL '2 days',
     CURRENT_TIMESTAMP - INTERVAL '1 day',
     NULL
@@ -883,7 +883,7 @@ INSERT INTO notifications (
     'system_update',
     'email',
     'Welcome to SecureBase!',
-    'Thank you for starting your trial! Your infrastructure is ready. Access your dashboard at portal.securebase.io with your API key.',
+    'Thank you for starting your trial! Your infrastructure is ready. Access your dashboard at portal.securebase.tximhotep.com with your API key.',
     'founder@startupco.example.com',
     NULL,
     CURRENT_TIMESTAMP - INTERVAL '7 days',
@@ -904,7 +904,7 @@ INSERT INTO notifications (
     CURRENT_TIMESTAMP - INTERVAL '12 hours',
     CURRENT_TIMESTAMP - INTERVAL '12 hours',
     NULL,  -- Not yet read
-    '{"trial_days_remaining": 23, "upgrade_url": "https://portal.securebase.io/upgrade"}',
+    '{"trial_days_remaining": 23, "upgrade_url": "https://portal.securebase.tximhotep.com/upgrade"}',
     CURRENT_TIMESTAMP - INTERVAL '12 hours'
   )
 ON CONFLICT (id) DO NOTHING;

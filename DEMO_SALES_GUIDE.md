@@ -86,7 +86,7 @@ Perform these steps once. After that, any rep can self-serve.
 
    This creates:
    - The `Customers-Sales` OU under your AWS Organization root
-   - The `securebase-demo-sales` AWS account (`demo.sales@securebase.io`)
+   - The `securebase-demo-sales` AWS account (`demo.sales@securebase.tximhotep.com`)
 
 2. **Enable IAM Identity Center** in the AWS Console (if not already active).
 
@@ -207,7 +207,7 @@ http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
 • Full portal functionality (read-only)
 • Explore at your own pace
 
-Ready to deploy your own? Start free trial: https://securebase.io/signup
+Ready to deploy your own? Start free trial: https://securebase.tximhotep.com/signup
 ```
 
 ### Invite to Live Demo Session
@@ -219,7 +219,7 @@ Hi [Name],
 
 I've set up a live demo environment tailored for your evaluation.
 
-🎯 Portal: https://portal-demo.securebase.io
+🎯 Portal: https://portal-demo.securebase.tximhotep.com
 📧 Login:  [their email]
 
 What's inside:
@@ -315,7 +315,7 @@ Happy to hop on a call: [Calendly link]
 
 ## TODO (Future Enhancements)
 
-- [ ] **One-click web UI** — a simple form on `https://demo.securebase.io/new`
+- [ ] **One-click web UI** — a simple form on `https://demo.securebase.tximhotep.com/new`
   where a sales rep enters their name and email, clicks "Create Demo", and
   receives a portal link — no CLI required.
   *(Planned in Phase 6; tracked in [issue tracker])*
@@ -338,8 +338,8 @@ Happy to hop on a call: [Calendly link]
 | Platform docs | `docs/PAAS_ARCHITECTURE.md` |
 
 **Contacts:**
-- Demo technical issues: dev-team@securebase.io
-- Sales questions: sales@securebase.io
+- Demo technical issues: dev-team@securebase.tximhotep.com
+- Sales questions: sales@securebase.tximhotep.com
 - Slack: #sales-enablement
 
 
@@ -394,7 +394,7 @@ http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com
 • Full portal functionality (read-only)
 • Explore at your own pace
 
-Ready to deploy your own? Start free trial: https://securebase.io/signup
+Ready to deploy your own? Start free trial: https://securebase.tximhotep.com/signup
 ```
 
 ### Email Template
@@ -422,7 +422,7 @@ Questions? Let me know!
 
 [Your name]
 
-P.S. Ready to deploy? Start your free trial: https://securebase.io/signup
+P.S. Ready to deploy? Start your free trial: https://securebase.tximhotep.com/signup
 ```
 
 ### Follow-Up Template
@@ -503,8 +503,8 @@ The demo includes prominent CTAs:
    - "Start Free Trial"
 
 **Where they go:**
-- Start Free Trial → https://securebase.io/signup
-- Book Demo → https://securebase.io/contact
+- Start Free Trial → https://securebase.tximhotep.com/signup
+- Book Demo → https://securebase.tximhotep.com/contact
 
 ---
 
@@ -622,8 +622,8 @@ A: Unlimited! Demo never expires.
 
 ## 📞 Need Help?
 
-**Demo technical issues:** dev-team@securebase.io  
-**Sales questions:** sales@securebase.io  
+**Demo technical issues:** dev-team@securebase.tximhotep.com  
+**Sales questions:** sales@securebase.tximhotep.com  
 **Updated demo link?** Check Slack #sales channel  
 
 **More Resources:**

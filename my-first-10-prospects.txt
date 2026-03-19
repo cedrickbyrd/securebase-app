@@ -1,0 +1,99 @@
+# 🎯 MY FIRST 10 PROSPECTS
+
+## PRIORITY 1 - EMAIL THIS WEEK (Your Network)
+
+### Prospect 1
+Company: 
+Contact Name: 
+Title: 
+Email: 
+Why they need SecureBase: 
+Your connection: 
+First line of email: 
+
+### Prospect 2  
+Company: 
+Contact Name:
+Title:
+Email:
+Why they need SecureBase:
+Your connection:
+First line of email:
+
+### Prospect 3
+Company:
+Contact Name:
+Title:
+Email:
+Why they need SecureBase:
+Your connection:
+First line of email:
+
+---
+
+## PRIORITY 2 - EMAIL NEXT WEEK (YC/LinkedIn)
+
+### Prospect 4
+Company:
+Found via: (YC/LinkedIn/Other)
+Contact Name:
+Email:
+Pain point observed:
+First line of email:
+
+### Prospect 5
+Company:
+Found via:
+Contact Name:
+Email:
+Pain point observed:
+First line of email:
+
+### Prospect 6
+Company:
+Found via:
+Contact Name:
+Email:
+Pain point observed:
+First line of email:
+
+### Prospect 7
+Company:
+Found via:
+Contact Name:
+Email:
+Pain point observed:
+First line of email:
+
+---
+
+## PRIORITY 3 - BACKUP PROSPECTS
+
+### Prospect 8
+Company:
+Found via:
+Contact Name:
+Email:
+
+### Prospect 9
+Company:
+Found via:
+Contact Name:
+Email:
+
+### Prospect 10
+Company:
+Found via:
+Contact Name:
+Email:
+
+---
+
+## NEXT ACTIONS
+
+[ ] Fill out all 10 prospects (2 hours max)
+[ ] Email Priority 1 prospects THIS WEEK
+[ ] Email Priority 2 prospects NEXT WEEK
+[ ] Track responses in sales-tracker.txt
+
+**Start with people you know. That's always the fastest path to the first sale.**

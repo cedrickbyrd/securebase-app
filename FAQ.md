@@ -2,9 +2,9 @@
 
 **Frequently Asked Questions**
 
-Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and we'll get back to you within 2 hours.
+Can't find what you're looking for? [Contact us](mailto:sales@securebase.tximhotep.com) and we'll get back to you within 2 hours.
 
-[🚀 Start Free Trial](https://securebase.io/signup) | [📞 Book Demo](https://securebase.io/contact) | [💰 View Pricing](./PRICING.md)
+[🚀 Start Free Trial](https://securebase.tximhotep.com/signup) | [📞 Book Demo](https://securebase.tximhotep.com/contact) | [💰 View Pricing](./PRICING.md)
 
 ---
 
@@ -119,7 +119,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** Yes. We offer a 30-day money-back guarantee on your first month of service (excludes pilot program pricing). If you're not satisfied for any reason, we'll refund your payment in full. Annual contracts are non-refundable after 30 days but can be canceled with prorated credit.
 
 ### 33. **Q: Are there volume discounts?**
-**A:** Yes. Volume discounts apply when you deploy multiple customer environments: 5-20 environments (10% off), 21-50 (15% off), 51-100 (20% off), 100+ (custom enterprise pricing). Multi-year contracts (3+ years) also qualify for additional discounts. Contact [sales@securebase.io](mailto:sales@securebase.io).
+**A:** Yes. Volume discounts apply when you deploy multiple customer environments: 5-20 environments (10% off), 21-50 (15% off), 51-100 (20% off), 100+ (custom enterprise pricing). Multi-year contracts (3+ years) also qualify for additional discounts. Contact [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com).
 
 ### 34. **Q: What are the overage charges?**
 **A:** Overage charges apply when you exceed your tier's included limits. Additional environments cost $40-100/month (tier-dependent). Storage overages are $0.30-0.50/GB. Users cost $40-50/user/month (Fintech/Healthcare only). API calls cost $2-3 per million requests. We notify you at 80% capacity so you can upgrade or adjust usage.
@@ -150,7 +150,7 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 **A:** Yes. All SecureBase infrastructure is built with Terraform, and you can export the complete configuration at any time (no fees, no restrictions). Exports include all modules, variables, state files, and documentation. This ensures you're never locked into SecureBase—you can take your infrastructure and run it independently whenever you choose.
 
 ### 42. **Q: Do you offer professional services?**
-**A:** Yes. We offer professional services for complex migrations, custom integrations, compliance consulting, and audit preparation. Services are billed at $200/hour (Standard/Fintech) or included in your onboarding hours (Healthcare/Government). Contact [enterprise@securebase.io](mailto:enterprise@securebase.io) for a scoped engagement.
+**A:** Yes. We offer professional services for complex migrations, custom integrations, compliance consulting, and audit preparation. Services are billed at $200/hour (Standard/Fintech) or included in your onboarding hours (Healthcare/Government). Contact [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com) for a scoped engagement.
 
 ---
 
@@ -159,19 +159,19 @@ Can't find what you're looking for? [Contact us](mailto:sales@securebase.io) and
 We're here to help! Our team typically responds within 2 hours during business hours.
 
 ### 📧 General Questions
-**Email:** [support@securebase.io](mailto:support@securebase.io)
+**Email:** [support@securebase.tximhotep.com](mailto:support@securebase.tximhotep.com)
 
 ### 💰 Sales & Pricing
-**Email:** [sales@securebase.io](mailto:sales@securebase.io)  
+**Email:** [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com)  
 **Phone:** Coming soon  
-**Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
+**Schedule Call:** [https://securebase.tximhotep.com/contact](https://securebase.tximhotep.com/contact)
 
 ### 🏢 Enterprise & Custom Solutions
-**Email:** [enterprise@securebase.io](mailto:enterprise@securebase.io)  
-**Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
+**Email:** [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com)  
+**Schedule Call:** [https://securebase.tximhotep.com/contact](https://securebase.tximhotep.com/contact)
 
 ### 🛠️ Technical Support
-**Email:** [support@securebase.io](mailto:support@securebase.io)  
+**Email:** [support@securebase.tximhotep.com](mailto:support@securebase.tximhotep.com)  
 **Slack:** Available for Fintech+ tiers  
 **Phone:** Available for Healthcare+ tiers
 
@@ -182,17 +182,17 @@ We're here to help! Our team typically responds within 2 hours during business h
 - **[Security Policy](./SECURITY.md)** - Security practices and vulnerability disclosure
 - **[Getting Started](./GETTING_STARTED.md)** - Quick start deployment guide
 - **[API Documentation](./API_REFERENCE.md)** - API reference for developers
-- **[Pilot Program](https://portal.securebase.io/pilot)** - 50% off, 8 spots remaining
+- **[Pilot Program](https://portal.securebase.tximhotep.com/pilot)** - 50% off, 8 spots remaining
 
 ---
 
 ## 🚀 Ready to Get Started?
 
-**[Start Your Free 30-Day Trial →](https://securebase.io/signup)**
+**[Start Your Free 30-Day Trial →](https://securebase.tximhotep.com/signup)**
 
 No credit card required. Full access to all features. Cancel anytime.
 
 ---
 
 *Last Updated: January 30, 2026*  
-*Have a question not listed here? Email us at [support@securebase.io](mailto:support@securebase.io)*
+*Have a question not listed here? Email us at [support@securebase.tximhotep.com](mailto:support@securebase.tximhotep.com)*

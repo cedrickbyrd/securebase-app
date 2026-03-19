@@ -1,6 +1,6 @@
 # 🎭 SecureBase Demo Environment
 
-**Live Demo:** [https://demo.securebase.io](https://demo.securebase.io)  
+**Live Demo:** [https://demo.securebase.tximhotep.com](https://demo.securebase.tximhotep.com)  
 **Demo Credentials:** `demo / demo`  
 **Status:** ✅ Production Demo
 
@@ -10,7 +10,7 @@
 
 ### Try the Demo Now
 
-1. **Visit:** [https://demo.securebase.io](https://demo.securebase.io)
+1. **Visit:** [https://demo.securebase.tximhotep.com](https://demo.securebase.tximhotep.com)
 2. **Login with:**
    - Username: `demo`
    - Password: `demo`
@@ -106,7 +106,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     DEMO ENVIRONMENT                         │
-│  https://demo.securebase.io                                  │
+│  https://demo.securebase.tximhotep.com                                  │
 ├─────────────────────────────────────────────────────────────┤
 │  React Portal (phase3a-portal)                               │
 │  ├─ Mock Authentication (demo/demo)                          │
@@ -117,7 +117,7 @@
                             ↕ NO CONNECTION
 ┌─────────────────────────────────────────────────────────────┐
 │                   PRODUCTION ENVIRONMENT                     │
-│  https://portal.securebase.io                                │
+│  https://portal.securebase.tximhotep.com                                │
 ├─────────────────────────────────────────────────────────────┤
 │  Phase 1: AWS Organizations (Terraform)                      │
 │  Phase 2: Serverless Backend (Lambda + Aurora)               │
@@ -146,9 +146,9 @@
 
 The demo environment can be deployed to:
 
-1. **Marketing Site (Root):** Netlify ([demo.securebase.io](https://demo.securebase.io))
+1. **Marketing Site (Root):** Netlify ([demo.securebase.tximhotep.com](https://demo.securebase.tximhotep.com))
    - Netlify: `netlify.toml` in repository root
-2. **Customer Portal:** Netlify ([portal-demo.securebase.io](https://portal-demo.securebase.io))
+2. **Customer Portal:** Netlify ([portal-demo.securebase.tximhotep.com](https://portal-demo.securebase.tximhotep.com))
    - Configuration: `phase3a-portal/netlify.toml`
 
 ### Environment Variables
@@ -189,20 +189,20 @@ npm run build  # Creates production bundle in dist/
 
 - **Uptime Monitoring:** Configured via UptimeRobot (recommended)
 - **Check Interval:** Every 5 minutes
-- **Alert Email:** demo-support@securebase.io
+- **Alert Email:** demo-support@securebase.tximhotep.com
 - **Expected Uptime:** 99.9% (Netlify SLA)
 
 ### Security Scanning
 
 **Regular scans recommended:**
 
-- **Mozilla Observatory:** https://observatory.mozilla.org/analyze/demo.securebase.io
+- **Mozilla Observatory:** https://observatory.mozilla.org/analyze/demo.securebase.tximhotep.com
   - Target: A+ grade
 
-- **Security Headers:** https://securityheaders.com/?q=demo.securebase.io
+- **Security Headers:** https://securityheaders.com/?q=demo.securebase.tximhotep.com
   - Target: A grade
 
-- **SSL Labs:** https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.io
+- **SSL Labs:** https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.tximhotep.com
   - Target: A+ grade
 
 ### Performance Metrics
@@ -226,7 +226,7 @@ npm run build  # Creates production bundle in dist/
 
 ```bash
 # Test demo authentication
-1. Visit https://demo.securebase.io
+1. Visit https://demo.securebase.tximhotep.com
 2. Login with demo/demo
 3. Should redirect to dashboard
 4. Verify demo data displays
@@ -244,7 +244,7 @@ npm run build  # Creates production bundle in dist/
 
 ```bash
 # Check security headers
-curl -I https://demo.securebase.io
+curl -I https://demo.securebase.tximhotep.com
 
 # Expected headers:
 # - Content-Security-Policy
@@ -255,7 +255,7 @@ curl -I https://demo.securebase.io
 # - X-Robots-Tag: noindex, nofollow
 
 # Check security.txt
-curl https://demo.securebase.io/.well-known/security.txt
+curl https://demo.securebase.tximhotep.com/.well-known/security.txt
 ```
 
 ### Automated Testing
@@ -304,7 +304,7 @@ POST /api/auth/logout          # Session cleanup
 
 ### Demo Issues
 
-**Email:** demo-support@securebase.io  
+**Email:** demo-support@securebase.tximhotep.com  
 **Response Time:** <24 hours
 
 **Common Issues:**
@@ -331,9 +331,9 @@ POST /api/auth/logout          # Session cleanup
 
 ### Production Inquiries
 
-**Sales:** sales@securebase.io  
-**Security:** security@securebase.io  
-**Support:** support@securebase.io
+**Sales:** sales@securebase.tximhotep.com  
+**Security:** security@securebase.tximhotep.com  
+**Support:** support@securebase.tximhotep.com
 
 ---
 
@@ -343,7 +343,7 @@ POST /api/auth/logout          # Session cleanup
 
 ### How to Get Started
 
-1. **Sign Up:** [securebase.io/signup](https://securebase.io/signup)
+1. **Sign Up:** [securebase.tximhotep.com/signup](https://securebase.tximhotep.com/signup)
 2. **Choose Tier:**
    - Standard: $2,000/mo (CIS Foundations)
    - Fintech: $8,000/mo (SOC 2 Type II)
@@ -361,28 +361,28 @@ POST /api/auth/logout          # Session cleanup
 ✅ **Dedicated support** - Engineering team assistance  
 ✅ **No commitment** - Cancel anytime
 
-**Book a demo call:** [securebase.io/contact](https://securebase.io/contact)
+**Book a demo call:** [securebase.tximhotep.com/contact](https://securebase.tximhotep.com/contact)
 
 ---
 
 ## 🔗 Links
 
 ### Live Environments
-- **Demo:** https://demo.securebase.io
-- **Production Signup:** https://securebase.io/signup
-- **Marketing Site:** https://securebase.io
-- **Documentation:** https://docs.securebase.io
+- **Demo:** https://demo.securebase.tximhotep.com
+- **Production Signup:** https://securebase.tximhotep.com/signup
+- **Marketing Site:** https://securebase.tximhotep.com
+- **Documentation:** https://docs.securebase.tximhotep.com
 
 ### Resources
 - **GitHub:** https://github.com/cedrickbyrd/securebase-app
-- **Status Page:** https://status.securebase.io
-- **Security Policy:** https://demo.securebase.io/.well-known/security.txt
-- **Pricing:** https://securebase.io/pricing
+- **Status Page:** https://status.securebase.tximhotep.com
+- **Security Policy:** https://demo.securebase.tximhotep.com/.well-known/security.txt
+- **Pricing:** https://securebase.tximhotep.com/pricing
 
 ### Social
 - **LinkedIn:** [linkedin.com/company/securebase](https://linkedin.com/company/securebase)
 - **Twitter:** [@securebase_io](https://twitter.com/securebase_io)
-- **Blog:** https://securebase.io/blog
+- **Blog:** https://securebase.tximhotep.com/blog
 
 ---
 

@@ -602,7 +602,7 @@ Create `phase3a-portal/netlify.toml`:
 [context.production.environment]
   VITE_USE_MOCK_API = "true"
   VITE_ENV = "demo"
-  VITE_API_BASE_URL = "https://demo.securebase.io/api"
+  VITE_API_BASE_URL = "https://demo.securebase.tximhotep.com/api"
   VITE_STRIPE_PUBLIC_KEY = "pk_test_demo_key_not_functional"
   VITE_PILOT_PROGRAM_ENABLED = "false"
 ```
@@ -615,7 +615,7 @@ Update `phase3a-portal/src/App.jsx`:
   <div className="bg-yellow-100 border-b border-yellow-400 px-4 py-2 text-center">
     <p className="text-sm text-yellow-800">
       📊 <strong>Demo Mode:</strong> Displaying sample data. 
-      <a href="https://securebase.io/signup" className="underline ml-2">
+      <a href="https://securebase.tximhotep.com/signup" className="underline ml-2">
         Start Free Trial →
       </a>
     </p>
@@ -792,8 +792,8 @@ https://portal.securebase.tximhotep.com (production)
 1. Purchase domain: `securebase-demo.com` or use subdomain
 2. Add DNS records:
    ```
-   demo.securebase.io  → Vercel/Netlify CNAME
-   portal-demo.securebase.io → Netlify CNAME
+   demo.securebase.tximhotep.com  → Vercel/Netlify CNAME
+   portal-demo.securebase.tximhotep.com → Netlify CNAME
    ```
 3. Configure in platform settings (Vercel/Netlify domain management)
 4. Enable SSL (automatic with both platforms)
@@ -984,8 +984,8 @@ cat vite.config.js phase3a-portal/vite.config.js
 
 | Variable | Required | Default | Demo Value | Production Value |
 |----------|----------|---------|------------|------------------|
-| `VITE_API_BASE_URL` | ✅ Yes | `https://api.securebase.com/v1` | `https://demo-api.securebase.io` | `https://api.securebase.com/v1` |
-| `VITE_WS_URL` | ✅ Yes | `wss://ws.securebase.com` | `wss://demo-ws.securebase.io` | `wss://ws.securebase.com` |
+| `VITE_API_BASE_URL` | ✅ Yes | `https://api.securebase.com/v1` | `https://demo-api.securebase.tximhotep.com` | `https://api.securebase.com/v1` |
+| `VITE_WS_URL` | ✅ Yes | `wss://ws.securebase.com` | `wss://demo-ws.securebase.tximhotep.com` | `wss://ws.securebase.com` |
 | `VITE_ENV` | ✅ Yes | `development` | `demo` | `production` |
 | `VITE_STRIPE_PUBLIC_KEY` | ✅ Yes | None | `pk_test_demo_not_functional` | `pk_live_...` |
 | `VITE_HEALTHCARE_PRICE_ID` | ✅ Yes | `price_healthcare` | `price_demo_healthcare` | `price_live_healthcare` |
@@ -1006,7 +1006,7 @@ export const DEMO_DATA = {
   customer: {
     id: "cus_demo_001",
     name: "Demo Healthcare Corp",
-    email: "demo@securebase.io",
+    email: "demo@securebase.tximhotep.com",
     tier: "healthcare",
     framework: "hipaa",
     status: "trial",

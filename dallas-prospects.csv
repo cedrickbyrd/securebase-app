@@ -1,0 +1,11 @@
+Score,Company,Industry,Location,Funding,Employees,Founded,Pain Point,Contact Title,LinkedIn Search,Website
+95,Trellis,Healthcare Tech,Dallas TX,8M,45,2021,HIPAA compliance for medical records,CTO,https://www.linkedin.com/search/results/people/?keywords=Trellis%20Dallas%20CTO,trellis.health
+90,Strados Labs,Healthcare Tech,Dallas TX,21M,75,2016,Medical device data - needs HIPAA,VP Engineering,https://www.linkedin.com/search/results/people/?keywords=Strados%20Labs%20VP%20Engineering,stradoslabs.com
+88,Procare Solutions,SaaS,Plano TX,25M,120,2001,Childcare software - SOC 2 needed,Head of Infrastructure,https://www.linkedin.com/search/results/people/?keywords=Procare%20Solutions%20Infrastructure,procaresolutions.com
+85,MedStats,Healthcare Analytics,Dallas TX,5M,30,2019,Healthcare analytics - HIPAA critical,CTO,https://www.linkedin.com/search/results/people/?keywords=MedStats%20Dallas%20CTO,medstats.io
+83,ParkHub,Event Tech,Dallas TX,17M,85,2016,B2B SaaS - needs SOC 2,VP Engineering,https://www.linkedin.com/search/results/people/?keywords=ParkHub%20Engineering,parkhub.com
+80,Hypergiant,AI/ML,Austin TX,68M,150,2018,AI for defense - FedRAMP needed,Head of Infrastructure,https://www.linkedin.com/search/results/people/?keywords=Hypergiant%20Infrastructure,hypergiant.com
+78,Phunware,Mobile Platform,Austin TX,Public,180,2009,Multi-tenant mobile platform,VP Engineering,https://www.linkedin.com/search/results/people/?keywords=Phunware%20Engineering,phunware.com
+75,Crossover Health,Healthcare,Austin TX,168M,500,2010,Corporate health services - HIPAA,Head of Cloud,https://www.linkedin.com/search/results/people/?keywords=Crossover%20Health%20Cloud,crossoverhealth.com
+73,Vyopta,SaaS Analytics,Austin TX,34M,95,2007,Enterprise SaaS - SOC 2,CTO,https://www.linkedin.com/search/results/people/?keywords=Vyopta%20CTO,vyopta.com
+70,Amino,Healthcare,Austin TX,73M,120,2014,Healthcare price transparency - HIPAA,VP Infrastructure,https://www.linkedin.com/search/results/people/?keywords=Amino%20Infrastructure,amino.com
