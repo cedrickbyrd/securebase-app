@@ -620,7 +620,7 @@ const metrics = {
 - [ ] Dunning management configured (failed payments)
 
 **Operations:**
-- [ ] Support email configured (support@securebase.io)
+- [ ] Support email configured (support@securebase.tximhotep.com)
 - [ ] Slack channel for customer success
 - [ ] On-call rotation for trial support
 - [ ] Billing FAQ documented

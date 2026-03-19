@@ -109,3 +109,39 @@ for fn in "${FUNCTIONS[@]}"; do
   echo "  $name"
   echo "    ARN:  $arn"
 done
+# ── pg8000 dependency layer ───────────────────────────────────────────────────
+echo ""
+echo "▶ Building pg8000 Lambda layer..."
+LAYER_DIR=$(mktemp -d)
+pip install pg8000==1.31.2 --target "$LAYER_DIR/python" --quiet
+(cd "$LAYER_DIR" && zip -r pg8000-layer.zip python/ --quiet)
+
+LAYER_ARN=$(aws lambda publish-layer-version \
+  --layer-name securebase-pg8000 \
+  --zip-file "fileb://$LAYER_DIR/pg8000-layer.zip" \
+  --compatible-runtimes python3.11 \
+  --region "$REGION" \
+  --query 'LayerVersionArn' --output text)
+echo "  Layer ARN: $LAYER_ARN"
+rm -rf "$LAYER_DIR"
+
+# Attach layer and set env vars on all 4 functions
+DB_SECRET_ARN="arn:aws:secretsmanager:us-east-1:731184206915:secret:rds!cluster-23284d29-1828-4eb2-9c98-d51b6f7fca87-KzGyQ6"
+DB_HOST="securebase-phase2-dev.cluster-coti40osot2c.us-east-1.rds.amazonaws.com"
+DB_NAME="securebase"
+
+for FNAME in securebase-signup-handler securebase-account-provisioner securebase-onboarding-status securebase-verify-email; do
+  echo "▶ Attaching layer + env vars to $FNAME..."
+  aws lambda update-function-configuration \
+    --function-name "$FNAME" \
+    --layers "$LAYER_ARN" \
+    --environment "Variables={
+      DB_SECRET_ARN=$DB_SECRET_ARN,
+      DB_HOST=$DB_HOST,
+      DB_NAME=$DB_NAME,
+      ALLOWED_ORIGIN=https://securebase.tximhotep.com,
+      PORTAL_URL=https://securebase.tximhotep.com
+    }" \
+    --region "$REGION" \
+    --output text --query 'FunctionName' | xargs echo "  Updated:"
+done

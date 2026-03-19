@@ -302,7 +302,7 @@ npm run dev
 ./TEST_PHASE4.sh
 
 # Manual API test
-curl -X GET "https://api.securebase.io/v1/analytics?dateRange=30d" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/analytics?dateRange=30d" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -325,7 +325,7 @@ LOG_LEVEL=INFO
 
 **Frontend (phase3a-portal/.env):**
 ```bash
-VITE_API_BASE_URL=https://api.securebase.io/v1
+VITE_API_BASE_URL=https://api.securebase.tximhotep.com/v1
 VITE_ENV=development
 ```
 
@@ -412,10 +412,10 @@ const metrics = {
 - **FAQ:** Common questions
 
 ### Support Channels
-- **Email:** analytics-support@securebase.io
+- **Email:** analytics-support@securebase.tximhotep.com
 - **Slack:** #analytics-help
-- **Docs:** https://docs.securebase.io/analytics
-- **Status:** https://status.securebase.io
+- **Docs:** https://docs.securebase.tximhotep.com/analytics
+- **Status:** https://status.securebase.tximhotep.com
 
 ---
 

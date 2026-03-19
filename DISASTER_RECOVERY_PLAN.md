@@ -91,7 +91,7 @@ This Disaster Recovery (DR) Plan defines the SecureBase platform's strategy, pro
 │  └─ Handles API traffic           └─ Activates on failover      │
 │                                                                   │
 │  API Gateway (Primary)            API Gateway (Failover)         │
-│  ├─ api.securebase.io             ├─ api-dr.securebase.io       │
+│  ├─ api.securebase.tximhotep.com             ├─ api-dr.securebase.tximhotep.com       │
 │  └─ Route53 weighted ───────────> └─ Failover routing policy    │
 │                                                                   │
 │  S3 Buckets                       S3 Replica Buckets            │
@@ -189,7 +189,7 @@ This Disaster Recovery (DR) Plan defines the SecureBase platform's strategy, pro
 2. Check DynamoDB replication lag (<1 min acceptable)
 3. Validate API endpoints responding (smoke tests)
 4. Monitor error rates and latency
-5. Update status page (status.securebase.io)
+5. Update status page (status.securebase.tximhotep.com)
 
 **RTO:** <15 minutes  
 **RPO:** <1 minute (Aurora lag + DynamoDB eventual consistency)
@@ -345,7 +345,7 @@ This Disaster Recovery (DR) Plan defines the SecureBase platform's strategy, pro
 ### Health Check Configuration
 
 **Route53 Health Checks:**
-- **Endpoint:** https://api.securebase.io/health
+- **Endpoint:** https://api.securebase.tximhotep.com/health
 - **Interval:** 30 seconds
 - **Failure Threshold:** 2 consecutive failures
 - **Regions:** 3 (us-east-1, us-west-1, eu-west-1)

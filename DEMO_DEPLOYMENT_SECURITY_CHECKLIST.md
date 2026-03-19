@@ -101,7 +101,7 @@
 
 #### HTTP Headers Test
 ```bash
-curl -I https://demo.securebase.io
+curl -I https://demo.securebase.tximhotep.com
 ```
 - [ ] `Content-Security-Policy` header present
 - [ ] `X-Frame-Options: DENY` present
@@ -113,7 +113,7 @@ curl -I https://demo.securebase.io
 #### SSL/TLS Test
 ```bash
 # Check SSL certificate
-openssl s_client -connect demo.securebase.io:443 -servername demo.securebase.io
+openssl s_client -connect demo.securebase.tximhotep.com:443 -servername demo.securebase.tximhotep.com
 ```
 - [ ] Valid SSL certificate (not self-signed)
 - [ ] Certificate not expired
@@ -122,7 +122,7 @@ openssl s_client -connect demo.securebase.io:443 -servername demo.securebase.io
 
 #### security.txt Test
 ```bash
-curl https://demo.securebase.io/.well-known/security.txt
+curl https://demo.securebase.tximhotep.com/.well-known/security.txt
 ```
 - [ ] File accessible and returns 200 OK
 - [ ] Contains valid contact email
@@ -158,7 +158,7 @@ curl https://demo.securebase.io/.well-known/security.txt
 
 #### Mozilla Observatory
 ```
-https://observatory.mozilla.org/analyze/demo.securebase.io
+https://observatory.mozilla.org/analyze/demo.securebase.tximhotep.com
 ```
 - [ ] Grade: A+ or A
 - [ ] No failed tests
@@ -166,7 +166,7 @@ https://observatory.mozilla.org/analyze/demo.securebase.io
 
 #### Security Headers
 ```
-https://securityheaders.com/?q=demo.securebase.io
+https://securityheaders.com/?q=demo.securebase.tximhotep.com
 ```
 - [ ] Grade: A or better
 - [ ] CSP grade: A
@@ -174,7 +174,7 @@ https://securityheaders.com/?q=demo.securebase.io
 
 #### SSL Labs
 ```
-https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.io
+https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.tximhotep.com
 ```
 - [ ] Overall grade: A or A+
 - [ ] Certificate: Trusted
@@ -198,7 +198,7 @@ npm audit
 
 ### 15. Uptime Monitoring
 - [ ] Uptime monitoring configured (UptimeRobot, Pingdom, etc.)
-- [ ] Monitor URL: `https://demo.securebase.io`
+- [ ] Monitor URL: `https://demo.securebase.tximhotep.com`
 - [ ] Check interval: 5 minutes
 - [ ] Alert email configured
 - [ ] Alert threshold: 2 consecutive failures
@@ -280,8 +280,8 @@ npm audit
 5. Verify rollback successful
 
 ### Emergency Contact
-- **DevOps Lead:** devops@securebase.io
-- **Security Lead:** security@securebase.io
+- **DevOps Lead:** devops@securebase.tximhotep.com
+- **Security Lead:** security@securebase.tximhotep.com
 - **On-Call:** [on-call phone number]
 
 ---
@@ -303,7 +303,7 @@ Use this space to document deployment-specific notes, issues encountered, or dev
 Deployment Date: __________
 Deployed By: __________
 Platform: Vercel / Netlify (circle one)
-URL: https://demo.securebase.io
+URL: https://demo.securebase.tximhotep.com
 
 Notes:
 - 

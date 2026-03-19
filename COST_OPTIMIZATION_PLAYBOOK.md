@@ -541,7 +541,7 @@ resource "aws_ce_anomaly_subscription" "securebase" {
 
   subscriber {
     type    = "EMAIL"
-    address = "finops@securebase.io"
+    address = "finops@securebase.tximhotep.com"
   }
 
   threshold_expression {
@@ -697,10 +697,10 @@ infracost breakdown --path .
 
 | Role | Responsibilities | Contact |
 |------|-----------------|---------|
-| **FinOps Lead** | Cost governance, budget approval | finops-lead@securebase.io |
-| **Platform Engineer** | Infrastructure optimization | platform-team@securebase.io |
-| **DevOps Engineer** | Auto-scaling, monitoring | devops@securebase.io |
-| **VP Engineering** | Strategic cost decisions | vp-eng@securebase.io |
+| **FinOps Lead** | Cost governance, budget approval | finops-lead@securebase.tximhotep.com |
+| **Platform Engineer** | Infrastructure optimization | platform-team@securebase.tximhotep.com |
+| **DevOps Engineer** | Auto-scaling, monitoring | devops@securebase.tximhotep.com |
+| **VP Engineering** | Strategic cost decisions | vp-eng@securebase.tximhotep.com |
 
 ---
 

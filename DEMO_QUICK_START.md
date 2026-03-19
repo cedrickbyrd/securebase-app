@@ -71,7 +71,7 @@ Create `phase3a-portal/src/mocks/mockData.js`:
 export const mockCustomer = {
   id: "demo-customer-001",
   name: "Demo Healthcare Corp",
-  email: "demo@securebase.io",
+  email: "demo@securebase.tximhotep.com",
   tier: "healthcare",
   framework: "hipaa",
   status: "trial",
@@ -340,7 +340,7 @@ Create `phase3a-portal/netlify.toml`:
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.securebase.io;"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.securebase.tximhotep.com;"
 
 # Cache static assets
 [[headers]]
@@ -352,7 +352,7 @@ Create `phase3a-portal/netlify.toml`:
 [context.production.environment]
   VITE_ENV = "demo"
   VITE_USE_MOCK_API = "true"
-  VITE_API_BASE_URL = "https://demo.securebase.io/api"
+  VITE_API_BASE_URL = "https://demo.securebase.tximhotep.com/api"
   VITE_STRIPE_PUBLIC_KEY = "pk_test_demo_not_functional"
   VITE_ANALYTICS_ENABLED = "true"
   VITE_PILOT_PROGRAM_ENABLED = "false"
@@ -380,7 +380,7 @@ function App() {
               </span>
             </div>
             <a 
-              href="https://securebase.io/signup" 
+              href="https://securebase.tximhotep.com/signup" 
               className="text-sm font-semibold text-yellow-900 hover:text-yellow-700 underline"
             >
               Start Free Trial →

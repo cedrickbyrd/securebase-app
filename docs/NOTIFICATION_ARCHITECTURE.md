@@ -253,7 +253,7 @@ subject = template['subject'].format(**notification['metadata'])
 
 #### Email (SES)
 
-- **From**: `notifications@securebase.io`
+- **From**: `notifications@securebase.tximhotep.com`
 - **Format**: HTML + plain text
 - **Delivery**: <30s for standard, <5s for critical
 - **Tracking**: SES bounce and complaint handling

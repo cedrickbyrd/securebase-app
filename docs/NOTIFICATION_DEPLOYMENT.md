@@ -35,7 +35,7 @@ Ensure the following are configured:
 ```bash
 export AWS_REGION=us-east-1
 export ENVIRONMENT=dev  # or staging, prod
-export SES_FROM_EMAIL=notifications@securebase.io
+export SES_FROM_EMAIL=notifications@securebase.tximhotep.com
 ```
 
 ### Pre-Deployment Checklist
@@ -528,7 +528,7 @@ aws ses get-send-quota --region us-east-1
 
 # Check SES domain verification
 aws ses get-identity-verification-attributes \
-  --identities securebase.io \
+  --identities securebase.tximhotep.com \
   --region us-east-1
 ```
 

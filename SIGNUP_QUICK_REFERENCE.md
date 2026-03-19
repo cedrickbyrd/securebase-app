@@ -23,7 +23,7 @@ python tests/integration/test_signup_flow.py
 python tests/e2e/test_pilot_signup.py
 
 # Test with Stripe test mode
-curl -X POST https://api-dev.securebase.io/checkout \
+curl -X POST https://api-dev.securebase.tximhotep.com/checkout \
   -H "Content-Type: application/json" \
   -d '{
     "tier": "fintech",
@@ -74,7 +74,7 @@ STRIPE_PRICE_FINTECH=price_...
 STRIPE_PRICE_HEALTHCARE=price_...
 STRIPE_PRICE_GOVERNMENT=price_...
 STRIPE_PILOT_COUPON=pilot50off
-PORTAL_URL=https://portal.securebase.io
+PORTAL_URL=https://portal.securebase.tximhotep.com
 RATE_LIMIT_TABLE=securebase-signup-rate-limits
 ```
 
@@ -88,10 +88,10 @@ ONBOARDING_FUNCTION_NAME=securebase-trigger-onboarding
 
 ### trigger_onboarding
 ```bash
-SES_SENDER_EMAIL=noreply@securebase.io
+SES_SENDER_EMAIL=noreply@securebase.tximhotep.com
 SNS_TOPIC_ARN=arn:aws:sns:...
 ONBOARDING_TOPIC_ARN=arn:aws:sns:...:infrastructure
-PORTAL_URL=https://portal.securebase.io
+PORTAL_URL=https://portal.securebase.tximhotep.com
 ```
 
 ## 🎯 API Endpoints

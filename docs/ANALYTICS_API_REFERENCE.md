@@ -2,7 +2,7 @@
 
 **Version:** 1.0  
 **Last Updated:** January 23, 2026  
-**Base URL:** `https://api.securebase.io/v1`
+**Base URL:** `https://api.securebase.tximhotep.com/v1`
 
 ---
 
@@ -44,7 +44,7 @@ Query analytics data with multi-dimensional filtering.
 
 **Example Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/analytics?dateRange=30d&dimension=service" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/analytics?dateRange=30d&dimension=service" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -116,7 +116,7 @@ Get detailed cost breakdown by dimension.
 
 **Example Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/analytics/cost-breakdown?dimension=service&topN=5" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/analytics/cost-breakdown?dimension=service&topN=5" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -400,7 +400,7 @@ Export analytics data in various formats.
 
 **CSV Export Example:**
 ```bash
-curl -X POST "https://api.securebase.io/v1/analytics/export" \
+curl -X POST "https://api.securebase.tximhotep.com/v1/analytics/export" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -413,7 +413,7 @@ curl -X POST "https://api.securebase.io/v1/analytics/export" \
 
 **PDF Export Example:**
 ```bash
-curl -X POST "https://api.securebase.io/v1/analytics/export" \
+curl -X POST "https://api.securebase.tximhotep.com/v1/analytics/export" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -600,7 +600,7 @@ const SecureBaseAnalytics = require('@securebase/analytics');
 
 const client = new SecureBaseAnalytics({
   apiKey: 'your-api-key',
-  baseUrl: 'https://api.securebase.io/v1'
+  baseUrl: 'https://api.securebase.tximhotep.com/v1'
 });
 
 // Get analytics data
@@ -632,7 +632,7 @@ from securebase import AnalyticsClient
 
 client = AnalyticsClient(
     api_key='your-api-key',
-    base_url='https://api.securebase.io/v1'
+    base_url='https://api.securebase.tximhotep.com/v1'
 )
 
 # Get analytics data
@@ -674,9 +674,9 @@ client.reports.schedule(
 ## Support
 
 For API support, contact:
-- Email: api-support@securebase.io
-- Documentation: https://docs.securebase.io/api
-- Status Page: https://status.securebase.io
+- Email: api-support@securebase.tximhotep.com
+- Documentation: https://docs.securebase.tximhotep.com/api
+- Status Page: https://status.securebase.tximhotep.com
 
 ---
 
