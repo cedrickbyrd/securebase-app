@@ -5,7 +5,7 @@ import BRANDING from '../config/branding';
 import './Login.css';
 
 function Login({ setAuth }) {
-  const [step, setStep] = useState('credentials'); // 'credentials' | 'mfa'
+  const [step, setStep] = useState('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -13,10 +13,8 @@ function Login({ setAuth }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Check if this is the demo subdomain
   const isDemo = window.location.hostname.startsWith('demo.');
 
-  // Pre-fill demo credentials
   React.useEffect(() => {
     if (isDemo) {
       setEmail('demo@securebase.tximhotep.com');
@@ -27,7 +25,26 @@ function Login({ setAuth }) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
+      // Special handling for demo environment
+      if (isDemo && 
+          email === 'demo@securebase.tximhotep.com' && 
+          password === 'SecureBaseDemo2026!') {
+        // For demo, set auth and navigate directly
+        setAuth(true);
+        // Store demo token
+        localStorage.setItem('demo_mode', 'true');
+        localStorage.setItem('demo_user', JSON.stringify({
+          email: 'demo@securebase.tximhotep.com',
+          customerId: 'a0000000-0000-0000-0000-000000000001',
+          orgName: 'Acme Corporation'
+        }));
+        navigate('/dashboard');
+        return;
+      }
+
+      // Regular authentication for non-demo
       const response = await apiService.authenticate(email, password);
       if (response.mfa_required) {
         setStep('mfa');
@@ -71,35 +88,39 @@ function Login({ setAuth }) {
 
   return (
     <div className="login-page">
-      <div className="login-container">
-        {/* Demo Credentials Banner - Only on demo.* subdomain */}
-        {isDemo && step === 'credentials' && (
+      {/* Demo Banner */}
+      {isDemo && step === 'credentials' && (
+        <div style={{
+          maxWidth: '440px',
+          margin: '0 auto 20px auto',
+          padding: '0 20px'
+        }}>
           <div style={{
             background: 'linear-gradient(135deg, #FEF3C7 0%, #DBEAFE 100%)',
-            border: '2px solid #FBBF24',
-            borderRadius: '12px',
-            padding: '20px',
-            marginBottom: '20px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+            border: '3px solid #FBBF24',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 10px 30px rgba(251, 191, 36, 0.3)',
           }}>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'start' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                background: '#FBBF24',
+                width: '56px',
+                height: '56px',
+                background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '24px',
-                flexShrink: 0
+                fontSize: '28px',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)'
               }}>
                 🎯
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ 
                   margin: '0 0 8px 0', 
-                  fontSize: '18px', 
+                  fontSize: '20px', 
                   fontWeight: 'bold',
                   color: '#1F2937'
                 }}>
@@ -107,7 +128,7 @@ function Login({ setAuth }) {
                 </h3>
                 <p style={{ 
                   margin: '0 0 16px 0', 
-                  fontSize: '13px', 
+                  fontSize: '14px', 
                   color: '#6B7280'
                 }}>
                   Use these credentials to explore SecureBase
@@ -115,32 +136,35 @@ function Login({ setAuth }) {
                 
                 <div style={{
                   background: 'white',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   padding: '16px',
-                  border: '1px solid #E5E7EB'
+                  border: '2px solid #E5E7EB',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}>
-                  {/* Email */}
-                  <div style={{ marginBottom: '12px' }}>
+                  <div style={{ marginBottom: '14px' }}>
                     <label style={{ 
                       display: 'block', 
                       fontSize: '11px', 
-                      fontWeight: '600',
-                      color: '#6B7280',
-                      marginBottom: '4px'
+                      fontWeight: '700',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
-                      Email Address
+                      📧 Email Address
                     </label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <code style={{
                         flex: 1,
-                        background: '#F9FAFB',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #E5E7EB',
+                        background: '#F3F4F6',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #D1D5DB',
                         fontSize: '13px',
-                        fontFamily: 'monospace',
+                        fontFamily: 'Monaco, Consolas, monospace',
                         color: '#1F2937',
-                        userSelect: 'all'
+                        userSelect: 'all',
+                        fontWeight: '500'
                       }}>
                         demo@securebase.tximhotep.com
                       </code>
@@ -148,46 +172,55 @@ function Login({ setAuth }) {
                         type="button"
                         onClick={() => copyToClipboard('demo@securebase.tximhotep.com', 'email')}
                         style={{
-                          padding: '8px 16px',
-                          background: '#2563EB',
+                          padding: '10px 18px',
+                          background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: '8px',
                           fontSize: '13px',
-                          fontWeight: '500',
+                          fontWeight: '600',
                           cursor: 'pointer',
-                          transition: 'background 0.2s'
+                          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                          transition: 'all 0.2s'
                         }}
-                        onMouseOver={(e) => e.target.style.background = '#1D4ED8'}
-                        onMouseOut={(e) => e.target.style.background = '#2563EB'}
+                        onMouseOver={(e) => {
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+                        }}
                       >
                         Copy
                       </button>
                     </div>
                   </div>
 
-                  {/* Password */}
                   <div>
                     <label style={{ 
                       display: 'block', 
                       fontSize: '11px', 
-                      fontWeight: '600',
-                      color: '#6B7280',
-                      marginBottom: '4px'
+                      fontWeight: '700',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
-                      Password
+                      🔐 Password
                     </label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <code style={{
                         flex: 1,
-                        background: '#F9FAFB',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #E5E7EB',
+                        background: '#F3F4F6',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #D1D5DB',
                         fontSize: '13px',
-                        fontFamily: 'monospace',
+                        fontFamily: 'Monaco, Consolas, monospace',
                         color: '#1F2937',
-                        userSelect: 'all'
+                        userSelect: 'all',
+                        fontWeight: '500'
                       }}>
                         SecureBaseDemo2026!
                       </code>
@@ -195,18 +228,25 @@ function Login({ setAuth }) {
                         type="button"
                         onClick={() => copyToClipboard('SecureBaseDemo2026!', 'password')}
                         style={{
-                          padding: '8px 16px',
-                          background: '#2563EB',
+                          padding: '10px 18px',
+                          background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: '8px',
                           fontSize: '13px',
-                          fontWeight: '500',
+                          fontWeight: '600',
                           cursor: 'pointer',
-                          transition: 'background 0.2s'
+                          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                          transition: 'all 0.2s'
                         }}
-                        onMouseOver={(e) => e.target.style.background = '#1D4ED8'}
-                        onMouseOut={(e) => e.target.style.background = '#2563EB'}
+                        onMouseOver={(e) => {
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+                        }}
                       >
                         Copy
                       </button>
@@ -215,18 +255,21 @@ function Login({ setAuth }) {
                 </div>
 
                 <p style={{ 
-                  margin: '12px 0 0 0', 
-                  fontSize: '11px', 
+                  margin: '14px 0 0 0', 
+                  fontSize: '12px', 
                   color: '#6B7280',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  fontWeight: '500'
                 }}>
                   💡 Click "Copy" to auto-fill the login form below
                 </p>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
+      <div className="login-container">
         <div className="login-card">
           <div className="login-header">
             <div className="logo">
@@ -324,7 +367,7 @@ function Login({ setAuth }) {
             {isDemo && (
               <>
                 {' '}•{' '}
-                <a href="https://securebase.tximhotep.com/signup" style={{ fontWeight: 'bold' }}>
+                <a href="https://securebase.tximhotep.com/signup" style={{ fontWeight: 'bold', color: '#2563EB' }}>
                   Start Your Free Trial →
                 </a>
               </>
