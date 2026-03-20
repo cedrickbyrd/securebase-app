@@ -5,7 +5,7 @@ import Login from './components/Login';
 import SignupForm from './components/SignupForm';
 import OnboardingProgress from './components/OnboardingProgress';
 import Compliance from './components/Compliance';
-import SREDashboard from './components/SREDashboard';
+import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
 import './App.css';
 
@@ -35,7 +35,7 @@ function App() {
         <Route path="/onboarding" element={<OnboardingRoute />} />
         <Route path="/dashboard"     element={isAuthenticated ? <Dashboard />       : <Navigate to="/login" />} />
         <Route path="/compliance"    element={isAuthenticated ? <Compliance />      : <Navigate to="/login" />} />
-        <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboard />   : <Navigate to="/login" />} />
+        <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
