@@ -1,4 +1,4 @@
-# ../../modules/securebase/outputs.tf
+# modules/securebase/outputs.tf
 
 output "stripe_handler_function_name" {
   description = "Name of the Stripe handler Lambda function."
