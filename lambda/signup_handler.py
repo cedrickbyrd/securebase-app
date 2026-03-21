@@ -22,6 +22,50 @@ def validate(body):
     if body.get("awsRegion") not in ["us-east-1","us-west-2","eu-west-1","ap-southeast-1","ap-northeast-1"]: errors.append("Invalid AWS region.")
     return errors
 
+def invoke_provisioner(provisioner_fn, job_id, customer_id, email, org_name, aws_region, mfa_enabled, guardrails_level):
+    """Asynchronously invoke the account provisioner Lambda."""
+    lambda_.invoke(FunctionName=provisioner_fn,InvocationType="Event",Payload=json.dumps({"jobId":job_id,"customerId":customer_id,"email":email,"orgName":org_name,"awsRegion":aws_region,"mfaEnabled":mfa_enabled,"guardrailsLevel":guardrails_level}))
+
+def verify_email_handler(event,provisioner_fn):
+    """Handle email verification link. Validates token ownership, marks verified, re-triggers provisioner."""
+    params=event.get("queryStringParameters") or {}
+    job_id=params.get("token","").strip(); email=params.get("email","").strip().lower()
+    if not job_id or not email: return cors_response(400,{"message":"token and email are required."})
+    if not re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",job_id): return cors_response(400,{"message":"Invalid token."})
+    try:
+        user_pool_id=get_param("/securebase/cognito/user_pool_id")
+        db_resource_arn=get_param("/securebase/db/resource_arn"); db_secret_arn=get_param("/securebase/db/secret_arn"); db_name=get_param("/securebase/db/name")
+    except ClientError: return cors_response(500,{"message":"Configuration error."})
+    try:
+        # Validate the job belongs to this email and is still active before doing anything.
+        # Use LOWER() on sr.email for consistent case-insensitive matching (matches the index).
+        rows=rds.execute_statement(
+            resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,
+            sql=("SELECT sr.id, sr.org_name, sr.aws_region, sr.mfa_enabled, sr.guardrails_level "
+                 "FROM onboarding_jobs oj "
+                 "JOIN signup_requests sr ON sr.id = oj.customer_id "
+                 "WHERE oj.id = :job_id AND LOWER(sr.email) = :email "
+                 "AND oj.overall_status IN ('pending','in_progress') LIMIT 1"),
+            parameters=[{"name":"job_id","value":{"stringValue":job_id}},{"name":"email","value":{"stringValue":email}}]
+        )["records"]
+    except ClientError as e: return cors_response(500,{"message":"Database error."})
+    if not rows: return cors_response(404,{"message":"Verification token not found or already processed."})
+    # Column order matches SELECT: id, org_name, aws_region, mfa_enabled, guardrails_level
+    customer_id=rows[0][0]["stringValue"]; org_name=rows[0][1]["stringValue"]; aws_region=rows[0][2]["stringValue"]
+    mfa_enabled=rows[0][3]["booleanValue"]; guardrails_level=rows[0][4]["stringValue"]
+    try:
+        cognito.admin_update_user_attributes(UserPoolId=user_pool_id,Username=email,UserAttributes=[{"Name":"email_verified","Value":"true"}])
+    except ClientError as e: logger.error("Cognito verify error: %s",e); return cors_response(500,{"message":"Failed to verify email."})
+    try:
+        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,
+                              sql="UPDATE signup_requests SET email_verified=TRUE,email_verified_at=NOW() WHERE id=:cid",
+                              parameters=[{"name":"cid","value":{"stringValue":customer_id}}])
+    except ClientError as e: return cors_response(500,{"message":"Database error."})
+    try: invoke_provisioner(provisioner_fn,job_id,customer_id,email,org_name,aws_region,mfa_enabled,guardrails_level)
+    except ClientError as e: logger.error("Provisioner re-invoke error: %s",e)
+    logger.info("Email verified, provisioner re-triggered: customer=%s job=%s",customer_id,job_id)
+    return cors_response(200,{"message":"Email verified. Provisioning will begin shortly.","jobId":job_id})
+
 def handler(event,context):
     if event.get("httpMethod")=="OPTIONS": return cors(200,{})
     try: body=json.loads(event.get("body") or "{}")
