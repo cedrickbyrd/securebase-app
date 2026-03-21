@@ -92,7 +92,12 @@ CREATE INDEX idx_fintech_tx_texas_nexus ON fintech_transactions(texas_nexus) WHE
 
 CREATE TABLE IF NOT EXISTS fintech_customer_details (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE UNIQUE,
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  
+  -- Note: UNIQUE constraint creates one-to-one relationship with customers table
+  -- Each SecureBase customer has one fintech_customer_details record containing
+  -- aggregated KYC/CIP information for their fintech service
+  UNIQUE(customer_id),
   
   -- Customer Identification Program (CIP) fields
   full_name TEXT NOT NULL,

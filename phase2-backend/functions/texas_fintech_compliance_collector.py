@@ -553,6 +553,9 @@ def collect_authorized_delegate_records(conn, customer_id: str) -> Dict[str, Any
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     set_rls_context(cursor, customer_id, 'admin')
     
+    # Store current date for consistent date comparisons
+    current_date = datetime.now().date()
+    
     query = """
     SELECT 
         ad.delegate_id,
@@ -590,8 +593,8 @@ def collect_authorized_delegate_records(conn, customer_id: str) -> Dict[str, Any
                 'transaction_count': d['transaction_count_30d'] or 0,
                 'transaction_volume': float(d['transaction_volume_30d']) if d['transaction_volume_30d'] else 0
             },
-            'agreement_current': d['agreement_expiration'] and d['agreement_expiration'] > datetime.now().date(),
-            'audit_current': d['last_audit_date'] and (datetime.now().date() - d['last_audit_date']).days <= 365
+            'agreement_current': d['agreement_expiration'] and d['agreement_expiration'] > current_date,
+            'audit_current': d['last_audit_date'] and (current_date - d['last_audit_date']).days <= 365
         })
     
     return {
