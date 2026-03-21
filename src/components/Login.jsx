@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase'; // Use the client we created
 import { useNavigate } from 'react-router-dom';
+import { isDemoMode } from '../services/demoApiService';
+import { DEMO_CUSTOMER } from '../utils/demoData';
 import '../styles/Login.css';
+
+const DEMO_EMAIL = DEMO_CUSTOMER.email;
+const DEMO_PASSWORD = DEMO_CUSTOMER.password;
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,6 +16,19 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const isDemo = isDemoMode();
+
+  const copyToClipboard = (text, field) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    }).catch(() => {
+      setCopiedField(`${field}-error`);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,6 +36,14 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // Demo mode bypass — no real auth API call
+      if (isDemo && email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+        localStorage.setItem('demo_mode', 'true');
+        setSuccess(true);
+        setTimeout(() => navigate('/dashboard'), 500);
+        return;
+      }
+
       // Direct Supabase Authentication
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email,
@@ -40,6 +66,34 @@ export default function Login() {
   return (
     <div className="sb-Login">
       <div className="sb-Login__container">
+        {/* Demo credentials banner — only visible in demo mode */}
+        {isDemo && (
+          <div className="sb-Login__demoBanner">
+            <div className="sb-Login__demoBannerTitle">🚀 Demo Credentials</div>
+            <div className="sb-Login__demoBannerRow">
+              <span className="sb-Login__demoBannerLabel">Email</span>
+              <code className="sb-Login__demoBannerValue">{DEMO_EMAIL}</code>
+              <button
+                type="button"
+                className="sb-Login__demoCopyBtn"
+                onClick={() => copyToClipboard(DEMO_EMAIL, 'email')}
+              >
+                {copiedField === 'email' ? '✓ Copied' : copiedField === 'email-error' ? '✗ Failed' : 'Copy'}
+              </button>
+            </div>
+            <div className="sb-Login__demoBannerRow">
+              <span className="sb-Login__demoBannerLabel">Password</span>
+              <code className="sb-Login__demoBannerValue">{DEMO_PASSWORD}</code>
+              <button
+                type="button"
+                className="sb-Login__demoCopyBtn"
+                onClick={() => copyToClipboard(DEMO_PASSWORD, 'password')}
+              >
+                {copiedField === 'password' ? '✓ Copied' : copiedField === 'password-error' ? '✗ Failed' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="sb-Login__logo">
           <div className="sb-Login__logoIcon">
             <svg className="sb-Login__logoSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
