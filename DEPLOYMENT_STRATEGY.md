@@ -15,7 +15,7 @@ SecureBase uses a multi-site deployment strategy with Netlify as the primary hos
 
 SecureBase operates two primary web properties with distinct purposes:
 
-### 1. Marketing Site - `securebase.io`
+### 1. Marketing Site - `securebase.tximhotep.com`
 
 **Purpose:** Public-facing marketing and landing pages  
 **Platform:** Netlify  
@@ -48,7 +48,7 @@ Repository Root
 
 ---
 
-### 2. Portal Demo - `demo.securebase.io`
+### 2. Portal Demo - `demo.securebase.tximhotep.com`
 
 **Purpose:** Interactive demo of the customer portal with mock data  
 **Platform:** Netlify  
@@ -89,8 +89,8 @@ phase3a-portal/
 VITE_USE_MOCK_API=true
 VITE_ENV=demo
 VITE_ANALYTICS_ENABLED=false
-VITE_DEMO_CTA_TRIAL_URL=https://securebase.io/signup
-VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.io/contact
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/signup
+VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.tximhotep.com/contact
 ```
 
 ---
@@ -144,8 +144,8 @@ Set these in Netlify Dashboard → Site settings → Environment variables:
 VITE_USE_MOCK_API=true
 VITE_ENV=demo
 VITE_ANALYTICS_ENABLED=false
-VITE_DEMO_CTA_TRIAL_URL=https://securebase.io/signup
-VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.io/contact
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/signup
+VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.tximhotep.com/contact
 ```
 
 ---
@@ -249,7 +249,7 @@ X-Robots-Tag: noindex, nofollow
 
 **Check Frequency:** Every 5 minutes  
 **Alert Threshold:** 2 consecutive failures  
-**Notification:** Email to ops@securebase.io
+**Notification:** Email to ops@securebase.tximhotep.com
 
 ---
 
@@ -404,7 +404,7 @@ cd phase3a-portal
 
 | Old URL | New URL | Status |
 |---------|---------|--------|
-| ~~portal.securebase.io/signup~~ | tximhotep.com/signup | ❌ Deprecated |
+| ~~portal.securebase.tximhotep.com/signup~~ | tximhotep.com/signup | ❌ Deprecated |
 | ~~calendly.com/securebase/demo~~ | tximhotep.com/contact | ❌ Deprecated |
 
 **Migration Date:** February 5, 2026  
@@ -514,9 +514,9 @@ npm run build
 
 | Issue Type | Contact | Response Time |
 |------------|---------|---------------|
-| Build Failures | dev-team@securebase.io | < 1 hour |
-| DNS Issues | ops@securebase.io | < 2 hours |
-| Security Concerns | security@securebase.io | < 30 minutes |
+| Build Failures | dev-team@securebase.tximhotep.com | < 1 hour |
+| DNS Issues | ops@securebase.tximhotep.com | < 2 hours |
+| Security Concerns | security@securebase.tximhotep.com | < 30 minutes |
 | Netlify Platform | support@netlify.com | 24-48 hours |
 
 ---
@@ -577,7 +577,7 @@ npm run build
              │                              │
     ┌────────▼────────────┐        ┌────────▼─────────────────┐
     │   Netlify CDN       │        │     Netlify CDN          │
-    │  securebase.io      │        │  demo.securebase.io      │
+    │  securebase.tximhotep.com      │        │  demo.securebase.tximhotep.com      │
     └─────────────────────┘        └──────────────────────────┘
              │                              │
              │                              │

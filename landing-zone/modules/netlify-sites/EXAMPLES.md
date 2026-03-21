@@ -18,8 +18,8 @@ module "netlify_sites" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
   
   tags = {
     Project     = "SecureBase"
@@ -55,8 +55,8 @@ module "netlify_sites" {
   netlify_token       = local.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
 }
 
 # ============================================================================
@@ -70,8 +70,8 @@ module "netlify_sites_dev" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "dev.securebase.io"
-  portal_demo_domain  = "portal-dev.securebase.io"
+  marketing_domain    = "dev.securebase.tximhotep.com"
+  portal_demo_domain  = "portal-dev.securebase.tximhotep.com"
   
   tags = {
     Environment = "development"
@@ -85,8 +85,8 @@ module "netlify_sites_staging" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "staging.securebase.io"
-  portal_demo_domain  = "portal-staging.securebase.io"
+  marketing_domain    = "staging.securebase.tximhotep.com"
+  portal_demo_domain  = "portal-staging.securebase.tximhotep.com"
   
   tags = {
     Environment = "staging"
@@ -100,8 +100,8 @@ module "netlify_sites_prod" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal.securebase.tximhotep.com"
   
   tags = {
     Environment = "production"
@@ -114,7 +114,7 @@ module "netlify_sites_prod" {
 
 # Get existing hosted zone
 data "aws_route53_zone" "main" {
-  name = "securebase.io"
+  name = "securebase.tximhotep.com"
 }
 
 # Deploy Netlify sites
@@ -122,14 +122,14 @@ module "netlify_sites" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
 }
 
 # Configure DNS for marketing site (apex domain)
 resource "aws_route53_record" "marketing" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "securebase.io"
+  name    = "securebase.tximhotep.com"
   type    = "A"
   ttl     = 300
   records = ["75.2.60.5"]  # Netlify load balancer IP
@@ -138,7 +138,7 @@ resource "aws_route53_record" "marketing" {
 # Configure DNS for portal demo (subdomain)
 resource "aws_route53_record" "portal_demo" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "portal-demo.securebase.io"
+  name    = "portal-demo.securebase.tximhotep.com"
   type    = "CNAME"
   ttl     = 300
   records = [module.netlify_sites.portal_demo_url]
@@ -152,8 +152,8 @@ module "netlify_sites" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
 }
 
 # SNS topic for alerts
@@ -164,7 +164,7 @@ resource "aws_sns_topic" "netlify_alerts" {
 resource "aws_sns_topic_subscription" "email" {
   topic_arn = aws_sns_topic.netlify_alerts.arn
   protocol  = "email"
-  endpoint  = "ops@securebase.io"
+  endpoint  = "ops@securebase.tximhotep.com"
 }
 
 # CloudWatch alarm for marketing site
@@ -177,7 +177,7 @@ resource "aws_cloudwatch_metric_alarm" "marketing_site_down" {
   period              = 60
   statistic           = "Minimum"
   threshold           = 1
-  alarm_description   = "Marketing site (securebase.io) is down"
+  alarm_description   = "Marketing site (securebase.tximhotep.com) is down"
   alarm_actions       = [aws_sns_topic.netlify_alerts.arn]
   
   dimensions = {
@@ -187,7 +187,7 @@ resource "aws_cloudwatch_metric_alarm" "marketing_site_down" {
 
 # Health check for marketing site
 resource "aws_route53_health_check" "marketing" {
-  fqdn              = "securebase.io"
+  fqdn              = "securebase.tximhotep.com"
   port              = 443
   type              = "HTTPS"
   resource_path     = "/"
@@ -236,8 +236,8 @@ module "netlify_sites" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
 }
 
 # Step 2: Import existing sites (run in terminal)
@@ -262,8 +262,8 @@ module "netlify_sites" {
   source = "../../modules/netlify-sites"
   
   netlify_token       = var.netlify_token
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
 }
 
 # ============================================================================

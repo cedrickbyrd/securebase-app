@@ -150,7 +150,7 @@ curl -i $API_URL/health
 ### 4. Configure Monitoring
 
 **Route53 Health Check**:
-- Endpoint: `https://api.securebase.io/health`
+- Endpoint: `https://api.securebase.tximhotep.com/health`
 - Check interval: 30 seconds
 - Failure threshold: 2 consecutive failures
 - String matching: `"status":"healthy"`

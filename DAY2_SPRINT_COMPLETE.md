@@ -18,7 +18,7 @@ Created a fully functional demo environment at the target URL where prospects ca
 ### Configuration Files (2)
 1. **`.env.demo`** - 19 environment variables for demo mode
    - Demo mode, read-only mode, banner settings
-   - API endpoints (demo-api.securebase.io)
+   - API endpoints (demo-api.securebase.tximhotep.com)
    - Stripe test keys
    - Auto-reset configuration (24 hours)
    - CTA URLs for trial/demo booking
@@ -186,7 +186,7 @@ gh workflow run deploy-phase3a-demo.yml
 
 ### Demo URL
 **S3 Website:** http://securebase-phase3a-demo.s3-website-us-east-1.amazonaws.com  
-**Custom Domain (future):** https://demo.securebase.io
+**Custom Domain (future):** https://demo.securebase.tximhotep.com
 
 ---
 
@@ -227,7 +227,7 @@ All validation checks passed:
 - [x] GitHub Actions workflow created
 - [x] S3 bucket configured for static hosting
 - [x] Demo accessible at S3 website URL
-- [x] (Optional) CloudFront distribution ready for demo.securebase.io
+- [x] (Optional) CloudFront distribution ready for demo.securebase.tximhotep.com
 
 ### Documentation ✅
 - [x] `DEMO_ENVIRONMENT.md` created with comprehensive docs
@@ -248,7 +248,7 @@ All validation checks passed:
 ## 🎊 Success Metrics
 
 **Expected Outcomes:**
-- ✅ Live demo accessible at S3 URL (ready for demo.securebase.io)
+- ✅ Live demo accessible at S3 URL (ready for demo.securebase.tximhotep.com)
 - ✅ Prospects can explore full portal without signup
 - ✅ Demo clearly labeled (not confused with production)
 - ✅ CTAs drive traffic to trial signup
@@ -282,7 +282,7 @@ All validation checks passed:
    - Iterate on demo data/features
 
 5. **Optional Enhancements**
-   - Set up custom domain (demo.securebase.io)
+   - Set up custom domain (demo.securebase.tximhotep.com)
    - Add analytics tracking (Google Analytics)
    - Implement guided tour
    - A/B test CTA placements

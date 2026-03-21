@@ -4,7 +4,7 @@
 
 SecureBase Phase 2 provides a multi-tenant REST API for managing AWS Organizations, compliance, and billing.
 
-**Base URL:** `https://api.securebase.io/v1` (or `https://{api-id}.execute-api.us-east-1.amazonaws.com/prod`)
+**Base URL:** `https://api.securebase.tximhotep.com/v1` (or `https://{api-id}.execute-api.us-east-1.amazonaws.com/prod`)
 
 **Authentication:** Bearer token (API key or session token)
 
@@ -51,7 +51,7 @@ Check API health status and database connectivity.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/health
+curl -X GET https://api.securebase.tximhotep.com/v1/health
 ```
 
 **Response (200 - Healthy):**
@@ -99,7 +99,7 @@ Authenticate with API key and receive session token.
 
 **Request:**
 ```bash
-curl -X POST https://api.securebase.io/v1/auth/authenticate \
+curl -X POST https://api.securebase.tximhotep.com/v1/auth/authenticate \
   -H "Authorization: Bearer sb_ABC123DEF456_..." \
   -H "Content-Type: application/json"
 ```
@@ -137,7 +137,7 @@ List customer's invoices.
 
 **Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/invoices?limit=12&status=paid" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/invoices?limit=12&status=paid" \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -182,7 +182,7 @@ Get single invoice details.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/invoices/inv_550e8400 \
+curl -X GET https://api.securebase.tximhotep.com/v1/invoices/inv_550e8400 \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -221,7 +221,7 @@ Download invoice as PDF.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/invoices/inv_550e8400/download \
+curl -X GET https://api.securebase.tximhotep.com/v1/invoices/inv_550e8400/download \
   -H "Authorization: Bearer {session_token}" \
   -o invoice.pdf
 ```
@@ -241,7 +241,7 @@ Get customer's usage metrics.
 
 **Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/metrics?month=2025-01-01" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/metrics?month=2025-01-01" \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -277,7 +277,7 @@ Get historical metrics (last 12 months).
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/metrics/history \
+curl -X GET https://api.securebase.tximhotep.com/v1/metrics/history \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -310,7 +310,7 @@ List customer's API keys.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/api-keys \
+curl -X GET https://api.securebase.tximhotep.com/v1/api-keys \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -339,7 +339,7 @@ Create a new API key.
 
 **Request:**
 ```bash
-curl -X POST https://api.securebase.io/v1/api-keys/create \
+curl -X POST https://api.securebase.tximhotep.com/v1/api-keys/create \
   -H "Authorization: Bearer {session_token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -366,7 +366,7 @@ Revoke an API key.
 
 **Request:**
 ```bash
-curl -X DELETE https://api.securebase.io/v1/api-keys/key_abc123 \
+curl -X DELETE https://api.securebase.tximhotep.com/v1/api-keys/key_abc123 \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -381,7 +381,7 @@ Get compliance status for all frameworks.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/compliance/status \
+curl -X GET https://api.securebase.tximhotep.com/v1/compliance/status \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -428,7 +428,7 @@ Get detailed compliance findings.
 
 **Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/compliance/findings?framework=soc2&severity=high" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/compliance/findings?framework=soc2&severity=high" \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -466,7 +466,7 @@ List AWS accounts in customer's Organization.
 
 **Request:**
 ```bash
-curl -X GET https://api.securebase.io/v1/accounts \
+curl -X GET https://api.securebase.tximhotep.com/v1/accounts \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -498,7 +498,7 @@ Create a new support ticket.
 
 **Request:**
 ```bash
-curl -X POST https://api.securebase.io/v1/support/tickets/create \
+curl -X POST https://api.securebase.tximhotep.com/v1/support/tickets/create \
   -H "Authorization: Bearer {session_token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -518,7 +518,7 @@ curl -X POST https://api.securebase.io/v1/support/tickets/create \
     "priority": "normal",
     "status": "open",
     "created_at": "2025-01-19T15:30:00Z",
-    "support_team_email": "support@securebase.io"
+    "support_team_email": "support@securebase.tximhotep.com"
   }
 }
 ```
@@ -530,7 +530,7 @@ List customer's support tickets.
 
 **Request:**
 ```bash
-curl -X GET "https://api.securebase.io/v1/support/tickets?status=open" \
+curl -X GET "https://api.securebase.tximhotep.com/v1/support/tickets?status=open" \
   -H "Authorization: Bearer {session_token}"
 ```
 
@@ -546,7 +546,7 @@ curl -X GET "https://api.securebase.io/v1/support/tickets?status=open" \
       "status": "open",
       "created_at": "2025-01-19T15:30:00Z",
       "updated_at": "2025-01-19T16:00:00Z",
-      "assigned_to": "support@securebase.io"
+      "assigned_to": "support@securebase.tximhotep.com"
     }
   ]
 }
@@ -602,7 +602,7 @@ curl -X GET "https://api.securebase.io/v1/support/tickets?status=open" \
 {
   "error": "Internal server error",
   "request_id": "req_abc123",
-  "support_email": "support@securebase.io"
+  "support_email": "support@securebase.tximhotep.com"
 }
 ```
 
@@ -673,7 +673,7 @@ Webhooks will send real-time events to your server:
 
 **Configuration:**
 ```bash
-curl -X POST https://api.securebase.io/v1/webhooks \
+curl -X POST https://api.securebase.tximhotep.com/v1/webhooks \
   -H "Authorization: Bearer {session_token}" \
   -d '{
     "url": "https://your-server.com/webhooks/securebase",
@@ -694,7 +694,7 @@ headers = {"Authorization": f"Bearer {API_KEY}"}
 
 # Authenticate
 response = requests.post(
-    "https://api.securebase.io/v1/auth/authenticate",
+    "https://api.securebase.tximhotep.com/v1/auth/authenticate",
     headers=headers
 )
 session_token = response.json()["session_token"]
@@ -702,7 +702,7 @@ session_token = response.json()["session_token"]
 # Get invoices
 headers["Authorization"] = f"Bearer {session_token}"
 invoices = requests.get(
-    "https://api.securebase.io/v1/invoices",
+    "https://api.securebase.tximhotep.com/v1/invoices",
     headers=headers
 ).json()
 ```
@@ -713,7 +713,7 @@ const apiKey = "sb_ABC123DEF456_...";
 
 // Authenticate
 const authResponse = await fetch(
-  "https://api.securebase.io/v1/auth/authenticate",
+  "https://api.securebase.tximhotep.com/v1/auth/authenticate",
   {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}` }
@@ -723,7 +723,7 @@ const { session_token } = await authResponse.json();
 
 // Get invoices
 const invoicesResponse = await fetch(
-  "https://api.securebase.io/v1/invoices",
+  "https://api.securebase.tximhotep.com/v1/invoices",
   {
     headers: { Authorization: `Bearer ${session_token}` }
   }
@@ -735,9 +735,9 @@ const { invoices } = await invoicesResponse.json();
 
 ## Support
 
-**Documentation:** https://docs.securebase.io
-**API Status:** https://status.securebase.io
-**Email:** api-support@securebase.io
+**Documentation:** https://docs.securebase.tximhotep.com
+**API Status:** https://status.securebase.tximhotep.com
+**Email:** api-support@securebase.tximhotep.com
 **Slack:** #securebase-api (for early access partners)
 
 ---

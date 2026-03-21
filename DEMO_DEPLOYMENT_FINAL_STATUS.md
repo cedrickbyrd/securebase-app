@@ -298,7 +298,7 @@ Use the checklist in DEMO_DEPLOYMENT_EXECUTION.md to verify:
 4. **Add analytics** (Plausible or Google Analytics)
 
 ### Medium Term (Next Week)
-1. **Custom domain** setup (demo.securebase.io)
+1. **Custom domain** setup (demo.securebase.tximhotep.com)
 2. **Gather feedback** from demo users
 3. **Monitor metrics** (traffic, conversions, errors)
 4. **Refine mock data** based on feedback

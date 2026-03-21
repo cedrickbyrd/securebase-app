@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"error\": \"{'S': 'ERROR', 'V': 'ERROR', 'C': '42703', 'M': 'column \\\"tier\\\" of relation \\\"customers\\\" does not exist', 'P': '130', 'F': 'parse_target.c', 'L': '1288', 'R': 'checkInsertTargets'}\"}"}

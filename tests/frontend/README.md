@@ -111,7 +111,7 @@ The portal should start at `http://localhost:5173`
 - [ ] Click "Sign In" or press Enter
 - [ ] Login succeeds and redirects to dashboard
 - [ ] Token is stored in sessionStorage/localStorage
-- [ ] User menu shows "Demo User" or "demo@securebase.io"
+- [ ] User menu shows "Demo User" or "demo@securebase.tximhotep.com"
 
 #### ✅ Invalid Credentials
 - [ ] Try username: `wrong` / password: `wrong`
@@ -462,7 +462,7 @@ For issues or questions:
 - Check [Troubleshooting](#troubleshooting) section above
 - Review browser console for errors
 - Check [GitHub Issues](https://github.com/cedrickbyrd/securebase-app/issues)
-- Contact: support@securebase.io
+- Contact: support@securebase.tximhotep.com
 
 ---
 

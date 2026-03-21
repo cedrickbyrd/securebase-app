@@ -2,16 +2,18 @@ import json, logging, os, re, uuid
 from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
+import db
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 ssm=boto3.client("ssm"); ses=boto3.client("ses",region_name=os.environ.get("AWS_REGION","us-east-1"))
-cognito=boto3.client("cognito-idp"); lambda_=boto3.client("lambda"); rds=boto3.client("rds-data")
+cognito=boto3.client("cognito-idp"); lambda_=boto3.client("lambda")
 
-def get_param(name,decrypt=True): return ssm.get_parameter(Name=name,WithDecryption=decrypt)["Parameter"]["Value"]
-def cors_response(status,body):
-    return{"statusCode":status,"headers":{"Content-Type":"application/json","Access-Control-Allow-Origin":os.environ.get("ALLOWED_ORIGIN","https://securebase.tximhotep.com"),"Access-Control-Allow-Methods":"POST,GET,OPTIONS","Access-Control-Allow-Headers":"Content-Type,Authorization"},"body":json.dumps(body)}
-def validate_payload(body):
+def get_param(n): return ssm.get_parameter(Name=n,WithDecryption=True)["Parameter"]["Value"]
+def cors(status,body):
+    return{"statusCode":status,"headers":{"Content-Type":"application/json","Access-Control-Allow-Origin":os.environ.get("ALLOWED_ORIGIN","https://securebase.tximhotep.com")},"body":json.dumps(body)}
+
+def validate(body):
     errors=[]
     for f in ["firstName","lastName","email","password","orgName","orgSize","industry","awsRegion"]:
         if not body.get(f,"").strip(): errors.append(f"{f} is required.")
@@ -65,42 +67,70 @@ def verify_email_handler(event,provisioner_fn):
     return cors_response(200,{"message":"Email verified. Provisioning will begin shortly.","jobId":job_id})
 
 def handler(event,context):
-    if event.get("httpMethod")=="OPTIONS": return cors_response(200,{})
-    path=event.get("path","")
-    # Verify-email route: GET /signup/verify-email?token=...&email=...
-    if event.get("httpMethod")=="GET" and "/verify-email" in path:
-        try: provisioner_fn=get_param("/securebase/provisioner/function")
-        except ClientError: return cors_response(500,{"message":"Configuration error."})
-        return verify_email_handler(event,provisioner_fn)
+    if event.get("httpMethod")=="OPTIONS": return cors(200,{})
     try: body=json.loads(event.get("body") or "{}")
-    except json.JSONDecodeError: return cors_response(400,{"message":"Invalid JSON."})
-    errors=validate_payload(body)
-    if errors: return cors_response(400,{"message":errors[0],"errors":errors})
-    email=body["email"].strip().lower(); job_id=str(uuid.uuid4()); customer_id=str(uuid.uuid4()); now=datetime.now(timezone.utc).isoformat()
+    except: return cors(400,{"message":"Invalid JSON."})
+    errors=validate(body)
+    if errors: return cors(400,{"message":errors[0],"errors":errors})
+    email=body["email"].strip().lower(); now=datetime.now(timezone.utc).isoformat()
     try:
-        db_resource_arn=get_param("/securebase/db/resource_arn"); db_secret_arn=get_param("/securebase/db/secret_arn")
-        db_name=get_param("/securebase/db/name"); ses_sender=get_param("/securebase/ses/from_address")
-        user_pool_id=get_param("/securebase/cognito/user_pool_id"); provisioner_fn=get_param("/securebase/provisioner/function")
-    except ClientError as e: logger.error("SSM error: %s",e); return cors_response(500,{"message":"Configuration error."})
+        ses_sender=get_param("/securebase/ses/from_address")
+        user_pool_id=get_param("/securebase/cognito/user_pool_id")
+        provisioner_fn=get_param("/securebase/provisioner/function")
+    except ClientError as e: logger.error("SSM: %s",e); return cors(500,{"message":"Configuration error."})
     try:
-        dup=rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="SELECT id FROM signup_requests WHERE LOWER(email)=:email LIMIT 1",parameters=[{"name":"email","value":{"stringValue":email}}])
-        if dup["records"]: return cors_response(409,{"message":"An account with this email already exists."})
-    except ClientError as e: return cors_response(500,{"message":"Database error."})
+        rows=db.execute("SELECT id FROM customers WHERE email=:email LIMIT 1",{"email":email})
+        if rows: return cors(409,{"message":"An account with this email already exists."})
+    except Exception as e: logger.error("DB: %s",e); return cors(500,{"message":"Database error."})
     try:
-        cognito.admin_create_user(UserPoolId=user_pool_id,Username=email,UserAttributes=[{"Name":"email","Value":email},{"Name":"given_name","Value":body["firstName"]},{"Name":"family_name","Value":body["lastName"]},{"Name":"custom:org_name","Value":body["orgName"]},{"Name":"custom:job_id","Value":job_id}],TemporaryPassword=body["password"],MessageAction="SUPPRESS")
-    except cognito.exceptions.UsernameExistsException: return cors_response(409,{"message":"An account with this email already exists."})
-    except ClientError as e: return cors_response(500,{"message":"Failed to create account."})
+        # Create Cognito user (without job_id yet - will be set after DB insert)
+        cognito.admin_create_user(UserPoolId=user_pool_id,Username=email,UserAttributes=[{"Name":"email","Value":email},{"Name":"given_name","Value":body["firstName"]},{"Name":"family_name","Value":body["lastName"]},{"Name":"custom:org_name","Value":body["orgName"]}],TemporaryPassword=body["password"],MessageAction="SUPPRESS")
+    except cognito.exceptions.UsernameExistsException: return cors(409,{"message":"An account with this email already exists."})
+    except ClientError as e: return cors(500,{"message":"Failed to create account."})
     try:
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO signup_requests(id,email,first_name,last_name,org_name,org_size,industry,aws_region,mfa_enabled,guardrails_level,onboarding_status,created_at) VALUES(:id,:email,:fn,:ln,:org,:sz,:ind,:reg,:mfa,:gl,'pending',:ca)",parameters=[{"name":"id","value":{"stringValue":customer_id}},{"name":"email","value":{"stringValue":email}},{"name":"fn","value":{"stringValue":body["firstName"]}},{"name":"ln","value":{"stringValue":body["lastName"]}},{"name":"org","value":{"stringValue":body["orgName"]}},{"name":"sz","value":{"stringValue":body["orgSize"]}},{"name":"ind","value":{"stringValue":body["industry"]}},{"name":"reg","value":{"stringValue":body["awsRegion"]}},{"name":"mfa","value":{"booleanValue":bool(body.get("mfaEnabled",True))}},{"name":"gl","value":{"stringValue":body.get("guardrailsLevel","standard")}},{"name":"ca","value":{"stringValue":now}}])
-        rds.execute_statement(resourceArn=db_resource_arn,secretArn=db_secret_arn,database=db_name,sql="INSERT INTO onboarding_jobs(id,customer_id,overall_status,created_at,updated_at) VALUES(:id,:cid,'pending',:ca,:ca)",parameters=[{"name":"id","value":{"stringValue":job_id}},{"name":"cid","value":{"stringValue":customer_id}},{"name":"ca","value":{"stringValue":now}}])
-    except ClientError as e:
+        # Use database function for atomic customer + job creation
+        result = db.execute(
+            """SELECT * FROM create_customer_with_onboarding(
+                :email, :fn, :ln, :org, :sz, :ind, :reg, :mfa, :gl
+            )""",
+            {
+                "email": email,
+                "fn": body["firstName"],
+                "ln": body["lastName"],
+                "org": body["orgName"],
+                "sz": body.get("orgSize", "unknown"),
+                "ind": body.get("industry", "general"),
+                "reg": body["awsRegion"],
+                "mfa": bool(body.get("mfaEnabled", True)),
+                "gl": body.get("guardrailsLevel", "standard")
+            }
+        )
+        # Extract customer_id and job_id from function result
+        returned_customer_id, returned_job_id = result[0]
+        logger.info(f"Created customer {returned_customer_id} with job {returned_job_id}")
+        
+        # Update Cognito user with job_id
+        try:
+            cognito.admin_update_user_attributes(
+                UserPoolId=user_pool_id,
+                Username=email,
+                UserAttributes=[{"Name":"custom:job_id","Value":str(returned_job_id)}]
+            )
+        except Exception as cog_err:
+            logger.warning(f"Failed to update Cognito job_id: {cog_err}")
+    except Exception as e:
+        logger.error("DB write error: %s", str(e), exc_info=True)
+        # Check if it's a duplicate email error
+        if 'Email already exists' in str(e):
+            return cors(409, {"message": "An account with this email already exists."})
+        # Rollback Cognito user if database insert failed
         try: cognito.admin_delete_user(UserPoolId=user_pool_id,Username=email)
-        except ClientError: pass
-        return cors_response(500,{"message":"Failed to save account data."})
-    verify_url=f"https://securebase.tximhotep.com/verify-email?token={job_id}&email={email}"
-    try: ses.send_email(Source=ses_sender,Destination={"ToAddresses":[email]},Message={"Subject":{"Data":"Verify your SecureBase account"},"Body":{"Text":{"Data":f"Hi {body['firstName']},\n\nVerify your email: {verify_url}\n\n— SecureBase"}}})
-    except ClientError as e: logger.error("SES error: %s",e)
-    try: invoke_provisioner(provisioner_fn,job_id,customer_id,email,body["orgName"],body["awsRegion"],bool(body.get("mfaEnabled",True)),body.get("guardrailsLevel","standard"))
-    except ClientError as e: logger.error("Provisioner invoke error: %s",e)
-    logger.info("Signup: customer=%s job=%s",customer_id,job_id)
-    return cors_response(201,{"message":"Account created. Please verify your email.","jobId":job_id})
+        except: pass
+        return cors(500,{"message":"Failed to save account data."})
+    verify_url=f"https://securebase.tximhotep.com/verify-email?token={returned_job_id}&email={email}"
+    try: ses.send_email(Source=ses_sender,Destination={"ToAddresses":[email]},Message={"Subject":{"Data":"Verify your SecureBase account"},"Body":{"Text":{"Data":f"Hi {body['firstName']},\n\nVerify your email:\n{verify_url}\n\n— SecureBase"}}})
+    except ClientError as e: logger.error("SES: %s",e)
+    try: lambda_.invoke(FunctionName=provisioner_fn,InvocationType="Event",Payload=json.dumps({"jobId":returned_job_id,"customerId":returned_customer_id,"email":email,"orgName":body["orgName"],"awsRegion":body["awsRegion"],"mfaEnabled":bool(body.get("mfaEnabled",True)),"guardrailsLevel":body.get("guardrailsLevel","standard")}))
+    except ClientError as e: logger.error("Provisioner: %s",e)
+    logger.info("Signup: customer=%s job=%s",returned_customer_id,returned_job_id)
+    return cors(201,{"message":"Account created. Please verify your email.","jobId":returned_job_id})

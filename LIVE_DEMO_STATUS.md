@@ -88,7 +88,7 @@ See:
 
 #### Core Demo Guides
 - ✅ **DEMO_README.md** (11,844 bytes)
-  - Live demo URL: https://demo.securebase.io
+  - Live demo URL: https://demo.securebase.tximhotep.com
   - Demo credentials: demo/demo
   - Complete feature list
   - Testing procedures
@@ -515,7 +515,7 @@ npx netlify deploy --prod
 **Custom Domain & Monitoring**
 
 1. **Custom Domains** (30 min)
-   - Purchase/configure `demo.securebase.io`
+   - Purchase/configure `demo.securebase.tximhotep.com`
    - Add DNS records to Vercel/Netlify
    - Enable automatic SSL
 
@@ -607,8 +607,8 @@ npx netlify deploy --prod
 ### Medium-Term Enhancements (Next Week)
 
 7. **Custom Domain Setup** (1 hour)
-   - Configure demo.securebase.io
-   - Configure portal-demo.securebase.io
+   - Configure demo.securebase.tximhotep.com
+   - Configure portal-demo.securebase.tximhotep.com
    - Add SSL certificates
    **Impact:** Professional branded URLs
 
