@@ -11,6 +11,8 @@
 
 In an era where AI agents and autonomous systems interact with critical infrastructure, SecureBase provides the "Source of Truth" for security posture, asset discovery, and audit readiness.
 
+📋 **[Full Project Roadmap →](ROADMAP.md)**
+
 ## ## Key Capabilities (2026 Roadmap)
 * **Sovereign Identity:** Advanced IAM protocols for non-human identities and AI agents.
 * **Compliance Drift Monitoring:** Real-time visualization of infrastructure status against NERC CIP and NIST standards.
