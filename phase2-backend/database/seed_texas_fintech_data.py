@@ -267,9 +267,17 @@ def seed_database(customer_id, num_customers=50, num_transactions=100):
     cur = conn.cursor()
     
     try:
-        # Set RLS context as admin
-        cur.execute(f"SET app.current_customer_id = '{customer_id}'")
-        cur.execute("SET app.role = 'admin'")
+        # Validate customer_id is a valid UUID to prevent SQL injection
+        import uuid as uuid_lib
+        try:
+            uuid_lib.UUID(customer_id)
+        except ValueError:
+            print(f"❌ Invalid customer_id format: must be UUID")
+            sys.exit(1)
+        
+        # Set RLS context as admin using parameterized queries
+        cur.execute("SET app.current_customer_id = %s", (customer_id,))
+        cur.execute("SET app.role = %s", ('admin',))
         
         # Generate customer details
         print("📝 Generating customer details...")
