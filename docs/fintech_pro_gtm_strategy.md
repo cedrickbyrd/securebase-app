@@ -2,7 +2,8 @@
 ## $3.84M ARR Roadmap for Texas Regulatory Compliance Platform
 
 **Version:** 1.0  
-**Target:** 40 customers × $8K avg MRR = $320K MRR by Month 12  
+**Target:** 40 customers × ~$8K avg MRR = $320K MRR by Month 12
+*(Mix: ~60% Fintech Pro @ $7.5K + ~40% Fintech Elite @ $12K ≈ $9.3K blended, conservatively modelled at $8K to account for beta-price holdovers)*  
 
 ---
 
