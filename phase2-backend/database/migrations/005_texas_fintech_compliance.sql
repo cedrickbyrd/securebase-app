@@ -395,6 +395,9 @@ CREATE POLICY customer_isolation_sar
   FOR ALL 
   USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
 
+-- Index for RLS policy performance
+CREATE INDEX idx_sar_filings_sar_customer ON sar_filings(sar_id, customer_id);
+
 CREATE POLICY customer_isolation_sar_tx 
   ON sar_transactions 
   FOR ALL 
@@ -410,6 +413,9 @@ CREATE POLICY customer_isolation_delegates
   ON authorized_delegates 
   FOR ALL 
   USING (customer_id = current_setting('app.current_customer_id')::uuid OR current_setting('app.role') = 'admin');
+
+-- Index for RLS policy performance
+CREATE INDEX idx_delegates_delegate_customer ON authorized_delegates(delegate_id, customer_id);
 
 CREATE POLICY customer_isolation_delegate_tx 
   ON delegate_transactions 

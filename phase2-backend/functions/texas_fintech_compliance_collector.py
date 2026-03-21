@@ -76,8 +76,20 @@ def get_db_connection():
 def set_rls_context(cur, customer_id: str, role: str = 'customer'):
     """Set Row-Level Security context for multi-tenant isolation"""
     try:
-        cur.execute(f"SET app.current_customer_id = '{customer_id}'")
-        cur.execute(f"SET app.role = '{role}'")
+        # Validate UUID format to prevent SQL injection
+        import uuid
+        try:
+            uuid.UUID(customer_id)
+        except ValueError:
+            raise ValueError(f"Invalid customer_id format: must be UUID")
+        
+        # Validate role to prevent SQL injection
+        if role not in ['customer', 'admin', 'auditor']:
+            raise ValueError(f"Invalid role: must be customer, admin, or auditor")
+        
+        # Use parameterized queries to prevent SQL injection
+        cur.execute("SET app.current_customer_id = %s", (customer_id,))
+        cur.execute("SET app.role = %s", (role,))
         logger.info(f"RLS context set for customer: {customer_id}, role: {role}")
     except Exception as e:
         logger.error(f"Failed to set RLS context: {str(e)}")
@@ -604,6 +616,9 @@ def collect_digital_asset_segregation(conn, customer_id: str) -> Dict[str, Any]:
     """
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     set_rls_context(cursor, customer_id, 'admin')
+    
+    # Store current date for consistent date comparisons
+    current_date = datetime.now().date()
     
     # Check if DASP requirements apply
     customer_count_query = """
