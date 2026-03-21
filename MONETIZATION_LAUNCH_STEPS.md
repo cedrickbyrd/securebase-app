@@ -48,8 +48,8 @@ cat > .env << 'EOF'
 VITE_STRIPE_PUBLIC_KEY=pk_test_YOUR_PUBLISHABLE_KEY_HERE
 
 # API Configuration
-VITE_API_BASE_URL=https://api.securebase.io
-VITE_PORTAL_URL=https://portal.securebase.io
+VITE_API_BASE_URL=https://api.securebase.tximhotep.com
+VITE_PORTAL_URL=https://portal.securebase.tximhotep.com
 EOF
 
 # Install Stripe.js dependency
@@ -87,12 +87,12 @@ cat >> variables.tf << 'EOF'
 variable "portal_url" {
   description = "Customer portal URL"
   type        = string
-  default     = "https://portal.securebase.io"
+  default     = "https://portal.securebase.tximhotep.com"
 }
 EOF
 
 # Add to terraform.tfvars
-echo 'portal_url = "https://portal.securebase.io"' >> terraform.tfvars
+echo 'portal_url = "https://portal.securebase.tximhotep.com"' >> terraform.tfvars
 ```
 
 ---
@@ -217,7 +217,7 @@ aws lambda update-function-configuration \
     STRIPE_PRICE_GOVERNMENT=price_YOUR_GOVERNMENT_PRICE_ID,
     STRIPE_PRICE_STANDARD=price_YOUR_STANDARD_PRICE_ID,
     STRIPE_PILOT_COUPON=YOUR_COUPON_ID,
-    PORTAL_URL=https://portal.securebase.io
+    PORTAL_URL=https://portal.securebase.tximhotep.com
   }" \
   --region us-east-1
 ```
@@ -275,7 +275,7 @@ npm run build
 
 # Deploy to your hosting platform
 # Option A: AWS S3 + CloudFront
-aws s3 sync dist/ s3://portal.securebase.io/ --delete
+aws s3 sync dist/ s3://portal.securebase.tximhotep.com/ --delete
 aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 
 # Option B: AWS S3 + CloudFront
@@ -293,7 +293,7 @@ aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 - [ ] Update LinkedIn profile with SecureBase messaging
 - [ ] Create Calendly link for demo bookings
 - [ ] Set up email sequences in your outreach tool
-- [ ] Launch pricing page (securebase.io/signup)
+- [ ] Launch pricing page (securebase.tximhotep.com/signup)
 
 ### Week 1 Goals
 - [ ] Send 100 LinkedIn connection requests to CTOs

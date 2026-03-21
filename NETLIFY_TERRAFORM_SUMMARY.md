@@ -14,12 +14,12 @@ This implementation adds complete Terraform management for SecureBase's Netlify 
 - `netlify_build_hook` - Webhooks for manual deployments
 
 **Sites Managed:**
-- **Marketing Site** (securebase.io)
+- **Marketing Site** (securebase.tximhotep.com)
   - Build: `npm run build`
   - Publish: `dist/`
   - Env: `NODE_VERSION=22`, `VITE_ENV=production`
   
-- **Portal Demo** (portal-demo.securebase.io)
+- **Portal Demo** (portal-demo.securebase.tximhotep.com)
   - Build: `cd phase3a-portal && npm run build`
   - Publish: `phase3a-portal/dist/`
   - Env: `NODE_VERSION=22`, `VITE_USE_MOCK_API=true`, `VITE_ENV=demo`, `VITE_ANALYTICS_ENABLED=false`
@@ -41,8 +41,8 @@ module "netlify_sites" {
   netlify_token       = var.netlify_token
   github_owner        = "cedrickbyrd"
   github_repo         = "securebase-app"
-  marketing_domain    = "securebase.io"
-  portal_demo_domain  = "portal-demo.securebase.io"
+  marketing_domain    = "securebase.tximhotep.com"
+  portal_demo_domain  = "portal-demo.securebase.tximhotep.com"
   tags                = var.tags
 }
 ```
@@ -231,14 +231,14 @@ terraform import 'module.netlify_sites.netlify_site.portal_demo' <site-id>
    ```
 
 4. **Configure DNS**
-   - Add A record for securebase.io → Netlify
-   - Add CNAME for portal-demo.securebase.io → Netlify
+   - Add A record for securebase.tximhotep.com → Netlify
+   - Add CNAME for portal-demo.securebase.tximhotep.com → Netlify
    - Wait for DNS propagation (5min - 48hrs)
 
 5. **Verify Deployment**
    ```bash
-   curl -I https://securebase.io
-   curl -I https://portal-demo.securebase.io
+   curl -I https://securebase.tximhotep.com
+   curl -I https://portal-demo.securebase.tximhotep.com
    ```
 
 ## Benefits

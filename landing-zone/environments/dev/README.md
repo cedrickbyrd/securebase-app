@@ -247,24 +247,24 @@ terraform output netlify_portal_demo_url
 terraform output netlify_deployment_summary
 
 # Test sites
-curl -I https://securebase.io
-curl -I https://portal-demo.securebase.io
+curl -I https://securebase.tximhotep.com
+curl -I https://portal-demo.securebase.tximhotep.com
 ```
 
 ### DNS Configuration
 After deploying, configure DNS for custom domains:
 
-**Marketing Site (securebase.io)**:
+**Marketing Site (securebase.tximhotep.com)**:
 ```
 # Add to your DNS provider
-securebase.io.  ALIAS   <netlify-marketing-url>
-# Or: securebase.io.  A   75.2.60.5
+securebase.tximhotep.com.  ALIAS   <netlify-marketing-url>
+# Or: securebase.tximhotep.com.  A   75.2.60.5
 ```
 
-**Portal Demo (portal-demo.securebase.io)**:
+**Portal Demo (portal-demo.securebase.tximhotep.com)**:
 ```
 # Add to your DNS provider
-portal-demo.securebase.io.  CNAME   <netlify-demo-url>
+portal-demo.securebase.tximhotep.com.  CNAME   <netlify-demo-url>
 ```
 
 ### Troubleshooting Netlify Deployments

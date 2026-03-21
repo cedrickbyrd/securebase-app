@@ -104,7 +104,7 @@ jobs:
             -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
             -backend-config="key=landing-zone/dev/terraform.tfstate" \
             -backend-config="region=us-east-1" \
-            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_DYNAMODB_TABLE }}"
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
 
       - name: Terraform validate
         run: terraform validate

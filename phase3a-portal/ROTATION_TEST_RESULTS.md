@@ -135,14 +135,14 @@ Each customer sees tailored data based on their profile:
 ```env
 # Demo Customer Rotation (Phase 1: Time-based)
 VITE_DEMO_COUNTER_ENABLED=false
-# VITE_DEMO_COUNTER_API=https://api.securebase.io/demo/customer-index
+# VITE_DEMO_COUNTER_API=https://api.securebase.tximhotep.com/demo/customer-index
 ```
 
 ### Future Backend Integration
 When Phase 2 infrastructure is deployed:
 ```env
 VITE_DEMO_COUNTER_ENABLED=true
-VITE_DEMO_COUNTER_API=https://api.securebase.io/demo/customer-index
+VITE_DEMO_COUNTER_API=https://api.securebase.tximhotep.com/demo/customer-index
 ```
 
 ## Visual Design

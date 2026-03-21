@@ -11,8 +11,8 @@ This document covers the automated workflows for deploying and setting up Secure
 ## Overview
 
 The deployment system manages two sites:
-1. **Marketing Site** (`securebase.io`) - Root marketing site
-2. **Demo Portal** (`demo.securebase.io`) - Customer portal demo
+1. **Marketing Site** (`securebase.tximhotep.com`) - Root marketing site
+2. **Demo Portal** (`demo.securebase.tximhotep.com`) - Customer portal demo
 
 ---
 
@@ -158,12 +158,12 @@ After workflow completes successfully:
 
 5. **Configure custom domain** (optional)
    - Go to site Settings → Domain management
-   - Add custom domain: `securebase.io`
+   - Add custom domain: `securebase.tximhotep.com`
    - Follow DNS configuration instructions
 
 ### Next Steps After Setup
 
-1. **Configure custom domain**: Add `securebase.io` in Netlify dashboard
+1. **Configure custom domain**: Add `securebase.tximhotep.com` in Netlify dashboard
 2. **Set up SSL**: Netlify automatically provisions SSL certificates
 3. **Test deployment workflow**: Push changes to trigger automatic deployment
 4. **Monitor deployments**: Check Netlify dashboard for build status
@@ -191,7 +191,7 @@ Deploys the marketing site to Netlify.
 Verifies the production deployment (only runs on `main` branch).
 
 - Waits 15 seconds for DNS propagation
-- Tests `https://securebase.io` returns HTTP 200
+- Tests `https://securebase.tximhotep.com` returns HTTP 200
 - Checks security headers (HSTS, X-Frame-Options, X-Content-Type-Options)
 - Generates deployment report in GitHub Actions
 
@@ -218,7 +218,7 @@ Your Netlify personal access token
 4. Add to GitHub: Settings → Secrets → Actions → New repository secret
 
 ### `NETLIFY_MARKETING_SITE_ID`
-Site ID for marketing site (securebase.io)
+Site ID for marketing site (securebase.tximhotep.com)
 
 **How to get**:
 - **Option 1**: Run the "Setup Marketing Site in Netlify" workflow (recommended)
@@ -278,7 +278,7 @@ Automatically provided by GitHub Actions (no setup needed)
    ```
    → Go to Netlify dashboard
    → Site Settings → Domain management
-   → Add custom domain: securebase.io
+   → Add custom domain: securebase.tximhotep.com
    → Follow DNS configuration instructions
    ```
 
@@ -310,7 +310,7 @@ After initial setup, deployments happen automatically:
 To manually trigger a deployment:
 
 1. Go to Actions tab in GitHub
-2. Select "Deploy Marketing Site (securebase.io)" workflow
+2. Select "Deploy Marketing Site (securebase.tximhotep.com)" workflow
 3. Click "Run workflow"
 4. Select branch (usually `main`)
 5. Click "Run workflow"

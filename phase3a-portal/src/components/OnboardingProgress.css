@@ -1,0 +1,250 @@
+/**
+ * OnboardingProgress Styles – live provisioning status panel
+ */
+
+/* ── Container ───────────────────────────────── */
+.op-container {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.op-container.op-compact {
+  padding: 1rem 1.25rem;
+  max-width: none;
+  box-shadow: none;
+}
+
+/* ── Header ──────────────────────────────────── */
+.op-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.op-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.op-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* ── Badge ───────────────────────────────────── */
+.op-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.op-badge-lg { font-size: 0.875rem; padding: 0.4rem 1rem; }
+
+.status-pending     { background: #f3f4f6; color: #6b7280; }
+.status-in-progress { background: #eff6ff; color: #2563eb; }
+.status-complete    { background: #f0fdf4; color: #16a34a; }
+.status-failed      { background: #fef2f2; color: #dc2626; }
+
+/* ── Progress bar ────────────────────────────── */
+.op-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.op-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.op-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.op-progress-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* ── Step rows ───────────────────────────────── */
+.op-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.op-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+}
+
+.op-step-row:last-child { border-bottom: none; }
+
+.op-step-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.status-pending     .op-step-icon { color: #d1d5db; }
+.status-in-progress .op-step-icon { color: #2563eb; animation: pulse 1.4s ease infinite; }
+.status-complete    .op-step-icon { color: #16a34a; }
+.status-failed      .op-step-icon { color: #dc2626; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.op-step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.op-step-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.op-step-time {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.op-step-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+}
+
+.op-step-status-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.status-pending     .op-step-status-label { background: #f3f4f6; color: #6b7280; }
+.status-in-progress .op-step-status-label { background: #eff6ff; color: #2563eb; }
+.status-complete    .op-step-status-label { background: #f0fdf4; color: #16a34a; }
+.status-failed      .op-step-status-label { background: #fef2f2; color: #dc2626; }
+
+/* ── Success / failure banners ───────────────── */
+.op-success-banner,
+.op-failure-banner {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.op-success-banner {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.op-success-banner a {
+  color: #15803d;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.op-failure-banner {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.op-failure-detail { font-weight: 400; }
+
+/* ── Compact variant ─────────────────────────── */
+.op-compact .op-compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.op-compact-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ── Misc ────────────────────────────────────── */
+.op-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.op-spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.op-error {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.9rem;
+}
+
+.op-empty {
+  padding: 1rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.op-last-poll {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: right;
+}

@@ -1,14 +1,14 @@
 # SecureBase Demo Environment Security Configuration
 
 **Last Updated:** February 2, 2026  
-**Environment:** demo.securebase.io  
+**Environment:** demo.securebase.tximhotep.com  
 **Status:** Production Demo
 
 ---
 
 ## Overview
 
-This document outlines the security measures implemented for the SecureBase demo environment at demo.securebase.io. The demo environment is designed to showcase product capabilities while maintaining strong security posture and preventing unauthorized access or data exposure.
+This document outlines the security measures implemented for the SecureBase demo environment at demo.securebase.tximhotep.com. The demo environment is designed to showcase product capabilities while maintaining strong security posture and preventing unauthorized access or data exposure.
 
 ## Key Security Principles
 
@@ -36,7 +36,7 @@ Content-Security-Policy:
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
   img-src 'self' data: https: blob:;
-  connect-src 'self' https://*.securebase.io https://*.securebase.com wss://*.securebase.io;
+  connect-src 'self' https://*.securebase.tximhotep.com https://*.securebase.com wss://*.securebase.tximhotep.com;
   frame-src 'self' https://js.stripe.com;
   object-src 'none';
   base-uri 'self';
@@ -196,12 +196,12 @@ All mock data in the demo environment:
 
 #### CORS Configuration
 ```javascript
-connect-src 'self' https://*.securebase.io https://*.securebase.com wss://*.securebase.io
+connect-src 'self' https://*.securebase.tximhotep.com https://*.securebase.com wss://*.securebase.tximhotep.com
 ```
 
 Only allows connections to:
 - Same origin (`'self'`)
-- SecureBase domains (*.securebase.io, *.securebase.com)
+- SecureBase domains (*.securebase.tximhotep.com, *.securebase.com)
 - WebSocket connections to SecureBase domains
 
 ---
@@ -212,9 +212,9 @@ Only allows connections to:
 **File:** `public/.well-known/security.txt` (RFC 9116 compliant)
 
 ```
-Contact: mailto:security@securebase.io
+Contact: mailto:security@securebase.tximhotep.com
 Expires: 2027-12-31T23:59:59.000Z
-Canonical: https://demo.securebase.io/.well-known/security.txt
+Canonical: https://demo.securebase.tximhotep.com/.well-known/security.txt
 ```
 
 #### Logging Strategy
@@ -312,7 +312,7 @@ Cache-Control: no-cache, no-store, must-revalidate
 
 ```bash
 # 1. Test security headers
-curl -I https://demo.securebase.io
+curl -I https://demo.securebase.tximhotep.com
 
 # Expected headers:
 # - Content-Security-Policy
@@ -332,7 +332,7 @@ curl -I https://demo.securebase.io
 # - Should be none (or only intentional unsafe-inline for React)
 
 # 4. Test HSTS
-# - Try accessing http://demo.securebase.io
+# - Try accessing http://demo.securebase.tximhotep.com
 # - Should automatically redirect to https://
 ```
 
@@ -374,25 +374,25 @@ For compliance requirements, see production environment documentation.
 ## Incident Response
 
 ### Security Contact
-**Email:** security@securebase.io  
-**Demo Issues:** demo-support@securebase.io  
+**Email:** security@securebase.tximhotep.com  
+**Demo Issues:** demo-support@securebase.tximhotep.com  
 **Response Time:** <24 hours
 
 ### Escalation Path
-1. **Low Severity** (demo bug, UI issue): demo-support@securebase.io
-2. **Medium Severity** (potential vulnerability): security@securebase.io
-3. **High Severity** (active exploit, data exposure): security@securebase.io + phone call
+1. **Low Severity** (demo bug, UI issue): demo-support@securebase.tximhotep.com
+2. **Medium Severity** (potential vulnerability): security@securebase.tximhotep.com
+3. **High Severity** (active exploit, data exposure): security@securebase.tximhotep.com + phone call
 
 ### Safe Harbor
 We welcome responsible security research on the demo environment. Researchers acting in good faith will not face legal action.
 
 **Allowed:**
-- Testing demo.securebase.io for vulnerabilities
-- Reporting issues via security@securebase.io
+- Testing demo.securebase.tximhotep.com for vulnerabilities
+- Reporting issues via security@securebase.tximhotep.com
 - Attempting to bypass rate limiting (it's a demo!)
 
 **Not Allowed:**
-- Attacking production infrastructure (portal.securebase.io)
+- Attacking production infrastructure (portal.securebase.tximhotep.com)
 - Denial of service attacks
 - Social engineering of SecureBase employees
 

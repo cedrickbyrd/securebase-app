@@ -327,11 +327,11 @@ Demo data is static. To update:
 ## 💬 Support
 
 ### Deployment Issues
-- **Email:** dev-team@securebase.io
+- **Email:** dev-team@securebase.tximhotep.com
 - **GitHub Issues:** https://github.com/cedrickbyrd/securebase-app/issues
 
 ### Demo Questions
-- **Sales Team:** sales@securebase.io
+- **Sales Team:** sales@securebase.tximhotep.com
 - **Documentation:** See above links
 
 ---
@@ -363,8 +363,8 @@ Use this for:
 • Technical evaluations
 
 Built-in CTAs:
-• Start Free Trial → securebase.io/signup
-• Book Live Demo → securebase.io/contact
+• Start Free Trial → securebase.tximhotep.com/signup
+• Book Live Demo → securebase.tximhotep.com/contact
 
 Questions? Reply to this email.
 

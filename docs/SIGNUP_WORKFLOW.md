@@ -102,7 +102,7 @@ STRIPE_PRICE_FINTECH=price_...
 STRIPE_PRICE_HEALTHCARE=price_...
 STRIPE_PRICE_GOVERNMENT=price_...
 STRIPE_PILOT_COUPON=pilot50off
-PORTAL_URL=https://portal.securebase.io
+PORTAL_URL=https://portal.securebase.tximhotep.com
 RATE_LIMIT_TABLE=securebase-signup-rate-limits
 ```
 
@@ -147,7 +147,7 @@ ONBOARDING_FUNCTION_NAME=securebase-trigger-onboarding
 **Webhook Configuration**:
 ```bash
 # Configure in Stripe Dashboard
-https://api.securebase.io/webhooks/stripe
+https://api.securebase.tximhotep.com/webhooks/stripe
 
 # Events to subscribe:
 - checkout.session.completed
@@ -171,10 +171,10 @@ https://api.securebase.io/webhooks/stripe
 
 **Environment Variables**:
 ```bash
-SES_SENDER_EMAIL=noreply@securebase.io
+SES_SENDER_EMAIL=noreply@securebase.tximhotep.com
 SNS_TOPIC_ARN=arn:aws:sns:...
 ONBOARDING_TOPIC_ARN=arn:aws:sns:...:infrastructure-provisioning
-PORTAL_URL=https://portal.securebase.io
+PORTAL_URL=https://portal.securebase.tximhotep.com
 ```
 
 ### 3. Database Schema
@@ -401,7 +401,7 @@ aws dynamodb create-table \
 3. **Configure Webhook**:
    ```bash
    stripe webhooks create \
-     --url https://api.securebase.io/webhooks/stripe \
+     --url https://api.securebase.tximhotep.com/webhooks/stripe \
      --enabled-events checkout.session.completed \
      --enabled-events invoice.payment_succeeded \
      --enabled-events invoice.payment_failed \
@@ -424,7 +424,7 @@ aws lambda update-function-configuration \
     STRIPE_PRICE_HEALTHCARE=price_...,
     STRIPE_PRICE_GOVERNMENT=price_...,
     STRIPE_PILOT_COUPON=pilot50off,
-    PORTAL_URL=https://portal.securebase.io,
+    PORTAL_URL=https://portal.securebase.tximhotep.com,
     RATE_LIMIT_TABLE=securebase-signup-rate-limits
   }"
 
@@ -442,10 +442,10 @@ aws lambda update-function-configuration \
 aws lambda update-function-configuration \
   --function-name securebase-trigger-onboarding \
   --environment Variables="{
-    SES_SENDER_EMAIL=noreply@securebase.io,
+    SES_SENDER_EMAIL=noreply@securebase.tximhotep.com,
     SNS_TOPIC_ARN=arn:aws:sns:...,
     ONBOARDING_TOPIC_ARN=arn:aws:sns:...:infrastructure,
-    PORTAL_URL=https://portal.securebase.io
+    PORTAL_URL=https://portal.securebase.tximhotep.com
   }"
 ```
 
