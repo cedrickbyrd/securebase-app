@@ -1,0 +1,154 @@
+/* Compliance page professional styling */
+
+/* Summary stat gradient cards */
+.compliance-stat-card {
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compliance-stat-card--blue   { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+.compliance-stat-card--green  { background: linear-gradient(135deg, #15803d, #22c55e); }
+.compliance-stat-card--orange { background: linear-gradient(135deg, #c2410c, #f97316); }
+.compliance-stat-card--purple { background: linear-gradient(135deg, #6d28d9, #a855f7); }
+
+.compliance-stat-card__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+.compliance-stat-card__value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.compliance-stat-card__sub {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+
+/* Progress bar */
+.compliance-progress {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.compliance-progress__fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+  background: #3b82f6;
+}
+
+.compliance-progress__fill--green  { background: #22c55e; }
+.compliance-progress__fill--yellow { background: #f59e0b; }
+.compliance-progress__fill--red    { background: #ef4444; }
+
+/* Trust Service Criteria cards */
+.compliance-tsc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.compliance-tsc-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.compliance-tsc-card__score {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+
+.compliance-tsc-card__label {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.compliance-tsc-card__controls {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+/* Finding severity badges */
+.compliance-finding-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.compliance-finding-badge--high   { background: #fee2e2; color: #b91c1c; }
+.compliance-finding-badge--medium { background: #fef3c7; color: #92400e; }
+.compliance-finding-badge--low    { background: #f0fdf4; color: #15803d; }
+
+/* Finding status badges */
+.compliance-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.compliance-status-badge--open           { background: #fee2e2; color: #b91c1c; }
+.compliance-status-badge--in_remediation { background: #dbeafe; color: #1d4ed8; }
+.compliance-status-badge--closed         { background: #dcfce7; color: #15803d; }
+
+/* Findings table */
+.compliance-findings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.compliance-findings-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.compliance-findings-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.compliance-findings-table tr:last-child td {
+  border-bottom: none;
+}
