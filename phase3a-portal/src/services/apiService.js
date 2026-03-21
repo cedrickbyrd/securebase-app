@@ -69,6 +69,21 @@ class ApiService {
   getTickets          = async (params) => this.get('/tickets', { params });
   createTicket        = async (ticketData) => this.post('/tickets', ticketData);
 
+  // Texas Fintech Compliance (fintech_pro / fintech_elite tiers)
+  getFintechComplianceStatus = async (customerId) => {
+    const query = customerId ? `?customer_id=${encodeURIComponent(customerId)}` : '';
+    return this.get(`/fintech/compliance-status${query}`);
+  };
+  getFintechTransactions = async ({ customerId, startDate, endDate, limit = 50, offset = 0 } = {}) => {
+    const params = new URLSearchParams();
+    if (customerId) params.set('customer_id', customerId);
+    if (startDate)  params.set('start_date', startDate);
+    if (endDate)    params.set('end_date', endDate);
+    params.set('limit', limit);
+    params.set('offset', offset);
+    return this.get(`/fintech/transactions?${params.toString()}`);
+  };
+
   // Signup & Onboarding — FIX: getOnboardingStatus now uses jobId not customer_id
   signup              = async (payload) => this.post('/signup', payload);
   verifyEmail         = async (token, email) => this.post('/verify-email', { token, email });
