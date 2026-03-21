@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { demoAwareApiService, isDemoMode } from '../services/demoApiService';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -28,12 +29,11 @@ export default function Dashboard() {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const { apiService } = await import('../services/apiService');
-      const metrics = await apiService.getMetrics();
+      const result = await demoAwareApiService.getDashboardMetrics();
       
       setDashboardData(prev => ({
         ...prev,
-        monthlyUsage: metrics.data,
+        monthlyUsage: result.data?.monthlyUsage ?? result.data,
       }));
     } catch (err) {
       console.error('Dashboard Error:', err);
@@ -63,7 +63,13 @@ export default function Dashboard() {
     // ...
     <div className="sb-UsageTrends">
        <div className="sb-UsageTrends__header">
-         <h2 className="sb-UsageTrends__title">Infrastructure Activity</h2>
+         <h2 className="sb-UsageTrends__title">Infrastructure Activity
+           {isDemoMode() && (
+             <span className="sb-UsageTrends__demoBadge">
+               Demo Mode
+             </span>
+           )}
+         </h2>
        </div>
        <div className="sb-UsageTrends__chart">
           <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} height={200} />
