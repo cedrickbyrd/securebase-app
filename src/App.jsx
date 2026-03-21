@@ -4,6 +4,8 @@ import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import SecureBaseLandingZone from './SecureBaseLandingZone';
 import TrustCenter from './components/TrustCenter';
+import SREDashboardWrapper from './components/SREDashboardWrapper';
+import Alerts from './components/Alerts';
 import { Loader } from 'lucide-react';
 
 // 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
@@ -54,6 +56,18 @@ function App() {
           <Route 
             path="/admin" 
             element={isAuthenticated ? <AdminDashboard /> : <Navigate to="/login" />} 
+          />
+
+          {/* SRE Dashboard — routes to DemoDashboard in demo mode */}
+          <Route
+            path="/sre"
+            element={isAuthenticated ? <SREDashboardWrapper /> : <Navigate to="/login" />}
+          />
+
+          {/* Alerts */}
+          <Route
+            path="/alerts"
+            element={isAuthenticated ? <Alerts /> : <Navigate to="/login" />}
           />
 
           {/* Wildcard Catch-all */}
