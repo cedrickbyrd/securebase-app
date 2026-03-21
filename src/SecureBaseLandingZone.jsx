@@ -194,7 +194,7 @@ export default function SecureBaseLandingZone() {
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-semibold ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-600'}`}>Overview</button>
             <button onClick={() => handleTabChange('compliance')} className={`text-sm font-semibold ${activeTab === 'compliance' ? 'text-blue-600' : 'text-slate-600'}`}>Compliance</button>
             {user && <AdminLink user={user} />}
-            {user && <button onClick={() => supabase.auth.signOut()} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
+            {user && <button onClick={() => { localStorage.removeItem('demo_mode'); supabase.auth.signOut(); }} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
           </nav>
         </div>
       </header>
