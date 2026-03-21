@@ -1,6 +1,6 @@
 # 🚀 Netlify Deployment Guide
 
-## Quick Deploy to demo.securebase.io
+## Quick Deploy to demo.securebase.tximhotep.com
 
 SecureBase marketing site is ready for immediate deployment to Netlify.
 
@@ -8,7 +8,7 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 
 ## 🔄 Automated Deployments via GitHub Actions
 
-### Marketing Site Workflow (securebase.io)
+### Marketing Site Workflow (securebase.tximhotep.com)
 
 **File**: `.github/workflows/deploy-marketing-site.yml`
 
@@ -22,7 +22,7 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 
 **Required Secrets:**
 - `NETLIFY_AUTH_TOKEN` - Your Netlify personal access token
-- `NETLIFY_MARKETING_SITE_ID` - Netlify site ID for securebase.io
+- `NETLIFY_MARKETING_SITE_ID` - Netlify site ID for securebase.tximhotep.com
 
 **Features:**
 - ✅ Automatic production deployment on merge to main
@@ -32,7 +32,7 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 
 ---
 
-### Demo Portal Workflow (demo.securebase.io)
+### Demo Portal Workflow (demo.securebase.tximhotep.com)
 
 **File**: `.github/workflows/deploy-demo-portal.yml`
 
@@ -43,7 +43,7 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 - **After marketing site deployment completes** (workflow_run trigger)
 
 **Dependency:**
-- ⚠️ **Checks if `securebase.io` exists and is healthy before deploying**
+- ⚠️ **Checks if `securebase.tximhotep.com` exists and is healthy before deploying**
 - If marketing site is down, demo portal deployment is skipped (unless manually triggered)
 
 **Path filters:**
@@ -51,7 +51,7 @@ SecureBase marketing site is ready for immediate deployment to Netlify.
 
 **Required Secrets:**
 - `NETLIFY_AUTH_TOKEN` - Your Netlify personal access token
-- `NETLIFY_DEMO_SITE_ID` - Netlify site ID for demo.securebase.io
+- `NETLIFY_DEMO_SITE_ID` - Netlify site ID for demo.securebase.tximhotep.com
 
 **Features:**
 - ✅ Validates marketing site health before deployment
@@ -186,14 +186,14 @@ The deployment includes production-grade security headers:
 - **Source**: `src/`
 - **Build**: `npm run build`
 - **Output**: `dist/`
-- **Deploy to**: `demo.securebase.io`
+- **Deploy to**: `demo.securebase.tximhotep.com`
 
 ### Customer Portal
 - **Config**: `phase3a-portal/netlify.toml`
 - **Source**: `phase3a-portal/src/`
 - **Build**: `cd phase3a-portal && npm run build`
 - **Output**: `phase3a-portal/dist/`
-- **Deploy to**: `portal-demo.securebase.io`
+- **Deploy to**: `portal-demo.securebase.tximhotep.com`
 
 To deploy both:
 ```bash
@@ -274,7 +274,7 @@ netlify deploy --prod
 
 Then verify:
 ```bash
-curl -I https://demo.securebase.io
+curl -I https://demo.securebase.tximhotep.com
 ```
 
 ### Custom Domain Not Working
@@ -354,7 +354,7 @@ dig tximhotep.com CNAME
 - Repository Issues: https://github.com/cedrickbyrd/securebase-app/issues
 
 **Security Concerns:**
-- Email: security@securebase.io
+- Email: security@securebase.tximhotep.com
 - Security Policy: [SECURITY.md](SECURITY.md)
 
 ---

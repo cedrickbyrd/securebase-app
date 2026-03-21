@@ -1170,7 +1170,7 @@ SecureBase Billing Team
 """
     
     ses_client.send_email(
-        Source='billing@securebase.io',
+        Source='billing@securebase.tximhotep.com',
         Destination={'ToAddresses': [billing_email]},
         Message={
             'Subject': {'Data': f'SecureBase Invoice - {invoice_id}'},

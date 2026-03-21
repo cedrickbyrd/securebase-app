@@ -174,10 +174,10 @@ Questions? Reply to this email.
 3. Track conversion metrics (demo → trial)
 4. Consider adding guided tour (future)
 5. Set up analytics (optional)
-6. Configure custom domain (demo.securebase.io)
+6. Configure custom domain (demo.securebase.tximhotep.com)
 
 ## Support
 
-- **Technical Issues:** dev-team@securebase.io
-- **Sales Questions:** sales@securebase.io
+- **Technical Issues:** dev-team@securebase.tximhotep.com
+- **Sales Questions:** sales@securebase.tximhotep.com
 - **Documentation:** phase3a-portal/DEMO_ENVIRONMENT.md

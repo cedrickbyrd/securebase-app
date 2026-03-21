@@ -1,0 +1,185 @@
+import React, { useState, useEffect } from 'react';
+import { demoAwareApiService } from '../services/demoApiService';
+import { isDemoMode } from '../utils/demoData';
+
+export default function ComplianceScreen() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [complianceData, setComplianceData] = useState(null);
+  const [findings, setFindings] = useState([]);
+
+  useEffect(() => {
+    loadComplianceData();
+  }, []);
+
+  const loadComplianceData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load compliance score and findings
+      const [scoreResponse, findingsResponse] = await Promise.all([
+        demoAwareApiService.getComplianceScore(),
+        demoAwareApiService.getComplianceFindings()
+      ]);
+
+      setComplianceData(scoreResponse.data);
+      setFindings(findingsResponse.data || []);
+    } catch (err) {
+      console.error('Error loading compliance data:', err);
+      setError('Failed to load compliance data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading compliance data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      {isDemoMode() && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <span className="text-2xl">🎯</span>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Demo Mode:</strong> Showing sample compliance data
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">SOC 2 Compliance</h1>
+        <p className="text-gray-600">Trust Service Criteria Status</p>
+      </div>
+
+      {/* Overall Score */}
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-6xl font-bold text-blue-600">
+                {complianceData?.overallScore || 0}%
+              </span>
+              <span className="text-gray-600">
+                ({complianceData?.passedControls || 0} of {complianceData?.totalControls || 0} controls)
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              ✅ {complianceData?.criticalFindings || 0} Critical | 
+              ✅ {complianceData?.highFindings || 0} High | 
+              ⚠️ {complianceData?.mediumFindings || 0} Medium
+            </p>
+          </div>
+          <div className="text-6xl">📊</div>
+        </div>
+      </div>
+
+      {/* Categories */}
+      {complianceData?.categories && complianceData.categories.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Trust Service Criteria</h3>
+          <div className="space-y-4">
+            {complianceData.categories.map((cat, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium">{cat.name}</span>
+                  <span className="text-sm text-gray-600">
+                    {cat.passed}/{cat.total} controls ({cat.percentage}%)
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${
+                      cat.percentage >= 95 ? 'bg-green-500' :
+                      cat.percentage >= 90 ? 'bg-blue-500' :
+                      'bg-yellow-500'
+                    }`}
+                    style={{ width: `${cat.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Findings */}
+      {findings && findings.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Recent Findings</h3>
+          <div className="space-y-3">
+            {findings.map((finding) => (
+              <div 
+                key={finding.id} 
+                className={`border-l-4 p-4 rounded ${
+                  finding.severity === 'high' ? 'border-red-400 bg-red-50' :
+                  finding.severity === 'medium' ? 'border-yellow-400 bg-yellow-50' :
+                  'border-blue-400 bg-blue-50'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded mb-2 ${
+                      finding.severity === 'high' ? 'text-red-800 bg-red-200' :
+                      finding.severity === 'medium' ? 'text-yellow-800 bg-yellow-200' :
+                      'text-blue-800 bg-blue-200'
+                    }`}>
+                      {finding.severity?.toUpperCase()}
+                    </span>
+                    <p className="font-medium">{finding.title}</p>
+                    {finding.description && (
+                      <p className="text-sm text-gray-600 mt-1">{finding.description}</p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">{finding.date}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(!findings || findings.length === 0) && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-8">
+            <span className="text-6xl mb-4 block">🎉</span>
+            <h3 className="text-xl font-semibold mb-2">All Clear!</h3>
+            <p className="text-gray-600">No compliance findings to address</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

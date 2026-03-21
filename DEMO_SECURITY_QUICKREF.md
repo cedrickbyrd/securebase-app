@@ -64,7 +64,7 @@ Use this before deploying or showing the demo:
 
 #### 1. Test Security Headers
 ```bash
-curl -I https://demo.securebase.io | grep -E "(Content-Security|X-Frame|Strict-Transport|X-Environment)"
+curl -I https://demo.securebase.tximhotep.com | grep -E "(Content-Security|X-Frame|Strict-Transport|X-Environment)"
 ```
 
 **Expected output:**
@@ -77,7 +77,7 @@ x-environment: demo
 
 #### 2. Test Rate Limiting
 ```
-1. Open https://demo.securebase.io
+1. Open https://demo.securebase.tximhotep.com
 2. Try login with wrong password 5 times
 3. On 6th attempt, should see: "Too many failed attempts. Please try again in 1 minute."
 4. Wait 60 seconds
@@ -86,14 +86,14 @@ x-environment: demo
 
 #### 3. Test HTTPS Enforcement
 ```bash
-curl -I http://demo.securebase.io
+curl -I http://demo.securebase.tximhotep.com
 ```
 
 **Expected:** Redirect to `https://` (301 or 308)
 
 #### 4. Test security.txt
 ```bash
-curl https://demo.securebase.io/.well-known/security.txt
+curl https://demo.securebase.tximhotep.com/.well-known/security.txt
 ```
 
 **Expected:** Contact info, expiry date, canonical URL
@@ -102,7 +102,7 @@ curl https://demo.securebase.io/.well-known/security.txt
 
 #### Mozilla Observatory
 ```
-URL: https://observatory.mozilla.org/analyze/demo.securebase.io
+URL: https://observatory.mozilla.org/analyze/demo.securebase.tximhotep.com
 Target Grade: A+ or A
 ```
 
@@ -115,7 +115,7 @@ Target Grade: A+ or A
 
 #### Security Headers Scanner
 ```
-URL: https://securityheaders.com/?q=demo.securebase.io
+URL: https://securityheaders.com/?q=demo.securebase.tximhotep.com
 Target Grade: A
 ```
 
@@ -128,7 +128,7 @@ Target Grade: A
 
 #### SSL Labs
 ```
-URL: https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.io
+URL: https://www.ssllabs.com/ssltest/analyze.html?d=demo.securebase.tximhotep.com
 Target Grade: A+
 ```
 
@@ -172,11 +172,11 @@ Target Grade: A+
 
 ### Q: Can the demo be used for penetration testing?
 **A:** ✅ YES (with limits):
-- Allowed: Security research on demo.securebase.io
+- Allowed: Security research on demo.securebase.tximhotep.com
 - Allowed: Testing rate limiting, CSP, headers
 - NOT allowed: DoS attacks
 - NOT allowed: Testing production infrastructure
-- Report findings to: demo-support@securebase.io
+- Report findings to: demo-support@securebase.tximhotep.com
 
 ### Q: How often are dependencies updated?
 **A:** 📅 Monthly security updates:
@@ -192,7 +192,7 @@ Target Grade: A+
 ### If You Discover a Security Issue
 
 #### Demo Environment Issue (Low Priority)
-**Contact:** demo-support@securebase.io  
+**Contact:** demo-support@securebase.tximhotep.com  
 **Examples:**
 - UI/UX bug in demo
 - Mock data displaying incorrectly
@@ -202,7 +202,7 @@ Target Grade: A+
 **Response Time:** <24 hours
 
 #### Production Security Issue (High Priority)
-**Contact:** security@securebase.io  
+**Contact:** security@securebase.tximhotep.com  
 **Examples:**
 - Real data exposure
 - Production system vulnerability
@@ -238,7 +238,7 @@ Target Grade: A+
 
 ### Post-Deployment Verification
 ```
-□ Test: https://demo.securebase.io loads
+□ Test: https://demo.securebase.tximhotep.com loads
 □ Test: Security headers present (curl -I)
 □ Test: SSL certificate valid (A+ on SSL Labs)
 □ Test: Rate limiting works
@@ -265,9 +265,9 @@ Target Grade: A+
 - [Lighthouse](https://developers.google.com/speed/pagespeed/insights/)
 
 ### Support
-- **Demo Issues:** demo-support@securebase.io
-- **Security Issues:** security@securebase.io
-- **General Support:** support@securebase.io
+- **Demo Issues:** demo-support@securebase.tximhotep.com
+- **Security Issues:** security@securebase.tximhotep.com
+- **General Support:** support@securebase.tximhotep.com
 
 ---
 

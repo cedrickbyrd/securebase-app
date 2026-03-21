@@ -4,7 +4,7 @@
 
 Choose your tier based on your compliance needs. All tiers include multi-tenant AWS Organization, dedicated customer accounts, centralized logging, IAM Identity Center (SSO), and customer portal access.
 
-[🚀 Start Free Trial (30 Days)](https://securebase.io/signup) | [📞 Book Demo](https://securebase.io/contact) | [💬 Contact Sales](mailto:sales@securebase.io)
+[🚀 Start Free Trial (30 Days)](https://securebase.tximhotep.com/signup) | [📞 Book Demo](https://securebase.tximhotep.com/contact) | [💬 Contact Sales](mailto:sales@securebase.tximhotep.com)
 
 ---
 
@@ -236,7 +236,7 @@ Join our pilot program and get **50% off for the first 6 months** plus exclusive
 - **Filled:** 12 companies
 - **Remaining:** 8 spots (as of January 30, 2026)
 
-[🎯 Apply for Pilot Program Now →](https://portal.securebase.io/pilot)
+[🎯 Apply for Pilot Program Now →](https://portal.securebase.tximhotep.com/pilot)
 
 ---
 
@@ -363,7 +363,7 @@ Deploying multiple customer environments? Save with volume pricing:
 - Multi-year contract discounts
 - Dedicated technical account manager
 
-**Contact:** [sales@securebase.io](mailto:sales@securebase.io)
+**Contact:** [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com)
 
 ---
 
@@ -427,8 +427,8 @@ Need a custom solution? We work with enterprises requiring:
 ✅ **Air-gapped environments** (isolated deployments)
 
 ### Contact Enterprise Sales:
-- **Email:** [enterprise@securebase.io](mailto:enterprise@securebase.io)
-- **Schedule Call:** [https://securebase.io/contact](https://securebase.io/contact)
+- **Email:** [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com)
+- **Schedule Call:** [https://securebase.tximhotep.com/contact](https://securebase.tximhotep.com/contact)
 - **Response Time:** <2 hours (business hours)
 
 ---
@@ -463,13 +463,13 @@ Need a custom solution? We work with enterprises requiring:
 **A:** Yes! Our Pilot Program offers 50% off for the first 6 months (ends March 31, 2026). The Standard tier ($2,000/mo) is also designed specifically for seed-stage startups and MVPs.
 
 ### 10. **Q: Do you offer discounts for nonprofits or educational institutions?**
-**A:** Yes, we offer a 25% discount for verified nonprofit organizations and educational institutions. Contact [sales@securebase.io](mailto:sales@securebase.io) with your verification documents.
+**A:** Yes, we offer a 25% discount for verified nonprofit organizations and educational institutions. Contact [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com) with your verification documents.
 
 ### 11. **Q: Is support included in all tiers?**
 **A:** Yes, all tiers include support. Response times vary by tier: Standard (24h email), Fintech (4h email/Slack), Healthcare (2h phone/email/Slack), Government (1h 24/7 support).
 
 ### 12. **Q: Can I get a custom quote?**
-**A:** Yes! Contact [sales@securebase.io](mailto:sales@securebase.io) for custom pricing on enterprise deployments, multi-year contracts, volume discounts, or custom compliance requirements.
+**A:** Yes! Contact [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com) for custom pricing on enterprise deployments, multi-year contracts, volume discounts, or custom compliance requirements.
 
 ---
 
@@ -479,13 +479,13 @@ Need a custom solution? We work with enterprises requiring:
 
 <div style="text-align: center; margin: 40px 0;">
 
-**[🚀 Start Free Trial - Standard ($2K)](https://securebase.io/signup?tier=standard)**
+**[🚀 Start Free Trial - Standard ($2K)](https://securebase.tximhotep.com/signup?tier=standard)**
 
-**[🚀 Start Free Trial - Fintech ($8K)](https://securebase.io/signup?tier=fintech)**
+**[🚀 Start Free Trial - Fintech ($8K)](https://securebase.tximhotep.com/signup?tier=fintech)**
 
-**[🚀 Start Free Trial - Healthcare ($15K)](https://securebase.io/signup?tier=healthcare)**
+**[🚀 Start Free Trial - Healthcare ($15K)](https://securebase.tximhotep.com/signup?tier=healthcare)**
 
-**[🚀 Start Free Trial - Government ($25K)](https://securebase.io/signup?tier=government)**
+**[🚀 Start Free Trial - Government ($25K)](https://securebase.tximhotep.com/signup?tier=government)**
 
 </div>
 
@@ -493,11 +493,11 @@ Need a custom solution? We work with enterprises requiring:
 
 ### Or Talk to Our Team:
 
-**[📞 Book a Demo](https://securebase.io/contact)** - See SecureBase in action (30 minutes)
+**[📞 Book a Demo](https://securebase.tximhotep.com/contact)** - See SecureBase in action (30 minutes)
 
-**[💬 Contact Sales](mailto:sales@securebase.io)** - Get custom pricing and answers
+**[💬 Contact Sales](mailto:sales@securebase.tximhotep.com)** - Get custom pricing and answers
 
-**[🎯 Apply for Pilot](https://portal.securebase.io/pilot)** - Save 50% for 6 months (8 spots left)
+**[🎯 Apply for Pilot](https://portal.securebase.tximhotep.com/pilot)** - Save 50% for 6 months (8 spots left)
 
 ---
 
@@ -514,9 +514,9 @@ Need a custom solution? We work with enterprises requiring:
 
 **Questions about pricing?**
 
-- **Email:** [sales@securebase.io](mailto:sales@securebase.io)
+- **Email:** [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com)
 - **Response Time:** <2 hours (business hours)
-- **Enterprise Sales:** [enterprise@securebase.io](mailto:enterprise@securebase.io)
+- **Enterprise Sales:** [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com)
 
 ---
 

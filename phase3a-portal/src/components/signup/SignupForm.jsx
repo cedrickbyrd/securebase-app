@@ -192,6 +192,7 @@ export default function SignupForm({ onSuccess }) {
                     aria-checked={form.mfaEnabled}
                     className={`toggle ${form.mfaEnabled ? "on" : ""}`}
                     onClick={() => setForm(f => ({ ...f, mfaEnabled: !f.mfaEnabled }))}
+                    onKeyDown={e => (e.key === " " || e.key === "Enter") && setForm(f => ({ ...f, mfaEnabled: !f.mfaEnabled }))}
                   >
                     <div className="toggle-thumb" />
                   </button>

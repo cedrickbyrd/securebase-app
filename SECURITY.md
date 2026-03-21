@@ -6,32 +6,32 @@ SecureBase maintains security support for the following versions:
 
 | Version | Supported          | Environment |
 | ------- | ------------------ | ----------- |
-| Demo    | :white_check_mark: | demo.securebase.io |
-| Staging | :white_check_mark: | staging.securebase.io |
-| Production | :white_check_mark: | portal.securebase.io |
+| Demo    | :white_check_mark: | demo.securebase.tximhotep.com |
+| Staging | :white_check_mark: | staging.securebase.tximhotep.com |
+| Production | :white_check_mark: | portal.securebase.tximhotep.com |
 | Legacy (< v4.0) | :x: | Deprecated |
 
 ## Security Environments
 
 ### Production Environment
-- **URL:** portal.securebase.io
+- **URL:** portal.securebase.tximhotep.com
 - **Data:** Real customer data, PII, PHI
 - **Compliance:** SOC 2, HIPAA, FedRAMP
-- **Contact:** security@securebase.io
+- **Contact:** security@securebase.tximhotep.com
 - **SLA:** Critical issues <4 hours
 
 ### Staging Environment
-- **URL:** staging.securebase.io
+- **URL:** staging.securebase.tximhotep.com
 - **Data:** Test data, no production data
 - **Purpose:** Pre-production testing
-- **Contact:** devops@securebase.io
+- **Contact:** devops@securebase.tximhotep.com
 
 ### Demo Environment
-- **URL:** demo.securebase.io
+- **URL:** demo.securebase.tximhotep.com
 - **Data:** Mock data only (NO real data)
 - **Credentials:** `demo/demo` (public, safe to share)
 - **Purpose:** Product demonstrations, sales, evaluation
-- **Contact:** demo-support@securebase.io
+- **Contact:** demo-support@securebase.tximhotep.com
 - **Security Config:** See [DEMO_SECURITY_CONFIG.md](./DEMO_SECURITY_CONFIG.md)
 
 **Important:** The demo environment is intentionally public with known credentials. It contains NO production systems, real data, or secrets.
@@ -42,8 +42,8 @@ We take security seriously. If you discover a security vulnerability, please fol
 
 ### For Production/Staging Issues (CRITICAL)
 
-**Contact:** security@securebase.io  
-**PGP Key:** Available at https://securebase.io/.well-known/pgp-key.txt  
+**Contact:** security@securebase.tximhotep.com  
+**PGP Key:** Available at https://securebase.tximhotep.com/.well-known/pgp-key.txt  
 **Response Time:** <4 hours for critical issues
 
 **Please include:**
@@ -62,7 +62,7 @@ We take security seriously. If you discover a security vulnerability, please fol
 
 ### For Demo Environment Issues (NON-CRITICAL)
 
-**Contact:** demo-support@securebase.io  
+**Contact:** demo-support@securebase.tximhotep.com  
 **Response Time:** <24 hours
 
 The demo environment is a public demonstration with no sensitive data. Issues with the demo environment are appreciated but not considered critical security vulnerabilities.
@@ -90,13 +90,13 @@ SecureBase supports responsible security research and will not pursue legal acti
    - Do not exploit vulnerabilities beyond what's necessary to prove they exist
 
 2. **Follow disclosure guidelines**
-   - Report vulnerabilities privately to security@securebase.io
+   - Report vulnerabilities privately to security@securebase.tximhotep.com
    - Allow reasonable time for remediation before public disclosure (90 days)
    - Do not publicly disclose until we confirm the fix is deployed
 
 3. **Stay within scope**
-   - Test only against demo.securebase.io or staging.securebase.io
-   - Do NOT test against production (portal.securebase.io)
+   - Test only against demo.securebase.tximhotep.com or staging.securebase.tximhotep.com
+   - Do NOT test against production (portal.securebase.tximhotep.com)
    - Do NOT perform denial of service attacks
    - Do NOT engage in social engineering of employees
 
@@ -182,7 +182,7 @@ The following are **NOT** considered security vulnerabilities:
 1. **Use strong passwords** - Minimum 12 characters
 2. **Enable MFA** - Required for production access
 3. **Don't share credentials** - Use SSO and role-based access
-4. **Report suspicious activity** - security@securebase.io
+4. **Report suspicious activity** - security@securebase.tximhotep.com
 5. **Keep software updated** - Browsers, OS, tools
 6. **Verify URLs** - Look for https:// and correct domain
 7. **Be wary of phishing** - We'll never ask for your password via email
@@ -192,9 +192,9 @@ The following are **NOT** considered security vulnerabilities:
 We publish security updates in the following channels:
 
 - **Critical Alerts:** Email to all registered users
-- **Security Advisories:** https://securebase.io/security
+- **Security Advisories:** https://securebase.tximhotep.com/security
 - **Changelog:** https://github.com/cedrickbyrd/securebase-app/releases
-- **Status Page:** https://status.securebase.io
+- **Status Page:** https://status.securebase.tximhotep.com
 
 ## Bug Bounty Program
 
@@ -207,7 +207,7 @@ SecureBase operates a private bug bounty program. Invited researchers can earn r
 | Medium | $100 - $250 |
 | Low | Recognition + swag |
 
-**Interested in joining?** Email security@securebase.io with your researcher profile.
+**Interested in joining?** Email security@securebase.tximhotep.com with your researcher profile.
 
 ## Audit Logs
 
@@ -222,17 +222,17 @@ For compliance customers (Healthcare, Fintech, Government tiers):
 ## Contact
 
 ### Security Team
-- **Email:** security@securebase.io
-- **PGP Key:** https://securebase.io/.well-known/pgp-key.txt
+- **Email:** security@securebase.tximhotep.com
+- **PGP Key:** https://securebase.tximhotep.com/.well-known/pgp-key.txt
 - **Response Time:** <4 hours (critical), <24 hours (others)
 
 ### Demo Support
-- **Email:** demo-support@securebase.io
+- **Email:** demo-support@securebase.tximhotep.com
 - **Purpose:** Demo environment issues only
 - **Response Time:** <24 hours
 
 ### General Support
-- **Email:** support@securebase.io
+- **Email:** support@securebase.tximhotep.com
 - **Chat:** Available in customer portal
 - **Phone:** Available for Enterprise tier
 

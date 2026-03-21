@@ -1,7 +1,7 @@
-Contact: mailto:security@securebase.io
+Contact: mailto:security@securebase.tximhotep.com
 Expires: 2027-12-31T23:59:59.000Z
 Preferred-Languages: en
-Canonical: https://demo.securebase.io/.well-known/security.txt
+Canonical: https://demo.securebase.tximhotep.com/.well-known/security.txt
 
 # Security Policy for SecureBase Demo Environment
 
@@ -11,8 +11,8 @@ This is a DEMO environment containing NO real customer data.
 - No real API keys or secrets are exposed
 - All data displayed is synthetic/mock data
 
-For production security issues, please contact: security@securebase.io
-For demo-specific issues, please use: demo-support@securebase.io
+For production security issues, please contact: security@securebase.tximhotep.com
+For demo-specific issues, please use: demo-support@securebase.tximhotep.com
 
 # Scope
 This demo environment is intended for:

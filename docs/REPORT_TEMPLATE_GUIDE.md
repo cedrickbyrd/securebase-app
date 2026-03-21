@@ -157,7 +157,7 @@ const report = await analyticsService.createFromTemplate('cost-analysis', {
 
 **Usage:**
 ```bash
-curl -X POST "https://api.securebase.io/v1/reports/templates/security" \
+curl -X POST "https://api.securebase.tximhotep.com/v1/reports/templates/security" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -642,9 +642,9 @@ await analyticsService.scheduleReport({
 - SDK Examples: [examples/](./examples/)
 
 **Support:**
-- Email: support@securebase.io
+- Email: support@securebase.tximhotep.com
 - Slack: #analytics-support
-- Docs: https://docs.securebase.io/analytics
+- Docs: https://docs.securebase.tximhotep.com/analytics
 
 **Changelog:**
 - v1.0 (Jan 2026): Initial release with 5 templates

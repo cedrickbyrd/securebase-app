@@ -116,7 +116,7 @@ resource "aws_lambda_function" "create_checkout" {
       STRIPE_PRICE_GOVERNMENT = var.stripe_price_government
       STRIPE_PRICE_STANDARD  = var.stripe_price_standard
       STRIPE_PILOT_COUPON    = var.stripe_pilot_coupon
-      PORTAL_URL             = "https://portal.securebase.io"
+      PORTAL_URL             = "https://portal.securebase.tximhotep.com"
     }
   }
   
@@ -158,15 +158,15 @@ npm install @stripe/stripe-js
 # Set environment variables
 cat > .env << EOF
 VITE_STRIPE_PUBLIC_KEY=pk_test_YOUR_KEY_HERE
-VITE_API_BASE_URL=https://api.securebase.io
-VITE_PORTAL_URL=https://portal.securebase.io
+VITE_API_BASE_URL=https://api.securebase.tximhotep.com
+VITE_PORTAL_URL=https://portal.securebase.tximhotep.com
 EOF
 
 # Build and deploy
 npm run build
 
 # Upload to S3 + CloudFront (or your hosting)
-aws s3 sync dist/ s3://portal.securebase.io/ --delete
+aws s3 sync dist/ s3://portal.securebase.tximhotep.com/ --delete
 aws cloudfront create-invalidation --distribution-id E1234 --paths "/*"
 ```
 
@@ -218,7 +218,7 @@ We're offering 50% off to our first 20 customers ({{slots_remaining}} spots left
 
 Worth a 15-minute call to see if we can save you $400K+ in Year 1?
 
-Calendar: https://securebase.io/contact
+Calendar: https://securebase.tximhotep.com/contact
 
 Best,
 [Your Name]
@@ -239,7 +239,7 @@ Quick question: how much time is your team spending on AWS infrastructure setup 
 
 We just launched a pilot program (50% off) to help {{industry}} companies like {{Company}} deploy HIPAA/SOC2-compliant landing zones in 2 days.
 
-Open to a quick 15-min demo? https://securebase.io/contact
+Open to a quick 15-min demo? https://securebase.tximhotep.com/contact
 ```
 
 **Day 7:** Value add (if no response)
@@ -281,7 +281,7 @@ Your savings: $404K in Year 1
 
 **Minutes 13-15: Close**
 - "Want to start a 30-day free trial today?"
-- Send signup link: https://securebase.io/signup
+- Send signup link: https://securebase.tximhotep.com/signup
 - Follow up: "I'll check in next week to see how the trial is going"
 
 ---

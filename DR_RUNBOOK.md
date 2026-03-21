@@ -15,12 +15,12 @@
 
 **On-Call Rotation:** PagerDuty escalation policy "SecureBase-DR"  
 **Incident Slack Channel:** `#securebase-incidents`  
-**Status Page:** https://status.securebase.io
+**Status Page:** https://status.securebase.tximhotep.com
 
 ### Critical URLs
 
-- **Primary API:** https://api.securebase.io
-- **Failover API:** https://api-dr.securebase.io
+- **Primary API:** https://api.securebase.tximhotep.com
+- **Failover API:** https://api-dr.securebase.tximhotep.com
 - **CloudWatch Dashboard:** [DR Monitoring Dashboard](https://console.aws.amazon.com/cloudwatch)
 - **Route53 Health Checks:** [Health Check Console](https://console.aws.amazon.com/route53)
 
@@ -113,7 +113,7 @@ T+15:00 Incident marked as RESOLVED (if all checks pass)
 # Check Route53 DNS records
 aws route53 list-resource-record-sets \
   --hosted-zone-id Z1234567890ABC \
-  --query "ResourceRecordSets[?Name=='api.securebase.io.']"
+  --query "ResourceRecordSets[?Name=='api.securebase.tximhotep.com.']"
 
 # Expected output: Weight should shift to us-west-2
 # us-east-1: Weight 0
@@ -202,7 +202,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "api.securebase.io",
+        "Name": "api.securebase.tximhotep.com",
         "Type": "A",
         "SetIdentifier": "us-east-1-primary",
         "Weight": 0,
@@ -222,7 +222,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "api.securebase.io",
+        "Name": "api.securebase.tximhotep.com",
         "Type": "A",
         "SetIdentifier": "us-west-2-failover",
         "Weight": 100,
@@ -238,7 +238,7 @@ aws route53 change-resource-record-sets \
 # Verify change propagated
 aws route53 list-resource-record-sets \
   --hosted-zone-id $HOSTED_ZONE_ID \
-  --query "ResourceRecordSets[?Name=='api.securebase.io.']"
+  --query "ResourceRecordSets[?Name=='api.securebase.tximhotep.com.']"
 ```
 
 **Expected Wait:** 30-60 seconds for DNS propagation
@@ -354,23 +354,23 @@ cat /tmp/lambda-response.json
 cd /opt/securebase-tests
 
 # Test 1: API health endpoint
-curl -f https://api.securebase.io/health
+curl -f https://api.securebase.tximhotep.com/health
 # Expected: {"status":"ok","region":"us-west-2","timestamp":"..."}
 
 # Test 2: Authentication
-curl -X POST https://api.securebase.io/auth/login \
+curl -X POST https://api.securebase.tximhotep.com/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","api_key":"test_key_123"}'
 # Expected: {"token":"...","customer_id":"..."}
 
 # Test 3: Database read/write
-curl -X POST https://api.securebase.io/api/test/db-write \
+curl -X POST https://api.securebase.tximhotep.com/api/test/db-write \
   -H "X-API-Key: test_key_123" \
   -d '{"test_data":"failover-validation"}'
 # Expected: {"id":"...","status":"success"}
 
 # Test 4: Customer portal (Portal must be accessible)
-curl -I https://portal.securebase.io
+curl -I https://portal.securebase.tximhotep.com
 # Expected: HTTP/2 200
 ```
 
@@ -433,7 +433,7 @@ echo "Start time: $(date -u)"
 
 # Check 1: Route53 DNS
 echo -e "\n[1/8] Checking Route53 DNS..."
-RESOLVED_IP=$(dig +short api.securebase.io | head -1)
+RESOLVED_IP=$(dig +short api.securebase.tximhotep.com | head -1)
 echo "Resolved IP: $RESOLVED_IP"
 # Compare with expected us-west-2 API Gateway IP range
 
@@ -486,7 +486,7 @@ echo "Lambda functions deployed in us-west-2: $LAMBDA_COUNT"
 
 # Check 6: API Gateway endpoint
 echo -e "\n[6/8] Testing API Gateway health endpoint..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.securebase.io/health)
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.securebase.tximhotep.com/health)
 echo "API health endpoint HTTP status: $HTTP_STATUS"
 if [ "$HTTP_STATUS" != "200" ]; then
   echo "❌ FAIL: API health check failed"
@@ -503,7 +503,7 @@ echo "CloudFront status: $CF_STATUS"
 
 # Check 8: Customer portal accessibility
 echo -e "\n[8/8] Testing customer portal..."
-PORTAL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://portal.securebase.io)
+PORTAL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://portal.securebase.tximhotep.com)
 echo "Portal HTTP status: $PORTAL_STATUS"
 
 echo -e "\n=== Validation Complete ==="
@@ -588,7 +588,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "api.securebase.io",
+        "Name": "api.securebase.tximhotep.com",
         "Type": "A",
         "SetIdentifier": "us-east-1-primary",
         "Weight": 25,
@@ -616,7 +616,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "api.securebase.io",
+        "Name": "api.securebase.tximhotep.com",
         "Type": "A",
         "SetIdentifier": "us-east-1-primary",
         "Weight": 100,
@@ -642,7 +642,7 @@ aws route53 change-resource-record-sets \
 /opt/securebase-dr/validate-failback.sh
 
 # Verify API is responding from us-east-1
-curl https://api.securebase.io/health
+curl https://api.securebase.tximhotep.com/health
 # Expected: {"status":"ok","region":"us-east-1",...}
 ```
 
@@ -682,7 +682,7 @@ gh issue create \
 **Resolution:**
 ```bash
 # Check DNS propagation
-dig +trace api.securebase.io
+dig +trace api.securebase.tximhotep.com
 
 # Flush local DNS cache
 # macOS:

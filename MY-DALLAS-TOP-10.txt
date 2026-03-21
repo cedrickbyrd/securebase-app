@@ -1,0 +1,87 @@
+# 🎯 MY TOP 10 DALLAS/FW PROSPECTS
+
+## PRIORITY 1 - EMAIL THIS WEEK
+
+### Prospect 1: Trellis
+Company: Trellis
+Industry: Healthcare Tech
+Location: Dallas, TX
+Why perfect: Healthcare = HIPAA mandatory, $8M funded, 45 employees
+Contact: CTO/VP Engineering
+LinkedIn: https://www.linkedin.com/search/results/people/?keywords=Trellis%20Dallas%20CTO
+Email: engineering@trellis.health, cto@trellis.health
+First line: "I saw Trellis raised $8M for medical records..."
+Send by: ____________
+
+### Prospect 2: Strados Labs  
+Company: Strados Labs
+Industry: Healthcare/Medical Devices
+Location: Dallas, TX
+Why perfect: Medical device data = HIPAA critical, $21M funded
+Contact: VP Engineering
+Email: ____________
+Send by: ____________
+
+### Prospect 3: MedStats
+Company: MedStats  
+Industry: Healthcare Analytics
+Location: Dallas, TX
+Why perfect: Analytics on health data = HIPAA, $5M funded, 30 employees = fast
+Contact: ____________
+Email: ____________
+Send by: ____________
+
+---
+
+## PRIORITY 2 - EMAIL NEXT WEEK
+
+### Prospect 4: Procare Solutions
+Company: Procare Solutions
+Industry: Childcare SaaS
+Location: Plano, TX
+Why perfect: 120 employees, handles child data = compliance needed
+Contact: ____________
+
+### Prospect 5: ParkHub
+Company: ParkHub
+Industry: Event Tech SaaS
+Location: Dallas, TX
+Why perfect: B2B SaaS scaling, SOC 2 for enterprise sales
+Contact: ____________
+
+### Prospect 6: [Find via LinkedIn Search]
+Company: ____________
+Industry: ____________
+Location: Dallas/FW
+Contact: ____________
+
+### Prospect 7: [Find via LinkedIn Search]
+Company: ____________
+
+---
+
+## PRIORITY 3 - BACKUP (Austin acceptable)
+
+### Prospect 8: Hypergiant
+Company: Hypergiant
+Industry: AI/ML
+Location: Austin, TX
+Why perfect: AI for defense = FedRAMP needed, $68M funded
+
+### Prospect 9: Crossover Health
+Industry: Healthcare
+
+### Prospect 10: Amino
+Industry: Healthcare
+
+---
+
+## THIS WEEK'S ACTIONS
+
+[ ] Monday: Email Trellis
+[ ] Tuesday: Email Strados Labs  
+[ ] Wednesday: Email MedStats
+[ ] Thursday: Follow up + find prospects 6-7
+[ ] Friday: Summarize week, plan next week
+
+**GOAL: 3 emails sent, 1 demo booked**
