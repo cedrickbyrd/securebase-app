@@ -421,6 +421,19 @@
   margin: 0;
 }
 
+.sb-UsageTrends__demoBadge {
+  margin-left: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
 .sb-UsageTrends__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
