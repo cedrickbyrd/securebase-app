@@ -12,7 +12,7 @@ Controls implemented
   TX-MT-R2b   Suspicious Activity Reports     31 CFR §1022.320
   TX-MT-R3    Customer Identification Program 31 CFR §1022.210; 7 TAC §33.3
   TX-MT-R4    Digital Asset Segregation       TX HB 1666; Fin. Code §152
-  TX-DASP-R1  DASP Licence Compliance         TX Fin. Code §152.101
+  TX-DASP-R1  DASP License Compliance         TX Fin. Code §152.101
 
 Evidence pipeline
 -----------------
@@ -203,10 +203,10 @@ def vault_to_s3(
     customer_id: str, evidence_type: str, evidence_id: str, payload: Any
 ) -> str:
     """Upload evidence JSON to S3 and return the object key."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+    date_prefix = datetime.now(timezone.utc).strftime("%Y/%m/%d")
     key = (
         f"evidence/{ENVIRONMENT}/{customer_id}/{evidence_type}/"
-        f"{timestamp}/{evidence_id}.json"
+        f"{date_prefix}/{evidence_id}.json"
     )
     body = json.dumps(payload, default=str, indent=2).encode()
     _s3.put_object(
