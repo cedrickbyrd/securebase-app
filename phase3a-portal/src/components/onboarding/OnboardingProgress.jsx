@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import "./OnboardingProgress.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-
 const ONBOARDING_STEPS = [
   { key: "email_verified",    label: "Email verified",                   icon: "✉" },
   { key: "account_created",   label: "AWS account created",              icon: "☁" },
