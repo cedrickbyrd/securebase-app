@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import { demoAwareApiService } from '../services/demoApiService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
 import BRANDING from '../config/branding';
 import { useDemoCustomer } from '../hooks/useDemoCustomer';
 import DemoCustomerIndicator from './DemoCustomerIndicator';
+import { CUSTOMER_TIERS } from '../config/customerTiers';
 import './Dashboard.css';
+
+const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
+
+function getCustomerTier() {
+  return localStorage.getItem('customerTier') || '';
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -15,10 +23,15 @@ function Dashboard() {
   const [apiKeys, setApiKeys] = useState([]);
   const [compliance, setCompliance] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [texasCompliance, setTexasCompliance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+
+  // Determine if current customer has Texas fintech compliance
+  const effectiveTier = customer?.tier || getCustomerTier();
+  const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
 
   useEffect(() => {
     loadDashboardData();
@@ -26,19 +39,26 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const [metricsData, invoicesData, keysData, complianceData, ticketsData] = await Promise.all([
+      const requests = [
         apiService.getMetrics(),
         apiService.getInvoices(),
         apiService.getApiKeys(),
         apiService.getComplianceStatus(),
         apiService.getTickets({ status: 'open', limit: 5 })
-      ]);
+      ];
+
+      if (hasTexasCompliance) {
+        requests.push(demoAwareApiService.getFintechComplianceStatus());
+      }
+
+      const [metricsData, invoicesData, keysData, complianceData, ticketsData, texasData] = await Promise.all(requests);
 
       setMetrics(metricsData);
       setInvoices(invoicesData.slice(0, 3));
       setApiKeys(keysData);
       setCompliance(complianceData);
       setTickets(ticketsData.slice(0, 5));
+      if (texasData) setTexasCompliance(texasData.data || texasData);
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
@@ -171,6 +191,29 @@ function Dashboard() {
               <p className="metric-value">Operations</p>
             </div>
           </div>
+
+          {hasTexasCompliance && (
+            <div
+              className="metric-card clickable"
+              onClick={() => navigate('/fintech-portal')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/fintech-portal')}
+              aria-label="Navigate to Texas Examiner Portal"
+            >
+              <div className="metric-icon" style={{ background: '#eff6ff' }}>
+                ⭐
+              </div>
+              <div className="metric-content">
+                <h3>Texas DOB Compliance</h3>
+                <p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>
+                  {texasCompliance
+                    ? `${texasCompliance.passingControls}/${texasCompliance.totalControls} controls`
+                    : '5/5 controls'}
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Two Column Layout */}
@@ -301,6 +344,53 @@ function Dashboard() {
                 )}
               </div>
             </section>
+
+            {/* Texas DOB Compliance (fintech_pro / fintech_elite) */}
+            {hasTexasCompliance && (
+              <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
+                <div className="card-header">
+                  <h2>⭐ Texas DOB Compliance</h2>
+                  <button
+                    className="view-all-btn"
+                    onClick={() => navigate('/fintech-portal')}
+                  >
+                    Access Examiner Portal →
+                  </button>
+                </div>
+                <div className="card-content">
+                  {texasCompliance ? (
+                    <div>
+                      <div className="compliance-status" style={{ marginBottom: '1rem' }}>
+                        <div className="status-indicator passing" style={{ background: '#f0fdf4' }}>✅</div>
+                        <div>
+                          <p className="status-label">Texas DOB Status</p>
+                          <p className="status-value" style={{ color: '#10b981' }}>
+                            {texasCompliance.passingControls}/{texasCompliance.totalControls} Controls Passing
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {(texasCompliance.controls || []).slice(0, 3).map(ctrl => (
+                          <div key={ctrl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#f8fafc', borderRadius: 6 }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>
+                              ✅ {ctrl.id}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{ctrl.name}</span>
+                          </div>
+                        ))}
+                        {(texasCompliance.controls || []).length > 3 && (
+                          <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', margin: '0.25rem 0 0' }}>
+                            +{(texasCompliance.controls || []).length - 3} more controls
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="empty-state">Loading Texas compliance data…</p>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
         </div>
       </main>
