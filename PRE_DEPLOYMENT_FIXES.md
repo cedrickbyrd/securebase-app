@@ -92,6 +92,9 @@ clients = {
 
 ## Fix #2: AWS Account ID Allocation ⚠️ CRITICAL
 
+**Status: ✅ RESOLVED** — The `clients` variable now uses a typed object schema with
+`account_id = optional(string)`. Existing outputs already expose auto-assigned IDs.
+
 **File:** `landing-zone/main.tf` (Line 142) and `landing-zone/variables.tf`
 
 **Current Problem:**

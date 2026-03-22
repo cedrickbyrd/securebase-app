@@ -44,10 +44,13 @@ output "client_account_ids" {
 }
 
 output "client_details" {
+  description = "Full details for each customer account including auto-assigned AWS Account IDs"
   value = { for k, v in aws_organizations_account.clients : k => {
-    id    = v.id
-    arn   = v.arn
-    email = v.email
+    aws_account_id = v.id
+    arn            = v.arn
+    email          = v.email
+    ou_id          = v.parent_id
+    status         = v.status
   }}
 }
 

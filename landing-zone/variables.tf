@@ -36,7 +36,22 @@ variable "allowed_regions" {
 
 # --- Multi-Tenant & Phase 2/3 Core ---
 variable "clients" {
-  type    = map(any)
+  description = "Multi-tenant customer definitions. account_id is optional — AWS auto-assigns it during account creation."
+  type = map(object({
+    prefix        = string
+    tier          = string
+    framework     = string
+    email         = optional(string)
+    contact_email = optional(string)
+    account_id    = optional(string)  # Auto-assigned by AWS Organizations; do NOT pre-allocate
+    tags          = optional(map(string), {})
+    guardrails    = optional(object({
+      restrict_regions = optional(list(string))
+      enforce_vpce     = optional(bool, false)
+      mfa_required     = optional(bool, true)
+      retention_days   = optional(number, 365)
+    }))
+  }))
   default = {}
 }
 
