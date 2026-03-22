@@ -81,11 +81,24 @@ clients = {
 
 ---
 
-### ❓ Issue #2: AWS Account IDs - Who Allocates Them?
+### ✅ Issue #2: AWS Account IDs - Who Allocates Them?
 
-**Severity:** Medium | **Status:** Under Investigation
+**Severity:** Medium | **Status:** Resolved
 
-**Problem:**
+**Resolution (2026-03-22):**
+The `clients` variable in `landing-zone/variables.tf` now uses a fully typed `map(object(...))` schema where `account_id` is declared as `optional(string)`. Customers no longer need to supply (or even know about) their AWS account ID at deploy time — AWS Organizations auto-generates it.
+
+After `terraform apply`, retrieve the auto-assigned IDs with:
+```bash
+terraform output customer_account_ids
+# {
+#   "acme-finance" = "987654321098"
+# }
+```
+
+The new `customer_account_ids` output in `landing-zone/outputs.tf` exposes IDs for every client. The updated `client_details` output also includes `ou_id` and `aws_account_arn` for full account context.
+
+**Problem (historical):**
 Current terraform requires customers to pre-generate account IDs:
 ```hcl
 "acme-finance" = {
@@ -95,61 +108,10 @@ Current terraform requires customers to pre-generate account IDs:
 
 AWS Organizations doesn't let you choose account IDs - they're auto-generated.
 
-**Options:**
-
-**Option A: Leave Blank, Let AWS Assign (RECOMMENDED)**
-- Customer config has no account_id
-- Terraform creates account, gets ID from AWS
-- Update config with real ID after creation
-- Problem: Human manual step needed
-
-```hcl
-"acme-finance" = {
-  account_id = null  # AWS assigns this
-}
-```
-
-**Option B: Pre-Allocate from AWS**
-- Have admin manually create accounts in AWS
-- Record their IDs
-- Customer provides the account_id in config
-- Problem: Two-step process, error-prone
-
-**Option C: Use Terraform `local_exec` Provisioner**
-- Automatically query AWS to get generated account ID
-- Store in state file
-- Problem: Complex, potential race conditions
-
-**Recommendation:**
-Implement **Option A**. Terraform can:
-1. Create account without specifying ID
-2. Capture generated ID automatically
-3. Store in tfstate
-4. Customers never see this detail
-
-**Code Change:**
-```hcl
-resource "aws_organizations_account" "clients" {
-  for_each = var.clients
-  name     = each.value.prefix
-  email    = each.value.contact_email
-  
-  # account_id is auto-generated; no need to specify
-  # AWS will assign a unique ID
-}
-
-output "customer_account_ids" {
-  value = {
-    for k, v in aws_organizations_account.clients : k => v.id
-  }
-  description = "Auto-generated AWS account IDs per customer"
-}
-```
-
 **Next Steps:**
-- [ ] Verify AWS Organizations auto-generates IDs
-- [ ] Update terraform to not require pre-allocated IDs
-- [ ] Document that account IDs are assigned after `terraform apply`
+- [x] Verify AWS Organizations auto-generates IDs
+- [x] Update terraform to not require pre-allocated IDs (`account_id = optional(string)`)
+- [x] Document that account IDs are assigned after `terraform apply`
 - [ ] Test with real deployment
 
 ---
@@ -520,7 +482,7 @@ Organization Root
 | Priority | Issue | Status | Owner |
 |----------|-------|--------|-------|
 | 🔴 HIGH | Email format for AWS accounts | Investigation | Need decision |
-| 🔴 HIGH | Account IDs allocation | Investigation | Need decision |
+| ✅ RESOLVED | Account IDs allocation | Resolved | DevOps |
 | 🔴 HIGH | Terraform state backend (not remote) | Identified | DevOps |
 | 🟡 MEDIUM | Database schema not designed | Blocked | DB Team |
 | 🟡 MEDIUM | Compliance automation undefined | Design | DevOps |
