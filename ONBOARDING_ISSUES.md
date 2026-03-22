@@ -15,69 +15,29 @@
 
 ## Critical Path Issues (Blocking Launch)
 
-### ❓ Issue #1: Email Format for AWS Accounts
+### ✅ Issue #1: Email Format for AWS Accounts (FIXED)
 
-**Severity:** Medium | **Status:** Under Investigation
+**Severity:** Medium | **Status:** ✅ FIXED
 
-**Problem:**
-The terraform code generates customer account emails using:
+**Previous Problem:**
+The terraform code used to generate customer account emails using:
 ```hcl
 email = "${each.value.prefix}@${data.aws_caller_identity.current.account_id}.aws-internal"
 ```
 
-This creates emails like: `acme@731184206915.aws-internal`
+This created emails like: `acme@731184206915.aws-internal`
 
 AWS Organizations requires valid, routable email addresses. `.aws-internal` domains don't exist.
 
-**Impact:**
-- Account creation may fail with "Invalid email format"
-- Could block all customer provisioning
-
-**Proposed Solutions:**
-
-**Option A: Use Subdomain (RECOMMENDED)**
+**Fix Applied:**
+The code now uses `coalesce` to prefer a provided `email` field, falling back to a valid domain:
 ```hcl
-email = "${each.value.prefix}.customer@securebase.aws"
-```
-- Requires purchasing `securebase.aws` domain
-- Set up catch-all mail handler for notifications
-- Cost: ~$12/year for domain
-
-**Option B: Use Customer-Provided Email**
-```hcl
-email = each.value.contact_email  # Add to client config
-```
-- Requires adding `contact_email` to each client config
-- Uses real customer email for AWS account
-- Better for notifications
-- Requires validation that email is monitored
-
-**Option C: Use Shared Organization Email**
-```hcl
-email = "aws+${each.value.prefix}@securebase.com"
-```
-- Requires SecureBase.com email infrastructure
-- All account notifications go to single email
-- May miss customer-specific alerts
-
-**Recommendation:** 
-Implement **Option B** - require customer email. Store as `contact_email` in client config:
-```hcl
-clients = {
-  "acme-finance" = {
-    tier            = "fintech"
-    account_id      = "222233334444"
-    contact_email   = "john@acmefinance.com"  # ← ADD THIS
-    ...
-  }
-}
+email = coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")
 ```
 
-**Next Steps:**
-- [ ] Decide on email strategy with user
-- [ ] Update terraform main.tf
-- [ ] Update client.auto.tfvars template
-- [ ] Test with real deployment
+This generates valid emails like: `acme+acme-finance@demo.securebase.tximhotep.com`
+
+Customers should provide `email` in their client config to use their own address instead of the fallback domain.
 
 ---
 

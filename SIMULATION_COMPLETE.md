@@ -48,7 +48,7 @@ We executed a comprehensive customer onboarding simulation for **ACME Finance In
 - Testing checklist and rollback procedures
 
 **Fixes Provided:**
-1. Email address format → Use customer email instead of .aws-internal
+1. Email address format → ✅ FIXED — fallback now uses `demo.securebase.tximhotep.com`
 2. Account ID allocation → Make optional, let AWS assign
 3. Remote state backend → S3 + DynamoDB setup with commands
 4. Database schema design → Create before Phase 2
@@ -84,10 +84,10 @@ We executed a comprehensive customer onboarding simulation for **ACME Finance In
 ## 🔴 Critical Blocking Issues (Must Fix)
 
 ### Issue #1: Invalid Email Format
-**File:** `landing-zone/main.tf` line 143  
-**Error:** Generates emails like `acme@731184206915.aws-internal` ❌ Invalid  
-**Fix:** Change to `email = each.value.contact_email` (john@acmefinance.com ✅ Valid)  
-**Time:** 5 minutes
+**File:** `landing-zone/main.tf` line 164  
+**Status:** ✅ FIXED — Now generates valid emails like `acme+acme-finance@demo.securebase.tximhotep.com`  
+**Fix Applied:** `email = coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")`  
+**Note:** Provide `email` in client config to override the fallback
 
 ### Issue #2: Account ID Allocation Undefined
 **File:** `landing-zone/variables.tf` line 30  

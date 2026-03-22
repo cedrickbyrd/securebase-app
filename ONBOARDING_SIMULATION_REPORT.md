@@ -65,18 +65,11 @@ Expected 7-10 minute deployment:
 
 **Current Code:**
 ```hcl
-email = "${each.value.prefix}@${data.aws_caller_identity.current.account_id}.aws-internal"
-# Generates: acme@731184206915.aws-internal ❌
+email = coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")
+# Generates: acme+acme-finance@demo.securebase.tximhotep.com ✅
 ```
 
-**Root Cause:** `.aws-internal` domain doesn't exist and isn't a valid AWS email
-
-**Fix:** Use customer email instead
-```hcl
-email = each.value.contact_email  # john@acmefinance.com ✅
-```
-
-**Action Required:** [See PRE_DEPLOYMENT_FIXES.md - Fix #1]
+**Status:** ✅ FIXED — The `.aws-internal` domain pattern has been replaced with a valid fallback domain.
 
 ---
 
@@ -246,7 +239,7 @@ terraform apply tfplan
 ## Recommended Action Plan
 
 ### Phase A: Fix Critical Issues (2 hours)
-1. [ ] Fix email format - Use customer email instead of .aws-internal
+1. [x] Fix email format - Updated to use `coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")` ✅
 2. [ ] Fix account ID - Make optional, let AWS assign
 3. [ ] Enable remote state - Set up S3 + DynamoDB backend
 4. [ ] Run validation - Ensure all fixes work together

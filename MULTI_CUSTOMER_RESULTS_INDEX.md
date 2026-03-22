@@ -166,7 +166,7 @@ Status:        ✅ Configured & Tested
 Same 3 critical fixes still required:
 
 1. **Email Format** (5 min fix)
-   - Change: `${prefix}@${account_id}.aws-internal` → `contact_email`
+   - Status: ✅ FIXED — `coalesce(email, "${prefix}+${key}@demo.securebase.tximhotep.com")` replaces old `.aws-internal` pattern
    - Impact: Account creation fails without this
    - Fix: Use customer email instead
 
