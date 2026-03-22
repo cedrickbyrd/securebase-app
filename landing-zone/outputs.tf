@@ -43,11 +43,21 @@ output "client_account_ids" {
   value = { for k, v in aws_organizations_account.clients : k => v.id }
 }
 
+output "customer_account_ids" {
+  description = "Auto-assigned AWS account IDs for each customer (use after terraform apply)"
+  value = {
+    for client_key, account in aws_organizations_account.clients :
+    client_key => account.id
+  }
+}
+
 output "client_details" {
+  description = "Full customer account details including auto-assigned IDs"
   value = { for k, v in aws_organizations_account.clients : k => {
-    id    = v.id
-    arn   = v.arn
-    email = v.email
+    aws_account_id  = v.id
+    aws_account_arn = v.arn
+    email           = v.email
+    ou_id           = v.parent_id
   }}
 }
 
