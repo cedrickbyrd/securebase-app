@@ -90,14 +90,15 @@ clients = {
 
 ---
 
-## Fix #2: AWS Account ID Allocation ⚠️ CRITICAL
+## Fix #2: AWS Account ID Allocation ✅ COMPLETE
 
-**Status: ✅ RESOLVED** — The `clients` variable now uses a typed object schema with
-`account_id = optional(string)`. Existing outputs already expose auto-assigned IDs.
+**File:** `landing-zone/variables.tf` and `landing-zone/outputs.tf`
 
-**File:** `landing-zone/main.tf` (Line 142) and `landing-zone/variables.tf`
+**Resolution (2026-03-22):**
+`account_id` is now `optional(string)` in the fully typed `clients` variable schema.
+The `customer_account_ids` output in `landing-zone/outputs.tf` captures auto-assigned IDs after `terraform apply`. The `client_details` output has been updated to include `ou_id` and `aws_account_arn`.
 
-**Current Problem:**
+**Previous Problem:**
 ```hcl
 account_id = "222233334444"  # ← Where does customer get this?
 ```
@@ -502,7 +503,7 @@ resource "aws_budgets_budget" "per_customer" {
 
 **Priority 1 (MUST FIX BEFORE DEPLOY):**
 1. [ ] Fix #1 - Email address format
-2. [ ] Fix #2 - Account ID allocation
+2. [x] Fix #2 - Account ID allocation
 3. [ ] Fix #3 - Remote state backend
 
 **Priority 2 (SHOULD FIX BEFORE LAUNCH):**
