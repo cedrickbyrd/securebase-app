@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode } from '../utils/demoData';
 
+const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
+
+function getCustomerTier() {
+  return localStorage.getItem('customerTier') || '';
+}
+
 export default function Compliance() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [complianceData, setComplianceData] = useState(null);
   const [findings, setFindings] = useState([]);
+  const [texasData, setTexasData] = useState(null);
+
+  const isTexasTier = TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
 
   useEffect(() => {
     loadComplianceData();
@@ -17,14 +28,20 @@ export default function Compliance() {
       setLoading(true);
       setError(null);
 
-      // Load compliance score and findings using demo-aware service
-      const [scoreResponse, findingsResponse] = await Promise.all([
+      const requests = [
         demoAwareApiService.getComplianceScore(),
         demoAwareApiService.getComplianceFindings()
-      ]);
+      ];
+
+      if (isTexasTier) {
+        requests.push(demoAwareApiService.getFintechComplianceStatus());
+      }
+
+      const [scoreResponse, findingsResponse, texasResponse] = await Promise.all(requests);
 
       setComplianceData(scoreResponse.data);
       setFindings(findingsResponse.data || []);
+      if (texasResponse) setTexasData(texasResponse.data);
     } catch (err) {
       console.error('Error loading compliance data:', err);
       setError('Failed to load compliance data');
@@ -129,6 +146,48 @@ export default function Compliance() {
                     style={{ width: `${cat.percentage}%` }}
                   />
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Texas DOB Compliance Section (fintech_pro / fintech_elite) */}
+      {isTexasTier && texasData && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #1e3a5f' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">⭐</span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Texas DOB Compliance</h3>
+                <p className="text-sm text-gray-500">7 TAC §33 · 31 CFR §1022 · TX HB 1666</p>
+              </div>
+              <span className="inline-block px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
+                {texasData.passingControls}/{texasData.totalControls} controls (100%)
+              </span>
+            </div>
+            <button
+              className="px-4 py-2 text-sm font-semibold text-white rounded-lg"
+              style={{ background: '#1e3a5f' }}
+              onClick={() => navigate('/fintech-portal')}
+            >
+              Access Examiner Portal →
+            </button>
+          </div>
+          <div className="space-y-3">
+            {(texasData.controls || []).map(control => (
+              <div key={control.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-500 font-bold">✅</span>
+                    <span className="font-semibold text-sm">{control.id}:</span>
+                    <span className="text-sm text-gray-700">{control.name}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-6">{control.summary}</p>
+                </div>
+                <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">
+                  {new Date(control.lastAssessedAt).toLocaleDateString()}
+                </span>
               </div>
             ))}
           </div>

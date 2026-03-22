@@ -79,6 +79,19 @@ export const mockCustomers = [
     accounts: 35,
     created_at: "2025-11-01T00:00:00Z",
     subscription_status: "active"
+  },
+  {
+    id: "demo-customer-006",
+    name: "LoneStar Money Transfer Co.",
+    email: "admin@lonestar-mt.example.com",
+    tier: "fintech_pro",
+    framework: "SOC 2 Type II + Texas DOB",
+    status: "active",
+    monthly_price: 7500,
+    accounts: 22,
+    created_at: "2026-01-15T00:00:00Z",
+    subscription_status: "active",
+    texasLicense: "MTL-TX-2024-0042"
   }
 ];
 
