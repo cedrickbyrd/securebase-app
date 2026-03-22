@@ -7,10 +7,16 @@
 # - AWS Organization & OUs
 # - IAM Identity Center
 # - VPC networking
-# - Database records
-# - API keys
+# - Database records (direct insertion)
+# - API keys (hashed storage)
 # - Billing setup
-# 
+#
+# Prerequisites:
+#   - AWS CLI configured
+#   - Terraform installed
+#   - PostgreSQL client (psql) installed
+#   - Database connection configured in .env
+#
 # Usage: ./onboard-customer.sh --name "ACME Finance" --tier fintech --framework soc2 --email admin@acme.com
 
 set -e  # Exit on error
@@ -22,6 +28,10 @@ set -e  # Exit on error
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TERRAFORM_DIR="${SCRIPT_DIR}/landing-zone/environments/dev"
 BACKEND_SCRIPT="${SCRIPT_DIR}/scripts/onboarding-helpers.py"
+
+# Load database helper functions once at startup
+# shellcheck source=lib/database.sh
+source "${SCRIPT_DIR}/lib/database.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -96,9 +106,24 @@ check_prerequisites() {
     print_error "jq not found. Please install it first: apt-get install jq"
   fi
   
+  # Check psql (PostgreSQL client)
+  if ! command -v psql &> /dev/null; then
+    print_error "psql not found. Install PostgreSQL client: apt-get install postgresql-client"
+  fi
+  
+  # Check uuidgen for UUID generation
+  if ! command -v uuidgen &> /dev/null; then
+    print_error "uuidgen not found. Install uuid-runtime: apt-get install uuid-runtime"
+  fi
+  
   # Check AWS credentials
   if ! aws sts get-caller-identity &> /dev/null; then
     print_error "AWS credentials not configured. Run: aws configure"
+  fi
+  
+  # Check database connection
+  if ! load_db_config; then
+    print_error "Database connection not configured. Set VITE_SUPABASE_URL in .env or DB_HOST/DB_USER environment variables."
   fi
   
   print_success "All prerequisites met"
@@ -177,30 +202,46 @@ apply_infrastructure() {
 
 create_database_records() {
   print_step "Creating database records..."
-  
-  # Write customer record to temporary file
-  cat > /tmp/customer-${CUSTOMER_ID}.sql << EOF
--- Create customer record (Phase 2 database)
+
+  # Generate UUID for customer
+  CUSTOMER_UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+
+  # Escape string values to prevent SQL injection
+  local safe_name
+  safe_name=$(escape_sql_string "${CUSTOMER_NAME}")
+  local safe_email
+  safe_email=$(escape_sql_string "${EMAIL}")
+  local safe_org_id
+  safe_org_id=$(escape_sql_string "${ORG_ID}")
+  local safe_mgmt_account
+  safe_mgmt_account=$(escape_sql_string "${MGMT_ACCOUNT}")
+  local safe_onboarded_by
+  safe_onboarded_by=$(escape_sql_string "$(whoami)")
+
+  # Build SQL with transaction
+  local CUSTOMER_SQL
+  CUSTOMER_SQL=$(cat <<SQL
+BEGIN;
+
+-- Insert customer record
 INSERT INTO customers (
-  id, name, tier, framework, aws_org_id, 
-  aws_management_account_id, email, status, 
-  billing_email, billing_contact_phone, 
-  payment_method, tags, custom_config, 
-  mfa_enforced, audit_retention_days, 
+  id, name, tier, framework, aws_org_id,
+  aws_management_account_id, email, status,
+  billing_email, payment_method, tags, custom_config,
+  mfa_enforced, audit_retention_days,
   encryption_required, vpc_isolation_enabled
 ) VALUES (
-  '$(uuidgen | tr '[:upper:]' '[:lower:]')',
-  '${CUSTOMER_NAME}',
+  '${CUSTOMER_UUID}',
+  '${safe_name}',
   '${TIER}',
   '${FRAMEWORK}',
-  '${ORG_ID}',
-  '${MGMT_ACCOUNT}',
-  '${EMAIL}',
+  '${safe_org_id}',
+  '${safe_mgmt_account}',
+  '${safe_email}',
   'active',
-  '${EMAIL}',
-  '',
+  '${safe_email}',
   'aws_marketplace',
-  '{"Customer": "${CUSTOMER_NAME}", "Tier": "${TIER}"}',
+  jsonb_build_object('customer', '${safe_name}', 'tier', '${TIER}'),
   '{}',
   true,
   2555,
@@ -208,38 +249,85 @@ INSERT INTO customers (
   true
 );
 
--- Create initial usage metric record
+-- Insert initial usage metrics record
 INSERT INTO usage_metrics (
   customer_id, month, account_count, ou_count, scp_count,
   cloudtrail_events_logged, config_rule_evaluations,
-  guardduty_findings, log_storage_gb, archive_storage_gb,
-  nat_gateway_bytes_processed, vpn_connections_count,
-  custom_ec2_instances, custom_rds_instances, custom_s3_buckets
-) SELECT 
-  id, '$(date +%Y-%m-01)', 1, 1, 5,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-FROM customers 
-WHERE email = '${EMAIL}' 
-LIMIT 1;
-EOF
+  guardduty_findings, log_storage_gb, archive_storage_gb
+) VALUES (
+  '${CUSTOMER_UUID}',
+  DATE_TRUNC('month', NOW()),
+  1, 1, 5, 0, 0, 0, 0, 0
+);
 
-  # Note: Actual database connection would go here
-  # For now, just show the SQL that would be executed
-  print_success "Database records prepared (see /tmp/customer-${CUSTOMER_ID}.sql)"
+-- Log audit event
+INSERT INTO audit_events (
+  customer_id, event_type, action, actor_email, status, metadata
+) VALUES (
+  '${CUSTOMER_UUID}',
+  'customer',
+  'customer.onboarded',
+  '${safe_email}',
+  'success',
+  jsonb_build_object('tier', '${TIER}', 'framework', '${FRAMEWORK}', 'onboarded_by', '${safe_onboarded_by}')
+);
+
+COMMIT;
+SQL
+)
+
+  # Execute SQL directly
+  if execute_sql "$CUSTOMER_SQL" "Failed to create customer records"; then
+    print_success "Customer record created: ${CUSTOMER_UUID}"
+    print_success "Database: ${DB_HOST}/${DB_NAME}"
+  else
+    print_error "Database insertion failed. See error output above for details."
+  fi
 }
 
 generate_api_key() {
   print_step "Generating API key..."
-  
-  # Generate a secure random API key
+
+  # Generate secure random API key
   API_KEY_PREFIX="sk_live_${CUSTOMER_ID}"
   API_KEY_SECRET=$(openssl rand -hex 32)
   FULL_API_KEY="${API_KEY_PREFIX}_${API_KEY_SECRET}"
-  
-  # Hash for database storage
+
+  # Hash for database storage (store only the hash, never plaintext)
   API_KEY_HASH=$(echo -n "${FULL_API_KEY}" | sha256sum | awk '{print $1}')
-  
-  # Save to secure file
+
+  # Escape string values
+  local safe_name
+  safe_name=$(escape_sql_string "${CUSTOMER_NAME}")
+
+  # Insert hashed key into database
+  local API_KEY_SQL
+  API_KEY_SQL=$(cat <<SQL
+INSERT INTO api_keys (
+  customer_id,
+  key_hash,
+  key_prefix,
+  name,
+  scopes,
+  created_at
+) VALUES (
+  '${CUSTOMER_UUID}',
+  '${API_KEY_HASH}',
+  '${API_KEY_PREFIX}',
+  'Initial API key for ${safe_name}',
+  ARRAY['read:invoices', 'read:metrics', 'read:audit', 'read:customers'],
+  NOW()
+);
+SQL
+)
+
+  if execute_sql "$API_KEY_SQL" "Failed to store API key"; then
+    print_success "API key generated and stored (hashed)"
+  else
+    print_error "Failed to store API key in database"
+  fi
+
+  # Save full key to secure file (one-time display)
   cat > /tmp/api-key-${CUSTOMER_ID}.txt << EOF
 ╔════════════════════════════════════════════════════════════╗
 ║        SecureBase API Key - KEEP SECURE                   ║
@@ -248,28 +336,23 @@ generate_api_key() {
 Customer:   ${CUSTOMER_NAME}
 Tier:       ${TIER}
 Created:    $(date)
-Expires:    Never (rotate monthly recommended)
 
-API Key:
+API Key (DISPLAY ONCE):
 ${FULL_API_KEY}
 
-Scopes:
-  - read:invoices
-  - read:metrics
-  - read:audit
-  - read:customers
+Key Hash (stored in DB):
+${API_KEY_HASH}
 
 ⚠️  IMPORTANT:
-- Store this key securely (e.g., in 1Password, LastPass)
+- Store this key securely (1Password, AWS Secrets Manager)
 - This is the ONLY time the full key will be displayed
-- Never commit to version control
+- Database stores SHA-256 hash only
 - Rotate monthly for security
 
 Documentation: https://docs.securebase.io/api-keys
 EOF
 
-  print_success "API key generated: ${API_KEY_PREFIX}..."
-  print_success "Full key saved to: /tmp/api-key-${CUSTOMER_ID}.txt"
+  print_success "Full API key saved to: /tmp/api-key-${CUSTOMER_ID}.txt"
 }
 
 create_iam_users() {
@@ -537,7 +620,7 @@ main() {
   echo "  1. Review deployment summary: cat /tmp/deployment-summary-${CUSTOMER_ID}.md"
   echo "  2. Send welcome email: cat /tmp/welcome-email-${CUSTOMER_ID}.txt"
   echo "  3. Complete IAM setup: bash /tmp/iam-setup-${CUSTOMER_ID}.sh"
-  echo "  4. Retrieve API key: cat /tmp/api-key-${CUSTOMER_ID}.txt"
+  echo "  4. Retrieve API key (display once): cat /tmp/api-key-${CUSTOMER_ID}.txt"
   echo ""
 }
 
