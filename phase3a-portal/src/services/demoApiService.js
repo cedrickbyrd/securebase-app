@@ -4,7 +4,9 @@ import {
   isDemoMode, 
   mockComplianceData, 
   mockAlertData, 
-  mockEnvironmentData 
+  mockEnvironmentData,
+  mockTexasComplianceData,
+  mockFintechTransactions
 } from '../utils/demoData';
 
 // Wrap API service to return mock data in demo mode
@@ -125,6 +127,33 @@ export const demoAwareApiService = {
   // Pass through other methods
   authenticate: apiService.authenticate,
   
+  // Texas Fintech Compliance methods
+  getFintechComplianceStatus: async (_customerId) => {
+    if (isDemoMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ success: true, data: mockTexasComplianceData });
+        }, 300);
+      });
+    }
+    return apiService.getFintechComplianceStatus
+      ? apiService.getFintechComplianceStatus(_customerId)
+      : Promise.resolve({ data: mockTexasComplianceData });
+  },
+
+  getFintechTransactions: async (params) => {
+    if (isDemoMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ success: true, data: mockFintechTransactions });
+        }, 300);
+      });
+    }
+    return apiService.getFintechTransactions
+      ? apiService.getFintechTransactions(params)
+      : Promise.resolve({ data: mockFintechTransactions });
+  },
+
   // Add any other methods that need to be proxied
   ...Object.keys(apiService).reduce((acc, key) => {
     if (!acc[key]) {
