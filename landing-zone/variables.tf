@@ -36,7 +36,22 @@ variable "allowed_regions" {
 
 # --- Multi-Tenant & Phase 2/3 Core ---
 variable "clients" {
-  type    = map(any)
+  description = "Map of customer tenant definitions for multi-tenant account provisioning"
+  type = map(object({
+    tier          = string
+    prefix        = string
+    framework     = string
+    email         = optional(string)
+    contact_email = optional(string)
+    account_id    = optional(string)  # AWS auto-assigns if not provided
+    tags          = optional(map(string), {})
+    guardrails    = optional(object({
+      restrict_regions = optional(list(string), ["us-east-1"])
+      enforce_vpce     = optional(bool, false)
+      mfa_required     = optional(bool, true)
+      retention_days   = optional(number, 365)
+    }), {})
+  }))
   default = {}
 }
 
