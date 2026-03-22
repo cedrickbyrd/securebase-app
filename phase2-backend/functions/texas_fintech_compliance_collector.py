@@ -1,6 +1,5 @@
 """
 Texas Money Transmitter Compliance Evidence Collector
-=====================================================
 Lambda function that collects and vaults tamper-evident compliance evidence
 required by Texas Department of Banking (DOB) examiners for licensed money
 transmitters and digital asset service providers.
