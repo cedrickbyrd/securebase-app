@@ -83,7 +83,7 @@
 └──────────────┴────────┴──────────┴──────────────────┘
 
 🔴 CRITICAL (Must fix now - 30 minutes)
-  1. Email format: acme@731184206915.aws-internal → john@acmefinance.com
+  1. Email format: ✅ FIXED — `acme+acme-finance@demo.securebase.tximhotep.com` (was `acme@731184206915.aws-internal`)
   2. Account ID: Must be pre-allocated → AWS auto-assigns
   3. State backend: Local (laptop) → Remote S3 + DynamoDB
 

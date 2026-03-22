@@ -5,88 +5,28 @@
 
 ---
 
-## Fix #1: AWS Account Email Address Format ⚠️ CRITICAL
+## ✅ Fix #1: AWS Account Email Address Format (FIXED)
 
-**File:** `landing-zone/main.tf` (Line 143)
+**File:** `landing-zone/main.tf` (Line 164)
 
-**Current Code (BROKEN):**
+**Previous Code (BROKEN):**
 ```hcl
 email = "${each.value.prefix}@${data.aws_caller_identity.current.account_id}.aws-internal"
 # Generates: acme@731184206915.aws-internal ❌ INVALID
 ```
 
-**Problem:**
-AWS Organizations requires valid, routable email addresses. The `.aws-internal` domain doesn't exist and will cause account creation to fail.
-
-**Solution: Use Customer Email from Config**
-
-**Step 1: Update variable schema** in `landing-zone/variables.tf`
-
-Add `contact_email` field to clients variable:
+**Current Code (FIXED):**
 ```hcl
-variable "clients" {
-  type = map(object({
-    tier            = string
-    account_id      = optional(string)  # Optional; AWS will assign
-    prefix          = string
-    framework       = optional(string, "cis")
-    contact_email   = string            # ← ADD THIS
-    tags            = optional(map(string), {})
-  }))
-  
-  validation {
-    condition = alltrue([
-      for c in values(this) : 
-      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", c.contact_email))
-    ])
-    error_message = "All clients must have valid contact_email addresses"
-  }
-}
+email = coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")
+# Generates: acme+acme-finance@demo.securebase.tximhotep.com ✅ VALID
 ```
 
-**Step 2: Update terraform code** in `landing-zone/main.tf`
+**Resolution:**
+AWS Organizations requires valid, routable email addresses. The `.aws-internal` domain was replaced with `demo.securebase.tximhotep.com` as the fallback. Customers can provide `email` in their client config to use their own email address instead of the fallback.
 
-Replace line 143:
-```hcl
-# BEFORE:
-email = "${each.value.prefix}@${data.aws_caller_identity.current.account_id}.aws-internal"
+**Status:** ✅ Applied in `landing-zone/main.tf` line 164
 
-# AFTER:
-email = each.value.contact_email
-```
-
-**Step 3: Update client configuration** in `landing-zone/environments/dev/client.auto.tfvars`
-
-Update ACME Finance example:
-```hcl
-clients = {
-  "acme-finance" = {
-    tier            = "fintech"
-    account_id      = "222233334444"    # ← Currently placeholder
-    prefix          = "acme"
-    framework       = "soc2"
-    contact_email   = "john@acmefinance.com"  # ← ADD THIS
-    tags = {
-      Customer     = "ACME Finance Inc"
-      Tier         = "Fintech"
-      Framework    = "SOC2"
-      ContactEmail = "john@acmefinance.com"
-      OnboardedOn  = "2026-01-19"
-    }
-  }
-}
-```
-
-**Benefits:**
-✅ Uses real customer email for AWS notifications  
-✅ Eliminates invalid domain error  
-✅ Customers get account notifications directly  
-✅ Audit trail shows customer email  
-
-**Risk Assessment:**
-- Low risk - email will be provided by customer during signup
-- Required for account creation to work
-- Non-breaking: existing code has same field available
+**Note:** Customers should provide `email` in their client config to use their own address instead of the fallback domain.
 
 ---
 

@@ -150,7 +150,7 @@ This shows PaaS economics at work:
 Same 3 critical issues from first simulation still apply:
 
 1. **Email Format** (5 min fix)
-   - Current: `acme@731184206915.aws-internal` ❌
+   - Status: ✅ FIXED — `acme+acme-finance@demo.securebase.tximhotep.com` (was `acme@731184206915.aws-internal`)
    - Required: `john@acmefinance.com` ✅
 
 2. **Account ID Allocation** (5 min fix)

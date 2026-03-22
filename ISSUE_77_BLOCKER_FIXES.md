@@ -17,24 +17,18 @@ This sub-issue tracks all critical blockers preventing SecureBase from productio
 
 ### 🔴 **Category 1: Terraform Deployment Blockers** (Critical)
 
-#### Blocker 1.1: Email Address Format Issue
-**File:** `landing-zone/main.tf` (Line 143)  
+#### ✅ Blocker 1.1: Email Address Format Issue (FIXED)
+**File:** `landing-zone/main.tf` (Line 164)  
 **Severity:** Critical  
-**Impact:** Prevents AWS account creation for customers  
+**Status:** ✅ FIXED  
 
-**Problem:**  
-Current email generation uses AWS-internal format which is invalid:
+**Fix Applied:**  
+The email generation now uses a valid fallback domain:
 ```hcl
-email = "${each.value.prefix}@${data.aws_caller_identity.current.account_id}.aws-internal"
+email = coalesce(each.value.email, "${each.value.prefix}+${each.key}@demo.securebase.tximhotep.com")
 ```
 
-**Fix Required:**
-```hcl
-email = each.value.contact_email
-```
-
-**Effort:** 5 minutes  
-**Dependencies:** None  
+Customers should provide `email` in their client config to override the fallback.
 
 ---
 
