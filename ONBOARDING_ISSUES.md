@@ -81,9 +81,14 @@ clients = {
 
 ---
 
-### ❓ Issue #2: AWS Account IDs - Who Allocates Them?
+### ✅ Issue #2: AWS Account IDs - Who Allocates Them?
 
-**Severity:** Medium | **Status:** Under Investigation
+**Severity:** Medium | **Status:** ✅ Resolved
+
+**Resolution:** The `clients` variable type has been tightened to make `account_id` explicitly optional.
+Terraform outputs `client_account_ids` and `client_details` already expose auto-assigned IDs after
+`terraform apply`. The Lambda provisioner (`lambda/account_provisioner.py`) correctly captures
+auto-assigned IDs via `wait_for_account()`. No customer action needed — AWS handles ID allocation.
 
 **Problem:**
 Current terraform requires customers to pre-generate account IDs:
@@ -520,7 +525,7 @@ Organization Root
 | Priority | Issue | Status | Owner |
 |----------|-------|--------|-------|
 | 🔴 HIGH | Email format for AWS accounts | Investigation | Need decision |
-| 🔴 HIGH | Account IDs allocation | Investigation | Need decision |
+| ✅ RESOLVED | Account IDs allocation | Resolved | DevOps |
 | 🔴 HIGH | Terraform state backend (not remote) | Identified | DevOps |
 | 🟡 MEDIUM | Database schema not designed | Blocked | DB Team |
 | 🟡 MEDIUM | Compliance automation undefined | Design | DevOps |
