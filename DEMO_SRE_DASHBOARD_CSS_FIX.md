@@ -61,9 +61,9 @@ This fix resolves styling issues in:
 
 ### Method 2: Check Demo Mode
 The demo SRE dashboard is accessible via:
-- Direct route: `/sre` (when `isDemoMode()` returns true)
 - Demo hostname: `demo.securebase.tximhotep.com/sre`
-- Or by setting localStorage: `localStorage.setItem('demo_mode', 'true')`
+- Or by setting localStorage: `localStorage.setItem('demo_mode', 'true')` and navigating to `/sre`
+- Direct route: `/sre` (works when `isDemoMode()` returns true based on hostname or localStorage)
 
 **Expected Visual Elements:**
 - Blue banner at top: "🚀 DEMO MODE — All data is simulated"
