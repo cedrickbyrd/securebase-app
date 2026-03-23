@@ -93,8 +93,8 @@ console.log('🎭 MOCK API LOADED!');
       ok: true,
       status: 200,
       headers: new Headers({'content-type':'application/json'}),
-      json: () => Promise.resolve({ data: getMockDataForUrl(u) }),
-      text: () => Promise.resolve(JSON.stringify({ data: getMockDataForUrl(u) }))
+      json: () => Promise.resolve(getMockDataForUrl(u)),
+      text: () => Promise.resolve(JSON.stringify(getMockDataForUrl(u)))
     });
   };
   
