@@ -54,10 +54,15 @@ function Dashboard() {
       const [metricsData, invoicesData, keysData, complianceData, ticketsData, texasData] = await Promise.all(requests);
 
       setMetrics(metricsData);
-      setInvoices(Array.isArray(invoicesData) ? invoicesData.slice(0, 3) : []);
-      setApiKeys(Array.isArray(keysData) ? keysData : []);
+      // Handle both wrapped ({ data: [...] }) and unwrapped formats
+      const invoicesArray = invoicesData?.data || invoicesData;
+      const keysArray = keysData?.data || keysData;
+      const ticketsArray = ticketsData?.data || ticketsData;
+      
+      setInvoices(Array.isArray(invoicesArray) ? invoicesArray.slice(0, 3) : []);
+      setApiKeys(Array.isArray(keysArray) ? keysArray : []);
       setCompliance(complianceData);
-      setTickets(Array.isArray(ticketsData) ? ticketsData.slice(0, 5) : []);
+      setTickets(Array.isArray(ticketsArray) ? ticketsArray.slice(0, 5) : []);
       if (texasData) setTexasCompliance(texasData.data || texasData);
     } catch (error) {
       console.error('Failed to load dashboard:', error);
