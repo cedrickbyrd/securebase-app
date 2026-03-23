@@ -61,7 +61,7 @@ This fix resolves styling issues in:
 
 ### Method 2: Check Demo Mode
 The demo SRE dashboard is accessible via:
-- Demo hostname: `demo.securebase.tximhotep.com/sre`
+- Demo hostname: `demo.securebase.tximhotep.com/sre` (Note: This is the configured demo domain for SecureBase. Users may need to configure their own demo subdomain in DNS/hosting settings)
 - Or by setting localStorage: `localStorage.setItem('demo_mode', 'true')` and navigating to `/sre`
 - Direct route: `/sre` (works when `isDemoMode()` returns true based on hostname or localStorage)
 
