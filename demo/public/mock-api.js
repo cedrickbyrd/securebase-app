@@ -17,7 +17,11 @@ console.log('🎭 MOCK API LOADED!');
       account_count: 5,
       cloudtrail_events: 125847,
       log_storage_gb: 245,
-      data_transfer_gb: 89
+      data_transfer_gb: 89,
+      monthlyUsage: {
+        history: [125847, 118234, 134521, 142088, 129654, 138900, 125847],
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      }
     },
     invoices: [
       { 
