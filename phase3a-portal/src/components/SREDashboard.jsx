@@ -63,6 +63,7 @@ const SREDashboard = () => {
   const [timeRange, setTimeRange] = useState('1h');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [loading, setLoading] = useState(false);
 
   // Infrastructure health state
   const [infrastructureMetrics, setInfrastructureMetrics] = useState({
