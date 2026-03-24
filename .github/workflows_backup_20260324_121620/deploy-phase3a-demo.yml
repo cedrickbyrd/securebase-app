@@ -1,0 +1,204 @@
+name: Deploy Phase 3A Demo
+
+on:
+  push:
+    branches:
+      - main
+      - feature/sales-enablement
+    paths:
+      - 'phase3a-portal/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase3a-portal/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+
+env:
+  AWS_REGION: us-east-1
+  S3_BUCKET: securebase-phase3a-demo
+  CLOUDFRONT_DIST_ID: EGY0W64KNE7BO
+
+jobs:
+  build-demo:
+    name: Build Demo Portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase3a-portal
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            phase3a-portal/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-build-${{ hashFiles('phase3a-portal/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linter
+        run: npm run lint || true  # Allow warnings
+
+      - name: Build demo bundle
+        run: npm run build
+        env:
+          VITE_DEMO_MODE: true
+          VITE_READ_ONLY_MODE: true
+          VITE_SHOW_DEMO_BANNER: true
+          VITE_AUTO_RESET_ENABLED: true
+          VITE_RESET_INTERVAL_HOURS: 24
+          VITE_DEMO_SESSION_DURATION_DAYS: 7
+          VITE_DEMO_CTA_TRIAL_URL: https://tximhotep.com/signup
+          VITE_DEMO_CTA_BOOK_DEMO_URL: https://tximhotep.com/contact
+          VITE_DEMO_CTA_CONTACT_SALES: mailto:sales@tximhotep.com
+          VITE_API_BASE_URL: ${{ secrets.DEMO_API_URL || 'https://securebase-demo.netlify.app/v2' }}
+          VITE_USE_MOCK_API: true
+
+      - name: Copy demo data
+        run: |
+          if [ -f demo-data.json ]; then
+            cp demo-data.json dist/demo-data.json
+            echo "✅ Demo data copied to dist/"
+          else
+            echo "⚠️ demo-data.json not found, skipping"
+          fi
+
+      - name: Verify CSS build
+        run: |
+          echo "📋 Listing dist/assets directory:"
+          ls -lah dist/assets/ || echo "No assets directory found"
+          echo ""
+          echo "🎨 Checking for CSS files:"
+          find dist -name "*.css" -exec echo "Found: {}" \; -exec wc -l {} \;
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: phase3a-demo-build
+          path: phase3a-portal/dist/
+          retention-days: 7
+
+  deploy-demo:
+    name: Deploy to GitHub Pages
+    needs: build-demo
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: phase3a-demo-build
+          path: dist/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  validate-demo:
+    name: Validate Demo Deployment
+    needs: deploy-demo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 30
+
+      - name: Smoke test - Check HTTP status
+        run: |
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Demo site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Validate index.html
+        run: |
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
+
+          if curl -s "$DEMO_URL" | grep -q "SecureBase"; then
+            echo "✅ Index.html contains expected content"
+          else
+            echo "❌ Index.html validation failed"
+            exit 1
+          fi
+
+      - name: Validate demo data
+        run: |
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEMO_URL/demo-data.json")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Demo data is accessible (HTTP $STATUS)"
+          else
+            echo "⚠️ Demo data returned HTTP $STATUS (might not exist, continuing)"
+          fi
+
+  notify:
+    name: Send Deployment Notification
+    needs: [deploy-demo, validate-demo]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment notification
+        run: |
+          DEMO_URL="${{ needs.deploy-demo.outputs.page_url }}"
+
+          if [ "${{ needs.validate-demo.result }}" == "success" ]; then
+            echo "✅ Phase 3a demo deployed successfully to GitHub Pages"
+            echo "Demo URL: $DEMO_URL"
+            echo ""
+            echo "Share with prospects:"
+            echo "- Auto-login enabled (no signup required)"
+            echo "- Pre-populated with sample data"
+            echo "- Read-only mode active"
+            echo "- CTAs for trial signup and demo booking"
+          else
+            echo "❌ Demo deployment or validation failed"
+            exit 1
+          fi

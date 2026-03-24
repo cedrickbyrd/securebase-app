@@ -1,0 +1,17 @@
+--- a/src/components/SREDashboard.jsx
++++ b/src/components/SREDashboard.jsx
+@@ -1,4 +1,5 @@
+ import React, { useState, useEffect } from 'react';
++import { isDemoMode } from '../utils/demoData';
+ import {
+   Server, Database, Zap, Activity, AlertTriangle, CheckCircle,
+   TrendingUp, TrendingDown, Clock, BarChart3, Cpu, HardDrive,
+@@ -48,6 +49,7 @@ ChartJS.register(
+ const SREDashboard = () => {
+   const [timeRange, setTimeRange] = useState('1h');
+   const [autoRefresh, setAutoRefresh] = useState(true);
+   const [lastRefresh, setLastRefresh] = useState(new Date());
++  const [loading, setLoading] = useState(false);
++  const isDemo = isDemoMode();
+ 
+   // Infrastructure health state

@@ -145,7 +145,7 @@ update_terraform_config() {
   cat >> "${TERRAFORM_DIR}/client.auto.tfvars" << EOF
 
 # Customer: ${CUSTOMER_NAME} (added $(date +%Y-%m-%d))
-${CUSTOMER_ID} = {
+"${CUSTOMER_ID}" = {
   tier         = "${TIER}"
   account_id   = ""  # Will be auto-assigned by AWS
   prefix       = "${CUSTOMER_ID}"

@@ -1,0 +1,20 @@
+name: SecureBase Ops Audit
+on: [pull_request]
+
+jobs:
+  infrastructure_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Verify Netlify Proxy Configuration
+        run: |
+          if ! grep -q "from = \"/storage/\*\"" netlify.toml; then
+            echo "❌ ERROR: S3 Proxy Shield missing from netlify.toml"
+            exit 1
+          fi
+          
+      - name: Check for Expensive Large Maps
+        run: |
+          # Fails if any .map file over 500kb is found (prevents AWS PUT request bloat)
+          find dist -name "*.map" -size +500k | grep . && exit 1 || echo "✅ No oversized maps found."

@@ -1,0 +1,163 @@
+name: Deploy Phase 3a to Production (Netlify)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: 'Type "DEPLOY TO PRODUCTION" to confirm'
+        required: true
+        type: string
+
+jobs:
+  verify-confirmation:
+    name: Verify Deployment Confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm_production }}" != "DEPLOY TO PRODUCTION" ]; then
+            echo "❌ Production deployment not confirmed"
+            echo "You must type exactly: DEPLOY TO PRODUCTION"
+            exit 1
+          fi
+          echo "✅ Production deployment confirmed"
+
+  build:
+    name: Build Production Portal
+    needs: verify-confirmation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase3a-portal
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint || true
+
+      - name: Build production bundle
+        run: npm run build:production
+        env:
+          VITE_USE_MOCK_API: false
+          VITE_API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.securebase.com/v1' }}
+          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          VITE_ENV: production
+          VITE_ANALYTICS_ENABLED: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: phase3a-production-build
+          path: phase3a-portal/dist/
+          retention-days: 30
+
+  deploy:
+    name: Deploy to Netlify Production
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://securebase-app.netlify.app
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: phase3a-production-build
+          path: dist/
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Production Deploy - ${{ github.event.head_commit.message || 'Manual Production Deploy' }}"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+        timeout-minutes: 8
+
+      - name: Output production URL
+        run: |
+          echo "🚀 Production URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
+          echo "production_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
+        id: deploy
+
+  validate:
+    name: Validate Production Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 15
+
+      - name: Smoke test - Check HTTP status
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+          echo "🧪 Testing $PRODUCTION_URL..."
+          echo "Testing production URL: $PRODUCTION_URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Production site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Production site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Validate index.html content
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+          if curl -s "$PRODUCTION_URL" | grep -q "SecureBase"; then
+            echo "✅ Index.html contains expected content"
+          else
+            echo "❌ Index.html validation failed"
+            exit 1
+          fi
+
+  notify:
+    name: Send Production Notification
+    needs: [deploy, validate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment notification
+        run: |
+          PRODUCTION_URL="${{ needs.deploy.outputs.production_url }}"
+
+          if [ "${{ needs.validate.result }}" == "success" ]; then
+            echo "✅ Phase 3a deployed successfully to PRODUCTION"
+            echo "🚀 Production URL: $PRODUCTION_URL"
+            echo ""
+            echo "⚠️  PRODUCTION DEPLOYMENT COMPLETE"
+            echo "- Platform: Netlify"
+            echo "- Environment: Production"
+            echo "- Ready for customer access"
+            echo "- Monitor for issues"
+          else
+            echo "❌ Production deployment or validation failed"
+            exit 1
+          fi
