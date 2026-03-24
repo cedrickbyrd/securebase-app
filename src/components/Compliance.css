@@ -1,4 +1,15 @@
-/* Compliance page professional styling */
+/* Compliance page professional styling - Purple Theme Redesign */
+
+/* CSS Variables for SecureBase Brand Colors */
+:root {
+  --sb-purple-primary: #667eea;
+  --sb-purple-secondary: #764ba2;
+  --sb-gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --sb-gradient-green: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --sb-gradient-blue: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --sb-gradient-amber: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --sb-gradient-red: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
 
 /* Summary stat gradient cards */
 .compliance-stat-card {
@@ -11,10 +22,10 @@
   gap: 4px;
 }
 
-.compliance-stat-card--blue   { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
-.compliance-stat-card--green  { background: linear-gradient(135deg, #15803d, #22c55e); }
-.compliance-stat-card--orange { background: linear-gradient(135deg, #c2410c, #f97316); }
-.compliance-stat-card--purple { background: linear-gradient(135deg, #6d28d9, #a855f7); }
+.compliance-stat-card--blue   { background: var(--sb-gradient-blue); }
+.compliance-stat-card--green  { background: var(--sb-gradient-green); }
+.compliance-stat-card--orange { background: var(--sb-gradient-amber); }
+.compliance-stat-card--purple { background: var(--sb-gradient-purple); }
 
 .compliance-stat-card__label {
   font-size: 0.7rem;
@@ -48,12 +59,12 @@
   height: 100%;
   border-radius: 9999px;
   transition: width 0.4s ease;
-  background: #3b82f6;
+  background: var(--sb-gradient-blue);
 }
 
-.compliance-progress__fill--green  { background: #22c55e; }
-.compliance-progress__fill--yellow { background: #f59e0b; }
-.compliance-progress__fill--red    { background: #ef4444; }
+.compliance-progress__fill--green  { background: var(--sb-gradient-green); }
+.compliance-progress__fill--yellow { background: var(--sb-gradient-amber); }
+.compliance-progress__fill--red    { background: var(--sb-gradient-red); }
 
 /* Trust Service Criteria cards */
 .compliance-tsc-grid {
@@ -151,4 +162,115 @@
 
 .compliance-findings-table tr:last-child td {
   border-bottom: none;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.compliance-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.compliance-section:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.compliance-section:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* Typography Hierarchy */
+.compliance-title-main {
+  font-size: 2rem;
+  font-weight: 800;
+  background: var(--sb-gradient-purple);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.compliance-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.compliance-metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+/* Enhanced Card Shadows */
+.compliance-card {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(102, 126, 234, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.compliance-card-elevated {
+  box-shadow: 
+    0 10px 30px rgba(102, 126, 234, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+}
+
+/* Control Table Enhancements */
+.compliance-control-row {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.compliance-control-row:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.compliance-table-enhanced .ant-table-thead > tr > th {
+  background: var(--sb-gradient-purple);
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  border: none;
+}
+
+.compliance-table-enhanced .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .compliance-score-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .compliance-title-main {
+    font-size: 1.5rem;
+  }
+  
+  .compliance-table-enhanced {
+    font-size: 0.875rem;
+  }
+  
+  .compliance-card {
+    padding: 1rem;
+  }
 }
