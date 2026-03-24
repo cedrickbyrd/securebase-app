@@ -14,7 +14,7 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      environment:
+      # environment:  # REMOVED: Auto-approval enabled
         description: 'Environment to deploy'
         required: true
         type: choice
@@ -276,7 +276,7 @@ jobs:
     timeout-minutes: 30
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment:
+    # environment:  # REMOVED: Auto-approval enabled
       name: dev
       url: https://dev.securebase.com
     
@@ -337,7 +337,7 @@ jobs:
     timeout-minutes: 30
     needs: build
     if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
-    environment:
+    # environment:  # REMOVED: Auto-approval enabled
       name: staging
       url: https://staging.securebase.com
     
