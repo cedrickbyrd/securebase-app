@@ -238,10 +238,10 @@ function Dashboard() {
                       <div key={invoice.id} className="invoice-item">
                         <div className="invoice-info">
                           <p className="invoice-number">{invoice.invoice_number}</p>
-                          <p className="invoice-date">{new Date(invoice.date).toLocaleDateString()}</p>
+                          <p className="invoice-date">{invoice.created_at || invoice.date ? new Date(invoice.created_at || invoice.date).toLocaleDateString() : '—'}</p>
                         </div>
                         <div className="invoice-amount">
-                          <p className="amount">${invoice.amount.toLocaleString()}</p>
+                          <p className="amount">${(invoice.total_amount ?? invoice.amount ?? 0).toLocaleString()}</p>
                           <span className={`status-badge ${invoice.status}`}>{invoice.status}</span>
                         </div>
                       </div>
