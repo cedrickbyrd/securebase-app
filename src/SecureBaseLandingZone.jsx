@@ -44,11 +44,11 @@ const AuthLogin = () => {
           <input 
             type="password" placeholder="••••••••" value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" required 
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all" required 
           />
         </div>
         {error && <p className="text-red-500 text-xs font-semibold bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
-        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all flex justify-center items-center gap-2">
+        <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex justify-center items-center gap-2">
           {loading ? <Loader className="animate-spin w-5 h-5" /> : 'Sign In'}
         </button>
       </form>
@@ -89,7 +89,7 @@ const MFAChallenge = ({ onVerifySuccess }) => {
 
   return (
     <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-12 text-center">
-      <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="bg-purple-100 text-[#667eea] w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
         <Shield className="w-6 h-6" />
       </div>
       <h2 className="text-2xl font-bold text-slate-900">Security Check</h2>
@@ -98,7 +98,7 @@ const MFAChallenge = ({ onVerifySuccess }) => {
         <input
           type="text" maxLength="6" placeholder="000000" value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-          className="w-full text-center text-3xl tracking-[0.5em] font-mono py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none"
+          className="w-full text-center text-3xl tracking-[0.5em] font-mono py-3 border-2 border-slate-200 rounded-xl focus:border-[#667eea] outline-none"
           required
         />
         {error && <p className="text-red-500 text-xs font-semibold">{error}</p>}
@@ -183,7 +183,7 @@ export default function SecureBaseLandingZone() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('overview')}>
-            <div className="bg-blue-600 p-2 rounded-lg"><Shield className="text-white w-6 h-6" /></div>
+            <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] p-2 rounded-lg shadow-md"><Shield className="text-white w-6 h-6" /></div>
             <div>
               <div className="text-xl font-bold">SecureBase</div>
               <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
@@ -191,8 +191,8 @@ export default function SecureBaseLandingZone() {
           </div>
 
           <nav className="flex items-center gap-6">
-            <button onClick={() => setActiveTab('overview')} className={`text-sm font-semibold ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-600'}`}>Overview</button>
-            <button onClick={() => handleTabChange('compliance')} className={`text-sm font-semibold ${activeTab === 'compliance' ? 'text-blue-600' : 'text-slate-600'}`}>Compliance</button>
+            <button onClick={() => setActiveTab('overview')} className={`text-sm font-semibold transition-colors ${activeTab === 'overview' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Overview</button>
+            <button onClick={() => handleTabChange('compliance')} className={`text-sm font-semibold transition-colors ${activeTab === 'compliance' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Compliance</button>
             {user && <AdminLink user={user} />}
             {user && <button onClick={() => { localStorage.removeItem('demo_mode'); supabase.auth.signOut(); }} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
           </nav>
@@ -202,8 +202,8 @@ export default function SecureBaseLandingZone() {
       <main className="max-w-7xl mx-auto px-6 py-12">
         {activeTab === 'overview' && (
           <div className="text-center pt-12">
-            <h1 className="text-5xl md:text-7xl font-black mb-8 italic">Audit-Ready AWS <br /><span className="text-blue-600 not-italic">In Under 48 Hours</span></h1>
-            <button onClick={() => handleTabChange('compliance')} className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg mx-auto flex items-center gap-2 hover:bg-blue-700 transition-all">
+            <h1 className="text-5xl md:text-7xl font-black mb-8 italic">Audit-Ready AWS <br /><span className="bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent not-italic">In Under 48 Hours</span></h1>
+            <button onClick={() => handleTabChange('compliance')} className="px-8 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold text-lg mx-auto flex items-center gap-2 hover:shadow-xl transition-all transform hover:scale-105">
               View Compliance Vault <ArrowRight className="w-5 h-5" />
             </button>
           </div>
