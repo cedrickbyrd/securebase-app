@@ -1,0 +1,63 @@
+name: SecureBase Dependency Security
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  analyze-dependencies:
+    name: Dependency Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        if: github.event_name == 'pull_request'
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: true
+      
+      - name: Weekly dependency audit
+        if: github.event_name == 'schedule'
+        run: |
+          npm audit --json > audit-results.json || true
+          
+          high_vulns=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+          critical_vulns=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+          
+          echo "Critical vulnerabilities: $critical_vulns"
+          echo "High severity vulnerabilities: $high_vulns"
+          
+          if [ $critical_vulns -gt 0 ] || [ $high_vulns -gt 0 ]; then
+            echo "SECURITY_ALERT=true" >> $GITHUB_ENV
+          fi
+      
+      - name: Create security alert
+        if: env.SECURITY_ALERT == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const alertMessage = `## SecureBase Dependency Security Alert\n\n` +
+              `The weekly dependency audit has identified security vulnerabilities ` +
+              `that require attention.\n\n` +
+              `Please run \`npm audit\` locally to review and address these issues.\n\n` +
+              `**Date:** ${new Date().toISOString().split('T')[0]}`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[SECURITY] Dependency Vulnerabilities Detected`,
+              body: alertMessage,
+              labels: ['security', 'dependencies']
+            });

@@ -1,0 +1,166 @@
+name: Deploy Phase 3a to Staging (Netlify)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'phase3a-portal/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase3a-portal/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+
+jobs:
+  build:
+    name: Build Portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase3a-portal
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint || true
+
+      - name: Build staging bundle
+        run: npm run build:staging
+        env:
+          VITE_API_BASE_URL: ${{ secrets.STAGING_API_URL || 'https://staging-api.securebase.com/v1' }}
+          VITE_WS_URL: ${{ secrets.STAGING_WS_URL || 'wss://staging-ws.securebase.com' }}
+          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STAGING_STRIPE_PUBLIC_KEY || 'pk_test_YOUR_TEST_KEY_HERE' }}
+          VITE_ENV: staging
+          VITE_USE_MOCK_API: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: phase3a-staging-build
+          path: phase3a-portal/dist/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Netlify Staging
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: staging
+      url: https://securebase-staging.netlify.app
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: phase3a-staging-build
+          path: dist/
+
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          production-deploy: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Staging Deploy - ${{ github.event.head_commit.message || 'Manual Staging Deploy' }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: staging
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_STAGING_SITE_ID }}
+        timeout-minutes: 8
+
+      - name: Output staging URL
+        run: |
+          echo "🚀 Staging URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
+          echo "staging_url=${{ steps.netlify-deploy.outputs.deploy-url }}" >> $GITHUB_OUTPUT
+        id: deploy
+
+  validate:
+    name: Validate Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 15
+
+      - name: Smoke test - Check HTTP status
+        run: |
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
+          echo "🧪 Testing $STAGING_URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Staging site is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Staging site returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Validate index.html
+        run: |
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
+          if curl -s "$STAGING_URL" | grep -q "SecureBase"; then
+            echo "✅ Index.html contains expected content"
+          else
+            echo "❌ Index.html validation failed"
+            exit 1
+          fi
+
+  notify:
+    name: Send Notification
+    needs: [deploy, validate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment notification
+        run: |
+          STAGING_URL="${{ needs.deploy.outputs.staging_url }}"
+
+          if [ "${{ needs.validate.result }}" == "success" ]; then
+            echo "✅ Phase 3a deployed successfully to staging"
+            echo "🚀 Staging URL: $STAGING_URL"
+            echo ""
+            echo "**Staging Deployment Complete**"
+            echo "- Platform: Netlify"
+            echo "- Environment: Staging"
+          else
+            echo "❌ Deployment or validation failed"
+            exit 1
+          fi

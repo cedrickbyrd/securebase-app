@@ -1,0 +1,348 @@
+name: CSS Health Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - '**/*.css'
+      - '**/*.scss'
+      - '**/tailwind.config.js'
+      - '**/postcss.config.js'
+      - '**/package.json'
+      - '.github/workflows/css-health-check.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '**/*.css'
+      - '**/*.scss'
+      - '**/tailwind.config.js'
+      - '**/postcss.config.js'
+      - '**/package.json'
+      - '.github/workflows/css-health-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  css-health-check:
+    name: CSS Health Check - ${{ matrix.project_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        include:
+          - project_name: "Root Project"
+            project_path: "."
+          - project_name: "Phase3A Portal"
+            project_path: "phase3a-portal"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project_path }}/package.json
+
+      - name: Checkpoint 1 - Verify CSS source files exist
+        id: checkpoint1
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 1: Verify CSS Source Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          files_found=true
+
+          if [ -f "src/index.css" ]; then
+            echo "✅ src/index.css exists" >> $GITHUB_STEP_SUMMARY
+            echo "✅ src/index.css found"
+          else
+            echo "❌ src/index.css NOT found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ src/index.css missing"
+            files_found=false
+          fi
+
+          if [ -f "src/App.css" ]; then
+            echo "✅ src/App.css exists" >> $GITHUB_STEP_SUMMARY
+            echo "✅ src/App.css found"
+          else
+            echo "❌ src/App.css NOT found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ src/App.css missing"
+            files_found=false
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$files_found" = false ]; then
+            exit 1
+          fi
+
+      - name: Checkpoint 2 - Verify Tailwind config exists and display contents
+        id: checkpoint2
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 2: Verify Tailwind Config" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "tailwind.config.js" ]; then
+            echo "✅ tailwind.config.js exists" >> $GITHUB_STEP_SUMMARY
+            echo "✅ tailwind.config.js found"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Tailwind Config Contents:" >> $GITHUB_STEP_SUMMARY
+            echo '```javascript' >> $GITHUB_STEP_SUMMARY
+            cat tailwind.config.js >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ tailwind.config.js NOT found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ tailwind.config.js missing"
+            exit 1
+          fi
+
+      - name: Checkpoint 3 - Verify PostCSS config exists and display contents
+        id: checkpoint3
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 3: Verify PostCSS Config" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "postcss.config.js" ]; then
+            echo "✅ postcss.config.js exists" >> $GITHUB_STEP_SUMMARY
+            echo "✅ postcss.config.js found"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### PostCSS Config Contents:" >> $GITHUB_STEP_SUMMARY
+            echo '```javascript' >> $GITHUB_STEP_SUMMARY
+            cat postcss.config.js >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ postcss.config.js NOT found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ postcss.config.js missing"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project_path }}
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Checkpoint 4 - Verify CSS dependencies installed
+        id: checkpoint4
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 4: Verify CSS Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          deps_found=true
+
+          if npm list tailwindcss > /dev/null 2>&1; then
+            version=$(npm list tailwindcss --depth=0 2>/dev/null | grep tailwindcss@ | sed 's/.*tailwindcss@//')
+            echo "✅ tailwindcss installed (version: $version)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ tailwindcss: $version"
+          else
+            echo "❌ tailwindcss NOT installed" >> $GITHUB_STEP_SUMMARY
+            echo "❌ tailwindcss missing"
+            deps_found=false
+          fi
+
+          if npm list postcss > /dev/null 2>&1; then
+            version=$(npm list postcss --depth=0 2>/dev/null | grep postcss@ | sed 's/.*postcss@//')
+            echo "✅ postcss installed (version: $version)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ postcss: $version"
+          else
+            echo "❌ postcss NOT installed" >> $GITHUB_STEP_SUMMARY
+            echo "❌ postcss missing"
+            deps_found=false
+          fi
+
+          if npm list autoprefixer > /dev/null 2>&1; then
+            version=$(npm list autoprefixer --depth=0 2>/dev/null | grep autoprefixer@ | sed 's/.*autoprefixer@//')
+            echo "✅ autoprefixer installed (version: $version)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ autoprefixer: $version"
+          else
+            echo "❌ autoprefixer NOT installed" >> $GITHUB_STEP_SUMMARY
+            echo "❌ autoprefixer missing"
+            deps_found=false
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$deps_found" = false ]; then
+            exit 1
+          fi
+
+      - name: Checkpoint 5 - Verify CSS is imported in entry files
+        id: checkpoint5
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 5: Verify CSS Imports in Entry Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          imports_found=true
+
+          if [ -f "src/main.jsx" ]; then
+            if grep -q "import.*['\"]\.\/index\.css['\"]" src/main.jsx || grep -q "import.*['\"]\.\/index\.css['\"]" src/main.jsx; then
+              echo "✅ src/main.jsx imports index.css" >> $GITHUB_STEP_SUMMARY
+              echo "✅ index.css imported in main.jsx"
+            else
+              echo "❌ src/main.jsx does NOT import index.css" >> $GITHUB_STEP_SUMMARY
+              echo "❌ index.css not imported in main.jsx"
+              imports_found=false
+            fi
+          else
+            echo "⚠️  src/main.jsx not found (may use different entry file)" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  main.jsx not found"
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$imports_found" = false ]; then
+            exit 1
+          fi
+
+      - name: Checkpoint 6 - Build the project successfully
+        id: checkpoint6
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 6: Build Project" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if npm run build; then
+            echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Build successful"
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Build failed"
+            exit 1
+          fi
+
+      - name: Checkpoint 7 - Verify CSS files exist in dist/assets/
+        id: checkpoint7
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 7: Verify CSS Files in Build Output" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -d "dist/assets" ]; then
+            css_files=$(find dist/assets -type f -name "*.css" 2>/dev/null)
+            css_count=$(echo "$css_files" | grep -c "\.css$" || echo "0")
+
+            if [ $css_count -gt 0 ]; then
+              echo "✅ Found $css_count CSS file(s) in dist/assets/" >> $GITHUB_STEP_SUMMARY
+              echo "✅ CSS files found: $css_count"
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### CSS Files:" >> $GITHUB_STEP_SUMMARY
+              for file in $css_files; do
+                size=$(du -h "$file" | cut -f1)
+                filename=$(basename "$file")
+                echo "- $filename ($size)" >> $GITHUB_STEP_SUMMARY
+                echo "  - $filename ($size)"
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ No CSS files found in dist/assets/" >> $GITHUB_STEP_SUMMARY
+              echo "❌ No CSS files in dist/assets/"
+              exit 1
+            fi
+          else
+            echo "❌ dist/assets/ directory not found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ dist/assets/ missing"
+            exit 1
+          fi
+
+      - name: Checkpoint 8 - Verify Tailwind utilities are processed in generated CSS
+        id: checkpoint8
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 8: Verify Tailwind Utilities Processing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          css_files=$(find dist/assets -type f -name "*.css" 2>/dev/null)
+
+          if [ -z "$css_files" ]; then
+            echo "❌ No CSS files to check" >> $GITHUB_STEP_SUMMARY
+            echo "❌ No CSS files found"
+            exit 1
+          fi
+
+          utilities_found=false
+
+          for file in $css_files; do
+            # Check for Tailwind reset/base styles
+            if grep -q "normalize" "$file" || grep -q "\*,::before,::after" "$file" || grep -q "box-sizing" "$file"; then
+              utilities_found=true
+              echo "✅ Tailwind base/reset styles found in $(basename $file)" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Tailwind styles found in $(basename $file)"
+            fi
+
+            # Check for common Tailwind utility classes or CSS custom properties
+            if grep -qE "(--tw-|\.text-|\.bg-|\.flex|\.grid|\.p-|\.m-|\.border)" "$file"; then
+              utilities_found=true
+              echo "✅ Tailwind utility patterns found in $(basename $file)" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Tailwind utilities in $(basename $file)"
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$utilities_found" = true ]; then
+            echo "✅ Tailwind CSS has been processed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Tailwind processed successfully"
+          else
+            echo "⚠️  Could not detect Tailwind patterns (CSS may be minified or use different patterns)" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  Tailwind patterns not clearly detected"
+          fi
+
+      - name: Checkpoint 9 - Verify dist/index.html references CSS files
+        id: checkpoint9
+        working-directory: ${{ matrix.project_path }}
+        run: |
+          echo "## Checkpoint 9: Verify CSS References in index.html" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "dist/index.html" ]; then
+            if grep -qE '<link[^>]*href="[^"]*\.css"' dist/index.html; then
+              echo "✅ dist/index.html contains CSS file references" >> $GITHUB_STEP_SUMMARY
+              echo "✅ index.html references CSS"
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### CSS References Found:" >> $GITHUB_STEP_SUMMARY
+              echo '```html' >> $GITHUB_STEP_SUMMARY
+              grep -oE '<link[^>]*href="[^"]*\.css"[^>]*>' dist/index.html >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ No CSS file references found in dist/index.html" >> $GITHUB_STEP_SUMMARY
+              echo "❌ No CSS references in index.html"
+              exit 1
+            fi
+          else
+            echo "❌ dist/index.html not found" >> $GITHUB_STEP_SUMMARY
+            echo "❌ dist/index.html missing"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: css-health-check-${{ matrix.project_name }}-${{ github.sha }}
+          path: |
+            ${{ matrix.project_path }}/dist/assets/*.css
+            ${{ matrix.project_path }}/dist/index.html
+          retention-days: 7
+
+      - name: Generate summary report
+        if: always()
+        run: |
+          echo "## CSS Health Check Summary - ${{ matrix.project_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Project Path:** \`${{ matrix.project_path }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All checkpoints completed. Review individual checkpoint results above for details." >> $GITHUB_STEP_SUMMARY

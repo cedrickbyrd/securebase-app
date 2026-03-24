@@ -1,0 +1,191 @@
+name: SecureBase Frontend Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
+      - 'vite.config.js'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_ENV: production
+  SECUREBASE_BUILD_VERSION: ${{ github.sha }}
+
+jobs:
+  quality-validation:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure Node environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Restore dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Execute linter
+        run: npm run lint
+        continue-on-error: false
+      
+      - name: Compile application
+        run: npm run build
+        env:
+          VITE_SECUREBASE_MODE: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+      
+      - name: Validate build artifacts
+        run: |
+          if [ ! -f "dist/index.html" ]; then
+            echo "Build validation failed: index.html not found"
+            exit 1
+          fi
+          
+          css_files=$(find dist/assets -type f -name "*.css" 2>/dev/null | wc -l)
+          js_files=$(find dist/assets -type f -name "*.js" 2>/dev/null | wc -l)
+          
+          echo "Build artifacts verified:"
+          echo "  CSS bundles: $css_files"
+          echo "  JavaScript bundles: $js_files"
+          
+          if [ $css_files -eq 0 ] || [ $js_files -eq 0 ]; then
+            echo "Build validation failed: Missing required assets"
+            exit 1
+          fi
+      
+      - name: Calculate bundle metrics
+        run: |
+          total_size=$(du -sk dist/ | cut -f1)
+          echo "BUNDLE_SIZE_KB=$total_size" >> $GITHUB_ENV
+          
+          max_allowed=5120
+          if [ $total_size -gt $max_allowed ]; then
+            echo "Bundle size ${total_size}KB exceeds ${max_allowed}KB threshold"
+            exit 1
+          fi
+          
+          echo "Bundle size ${total_size}KB is within acceptable limits"
+      
+      - name: Archive build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: securebase-frontend-${{ github.sha }}
+          path: dist/
+          retention-days: 5
+
+  dependency-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Audit npm packages
+        run: npm audit --audit-level=high
+        continue-on-error: true
+      
+      - name: Check for vulnerable dependencies
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  netlify-deployment:
+    name: Deploy to Netlify
+    runs-on: ubuntu-latest
+    needs: [quality-validation]
+    if: success()
+    timeout-minutes: 8
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Retrieve build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: securebase-frontend-${{ github.sha }}
+          path: dist/
+      
+      - name: Execute Netlify deployment
+        uses: nwtgck/actions-netlify@v2.1
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'SecureBase v${{ github.sha }} - ${{ github.event.head_commit.message }}'
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 5
+      
+      - name: Notify deployment status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deploymentUrl = process.env.DEPLOY_URL || 'https://securebase-app.netlify.app';
+            const message = `### SecureBase Deployment Preview Ready\n\n` +
+              `**Preview URL:** ${deploymentUrl}\n\n` +
+              `**Build SHA:** \`${context.sha.substring(0, 7)}\`\n\n` +
+              `The frontend has been deployed and is ready for testing.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+  performance-assessment:
+    name: Performance Metrics
+    runs-on: ubuntu-latest
+    needs: [netlify-deployment]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Execute Lighthouse analysis
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: 'https://securebase-app.netlify.app/'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: './.lighthouserc.json'
+      
+      - name: Report performance scores
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const performanceNote = `### Performance Analysis Complete\n\n` +
+              `Lighthouse has assessed the deployed application.\n\n` +
+              `**Quality Targets:**\n` +
+              `- Performance: ≥90\n` +
+              `- Accessibility: ≥95\n` +
+              `- Best Practices: ≥95\n` +
+              `- SEO: ≥95\n\n` +
+              `Review detailed metrics in the workflow artifacts.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: performanceNote
+            });
