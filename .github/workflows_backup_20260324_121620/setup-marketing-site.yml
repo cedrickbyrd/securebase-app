@@ -1,0 +1,425 @@
+name: Setup Marketing Site in Netlify
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-marketing-site:
+    name: Create and Configure Marketing Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      secrets: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check if site exists
+        id: check-site
+        run: |
+          echo "🔍 Checking if marketing site exists..."
+          
+          SITE_ID="${{ secrets.NETLIFY_MARKETING_SITE_ID }}"
+          
+          if [ -z "$SITE_ID" ]; then
+            echo "site_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ NETLIFY_MARKETING_SITE_ID secret not found"
+            exit 0
+          fi
+          
+          # Check if site exists using Netlify API
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            "https://api.netlify.com/api/v1/sites/${SITE_ID}")
+          
+          if [ "$RESPONSE" -eq 200 ]; then
+            echo "site_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Site already exists (ID: ${SITE_ID})"
+            
+            # Get site details
+            SITE_INFO=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+              "https://api.netlify.com/api/v1/sites/${SITE_ID}")
+            
+            SITE_URL=$(echo "$SITE_INFO" | jq -r '.url // "N/A"')
+            SITE_NAME=$(echo "$SITE_INFO" | jq -r '.name // "N/A"')
+            
+            echo "site_url=${SITE_URL}" >> $GITHUB_OUTPUT
+            echo "site_name=${SITE_NAME}" >> $GITHUB_OUTPUT
+            echo "site_id=${SITE_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "site_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Site ID exists in secrets but site not found in Netlify (HTTP ${RESPONSE})"
+          fi
+      
+      - name: Create marketing site
+        id: create-site
+        if: steps.check-site.outputs.site_exists != 'true'
+        run: |
+          echo "🚀 Creating marketing site in Netlify..."
+          
+          # Prepare site configuration
+          SITE_CONFIG=$(cat <<EOF
+          {
+            "name": "securebase-marketing",
+            "repo": {
+              "provider": "github",
+              "repo": "cedrickbyrd/securebase-app",
+              "private": false,
+              "branch": "main",
+              "cmd": "npm run build",
+              "dir": "dist",
+              "base": ""
+            },
+            "build_settings": {
+              "cmd": "npm run build",
+              "dir": "dist",
+              "env": {
+                "VITE_ENV": "production",
+                "NODE_VERSION": "22.12.0"
+              }
+            }
+          }
+          EOF
+          )
+          
+          # Create site with retry logic
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$SUCCESS" = "false" ]; do
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -X POST \
+              -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "$SITE_CONFIG" \
+              "https://api.netlify.com/api/v1/sites")
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 200 ]; then
+              SUCCESS=true
+              echo "✅ Site created successfully!"
+              
+              SITE_ID=$(echo "$BODY" | jq -r '.id')
+              SITE_URL=$(echo "$BODY" | jq -r '.url // .ssl_url // "N/A"')
+              SITE_NAME=$(echo "$BODY" | jq -r '.name')
+              
+              echo "site_id=${SITE_ID}" >> $GITHUB_OUTPUT
+              echo "site_url=${SITE_URL}" >> $GITHUB_OUTPUT
+              echo "site_name=${SITE_NAME}" >> $GITHUB_OUTPUT
+              echo "created=true" >> $GITHUB_OUTPUT
+              
+              echo "📋 Site ID: ${SITE_ID}"
+              echo "🌐 Site URL: ${SITE_URL}"
+              echo "📝 Site Name: ${SITE_NAME}"
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ Attempt ${RETRY_COUNT}/${MAX_RETRIES} failed (HTTP ${HTTP_CODE})"
+              
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "🔄 Retrying in 5 seconds..."
+                sleep 5
+              else
+                echo "❌ Failed to create site after ${MAX_RETRIES} attempts"
+                echo "Response: ${BODY}"
+                echo "created=false" >> $GITHUB_OUTPUT
+                exit 1
+              fi
+            fi
+          done
+      
+      - name: Configure build settings
+        if: steps.create-site.outputs.created == 'true'
+        run: |
+          echo "⚙️ Configuring build settings..."
+          
+          SITE_ID="${{ steps.create-site.outputs.site_id }}"
+          
+          # Update build settings with environment variables
+          BUILD_CONFIG=$(cat <<EOF
+          {
+            "build_settings": {
+              "cmd": "npm run build",
+              "dir": "dist",
+              "env": {
+                "VITE_ENV": "production",
+                "NODE_VERSION": "22.12.0"
+              }
+            }
+          }
+          EOF
+          )
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$BUILD_CONFIG" \
+            "https://api.netlify.com/api/v1/sites/${SITE_ID}")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Build settings configured successfully"
+          else
+            echo "⚠️ Warning: Failed to update build settings (HTTP ${HTTP_CODE})"
+            echo "This may not affect deployment functionality"
+          fi
+      
+      - name: Update GitHub secret
+        if: steps.create-site.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔐 Updating GitHub secret NETLIFY_MARKETING_SITE_ID..."
+          
+          SITE_ID="${{ steps.create-site.outputs.site_id }}"
+          REPO="${{ github.repository }}"
+          
+          # Get repository public key for encrypting secrets
+          KEY_RESPONSE=$(curl -s \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/actions/secrets/public-key")
+          
+          KEY_ID=$(echo "$KEY_RESPONSE" | jq -r '.key_id')
+          PUBLIC_KEY=$(echo "$KEY_RESPONSE" | jq -r '.key')
+          
+          if [ -z "$KEY_ID" ] || [ "$KEY_ID" = "null" ]; then
+            echo "❌ Failed to get repository public key"
+            echo "Response: ${KEY_RESPONSE}"
+            exit 1
+          fi
+          
+          # Encrypt the secret using sodium
+          # Install libsodium if not available
+          if ! command -v base64 &> /dev/null; then
+            echo "Installing base64 utilities..."
+            sudo apt-get update && sudo apt-get install -y coreutils
+          fi
+          
+          # Use Python to encrypt the secret (simpler than installing libsodium)
+          python3 << PYTHON_SCRIPT
+          import base64
+          import json
+          import sys
+          from nacl import encoding, public
+          
+          def encrypt_secret(public_key: str, secret_value: str) -> str:
+              """Encrypt a secret using the repository's public key."""
+              public_key_bytes = base64.b64decode(public_key)
+              public_key_obj = public.PublicKey(public_key_bytes)
+              sealed_box = public.SealedBox(public_key_obj)
+              encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
+              return base64.b64encode(encrypted).decode("utf-8")
+          
+          try:
+              encrypted_value = encrypt_secret("${PUBLIC_KEY}", "${SITE_ID}")
+              print(encrypted_value)
+          except Exception as e:
+              print(f"Error encrypting secret: {e}", file=sys.stderr)
+              sys.exit(1)
+          PYTHON_SCRIPT
+          
+          ENCRYPTED_VALUE=$(python3 << PYTHON_SCRIPT
+          import base64
+          import sys
+          try:
+              from nacl import encoding, public
+          except ImportError:
+              print("ERROR: PyNaCl not installed", file=sys.stderr)
+              sys.exit(1)
+          
+          def encrypt_secret(public_key: str, secret_value: str) -> str:
+              public_key_bytes = base64.b64decode(public_key)
+              public_key_obj = public.PublicKey(public_key_bytes)
+              sealed_box = public.SealedBox(public_key_obj)
+              encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
+              return base64.b64encode(encrypted).decode("utf-8")
+          
+          encrypted_value = encrypt_secret("${PUBLIC_KEY}", "${SITE_ID}")
+          print(encrypted_value)
+          PYTHON_SCRIPT
+          )
+          
+          if [ $? -ne 0 ]; then
+            echo "⚠️ PyNaCl not available, installing..."
+            pip install PyNaCl
+            
+            ENCRYPTED_VALUE=$(python3 << PYTHON_SCRIPT
+          import base64
+          from nacl import encoding, public
+          
+          def encrypt_secret(public_key: str, secret_value: str) -> str:
+              public_key_bytes = base64.b64decode(public_key)
+              public_key_obj = public.PublicKey(public_key_bytes)
+              sealed_box = public.SealedBox(public_key_obj)
+              encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
+              return base64.b64encode(encrypted).decode("utf-8")
+          
+          encrypted_value = encrypt_secret("${PUBLIC_KEY}", "${SITE_ID}")
+          print(encrypted_value)
+          PYTHON_SCRIPT
+          )
+          fi
+          
+          # Update the secret
+          SECRET_PAYLOAD=$(cat <<EOF
+          {
+            "encrypted_value": "${ENCRYPTED_VALUE}",
+            "key_id": "${KEY_ID}"
+          }
+          EOF
+          )
+          
+          UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d "$SECRET_PAYLOAD" \
+            "https://api.github.com/repos/${REPO}/actions/secrets/NETLIFY_MARKETING_SITE_ID")
+          
+          HTTP_CODE=$(echo "$UPDATE_RESPONSE" | tail -n1)
+          
+          if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 204 ]; then
+            echo "✅ GitHub secret updated successfully"
+          else
+            echo "❌ Failed to update GitHub secret (HTTP ${HTTP_CODE})"
+            BODY=$(echo "$UPDATE_RESPONSE" | sed '$d')
+            echo "Response: ${BODY}"
+            exit 1
+          fi
+      
+      - name: Trigger initial deployment
+        id: deploy
+        if: steps.create-site.outputs.created == 'true'
+        run: |
+          echo "🚀 Triggering initial deployment..."
+          
+          SITE_ID="${{ steps.create-site.outputs.site_id }}"
+          
+          # Trigger a new deployment
+          DEPLOY_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"branch": "main"}' \
+            "https://api.netlify.com/api/v1/sites/${SITE_ID}/deploys")
+          
+          HTTP_CODE=$(echo "$DEPLOY_RESPONSE" | tail -n1)
+          BODY=$(echo "$DEPLOY_RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            DEPLOY_ID=$(echo "$BODY" | jq -r '.id')
+            DEPLOY_STATE=$(echo "$BODY" | jq -r '.state')
+            
+            echo "deploy_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
+            echo "deploy_state=${DEPLOY_STATE}" >> $GITHUB_OUTPUT
+            
+            echo "📦 Deployment triggered (ID: ${DEPLOY_ID})"
+            echo "📊 Initial state: ${DEPLOY_STATE}"
+            
+            # Wait for deployment to complete (with timeout)
+            echo "⏳ Waiting for deployment to complete..."
+            MAX_WAIT=300  # 5 minutes
+            ELAPSED=0
+            SLEEP_INTERVAL=10
+            
+            while [ $ELAPSED -lt $MAX_WAIT ]; do
+              sleep $SLEEP_INTERVAL
+              ELAPSED=$((ELAPSED + SLEEP_INTERVAL))
+              
+              STATUS_RESPONSE=$(curl -s \
+                -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+                "https://api.netlify.com/api/v1/deploys/${DEPLOY_ID}")
+              
+              STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state')
+              
+              echo "  State: ${STATE} (${ELAPSED}s elapsed)"
+              
+              if [ "$STATE" = "ready" ]; then
+                echo "✅ Deployment completed successfully!"
+                echo "deploy_state=ready" >> $GITHUB_OUTPUT
+                break
+              elif [ "$STATE" = "error" ]; then
+                echo "❌ Deployment failed"
+                ERROR_MSG=$(echo "$STATUS_RESPONSE" | jq -r '.error_message // "Unknown error"')
+                echo "Error: ${ERROR_MSG}"
+                echo "deploy_state=error" >> $GITHUB_OUTPUT
+                exit 1
+              fi
+            done
+            
+            if [ $ELAPSED -ge $MAX_WAIT ]; then
+              echo "⚠️ Deployment timeout after ${MAX_WAIT} seconds"
+              echo "Current state: ${STATE}"
+              echo "You can check the deployment status at: https://app.netlify.com/sites/${SITE_ID}/deploys/${DEPLOY_ID}"
+            fi
+          else
+            echo "❌ Failed to trigger deployment (HTTP ${HTTP_CODE})"
+            echo "Response: ${BODY}"
+            echo "deploy_state=failed" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "## 🎉 Marketing Site Setup Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          SITE_EXISTS="${{ steps.check-site.outputs.site_exists }}"
+          CREATED="${{ steps.create-site.outputs.created }}"
+          
+          if [ "$SITE_EXISTS" = "true" ]; then
+            echo "### ✅ Site Already Exists" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site ID**: \`${{ steps.check-site.outputs.site_id }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site Name**: ${{ steps.check-site.outputs.site_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site URL**: ${{ steps.check-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No action needed - site is already configured." >> $GITHUB_STEP_SUMMARY
+          elif [ "$CREATED" = "true" ]; then
+            echo "### 🚀 Site Created Successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site ID**: \`${{ steps.create-site.outputs.site_id }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site Name**: ${{ steps.create-site.outputs.site_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Site URL**: ${{ steps.create-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Deployment State**: ${{ steps.deploy.outputs.deploy_state }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Next Steps" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. ✅ Site created in Netlify" >> $GITHUB_STEP_SUMMARY
+            echo "2. ✅ GitHub secret \`NETLIFY_MARKETING_SITE_ID\` updated" >> $GITHUB_STEP_SUMMARY
+            echo "3. ✅ Initial deployment triggered" >> $GITHUB_STEP_SUMMARY
+            echo "4. 🔗 View site: [${{ steps.create-site.outputs.site_url }}](${{ steps.create-site.outputs.site_url }})" >> $GITHUB_STEP_SUMMARY
+            echo "5. 🔗 Netlify dashboard: [https://app.netlify.com/sites/${{ steps.create-site.outputs.site_id }}](https://app.netlify.com/sites/${{ steps.create-site.outputs.site_id }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Configure Custom Domain" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To set up \`securebase.io\` domain:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Go to [Netlify dashboard](https://app.netlify.com/sites/${{ steps.create-site.outputs.site_id }}/settings/domain)" >> $GITHUB_STEP_SUMMARY
+            echo "2. Add custom domain: \`securebase.io\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Configure DNS settings as instructed by Netlify" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Setup Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The marketing site setup encountered errors. Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Troubleshooting Steps" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Verify \`NETLIFY_AUTH_TOKEN\` secret is configured correctly" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check that your Netlify account has permissions to create sites" >> $GITHUB_STEP_SUMMARY
+            echo "3. Review the workflow logs for specific error messages" >> $GITHUB_STEP_SUMMARY
+            echo "4. Ensure your Netlify plan supports the number of sites you're creating" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
