@@ -413,9 +413,9 @@ const SREDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Infrastructure Health</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 text-right">
                 {((100 - infrastructureMetrics.cpu.current) + (100 - infrastructureMetrics.memory.current)) / 2 > 50 ? '✓' : '⚠'} {
                   ((100 - infrastructureMetrics.cpu.current) + (100 - infrastructureMetrics.memory.current)) / 2 > 50 ? 'Healthy' : 'Degraded'
                 }
@@ -427,10 +427,10 @@ const SREDashboard = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Error Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{errorMetrics.rate}%</p>
-              <p className="text-xs text-gray-500 mt-1">{errorMetrics.total} errors</p>
+              <p className="text-2xl font-bold text-gray-900 text-right">{errorMetrics.rate}%</p>
+              <p className="text-xs text-gray-500 mt-1 text-right">{errorMetrics.total} errors</p>
             </div>
             <AlertTriangle className={`w-12 h-12 ${errorMetrics.rate > 1 ? 'text-red-500' : 'text-yellow-500'}`} />
           </div>
@@ -438,10 +438,10 @@ const SREDashboard = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Cache Hit Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{cacheMetrics.redis.hitRate}%</p>
-              <p className="text-xs text-gray-500 mt-1">{cacheMetrics.redis.hits.toLocaleString()} hits</p>
+              <p className="text-2xl font-bold text-gray-900 text-right">{cacheMetrics.redis.hitRate}%</p>
+              <p className="text-xs text-gray-500 mt-1 text-right">{cacheMetrics.redis.hits.toLocaleString()} hits</p>
             </div>
             <Database className="w-12 h-12 text-blue-500" />
           </div>
@@ -449,10 +449,10 @@ const SREDashboard = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Total Cost</p>
-              <p className="text-2xl font-bold text-gray-900">${costMetrics.total.toFixed(2)}</p>
-              <p className="text-xs text-green-600 flex items-center mt-1">
+              <p className="text-2xl font-bold text-gray-900 text-right">${costMetrics.total.toFixed(2)}</p>
+              <p className="text-xs text-green-600 flex items-center mt-1 justify-end">
                 {getTrendIcon(costMetrics.trend.direction)}
                 <span className="ml-1">{costMetrics.trend.percentage}% vs last period</span>
               </p>
@@ -484,9 +484,9 @@ const SREDashboard = () => {
                 <Line data={cpuChartData} options={chartOptions} />
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-600">
-                <div>Current: {infrastructureMetrics.cpu.current}%</div>
-                <div>Average: {infrastructureMetrics.cpu.average}%</div>
-                <div>Peak: {infrastructureMetrics.cpu.max}%</div>
+                <div className="text-right">Current: {infrastructureMetrics.cpu.current}%</div>
+                <div className="text-right">Average: {infrastructureMetrics.cpu.average}%</div>
+                <div className="text-right">Peak: {infrastructureMetrics.cpu.max}%</div>
               </div>
             </div>
 
@@ -506,7 +506,7 @@ const SREDashboard = () => {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      className="bg-purple-600 h-2 rounded-full transition-all"
                       style={{ width: `${infrastructureMetrics.memory.current}%` }}
                     />
                   </div>
@@ -514,11 +514,11 @@ const SREDashboard = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="bg-gray-50 p-3 rounded">
                     <div className="text-xs text-gray-600">Average</div>
-                    <div className="text-lg font-semibold">{infrastructureMetrics.memory.average}%</div>
+                    <div className="text-lg font-semibold text-right">{infrastructureMetrics.memory.average}%</div>
                   </div>
                   <div className="bg-gray-50 p-3 rounded">
                     <div className="text-xs text-gray-600">Peak</div>
-                    <div className="text-lg font-semibold">{infrastructureMetrics.memory.max}%</div>
+                    <div className="text-lg font-semibold text-right">{infrastructureMetrics.memory.max}%</div>
                   </div>
                 </div>
               </div>
