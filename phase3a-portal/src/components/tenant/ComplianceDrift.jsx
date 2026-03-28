@@ -326,12 +326,15 @@ const ComplianceDrift = () => {
     }
   };
 
+  // Drift event days configuration (days ago from today)
+  const DRIFT_EVENT_DAYS = [15, 32, 67];
+
   // Timeline chart data
   const driftTimelineData = {
     labels: generateDateLabels(90),
     datasets: [
       {
-        label: 'Compliance Score',
+        label: 'Overall Compliance Score',
         data: complianceHistory.map(h => h.score),
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -340,18 +343,15 @@ const ComplianceDrift = () => {
         pointRadius: (context) => {
           // Larger points on drift event days
           const dayIndex = context.dataIndex;
-          const driftDays = [15, 32, 67];
-          return driftDays.includes(89 - dayIndex) ? 8 : 2;
+          return DRIFT_EVENT_DAYS.includes(89 - dayIndex) ? 8 : 2;
         },
         pointBackgroundColor: (context) => {
           const dayIndex = context.dataIndex;
-          const driftDays = [15, 32, 67];
-          return driftDays.includes(89 - dayIndex) ? '#ef4444' : '#22c55e';
+          return DRIFT_EVENT_DAYS.includes(89 - dayIndex) ? '#ef4444' : '#22c55e';
         },
         pointBorderColor: (context) => {
           const dayIndex = context.dataIndex;
-          const driftDays = [15, 32, 67];
-          return driftDays.includes(89 - dayIndex) ? '#dc2626' : '#16a34a';
+          return DRIFT_EVENT_DAYS.includes(89 - dayIndex) ? '#dc2626' : '#16a34a';
         },
         pointBorderWidth: 2,
         pointHoverRadius: 10
