@@ -11,6 +11,12 @@ terraform {
 }
 
 # ============================================================================
+# Data Sources
+# ============================================================================
+
+data "aws_caller_identity" "current" {}
+
+# ============================================================================
 # Lambda Function - Admin Metrics Aggregation
 # ============================================================================
 
@@ -98,7 +104,7 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
           "securityhub:DescribeHub",
           "securityhub:ListFindingAggregators"
         ]
-        Resource = "arn:aws:securityhub:${var.aws_region}:*:hub/default"
+        Resource = "arn:aws:securityhub:${var.aws_region}:${data.aws_caller_identity.current.account_id}:hub/default"
       },
       {
         Effect = "Allow"
@@ -108,9 +114,9 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
           "dynamodb:Scan"
         ]
         Resource = [
-          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-customers",
-          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-metrics",
-          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-deployments"
+          "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-customers",
+          "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-metrics",
+          "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-deployments"
         ]
       }
     ]
