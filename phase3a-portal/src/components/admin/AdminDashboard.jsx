@@ -54,13 +54,15 @@ const AdminDashboard = () => {
 
     fetchMetrics();
     
-    // Only set up auto-refresh if we haven't had too many consecutive failures
-    if (failureCount < 3) {
-      // Refresh every 60 seconds
-      const interval = setInterval(fetchMetrics, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [failureCount]);
+    // Set up auto-refresh, but skip if we've had 3+ consecutive failures
+    const interval = setInterval(() => {
+      if (failureCount < 3) {
+        fetchMetrics();
+      }
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, []); // Empty deps - interval checks failureCount on each tick
 
   // Mock Data for Platform Health (Phase 5.1 Metrics) - used as fallback for visualization
   const systemHealthData = {
