@@ -207,6 +207,26 @@ module "api_gateway" {
 }
 
 # ============================================================================
+# Phase 5.1: Admin Metrics API (CloudWatch/Cost Explorer/Security Hub)
+# ============================================================================
+
+module "phase5_admin_metrics" {
+  source      = "./modules/phase5-admin-metrics"
+  environment = var.environment
+  aws_region  = var.target_region
+  tags        = merge(var.tags, { Phase = "5.1" })
+  
+  # Wire to existing API Gateway
+  api_gateway_id                = module.api_gateway.api_gateway_id
+  api_gateway_root_resource_id  = module.api_gateway.root_resource_id
+  api_gateway_execution_arn     = module.api_gateway.api_gateway_execution_arn
+  
+  cors_allowed_origin = "https://demo.securebase.tximhotep.com"
+  
+  depends_on = [module.api_gateway]
+}
+
+# ============================================================================
 # Organizational Units (Tier OUs)
 # FIX: These blocks were missing from main.tf after a failed merge. They were
 # restored by cross-referencing the terraform.tfstate backup file, where each

@@ -35,8 +35,11 @@ class AdminService {
       return this.parsePlatformMetrics(data);
     } catch (error) {
       console.error('Error fetching platform metrics:', error);
-      // Return mock data for development
-      return this.getMockPlatformMetrics(timeRange);
+      // Only use mock data if explicitly enabled
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockPlatformMetrics(timeRange);
+      }
+      throw error; // Surface real errors in production
     }
   }
 
@@ -62,7 +65,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching customer metrics:', error);
-      return this.getMockCustomerMetrics();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockCustomerMetrics();
+      }
+      throw error;
     }
   }
 
@@ -88,7 +94,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching API metrics:', error);
-      return this.getMockAPIMetrics();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockAPIMetrics();
+      }
+      throw error;
     }
   }
 
@@ -114,7 +123,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching infrastructure metrics:', error);
-      return this.getMockInfrastructureMetrics();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockInfrastructureMetrics();
+      }
+      throw error;
     }
   }
 
@@ -139,7 +151,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching security metrics:', error);
-      return this.getMockSecurityMetrics();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockSecurityMetrics();
+      }
+      throw error;
     }
   }
 
@@ -165,7 +180,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching cost metrics:', error);
-      return this.getMockCostMetrics();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockCostMetrics();
+      }
+      throw error;
     }
   }
 
@@ -191,7 +209,10 @@ class AdminService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching deployments:', error);
-      return this.getMockDeployments();
+      if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+        return this.getMockDeployments();
+      }
+      throw error;
     }
   }
 
