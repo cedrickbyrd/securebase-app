@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [metrics, setMetrics] = useState(null);
+  const [failureCount, setFailureCount] = useState(0);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -41,8 +42,10 @@ const AdminDashboard = () => {
         setError(null);
         const data = await adminService.getPlatformMetrics('24h');
         setMetrics(data);
+        setFailureCount(0); // Reset failure count on success
       } catch (err) {
         setError(err);
+        setFailureCount(prev => prev + 1);
         console.error('Failed to fetch admin metrics:', err);
       } finally {
         setLoading(false);
@@ -51,10 +54,13 @@ const AdminDashboard = () => {
 
     fetchMetrics();
     
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchMetrics, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    // Only set up auto-refresh if we haven't had too many consecutive failures
+    if (failureCount < 3) {
+      // Refresh every 60 seconds
+      const interval = setInterval(fetchMetrics, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [failureCount]);
 
   // Mock Data for Platform Health (Phase 5.1 Metrics) - used as fallback for visualization
   const systemHealthData = {
@@ -109,7 +115,10 @@ const AdminDashboard = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-red-800 font-medium">⚠️ Unable to load live metrics</p>
-          <p className="text-red-600 text-sm">{error.message} — Check CloudWatch endpoint configuration.</p>
+          <p className="text-red-600 text-sm">
+            {error.message} — Check CloudWatch endpoint configuration.
+            {failureCount >= 3 && ' Auto-refresh disabled after multiple failures.'}
+          </p>
         </div>
       )}
 
