@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +13,7 @@ import {
   Filler, // 1. Import Filler for the background area colors
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { adminService } from '../../services/adminService';
 
 // Register ChartJS modules
 ChartJS.register(
@@ -29,7 +30,33 @@ ChartJS.register(
 );
 
 const AdminDashboard = () => {
-  // Mock Data for Platform Health (Phase 5.1 Metrics)
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await adminService.getPlatformMetrics('24h');
+        setMetrics(data);
+      } catch (err) {
+        setError(err);
+        console.error('Failed to fetch admin metrics:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchMetrics, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mock Data for Platform Health (Phase 5.1 Metrics) - used as fallback for visualization
   const systemHealthData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
@@ -43,13 +70,18 @@ const AdminDashboard = () => {
       },
     ],
   };
-  const DEPLOY_ID = "v1.1-SRE-GLOW-" + Date.now();
 
   const securityThreatData = {
     labels: ['Blocked IPs', 'Failed Auth', 'WAF Alerts'],
     datasets: [
       {
-        data: [450, 120, 85],
+        data: metrics?.security 
+          ? [
+              metrics.security.criticalAlerts || 0,
+              metrics.security.violations || 0,
+              metrics.security.openIncidents || 0
+            ]
+          : [450, 120, 85],
         backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6'],
         hoverOffset: 4,
         borderWidth: 0, // Cleaner look
@@ -73,12 +105,29 @@ const AdminDashboard = () => {
         </button>
       </header>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800 font-medium">⚠️ Unable to load live metrics</p>
+          <p className="text-red-600 text-sm">{error.message} — Check CloudWatch endpoint configuration.</p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && !metrics && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-blue-800 font-medium">🔄 Loading live metrics from CloudWatch...</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* API Performance Chart */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold">System Latency (p95)</h3>
-            <span className="text-xs font-mono text-blue-600">AVG: 128ms</span>
+            <span className="text-xs font-mono text-blue-600">
+              AVG: {metrics?.api?.latency_p95 ? `${metrics.api.latency_p95}ms` : '128ms'}
+            </span>
           </div>
           <Line 
             data={systemHealthData} 

@@ -59,3 +59,8 @@ output "auth_resource_id" {
   description = "ID of the auth resource for CORS attachment"
   value       = aws_api_gateway_resource.auth.id
 }
+
+output "root_resource_id" {
+  description = "Root resource ID of the API Gateway REST API"
+  value       = aws_api_gateway_rest_api.securebase_api.root_resource_id
+}
