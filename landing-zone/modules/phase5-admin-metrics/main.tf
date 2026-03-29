@@ -98,7 +98,7 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
           "securityhub:DescribeHub",
           "securityhub:ListFindingAggregators"
         ]
-        Resource = "*"
+        Resource = "arn:aws:securityhub:${var.aws_region}:*:hub/default"
       },
       {
         Effect = "Allow"
@@ -108,9 +108,9 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
           "dynamodb:Scan"
         ]
         Resource = [
-          "arn:aws:dynamodb:*:*:table/securebase-${var.environment}-customers",
-          "arn:aws:dynamodb:*:*:table/securebase-${var.environment}-metrics",
-          "arn:aws:dynamodb:*:*:table/securebase-${var.environment}-deployments"
+          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-customers",
+          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-metrics",
+          "arn:aws:dynamodb:${var.aws_region}:*:table/securebase-${var.environment}-deployments"
         ]
       }
     ]
@@ -175,6 +175,9 @@ resource "aws_api_gateway_resource" "deployments" {
 
 # ============================================================================
 # API Gateway Methods (GET)
+# NOTE: Authorization is NONE at API Gateway level per requirements
+# (JWT validation happens in Lambda). For enhanced security, consider
+# using API Gateway's CUSTOM authorizer in production.
 # ============================================================================
 
 resource "aws_api_gateway_method" "metrics_get" {
