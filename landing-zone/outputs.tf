@@ -39,6 +39,11 @@ output "api_gateway_endpoint" {
   value = try(module.api_gateway.api_gateway_endpoint, "Not deployed")
 }
 
+output "admin_metrics_api_url" {
+  value       = try("${module.api_gateway.api_gateway_endpoint}/admin", "Not deployed")
+  description = "Live CloudWatch metrics endpoint for Phase 5.1 Admin Dashboard"
+}
+
 output "client_account_ids" {
   value = { for k, v in aws_organizations_account.clients : k => v.id }
 }
