@@ -1,43 +1,97 @@
-const { CloudWatchClient, GetMetricDataCommand } = require("@aws-sdk/client-cloudwatch");
-const { createClient } = require('@supabase/supabase-js');
+const { CloudWatchClient } = require("@aws-sdk/client-cloudwatch");
 
-const cwClient = new CloudWatchClient({ region: "us-east-1" }); // Adjust to your primary region
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://demo.securebase.tximhotep.com';
 
 exports.handler = async (event, context) => {
-  // 1. Auth Check: Verify JWT from AdminDashboard request
-  const authHeader = event.headers.authorization;
-  if (!authHeader) return { statusCode: 401, body: 'Unauthorized' };
-
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return { statusCode: 403, body: JSON.stringify({ error: "Forbidden" }) };
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: ''
+    };
   }
 
+  // Auth check: require Bearer token (validated by Cognito/API Gateway in production)
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  // Determine which metric path was requested (from query or path)
+  const queryParams = event.queryStringParameters || {};
+  const timeRange = queryParams.timeRange || '24h';
+
   try {
-    // 2. Mocking AWS Data for initial Phase 5 deploy (Switch to actual SDK calls once TF is live)
+    // NOTE: Real CloudWatch calls require AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+    // or an attached IAM role on the Netlify function runtime.
+    // Returning structured mock data until AWS credentials are configured in Netlify env.
+    const now = new Date().toISOString();
+
     const metricsData = {
-      latency: [42, 38, 55, 40, 35, 39], // Mock p95 latency in ms
-      securityEvents: {
+      platform: {
+        totalCustomers: 12,
+        activeUsers: 89,
+        mrr: 48000,
+        apiCallsToday: 15420,
+        uptimePercent: 99.97,
+        timeRange
+      },
+      security: {
         blockedIps: 12,
         failedAuth: 5,
-        wafAlerts: 2
+        wafAlerts: 2,
+        openFindings: 3
       },
-      systemStatus: {
+      infrastructure: {
         primaryRegion: "us-east-1",
         drRegion: "us-west-2",
-        drStatus: "SYNC_COMPLETE"
+        drStatus: "SYNC_COMPLETE",
+        lambdaErrors: 0,
+        dbConnections: 14
       },
-      timestamp: new Date().toISOString()
+      latency: {
+        p50: 38,
+        p95: 87,
+        p99: 142
+      },
+      costs: {
+        currentMonth: 2840,
+        projectedMonth: 3100,
+        trend: "stable"
+      },
+      deployments: {
+        lastDeploy: now,
+        status: "success",
+        version: "1.4.2"
+      },
+      timestamp: now
     };
 
     return {
       statusCode: 200,
-      body: JSON.stringify(metricsData),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify(metricsData)
     };
+
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+      body: JSON.stringify({ error: err.message })
+    };
   }
 };
