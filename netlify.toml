@@ -45,6 +45,49 @@
   force = true
   headers = {X-From = "Netlify-SecureBase"}
 
+# 5. ADMIN METRICS (Phase 5.1) - proxy to Netlify functions
+[[redirects]]
+  from = "/admin/metrics"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/customers"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/api-performance"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/infrastructure"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/security"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/costs"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/deployments"
+  to = "/.netlify/functions/get-admin-metrics"
+  status = 200
+  force = true
+
 # 4. SPA FALLBACK
 [[redirects]]
   from = "/*"

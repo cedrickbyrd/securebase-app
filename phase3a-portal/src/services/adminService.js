@@ -5,7 +5,7 @@
  * Fetches platform-wide metrics from CloudWatch and custom metrics tables
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.example.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
 class AdminService {
   constructor() {
@@ -19,7 +19,7 @@ class AdminService {
    */
   async getPlatformMetrics(timeRange = '24h') {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/metrics?timeRange=${timeRange}`, {
+      const response = await fetch(`/admin/metrics?timeRange=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ class AdminService {
    */
   async getCustomerMetrics(timeRange = '24h') {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/customers?timeRange=${timeRange}`, {
+      const response = await fetch(`/admin/customers?timeRange=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ class AdminService {
    */
   async getAPIMetrics(timeRange = '24h') {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/api-performance?timeRange=${timeRange}`, {
+      const response = await fetch(`/admin/api-performance?timeRange=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ class AdminService {
    */
   async getInfrastructureMetrics(timeRange = '24h') {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/infrastructure?timeRange=${timeRange}`, {
+      const response = await fetch(`/admin/infrastructure?timeRange=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ class AdminService {
    */
   async getSecurityMetrics() {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/security`, {
+      const response = await fetch(`/admin/security`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ class AdminService {
    */
   async getCostMetrics(timeRange = '30d') {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/costs?timeRange=${timeRange}`, {
+      const response = await fetch(`/admin/costs?timeRange=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ class AdminService {
    */
   async getRecentDeployments(limit = 10) {
     try {
-      const response = await fetch(`${this.baseUrl}/admin/deployments?limit=${limit}`, {
+      const response = await fetch(`/admin/deployments?limit=${limit}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -230,13 +230,35 @@ class AdminService {
    * @returns {Object}
    */
   parsePlatformMetrics(data) {
+    // Handle Netlify function response shape (Phase 5.1 interim)
+    if (data.platform) {
+      return {
+        totalCustomers: data.platform.totalCustomers ?? 0,
+        activeUsers: data.platform.activeUsers ?? 0,
+        mrr: data.platform.mrr ?? 0,
+        apiCallsToday: data.platform.apiCallsToday ?? 0,
+        uptimePercent: data.platform.uptimePercent ?? 0,
+        latency: data.latency ?? { p50: 0, p95: 0, p99: 0 },
+        security: data.security ?? {},
+        infrastructure: data.infrastructure ?? {},
+        costs: data.costs ?? {},
+        deployments: data.deployments ?? {},
+        timestamp: data.timestamp
+      };
+    }
+    // Handle AWS Lambda / CloudWatch response shape (Phase 5.1 production)
     return {
-      customers: data.customers || {},
-      api: data.api || {},
-      infrastructure: data.infrastructure || {},
-      security: data.security || {},
-      costs: data.costs || {},
-      deployments: data.deployments || {}
+      totalCustomers: data.totalCustomers ?? data.customerCount ?? 0,
+      activeUsers: data.activeUsers ?? 0,
+      mrr: data.mrr ?? data.monthlyRevenue ?? 0,
+      apiCallsToday: data.apiCallsToday ?? data.requestCount ?? 0,
+      uptimePercent: data.uptimePercent ?? data.uptime ?? 0,
+      latency: data.latency ?? { p50: 0, p95: 0, p99: 0 },
+      security: data.security ?? data.securityMetrics ?? {},
+      infrastructure: data.infrastructure ?? data.infraMetrics ?? {},
+      costs: data.costs ?? data.costMetrics ?? {},
+      deployments: data.deployments ?? data.deploymentMetrics ?? {},
+      timestamp: data.timestamp
     };
   }
 
