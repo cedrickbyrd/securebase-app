@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, ExternalLink } from 'lucide-react';
+import { trackCTAClick } from '../utils/analytics';
 
 const DemoBanner = () => {
   // Show banner when using mock API (demo mode)
@@ -30,6 +31,7 @@ const DemoBanner = () => {
             href={trialUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackCTAClick('start_trial', 'demo_banner')}
             className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition flex items-center gap-2"
           >
             Start Free Trial
@@ -39,6 +41,7 @@ const DemoBanner = () => {
             href={bookDemoUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackCTAClick('book_demo', 'demo_banner')}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-400 transition"
           >
             Book Live Demo

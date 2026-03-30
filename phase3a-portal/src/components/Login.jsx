@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import BRANDING from '../config/branding';
+import { trackPageView, trackDemoLogin, incrementPagesViewed } from '../utils/analytics';
 import './Login.css';
 
 function Login({ setAuth }) {
@@ -15,7 +16,12 @@ function Login({ setAuth }) {
 
   const isDemo = window.location.hostname.startsWith('demo.');
 
-  React.useEffect(() => {
+  useEffect(() => {
+    trackPageView('Login', '/login');
+    incrementPagesViewed();
+  }, []);
+
+  useEffect(() => {
     if (isDemo) {
       setEmail('demo@securebase.tximhotep.com');
     }
@@ -33,6 +39,7 @@ function Login({ setAuth }) {
           password === 'SecureBaseDemo2026!') {
         // For demo, set auth and navigate directly
         setAuth(true);
+        trackDemoLogin();
         // Store demo token
         localStorage.setItem('demo_mode', 'true');
         localStorage.setItem('demo_user', JSON.stringify({
@@ -49,6 +56,7 @@ function Login({ setAuth }) {
       if (response.mfa_required) {
         setStep('mfa');
       } else if (response.token) {
+        trackDemoLogin();
         setAuth(true);
         navigate('/dashboard');
       } else {
@@ -68,6 +76,7 @@ function Login({ setAuth }) {
     try {
       const response = await apiService.authenticate(email, password, totpCode);
       if (response.token) {
+        trackDemoLogin();
         setAuth(true);
         navigate('/dashboard');
       } else {

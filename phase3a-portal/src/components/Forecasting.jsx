@@ -21,6 +21,7 @@ import {
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area, AreaChart } from 'recharts';
 import { apiService } from '../services/apiService';
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
+import { trackPageView, trackCostForecastingInteraction, incrementPagesViewed } from '../utils/analytics';
 
 export const Forecasting = () => {
   const [forecastData, setForecastData] = useState(null);
@@ -32,6 +33,12 @@ export const Forecasting = () => {
   const [exportFormat, setExportFormat] = useState(null);
   const [budgetAlert, setBudgetAlert] = useState(null);
   const [showBudgetConfig, setShowBudgetConfig] = useState(false);
+
+  useEffect(() => {
+    trackPageView('Cost Forecasting', '/cost-forecasting');
+    trackCostForecastingInteraction('view');
+    incrementPagesViewed();
+  }, []);
 
   useEffect(() => {
     loadForecast();
@@ -208,7 +215,7 @@ export const Forecasting = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Forecast Period</label>
             <select
               value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
+              onChange={(e) => { setTimeframe(e.target.value); trackCostForecastingInteraction('adjust_timeframe'); }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="3">Next 3 months</option>

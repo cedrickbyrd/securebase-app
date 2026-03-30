@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { demoAwareApiService } from '../services/demoApiService';
@@ -8,6 +8,7 @@ import BRANDING from '../config/branding';
 import { useDemoCustomer } from '../hooks/useDemoCustomer';
 import DemoCustomerIndicator from './DemoCustomerIndicator';
 import { CUSTOMER_TIERS } from '../config/customerTiers';
+import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -28,13 +29,21 @@ function Dashboard() {
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+  const startTimeRef = useRef(null);
 
   // Determine if current customer has Texas fintech compliance
   const effectiveTier = customer?.tier || getCustomerTier();
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
 
   useEffect(() => {
+    startTimeRef.current = Date.now();
+    trackPageView('Dashboard', '/dashboard');
+    incrementPagesViewed();
     loadDashboardData();
+    return () => {
+      const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      trackPageEngagement('Dashboard', timeSpent);
+    };
   }, []);
 
   const loadDashboardData = async () => {
