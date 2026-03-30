@@ -3,7 +3,7 @@
  * Displays list of invoices with filtering, search, and download capabilities
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Download,
   Eye,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed } from '../utils/analytics';
 
 export const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
@@ -26,6 +27,18 @@ export const Invoices = () => {
     total: 0,
   });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const startTimeRef = useRef(null);
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    trackPageView('Invoices', '/invoices');
+    trackInvoiceView();
+    incrementPagesViewed();
+    return () => {
+      const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      trackPageEngagement('Invoices', timeSpent);
+    };
+  }, []);
 
   useEffect(() => {
     loadInvoices();
@@ -57,6 +70,7 @@ export const Invoices = () => {
   };
 
   const handleDownload = async (invoiceId) => {
+    trackFeatureInteraction('Invoice_Download', 'click');
     // In demo mode, redirect to marketing site to close the loop
     const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_USE_MOCK_API === 'true';
     
@@ -76,6 +90,7 @@ export const Invoices = () => {
   };
 
   const handleViewDetails = (invoice) => {
+    trackFeatureInteraction('Invoice_Details', 'expand');
     setSelectedInvoice(invoice);
   };
 
