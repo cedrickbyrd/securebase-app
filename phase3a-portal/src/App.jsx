@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { initializeSessionTracking } from './utils/analytics';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import SignupForm from './components/SignupForm';
@@ -24,6 +25,10 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
     return !!localStorage.getItem('sessionToken');
   });
+
+  useEffect(() => {
+    initializeSessionTracking();
+  }, []);
 
   return (
     <Router>
