@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatDate } from '../utils/formatters';
+import { trackPageView, trackAPIDocsView, trackFeatureInteraction, incrementPagesViewed } from '../utils/analytics';
 
 export const ApiKeys = () => {
   const [apiKeys, setApiKeys] = useState([]);
@@ -32,6 +33,9 @@ export const ApiKeys = () => {
   const [deletingKeyId, setDeletingKeyId] = useState(null);
 
   useEffect(() => {
+    trackPageView('API Keys', '/api-keys');
+    trackAPIDocsView();
+    incrementPagesViewed();
     loadApiKeys();
   }, []);
 
@@ -51,6 +55,7 @@ export const ApiKeys = () => {
 
   const handleCreateKey = async (e) => {
     e.preventDefault();
+    trackFeatureInteraction('API_Key_Create', 'click');
     try {
       const response = await apiService.createApiKey({
         name: newKeyName,
@@ -68,6 +73,7 @@ export const ApiKeys = () => {
   };
 
   const handleRevokeKey = async (keyId) => {
+    trackFeatureInteraction('API_Key_Revocation', 'click');
     try {
       setDeletingKeyId(keyId);
       await apiService.revokeApiKey(keyId);
