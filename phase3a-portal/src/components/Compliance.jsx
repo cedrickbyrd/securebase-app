@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode } from '../utils/demoData';
+import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
 
@@ -16,11 +17,19 @@ export default function Compliance() {
   const [complianceData, setComplianceData] = useState(null);
   const [findings, setFindings] = useState([]);
   const [texasData, setTexasData] = useState(null);
+  const startTimeRef = useRef(null);
 
   const isTexasTier = TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
 
   useEffect(() => {
+    startTimeRef.current = Date.now();
+    trackPageView('Compliance', '/compliance');
+    incrementPagesViewed();
     loadComplianceData();
+    return () => {
+      const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      trackPageEngagement('Compliance', timeSpent);
+    };
   }, []);
 
   const loadComplianceData = async () => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { isDemoMode } from '../utils/demoData';
+import { trackPageView, trackSREDashboardView, incrementPagesViewed } from '../utils/analytics';
 import {
   Server, Database, Zap, Activity, AlertTriangle, CheckCircle,
   TrendingUp, TrendingDown, Clock, BarChart3, Cpu, HardDrive,
@@ -253,6 +254,12 @@ const SREDashboard = () => {
       forecast: 473.40
     });
   };
+
+  useEffect(() => {
+    trackPageView('SRE Dashboard', '/sre-dashboard');
+    trackSREDashboardView();
+    incrementPagesViewed();
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
