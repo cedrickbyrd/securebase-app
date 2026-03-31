@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import { trackSignupView } from '../utils/analytics';
 import './SignupForm.css';
 
 const TIERS = [
@@ -332,6 +333,10 @@ export default function SignupForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    trackSignupView();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
