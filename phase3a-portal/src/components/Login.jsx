@@ -5,6 +5,11 @@ import BRANDING from '../config/branding';
 import { trackPageView, trackDemoLogin, incrementPagesViewed } from '../utils/analytics';
 import './Login.css';
 
+const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
+const DEMO_PASSWORD = 'SecureBaseDemo2026!';
+const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
+const DEMO_ORG_NAME = 'Acme Corporation';
+
 function Login({ setAuth }) {
   const [step, setStep] = useState('credentials');
   const [email, setEmail] = useState('');
@@ -12,9 +17,12 @@ function Login({ setAuth }) {
   const [totpCode, setTotpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
   const isDemo = window.location.hostname.startsWith('demo.');
+  // Show landing page first for demo visitors; they can switch to manual login
+  const [showDemoLanding, setShowDemoLanding] = useState(isDemo);
 
   useEffect(() => {
     trackPageView('Login', '/login');
@@ -23,9 +31,21 @@ function Login({ setAuth }) {
 
   useEffect(() => {
     if (isDemo) {
-      setEmail('demo@securebase.tximhotep.com');
+      setEmail(DEMO_EMAIL);
     }
   }, [isDemo]);
+
+  const authenticateDemoUser = () => {
+    setAuth(true);
+    trackDemoLogin();
+    localStorage.setItem('demo_mode', 'true');
+    localStorage.setItem('demo_user', JSON.stringify({
+      email: DEMO_EMAIL,
+      customerId: DEMO_CUSTOMER_ID,
+      orgName: DEMO_ORG_NAME,
+    }));
+    navigate('/dashboard');
+  };
 
   const handleCredentials = async (e) => {
     e.preventDefault();
@@ -35,19 +55,9 @@ function Login({ setAuth }) {
     try {
       // Special handling for demo environment
       if (isDemo && 
-          email === 'demo@securebase.tximhotep.com' && 
-          password === 'SecureBaseDemo2026!') {
-        // For demo, set auth and navigate directly
-        setAuth(true);
-        trackDemoLogin();
-        // Store demo token
-        localStorage.setItem('demo_mode', 'true');
-        localStorage.setItem('demo_user', JSON.stringify({
-          email: 'demo@securebase.tximhotep.com',
-          customerId: 'a0000000-0000-0000-0000-000000000001',
-          orgName: 'Acme Corporation'
-        }));
-        navigate('/dashboard');
+          email === DEMO_EMAIL && 
+          password === DEMO_PASSWORD) {
+        authenticateDemoUser();
         return;
       }
 
@@ -93,7 +103,250 @@ function Login({ setAuth }) {
     navigator.clipboard.writeText(text);
     if (field === 'email') setEmail(text);
     if (field === 'password') setPassword(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   };
+
+  const handleEnterDemo = () => {
+    authenticateDemoUser();
+  };
+
+  // Demo landing page shown to first-time demo visitors
+  if (showDemoLanding) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '520px',
+          animation: 'slideUp 0.4s ease-out',
+        }}>
+          {/* Header / Value Proposition */}
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '2.5rem',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+            marginBottom: '1rem',
+          }}>
+            {/* Logo + Badge */}
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <rect width="40" height="40" rx="8" fill="#0066CC"/>
+                  <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="white"/>
+                </svg>
+                <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1a202c' }}>
+                  SecureBase
+                </span>
+              </div>
+              <div style={{
+                display: 'inline-block',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                fontSize: '11px',
+                fontWeight: '700',
+                padding: '3px 10px',
+                borderRadius: '20px',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+              }}>
+                ✓ No Signup Required &nbsp;•&nbsp; Instant Access
+              </div>
+            </div>
+
+            {/* Headline */}
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <h1 style={{
+                fontSize: '1.9rem',
+                fontWeight: '800',
+                color: '#1a202c',
+                margin: '0 0 0.6rem 0',
+                lineHeight: '1.2',
+              }}>
+                🛡️ See Your AWS Compliance Score<br />in 60 Seconds
+              </h1>
+              <p style={{ fontSize: '1rem', color: '#6b7280', margin: 0 }}>
+                Interactive demo with real SOC 2 &amp; HIPAA data — no account needed
+              </p>
+            </div>
+
+            {/* Feature bullets */}
+            <div style={{
+              background: '#f8f9ff',
+              borderRadius: '12px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.75rem',
+            }}>
+              {[
+                ['✓', 'Full compliance dashboard preview', '#10b981'],
+                ['✓', '75% SOC 2 compliance score with 20+ controls', '#10b981'],
+                ['✓', 'Real-time security findings & remediation steps', '#10b981'],
+                ['✓', 'No signup required — explore freely', '#10b981'],
+              ].map(([icon, text, color]) => (
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
+                  <span style={{ color, fontWeight: '700', fontSize: '1rem' }}>{icon}</span>
+                  <span style={{ fontSize: '0.9rem', color: '#374151' }}>{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Demo Credentials */}
+            <div style={{
+              background: 'linear-gradient(135deg, #FEF3C7 0%, #DBEAFE 100%)',
+              border: '2px solid #FBBF24',
+              borderRadius: '14px',
+              padding: '1.25rem',
+              marginBottom: '1.5rem',
+            }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontSize: '13px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🔑 Demo Credentials
+              </p>
+
+              {/* Email row */}
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>
+                  📧 Email
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <code style={{
+                    flex: 1,
+                    background: 'white',
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '12.5px',
+                    fontFamily: 'Monaco, Consolas, monospace',
+                    color: '#1f2937',
+                    userSelect: 'all',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {DEMO_EMAIL}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(DEMO_EMAIL, 'email')}
+                    style={{
+                      padding: '9px 16px',
+                      background: copiedField === 'email' ? '#10b981' : 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    {copiedField === 'email' ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Password row */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>
+                  🔐 Password
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <code style={{
+                    flex: 1,
+                    background: 'white',
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '12.5px',
+                    fontFamily: 'Monaco, Consolas, monospace',
+                    color: '#1f2937',
+                    userSelect: 'all',
+                  }}>
+                    {DEMO_PASSWORD}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(DEMO_PASSWORD, 'password')}
+                    style={{
+                      padding: '9px 16px',
+                      background: copiedField === 'password' ? '#10b981' : 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    {copiedField === 'password' ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <button
+              type="button"
+              onClick={handleEnterDemo}
+              style={{
+                width: '100%',
+                padding: '1rem',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1.05rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+                letterSpacing: '0.3px',
+                transition: 'opacity 0.2s, transform 0.2s',
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              Enter Demo Portal →
+            </button>
+
+            {/* Footer */}
+            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowDemoLanding(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#9ca3af',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Sign in manually
+              </button>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
+            © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved.{' '}
+            <a href="https://securebase.tximhotep.com/signup" style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>
+              Start Free Trial →
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
@@ -175,11 +428,11 @@ function Login({ setAuth }) {
                         userSelect: 'all',
                         fontWeight: '500'
                       }}>
-                        demo@securebase.tximhotep.com
+                        {DEMO_EMAIL}
                       </code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard('demo@securebase.tximhotep.com', 'email')}
+                        onClick={() => copyToClipboard(DEMO_EMAIL, 'email')}
                         style={{
                           padding: '10px 18px',
                           background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
@@ -231,11 +484,11 @@ function Login({ setAuth }) {
                         userSelect: 'all',
                         fontWeight: '500'
                       }}>
-                        SecureBaseDemo2026!
+                        {DEMO_PASSWORD}
                       </code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard('SecureBaseDemo2026!', 'password')}
+                        onClick={() => copyToClipboard(DEMO_PASSWORD, 'password')}
                         style={{
                           padding: '10px 18px',
                           background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
