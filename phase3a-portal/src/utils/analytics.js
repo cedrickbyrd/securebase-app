@@ -175,6 +175,35 @@ export function trackCustomerSampleView(customerType) {
 }
 
 // ---------------------------------------------------------------------------
+// Signup attribution
+// ---------------------------------------------------------------------------
+
+/**
+ * Capture UTM parameters and referrer on the /signup page and send a
+ * `signup_page_view` event to GA4 for sales attribution.
+ *
+ * Call this once on component mount inside the signup page/form.
+ */
+export const trackSignupView = () => {
+  const params = new URLSearchParams(window.location.search);
+  const utmData = {
+    campaign: params.get('utm_campaign') || 'direct',
+    source: params.get('utm_source') || 'direct',
+    medium: params.get('utm_medium') || 'none',
+    content: params.get('utm_content') || 'none',
+    referrer: document.referrer || 'direct',
+  };
+
+  if (window.gtag) {
+    window.gtag('event', 'signup_page_view', {
+      ...utmData,
+      page_path: window.location.pathname,
+    });
+    console.log('[GA4] ✅ Signup Attribution Captured:', utmData);
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Generic interaction helpers
 // ---------------------------------------------------------------------------
 
