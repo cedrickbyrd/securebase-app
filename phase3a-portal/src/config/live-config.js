@@ -1,7 +1,16 @@
 import { loadStripe } from '@stripe/stripe-js';
 
 // Live mode Stripe configuration
-const LIVE_STRIPE_PUBLIC_KEY = 'pk_live_YOUR_KEY_HERE'; // Replace with your actual live key
+// IMPORTANT: This should be set via environment variable VITE_STRIPE_PUBLIC_KEY
+// The hardcoded value here is only a fallback and should be replaced
+const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_YOUR_KEY_HERE';
+
+// Validate Stripe key is configured
+if (LIVE_STRIPE_PUBLIC_KEY === 'pk_live_YOUR_KEY_HERE') {
+  console.error('⚠️ CRITICAL: VITE_STRIPE_PUBLIC_KEY not configured! Signup will fail.');
+  console.error('Please set VITE_STRIPE_PUBLIC_KEY in your .env file');
+}
+
 const stripePromise = loadStripe(LIVE_STRIPE_PUBLIC_KEY);
 
 // API Configuration for production
@@ -72,7 +81,8 @@ const PRICING_TIERS = {
 };
 
 // Pilot program configuration
-const PILOT_COUPON_ID = 'coupon_PILOT_LIVE_ID'; // Replace with actual coupon ID
+// IMPORTANT: This should match the backend STRIPE_PILOT_COUPON environment variable
+const PILOT_COUPON_ID = import.meta.env.VITE_STRIPE_PILOT_COUPON || 'coupon_PILOT_LIVE_ID';
 
 export {
   stripePromise,
