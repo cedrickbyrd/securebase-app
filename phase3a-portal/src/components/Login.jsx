@@ -9,6 +9,7 @@ const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
 const DEMO_PASSWORD = 'SecureBaseDemo2026!';
 const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
 const DEMO_ORG_NAME = 'Acme Corporation';
+const DEMO_SOCIAL_PROOF_COUNT = 147;
 
 function Login({ setAuth }) {
   const [step, setStep] = useState('credentials');
@@ -183,7 +184,7 @@ function Login({ setAuth }) {
               background: '#f8f9ff',
               borderRadius: '12px',
               padding: '1rem 1.25rem',
-              marginBottom: '1.75rem',
+              marginBottom: '1rem',
             }}>
               {[
                 ['✓', 'Full compliance dashboard preview', '#10b981'],
@@ -196,6 +197,24 @@ function Login({ setAuth }) {
                   <span style={{ fontSize: '0.9rem', color: '#374151' }}>{text}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Social Proof */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginBottom: '1.5rem',
+              padding: '10px 14px',
+              background: '#f0fdf4',
+              borderRadius: '10px',
+              border: '1px solid #d1fae5',
+            }}>
+              <span style={{ fontSize: '16px' }}>👥</span>
+              <span style={{ fontSize: '13px', color: '#065f46', fontWeight: '600' }}>
+                {DEMO_SOCIAL_PROOF_COUNT} DevOps teams are already using SecureBase
+              </span>
             </div>
 
             {/* Demo Credentials */}
@@ -294,28 +313,47 @@ function Login({ setAuth }) {
               </div>
             </div>
 
+            {/* Urgency Badge */}
+            <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+              <span style={{
+                display: 'inline-block',
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                border: '1px solid #f59e0b',
+                color: '#92400e',
+                fontSize: '12px',
+                fontWeight: '700',
+                padding: '4px 14px',
+                borderRadius: '20px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}>
+                ⚡ Free demo — no account or setup required
+              </span>
+            </div>
+
             {/* CTA Button */}
             <button
               type="button"
               onClick={handleEnterDemo}
+              className="demo-cta-button"
               style={{
                 width: '100%',
-                padding: '1rem',
+                padding: '1.1rem 1.5rem',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
-                fontSize: '1.05rem',
+                fontSize: '1.15rem',
                 fontWeight: '700',
                 cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+                boxShadow: '0 10px 28px rgba(102, 126, 234, 0.45)',
                 letterSpacing: '0.3px',
                 transition: 'opacity 0.2s, transform 0.2s',
               }}
-              onMouseOver={(e) => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseOver={(e) => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              Enter Demo Portal →
+              🚀 Enter Demo (One Click)
             </button>
 
             {/* Footer */}
