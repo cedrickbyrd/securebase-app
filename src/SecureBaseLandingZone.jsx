@@ -32,16 +32,18 @@ const AuthLogin = () => {
       
       <form onSubmit={handleSignIn} className="space-y-4">
         <div>
-          <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-1">Work Email</label>
+          <label htmlFor="login-email" className="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-1">Work Email</label>
           <input 
+            id="login-email"
             type="email" placeholder="name@company.com" value={email}
             onChange={e => setEmail(e.target.value)}
             className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" required 
           />
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-1">Password</label>
+          <label htmlFor="login-password" className="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-1">Password</label>
           <input 
+            id="login-password"
             type="password" placeholder="••••••••" value={password}
             onChange={e => setPassword(e.target.value)}
             className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all" required 
@@ -95,11 +97,14 @@ const MFAChallenge = ({ onVerifySuccess }) => {
       <h2 className="text-2xl font-bold text-slate-900">Security Check</h2>
       <p className="text-slate-500 text-sm mt-2 mb-6">Enter the 6-digit code from Authy.</p>
       <form onSubmit={handleVerify} className="space-y-4">
+        <label htmlFor="mfa-code" className="sr-only">6-digit authentication code</label>
         <input
+          id="mfa-code"
           type="text" maxLength="6" placeholder="000000" value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           className="w-full text-center text-3xl tracking-[0.5em] font-mono py-3 border-2 border-slate-200 rounded-xl focus:border-[#667eea] outline-none"
           required
+          aria-label="6-digit authentication code"
         />
         {error && <p className="text-red-500 text-xs font-semibold">{error}</p>}
         <button type="submit" disabled={loading || code.length !== 6} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2">
@@ -182,7 +187,14 @@ export default function SecureBaseLandingZone() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('overview')}>
+          <div 
+            className="flex items-center gap-3 cursor-pointer" 
+            onClick={() => setActiveTab('overview')}
+            role="button"
+            tabIndex={0}
+            aria-label="SecureBase home"
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveTab('overview')}
+          >
             <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] p-2 rounded-lg shadow-md"><Shield className="text-white w-6 h-6" /></div>
             <div>
               <div className="text-xl font-bold">SecureBase</div>
