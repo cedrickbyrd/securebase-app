@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { trackSignupView } from '../utils/analytics';
 
 // Stripe integration for payment (loaded dynamically when needed)
 // const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -74,6 +75,10 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    trackSignupView();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
