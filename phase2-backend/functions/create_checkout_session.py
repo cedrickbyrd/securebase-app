@@ -14,6 +14,11 @@ from db_utils import get_db_connection, execute_query
 # Initialize Stripe
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
+# Validate Stripe configuration on import
+if not stripe.api_key:
+    print('CRITICAL: STRIPE_SECRET_KEY environment variable not set!')
+    print('Signup functionality will be disabled until this is configured.')
+
 # Pricing tier mapping
 PRICE_IDS = {
     'healthcare': os.environ.get('STRIPE_PRICE_HEALTHCARE'),
@@ -21,6 +26,11 @@ PRICE_IDS = {
     'government': os.environ.get('STRIPE_PRICE_GOVERNMENT'),
     'standard': os.environ.get('STRIPE_PRICE_STANDARD'),
 }
+
+# Validate price IDs are configured
+missing_prices = [tier for tier, price_id in PRICE_IDS.items() if not price_id]
+if missing_prices:
+    print(f'WARNING: Missing Stripe price IDs for tiers: {", ".join(missing_prices)}')
 
 # Rate limiting configuration
 RATE_LIMIT_WINDOW = 3600  # 1 hour in seconds
@@ -39,6 +49,20 @@ def lambda_handler(event, context):
         "use_pilot_coupon": true
     }
     """
+    
+    # Check if Stripe is configured
+    if not stripe.api_key:
+        return {
+            'statusCode': 503,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({
+                'error': 'Payment system is currently unavailable. Please contact support.',
+                'error_type': 'configuration'
+            })
+        }
     
     try:
         # Get client IP for rate limiting
@@ -97,9 +121,18 @@ def lambda_handler(event, context):
         price_id = PRICE_IDS[tier]
         
         if not price_id:
+            print(f'ERROR: Price ID not configured for tier: {tier}')
+            print(f'Required environment variable: STRIPE_PRICE_{tier.upper()}')
             return {
-                'statusCode': 500,
-                'body': json.dumps({'error': f'Price ID not configured for tier: {tier}'})
+                'statusCode': 503,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({
+                    'error': f'The {tier} tier is temporarily unavailable. Please try another tier or contact support.',
+                    'error_type': 'configuration'
+                })
             }
         
         # Check if customer already exists with active subscription
@@ -180,6 +213,67 @@ def lambda_handler(event, context):
             })
         }
         
+    except stripe.error.AuthenticationError as e:
+        # Invalid API key
+        print(f"Stripe authentication error: {e}")
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({
+                'error': 'Payment provider configuration error. Please contact support.',
+                'error_type': 'authentication'
+            })
+        }
+    
+    except stripe.error.APIConnectionError as e:
+        # Network communication error
+        print(f"Stripe API connection error: {e}")
+        return {
+            'statusCode': 503,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({
+                'error': 'Payment provider temporarily unavailable. Please try again in a few moments.',
+                'error_type': 'connection'
+            })
+        }
+    
+    except stripe.error.InvalidRequestError as e:
+        # Invalid parameters (e.g., bad price ID)
+        print(f"Stripe invalid request error: {e}")
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({
+                'error': 'Payment configuration error. Please contact support.',
+                'error_type': 'invalid_request'
+            })
+        }
+    
+    except stripe.error.RateLimitError as e:
+        # Too many requests to Stripe API
+        print(f"Stripe rate limit error: {e}")
+        return {
+            'statusCode': 429,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Retry-After': '60',
+            },
+            'body': json.dumps({
+                'error': 'Too many payment requests. Please try again in a minute.',
+                'error_type': 'rate_limit'
+            })
+        }
+    
     except stripe.error.StripeError as e:
         print(f"Stripe error: {e}")
         return {
