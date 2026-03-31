@@ -13,6 +13,15 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+      // Console logging helpers for GA4 event debugging (development only)
+      if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+        window.gtagLog = function(event, params) {
+          console.log('[SecureBase GA4]', event, params || {});
+        };
+        window.gtagWarn = function(msg) {
+          console.warn('[SecureBase GA4]', msg);
+        };
+      }
     </script>
     <script src="/mock-api.js"></script>
   </head>
