@@ -291,3 +291,14 @@
     width: 100% !important;
   }
 }
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 10px 28px rgba(16, 185, 129, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 14px 36px rgba(16, 185, 129, 0.75);
+    transform: scale(1.02);
+  }
+}

@@ -164,7 +164,7 @@ function Login({ setAuth }) {
             </div>
 
             {/* Headline */}
-            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <h1 style={{
                 fontSize: '1.9rem',
                 fontWeight: '800',
@@ -178,6 +178,47 @@ function Login({ setAuth }) {
                 Interactive demo with real SOC 2 &amp; HIPAA data — no account needed
               </p>
             </div>
+
+            {/* Primary CTA — placed above credentials for maximum visibility */}
+            <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+              <span style={{
+                display: 'inline-block',
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                border: '1px solid #f59e0b',
+                color: '#92400e',
+                fontSize: '12px',
+                fontWeight: '700',
+                padding: '4px 14px',
+                borderRadius: '20px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}>
+                ⚡ Free demo — no account or setup required
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleEnterDemo}
+              className="demo-cta-button"
+              style={{
+                width: '100%',
+                padding: '1.1rem 1.5rem',
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '20px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                letterSpacing: '0.3px',
+                marginBottom: '1.25rem',
+                animation: 'pulse 2s infinite',
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.animationPlayState = 'paused'; e.currentTarget.style.opacity = '0.92'; }}
+              onMouseOut={(e) => { e.currentTarget.style.animationPlayState = 'running'; e.currentTarget.style.opacity = '1'; }}
+            >
+              🚀 Enter Demo (One Click)
+            </button>
 
             {/* Feature bullets */}
             <div style={{
@@ -312,49 +353,6 @@ function Login({ setAuth }) {
                 </div>
               </div>
             </div>
-
-            {/* Urgency Badge */}
-            <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
-              <span style={{
-                display: 'inline-block',
-                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                border: '1px solid #f59e0b',
-                color: '#92400e',
-                fontSize: '12px',
-                fontWeight: '700',
-                padding: '4px 14px',
-                borderRadius: '20px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                ⚡ Free demo — no account or setup required
-              </span>
-            </div>
-
-            {/* CTA Button */}
-            <button
-              type="button"
-              onClick={handleEnterDemo}
-              className="demo-cta-button"
-              style={{
-                width: '100%',
-                padding: '1.1rem 1.5rem',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '1.15rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 10px 28px rgba(102, 126, 234, 0.45)',
-                letterSpacing: '0.3px',
-                transition: 'opacity 0.2s, transform 0.2s',
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              🚀 Enter Demo (One Click)
-            </button>
 
             {/* Footer */}
             <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
@@ -585,6 +583,31 @@ function Login({ setAuth }) {
           {step === 'credentials' && (
             <form onSubmit={handleCredentials} className="login-form">
               <h2>Sign In</h2>
+              {isDemo && (
+                <button
+                  type="button"
+                  onClick={handleEnterDemo}
+                  className="demo-cta-button"
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    letterSpacing: '0.3px',
+                    marginBottom: '1.25rem',
+                    animation: 'pulse 2s infinite',
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.animationPlayState = 'paused'; e.currentTarget.style.opacity = '0.92'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.animationPlayState = 'running'; e.currentTarget.style.opacity = '1'; }}
+                >
+                  🚀 Enter Demo (One Click)
+                </button>
+              )}
               {error && (
                 <div className="error-message">
                   <span className="error-icon">⚠️</span>
