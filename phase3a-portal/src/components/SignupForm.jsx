@@ -326,7 +326,7 @@ function validate(step, form) {
   return errs;
 }
 
-export default function SignupForm() {
+export default function SignupForm({ onSuccess }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -369,7 +369,7 @@ export default function SignupForm() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await apiService.signup({
+      const response = await apiService.signup({
         first_name: form.firstName,
         last_name: form.lastName,
         email: form.email,
@@ -382,8 +382,17 @@ export default function SignupForm() {
         region: form.region,
         mfa_required: form.mfaRequired,
       });
-      setSubmitted(true);
-      setStep(3);
+
+      if (window.gtag) {
+        window.gtag('event', 'sign_up', { method: 'email', tier: form.tier });
+      }
+
+      if (onSuccess && response.jobId) {
+        onSuccess({ email: form.email, jobId: response.jobId });
+      } else {
+        setSubmitted(true);
+        setStep(3);
+      }
     } catch (err) {
       setSubmitError(err.message || 'Signup failed. Please try again.');
     } finally {
