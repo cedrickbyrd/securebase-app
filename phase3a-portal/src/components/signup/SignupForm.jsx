@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackSignupView } from "../../utils/analytics";
 import "./SignupForm.css";
 
 const STEPS = ["Account", "Organization", "Configuration", "Verify"];
@@ -16,6 +17,10 @@ export default function SignupForm({ onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [jobId, setJobId] = useState(null);
+
+  useEffect(() => {
+    trackSignupView();
+  }, []);
 
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", password: "", confirmPassword: "",
