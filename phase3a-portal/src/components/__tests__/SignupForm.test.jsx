@@ -13,6 +13,9 @@ vi.mock('../../services/apiService', () => ({
       if (payload.email === 'exists@example.com') {
         return Promise.reject(new Error('HTTP error! status: 409'));
       }
+      if (payload.email === 'withjob@example.com') {
+        return Promise.resolve({ customer_id: 'test-uuid-123', jobId: 'job-abc-456' });
+      }
       return Promise.resolve({ customer_id: 'test-uuid-123' });
     }),
   },
@@ -104,5 +107,58 @@ describe('SignupForm Component', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+  });
+
+  it('calls onSuccess with email and jobId when API returns a jobId', async () => {
+    const onSuccess = vi.fn();
+    renderWithRouter(<SignupForm onSuccess={onSuccess} />);
+
+    // Step 1
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { name: 'firstName', value: 'Jane' } });
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { name: 'lastName', value: 'Smith' } });
+    fireEvent.change(screen.getByLabelText(/work email/i), { target: { name: 'email', value: 'withjob@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^password$/i), { target: { name: 'password', value: 'SuperSecret123!' } });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { name: 'confirmPassword', value: 'SuperSecret123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 2
+    fireEvent.change(screen.getByLabelText(/company name/i), { target: { name: 'companyName', value: 'Acme Corp' } });
+    fireEvent.change(screen.getByLabelText(/industry/i), { target: { name: 'industry', value: 'technology' } });
+    fireEvent.change(screen.getByLabelText(/company size/i), { target: { name: 'companySize', value: '51-200' } });
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 3 – submit
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith({ email: 'withjob@example.com', jobId: 'job-abc-456' });
+    });
+  });
+
+  it('falls back to verification screen when API response has no jobId', async () => {
+    const onSuccess = vi.fn();
+    renderWithRouter(<SignupForm onSuccess={onSuccess} />);
+
+    // Step 1
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { name: 'firstName', value: 'Jane' } });
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { name: 'lastName', value: 'Smith' } });
+    fireEvent.change(screen.getByLabelText(/work email/i), { target: { name: 'email', value: 'jane@acme.com' } });
+    fireEvent.change(screen.getByLabelText(/^password$/i), { target: { name: 'password', value: 'SuperSecret123!' } });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { name: 'confirmPassword', value: 'SuperSecret123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 2
+    fireEvent.change(screen.getByLabelText(/company name/i), { target: { name: 'companyName', value: 'Acme Corp' } });
+    fireEvent.change(screen.getByLabelText(/industry/i), { target: { name: 'industry', value: 'technology' } });
+    fireEvent.change(screen.getByLabelText(/company size/i), { target: { name: 'companySize', value: '51-200' } });
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 3 – submit
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/check your email/i)).toBeInTheDocument();
+    });
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });
