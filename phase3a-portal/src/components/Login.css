@@ -276,3 +276,18 @@
   border-color: #cbd5e0;
   color: #4a5568;
 }
+
+/* Demo CTA Button - Mobile Optimization */
+/* !important is required here to override the inline styles set on the button */
+.demo-cta-button {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .demo-cta-button {
+    font-size: 18px !important;
+    padding: 16px 32px !important;
+    margin-top: 8px !important;
+    width: 100% !important;
+  }
+}
