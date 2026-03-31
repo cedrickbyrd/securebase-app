@@ -1,0 +1,175 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                  STRIPE SIGNUP ISSUE - QUICK REFERENCE                        ║
+║                           CRITICAL FIX GUIDE                                  ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🚨 PROBLEM: 400 Users at /signup Cannot Complete Stripe Connection          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚠️  ROOT CAUSES IDENTIFIED                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 1. Missing VITE_STRIPE_PUBLIC_KEY in .env files                             │
+│ 2. Placeholder values in live-config.js (pk_live_YOUR_KEY_HERE)             │
+│ 3. Missing STRIPE_SECRET_KEY in Lambda environment                          │
+│ 4. Missing STRIPE_PRICE_* IDs in Lambda environment                         │
+│ 5. Poor error messages (all returned 500)                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ✅ FIXES APPLIED                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 1. Added VITE_STRIPE_PUBLIC_KEY to .env and .env.production                 │
+│ 2. Updated live-config.js to use environment variables                      │
+│ 3. Added startup validation for Stripe configuration                        │
+│ 4. Enhanced error handling (5 specific Stripe error types)                  │
+│ 5. Created comprehensive troubleshooting guide (11KB)                       │
+│ 6. Created configuration validation script (5KB)                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔧 IMMEDIATE ACTIONS REQUIRED (OPS TEAM)                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ Step 1: Get Stripe Keys                                                     │
+│ ├─ Go to: https://dashboard.stripe.com/apikeys                              │
+│ ├─ Copy Publishable Key (pk_test_... or pk_live_...)                        │
+│ └─ Copy Secret Key (sk_test_... or sk_live_...)                             │
+│                                                                              │
+│ Step 2: Set Frontend Keys                                                   │
+│ ├─ Edit: .env                                                                │
+│ ├─ Edit: phase3a-portal/.env.production                                     │
+│ └─ Set: VITE_STRIPE_PUBLIC_KEY=pk_live_YOUR_ACTUAL_KEY                      │
+│                                                                              │
+│ Step 3: Set Backend Keys (Lambda Environment Variables)                     │
+│ ├─ AWS Console → Lambda → securebase-{env}-checkout → Configuration         │
+│ ├─ STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY                                │
+│ ├─ STRIPE_PRICE_STANDARD=price_1ABC...                                      │
+│ ├─ STRIPE_PRICE_FINTECH=price_1DEF...                                       │
+│ ├─ STRIPE_PRICE_HEALTHCARE=price_1GHI...                                    │
+│ ├─ STRIPE_PRICE_GOVERNMENT=price_1JKL...                                    │
+│ └─ PORTAL_URL=https://portal.securebase.com                                 │
+│                                                                              │
+│ Step 4: Create Stripe Products (if not exists)                              │
+│ ├─ Go to: https://dashboard.stripe.com/products                             │
+│ ├─ Create 4 products: Standard, Fintech, Healthcare, Government             │
+│ ├─ Set monthly prices: $20, $80, $150, $250                                 │
+│ └─ Copy Price IDs → Set in Lambda env vars                                  │
+│                                                                              │
+│ Step 5: Redeploy                                                             │
+│ ├─ Frontend: npm run build && deploy dist/                                  │
+│ └─ Backend: Update Lambda function code                                     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🧪 VERIFICATION                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 1. Run: ./scripts/validate-stripe-config.sh                                 │
+│    Expected: All green ✅ with 0 errors                                     │
+│                                                                              │
+│ 2. Test signup flow:                                                        │
+│    - Navigate to /signup                                                    │
+│    - Fill form and submit                                                   │
+│    - Should redirect to Stripe Checkout                                     │
+│    - Complete test payment                                                  │
+│    - Verify success redirect                                                │
+│                                                                              │
+│ 3. Check CloudWatch Logs:                                                   │
+│    - Should NOT see "CRITICAL: STRIPE_SECRET_KEY not set!"                  │
+│    - Should NOT see "WARNING: Missing Stripe price IDs"                     │
+│    - Should see "checkout session created" on success                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📊 ENVIRONMENT VARIABLES CHECKLIST                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ FRONTEND (.env & .env.production)                                           │
+│ ✅ VITE_STRIPE_PUBLIC_KEY=pk_live_...                                       │
+│ ✅ VITE_API_BASE_URL=https://api...                                         │
+│ ✅ VITE_PILOT_PROGRAM_ENABLED=true                                          │
+│                                                                              │
+│ BACKEND (Lambda Environment Variables)                                      │
+│ ✅ STRIPE_SECRET_KEY=sk_live_...                                            │
+│ ✅ STRIPE_PRICE_STANDARD=price_1...                                         │
+│ ✅ STRIPE_PRICE_FINTECH=price_1...                                          │
+│ ✅ STRIPE_PRICE_HEALTHCARE=price_1...                                       │
+│ ✅ STRIPE_PRICE_GOVERNMENT=price_1...                                       │
+│ ⚠️  STRIPE_PILOT_COUPON=50OFF6MO (optional)                                 │
+│ ✅ PORTAL_URL=https://portal...                                             │
+│ ✅ RATE_LIMIT_TABLE=securebase-dev-rate-limits                              │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🎯 EXPECTED IMPACT                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ BEFORE FIX                          AFTER FIX                               │
+│ ├─ ❌ 100% signup failure           ├─ ✅ Signups working                    │
+│ ├─ ❌ Generic error messages        ├─ ✅ Specific error messages            │
+│ ├─ ❌ Hard to diagnose              ├─ ✅ Easy configuration validation      │
+│ ├─ ❌ No monitoring                 ├─ ✅ Clear CloudWatch logs              │
+│ └─ ❌ Users frustrated              └─ ✅ Smooth payment flow                │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📚 DOCUMENTATION                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Full Troubleshooting Guide:    docs/STRIPE_TROUBLESHOOTING.md (415 lines)  │
+│ Fix Summary:                    STRIPE_FIX_SUMMARY.md (259 lines)           │
+│ Validation Script:              scripts/validate-stripe-config.sh           │
+│ Environment Template:           phase3a-portal/.env.example                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔗 QUICK LINKS                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Stripe API Keys:        https://dashboard.stripe.com/apikeys               │
+│ Stripe Products:        https://dashboard.stripe.com/products              │
+│ Stripe Coupons:         https://dashboard.stripe.com/coupons               │
+│ Stripe Status:          https://status.stripe.com                          │
+│ AWS Lambda Console:     https://console.aws.amazon.com/lambda               │
+│ CloudWatch Logs:        /aws/lambda/securebase-dev-checkout                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚡ QUICK COMMANDS                                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ # Validate configuration                                                    │
+│ $ ./scripts/validate-stripe-config.sh                                       │
+│                                                                              │
+│ # Check Lambda environment variables                                        │
+│ $ aws lambda get-function-configuration \                                   │
+│     --function-name securebase-dev-checkout \                               │
+│     --query 'Environment.Variables' --output json                           │
+│                                                                              │
+│ # View CloudWatch logs                                                      │
+│ $ aws logs tail /aws/lambda/securebase-dev-checkout --follow               │
+│                                                                              │
+│ # Test API endpoint                                                         │
+│ $ curl -X POST https://your-api.com/checkout \                              │
+│     -H "Content-Type: application/json" \                                   │
+│     -d '{"tier":"standard","email":"test@test.com","name":"Test"}'          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🆘 SUPPORT                                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Technical Support:      support@tximhotep.com                               │
+│ Emergency Hotline:      +1-800-SECURE-TX                                    │
+│ Issue Date:             2026-03-31                                          │
+│ Priority:               P0 - CRITICAL (Blocking Revenue)                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  ⏰ ESTIMATED TIME TO RESOLVE: 30 minutes (if Stripe account already setup)  ║
+║  🎯 ESTIMATED TIME TO TEST: 10 minutes                                       ║
+║  📈 ESTIMATED REVENUE RECOVERY: Immediate upon deployment                    ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
