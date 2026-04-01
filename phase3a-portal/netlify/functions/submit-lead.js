@@ -1,15 +1,14 @@
 const aws = require('@aws-sdk/client-ses');
 
 const ses = new aws.SES({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.SES_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    accessKeyId: process.env.SES_ACCESS_KEY_ID,
+    secretAccessKey: process.env.SES_SECRET_ACCESS_KEY
   }
 });
 
 exports.handler = async (event) => {
-  // Only handle POST requests
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -18,7 +17,6 @@ exports.handler = async (event) => {
     const data = JSON.parse(event.body);
     const { email, company, message } = data;
 
-    // Email 1: Notification to you
     const notificationParams = {
       Source: process.env.SES_FROM_EMAIL || 'sales@tximhotep.com',
       Destination: {
@@ -34,14 +32,12 @@ Email: ${email}
 Company: ${company}
 Message: ${message}
 
-Submitted: ${new Date().toLocaleString()}
-`
+Submitted: ${new Date().toLocaleString()}`
           }
         }
       }
     };
 
-    // Email 2: Auto-reply to lead
     const autoReplyParams = {
       Source: process.env.SES_FROM_EMAIL || 'sales@tximhotep.com',
       Destination: {
@@ -60,14 +56,12 @@ In the meantime:
 - Book a call: https://calendly.com/cedrickjbyrd/white-glove-pilot
 
 Best regards,
-SecureBase Team
-`
+SecureBase Team`
           }
         }
       }
     };
 
-    // Send both emails
     await ses.sendEmail(notificationParams);
     await ses.sendEmail(autoReplyParams);
 
