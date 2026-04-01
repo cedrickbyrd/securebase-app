@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const EarlyAccessForm = () => {
-  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({ email: '', company: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -25,23 +24,12 @@ const EarlyAccessForm = () => {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: encode({ 'form-name': 'early-access', ...formData }),
       });
-      setSubmitted(true);
       window.location.href = '/thank-you';
     } catch (err) {
-      setError('Something went wrong. Please try again or email us directly.');
+      setError('Something went wrong. Please try again.');
       setIsSubmitting(false);
     }
   };
-
-  if (submitted) {
-    return (
-      <div className="text-center py-8">
-        <div className="text-4xl mb-4">🎉</div>
-        <h3 className="text-2xl font-bold text-white mb-2">You&apos;re on the list!</h3>
-        <p className="text-blue-200">We&apos;ll be in touch within 24 hours.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full max-w-md mx-auto">
