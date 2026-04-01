@@ -123,3 +123,39 @@ export const mockEnvironmentData = [
   { id: 2, name: 'Staging', status: 'warning', region: 'us-east-1', accounts: 4, complianceScore: 88, cost: 1420 },
   { id: 3, name: 'Development', status: 'healthy', region: 'us-west-2', accounts: 8, complianceScore: 91, cost: 987 },
 ];
+
+/**
+ * Mock SOC 2 audit report in the shape returned by /.netlify/functions/get-audit-report.
+ * Used by SecureBaseLandingZone when isDemoMode() is true so the ComplianceScreen
+ * renders fully (including any export / PDF buttons) without a real Supabase session.
+ */
+export const mockAuditReport = {
+  audit_metadata: {
+    standard: 'SOC 2 Type II',
+    status: 'In Compliance',
+    run_id: 'demo-run-2026-001',
+    generated_at: '2026-03-15T08:00:00.000Z',
+  },
+  score: 94,
+  stats: { passed: 197, warned: 12, failed: 0 },
+  controls: [
+    { id: 'CC1.1', title: 'Control Environment — Commitment to Competence', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC2.1', title: 'Information & Communication — Internal Communication', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC3.1', title: 'Risk Assessment — Risk Identification', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC4.1', title: 'Monitoring — Ongoing Evaluations', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC5.1', title: 'Control Activities — Policies & Procedures', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC6.1', title: 'Logical Access — Multi-Factor Authentication', status: 'warning', category: 'Security', remediation: 'Enforce MFA on all non-privileged accounts.' },
+    { id: 'CC6.2', title: 'Logical Access — Access Provisioning', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC6.3', title: 'Logical Access — Access Removal', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC7.1', title: 'System Operations — Vulnerability Management', status: 'passed', category: 'Security', remediation: null },
+    { id: 'CC7.2', title: 'System Operations — Log Retention', status: 'warning', category: 'Security', remediation: 'Increase dev environment log retention to meet 90-day minimum.' },
+    { id: 'A1.1', title: 'Availability — Capacity Planning', status: 'passed', category: 'Availability', remediation: null },
+    { id: 'A1.2', title: 'Availability — Backup & Recovery', status: 'warning', category: 'Availability', remediation: 'Document backup retention policy.' },
+    { id: 'PI1.1', title: 'Processing Integrity — Input Validation', status: 'passed', category: 'Processing Integrity', remediation: null },
+    { id: 'PI1.4', title: 'Processing Integrity — Internal API Validation', status: 'warning', category: 'Processing Integrity', remediation: 'Add input validation to remaining internal API endpoint.' },
+    { id: 'C1.1', title: 'Confidentiality — Data Classification', status: 'warning', category: 'Confidentiality', remediation: 'Apply classification tags to 3 S3 buckets.' },
+    { id: 'C1.2', title: 'Confidentiality — Encryption at Rest', status: 'passed', category: 'Confidentiality', remediation: null },
+    { id: 'P1.1', title: 'Privacy — Notice & Communication', status: 'passed', category: 'Privacy', remediation: null },
+    { id: 'P2.1', title: 'Privacy — Choice & Consent', status: 'passed', category: 'Privacy', remediation: null },
+  ],
+};
