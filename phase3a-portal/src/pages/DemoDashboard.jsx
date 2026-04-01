@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchData } from '../utils/fetchData';
 
 export default function DemoDashboard() {
   const [downloading, setDownloading] = useState(false);
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    fetchData('/metrics').then(setMetrics);
+  }, []);
 
   const handleDownloadReport = () => {
     setDownloading(true);
@@ -38,7 +44,7 @@ export default function DemoDashboard() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">🎯 Demo Environment</span>
             <div className="flex gap-3">
-              
+              <a
                 href="https://securebase.tximhotep.com/signup"
                 className="bg-white text-purple-600 px-4 py-2 rounded-md text-sm font-medium"
               >
@@ -69,7 +75,7 @@ export default function DemoDashboard() {
           </div>
           <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
             <div className="text-4xl mb-2">✅</div>
-            <div className="text-3xl font-bold mb-1">94%</div>
+            <div className="text-3xl font-bold mb-1">{metrics?.soc2Score ?? 94}%</div>
             <div className="text-sm font-semibold">SOC 2 Compliance</div>
           </div>
           <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
