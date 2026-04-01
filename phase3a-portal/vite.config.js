@@ -28,32 +28,7 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: `assets/[name].${timestamp}.js`,
         chunkFileNames: `assets/[name].${timestamp}.js`,
         assetFileNames: `assets/[name].${timestamp}.[ext]`,
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'charts-legacy': ['chart.js', 'react-chartjs-2'],
-          'charts-modern': ['recharts'],
-          'ui-vendor': ['lucide-react', 'date-fns'],
-          'network': ['axios'],
-        },
       },
     },
-    chunkSizeWarningLimit: 1000,
-    cssCodeSplit: true,
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'axios',
-      'chart.js',
-      'react-chartjs-2',
-      'recharts',
-    ],
-  },
-  define: {
-    'process.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || 'https://api.securebase.com/v1'),
-    'process.env.VITE_WS_URL': JSON.stringify(process.env.VITE_WS_URL || 'wss://ws.securebase.com'),
-    'process.env.VITE_ENV': JSON.stringify(process.env.VITE_ENV || 'development'),
   },
 }));
