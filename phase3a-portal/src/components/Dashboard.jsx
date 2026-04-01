@@ -9,6 +9,7 @@ import { useDemoCustomer } from '../hooks/useDemoCustomer';
 import DemoCustomerIndicator from './DemoCustomerIndicator';
 import { CUSTOMER_TIERS } from '../config/customerTiers';
 import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
+import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -47,6 +48,13 @@ function Dashboard() {
   }, []);
 
   const loadDashboardData = async () => {
+    if (checkDemoMode()) {
+      const mockMetrics = await fetchData('/metrics');
+      setMetrics(mockMetrics);
+      setLoading(false);
+      return;
+    }
+
     try {
       const requests = [
         apiService.getMetrics(),
