@@ -6,10 +6,15 @@ const timestamp = Date.now();
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   publicDir: 'public',
-  base: '/',  // Changed to root for Netlify deployment
+  base: '/',
   server: {
     port: 3000,
     open: true,
+  },
+  css: {
+    postcss: {
+      plugins: []
+    }
   },
   build: {
     outDir: 'dist',
