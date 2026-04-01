@@ -13,7 +13,7 @@ const ThankYou = () => {
         In the meantime, feel free to schedule a call with our team.
       </p>
       <a
-        href="https://calendly.com/securebase/white-glove-pilot"
+        href="https://calendly.com/cedrickjbyrd/white-glove-pilot"
         target="_blank"
         rel="noopener noreferrer"
         className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition mb-6"
