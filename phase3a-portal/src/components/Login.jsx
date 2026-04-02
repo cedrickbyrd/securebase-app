@@ -25,17 +25,6 @@ function Login({ setAuth }) {
   // Show landing page first for demo visitors; they can switch to manual login
   const [showDemoLanding, setShowDemoLanding] = useState(isDemo);
 
-  useEffect(() => {
-    trackPageView('Login', '/login');
-    incrementPagesViewed();
-  }, []);
-
-  useEffect(() => {
-    if (isDemo) {
-      setEmail(DEMO_EMAIL);
-    }
-  }, [isDemo]);
-
   const authenticateDemoUser = () => {
     setAuth(true);
     trackDemoLogin();
@@ -47,6 +36,26 @@ function Login({ setAuth }) {
     }));
     navigate('/dashboard');
   };
+
+  useEffect(() => {
+    trackPageView('Login', '/login');
+    incrementPagesViewed();
+  }, []);
+
+  useEffect(() => {
+    if (isDemo) {
+      setEmail(DEMO_EMAIL);
+    }
+  }, [isDemo]);
+
+  // Auto-bypass auth when ?demo=true URL param is present
+  useEffect(() => {
+    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
+    if (demoParam) {
+      authenticateDemoUser();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCredentials = async (e) => {
     e.preventDefault();
