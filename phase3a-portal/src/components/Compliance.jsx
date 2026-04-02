@@ -17,6 +17,7 @@ export default function Compliance() {
   const [complianceData, setComplianceData] = useState(null);
   const [findings, setFindings] = useState([]);
   const [texasData, setTexasData] = useState(null);
+  const [downloading, setDownloading] = useState(false);
   const startTimeRef = useRef(null);
 
   const isTexasTier = TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
@@ -56,6 +57,34 @@ export default function Compliance() {
       setError('Failed to load compliance data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      setDownloading(true);
+      const response = await demoAwareApiService.downloadComplianceReport();
+      
+      if (isDemoMode()) {
+        // In demo mode, show alert
+        alert('Demo Mode: PDF download not available. In production, this would download a comprehensive SOC 2 compliance report.');
+      } else {
+        // In production, trigger actual download
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SecureBase-Compliance-Report-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (err) {
+      console.error('Error downloading report:', err);
+      alert('Failed to download report. Please try again.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -109,10 +138,10 @@ export default function Compliance() {
         <p className="text-gray-600">Trust Service Criteria Status</p>
       </div>
 
-      {/* Overall Score */}
+      {/* Overall Score with Download Button */}
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
             <div className="flex items-baseline gap-2">
               <span className="text-6xl font-bold text-blue-600">
@@ -127,6 +156,30 @@ export default function Compliance() {
               {' '}✅ {complianceData?.highFindings || 0} High | 
               {' '}⚠️ {complianceData?.mediumFindings || 0} Medium
             </p>
+            
+            {/* PDF Download Button */}
+            <button
+              onClick={handleDownloadReport}
+              disabled={downloading}
+              className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {downloading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Preparing Report...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download Compliance Report (PDF)
+                </>
+              )}
+            </button>
           </div>
           <div className="text-6xl">📊</div>
         </div>
