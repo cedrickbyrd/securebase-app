@@ -30,7 +30,8 @@ const DEMO_ORG_NAME = 'Acme Corporation';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    if (import.meta.env.VITE_DEMO_MODE === 'true' && !localStorage.getItem('sessionToken')) {
+    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
+    if ((import.meta.env.VITE_DEMO_MODE === 'true' || demoParam) && !localStorage.getItem('sessionToken')) {
       // Seed demo session once so all subsequent isDemoMode() checks pass
       localStorage.setItem('demo_mode', 'true');
       localStorage.setItem('demo_user', JSON.stringify({
@@ -49,7 +50,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login"      element={<Login setAuth={setIsAuthenticated} />} />
+        <Route path="/login"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login setAuth={setIsAuthenticated} />} />
         <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) =>
           window.location.href = `/onboarding?jobId=${jobId}&email=${encodeURIComponent(email)}`
         } />} />
