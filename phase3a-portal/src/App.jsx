@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { initializeSessionTracking } from './utils/analytics';
+import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import SignupForm from './components/SignupForm';
@@ -23,9 +24,22 @@ function OnboardingRoute() {
   );
 }
 
+const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
+const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
+const DEMO_ORG_NAME = 'Acme Corporation';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    return !!localStorage.getItem('sessionToken');
+    if (import.meta.env.VITE_DEMO_MODE === 'true' && !localStorage.getItem('sessionToken')) {
+      // Seed demo session once so all subsequent isDemoMode() checks pass
+      localStorage.setItem('demo_mode', 'true');
+      localStorage.setItem('demo_user', JSON.stringify({
+        email: DEMO_EMAIL,
+        customerId: DEMO_CUSTOMER_ID,
+        orgName: DEMO_ORG_NAME,
+      }));
+    }
+    return !!localStorage.getItem('sessionToken') || isDemoMode();
   });
 
   useEffect(() => {

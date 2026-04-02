@@ -1,7 +1,10 @@
 // Demo data utilities for demo mode
 
 export const isDemoMode = () => {
-  return localStorage.getItem('demo_mode') === 'true';
+  return (
+    import.meta.env.VITE_DEMO_MODE === 'true' ||
+    localStorage.getItem('demo_mode') === 'true'
+  );
 };
 
 export const getDemoUser = () => {

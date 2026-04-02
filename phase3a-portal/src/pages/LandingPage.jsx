@@ -62,13 +62,13 @@ const LandingPage = () => {
       <section className="px-6 py-10 flex flex-col items-center">
         <div className="w-full max-w-lg text-center">
           <Link
-            to="/login"
+            to="/dashboard"
             className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-4 px-10 rounded-xl text-lg shadow-lg transition transform hover:scale-105"
           >
-            🎮 Try Live Demo (No Signup Required)
+            🎮 Enter Demo (One Click)
           </Link>
           <p className="text-blue-200 text-xs mt-4">
-            See the product first — demo credentials are shown on the login page.
+            Instant access — no signup required.
           </p>
         </div>
       </section>
