@@ -5,6 +5,8 @@ import ComplianceScreen from './components/compliance/ComplianceScreen';
 import MFAEnrollment from './components/auth/MFAEnrollment';
 import AdminLink from './components/navigation/AdminLink'; 
 import { supabase } from './lib/supabase';
+import { isDemoMode } from './services/demoApiService';
+import { DEMO_CUSTOMER, mockAuditReport } from './utils/demoData';
 
 // --- Step 1: Login Component ---
 const AuthLogin = () => {
@@ -157,6 +159,15 @@ export default function SecureBaseLandingZone() {
   };
 
   useEffect(() => {
+    // In demo mode skip Supabase and use mock data so all UI (including
+    // export / PDF buttons) renders without a real session.
+    if (isDemoMode()) {
+      setUser({ email: DEMO_CUSTOMER.email, id: DEMO_CUSTOMER.id });
+      setReport(mockAuditReport);
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session) checkMFAAndFetch(session);
@@ -176,11 +187,21 @@ export default function SecureBaseLandingZone() {
   }, []);
 
   const handleTabChange = (tab) => {
-    if (tab === 'compliance' && !user) {
+    if (tab === 'compliance' && !user && !isDemoMode()) {
       setActiveTab('login');
       return;
     }
     setActiveTab(tab);
+  };
+
+  const handleSignOut = () => {
+    const inDemo = isDemoMode();
+    localStorage.removeItem('demo_mode');
+    if (inDemo) {
+      window.location.reload();
+    } else {
+      supabase.auth.signOut();
+    }
   };
 
   return (
@@ -206,7 +227,7 @@ export default function SecureBaseLandingZone() {
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-semibold transition-colors ${activeTab === 'overview' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Overview</button>
             <button onClick={() => handleTabChange('compliance')} className={`text-sm font-semibold transition-colors ${activeTab === 'compliance' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Compliance</button>
             {user && <AdminLink user={user} />}
-            {user && <button onClick={() => { localStorage.removeItem('demo_mode'); supabase.auth.signOut(); }} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
+            {user && <button onClick={handleSignOut} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
           </nav>
         </div>
       </header>
