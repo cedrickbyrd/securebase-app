@@ -3,7 +3,8 @@
 export const isDemoMode = () => {
   return (
     import.meta.env.VITE_DEMO_MODE === 'true' ||
-    localStorage.getItem('demo_mode') === 'true'
+    localStorage.getItem('demo_mode') === 'true' ||
+    new URLSearchParams(window.location.search).get('demo') === 'true'
   );
 };
 
