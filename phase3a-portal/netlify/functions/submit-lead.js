@@ -10,7 +10,7 @@ const ses = new aws.SES({
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   try {
@@ -62,17 +62,31 @@ SecureBase Team`
       }
     };
 
+    // Send notification email (critical)
     await ses.sendEmail(notificationParams);
-    await ses.sendEmail(autoReplyParams);
+
+    // Try to send auto-reply (non-critical)
+    try {
+      await ses.sendEmail(autoReplyParams);
+    } catch (autoReplyError) {
+      console.error('Auto-reply failed (non-critical):', autoReplyError.message);
+      // Continue - notification was sent successfully
+    }
 
     return {
       statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ success: true, message: 'Emails sent successfully' })
     };
   } catch (error) {
     console.error('Error sending email:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: error.message })
     };
   }
