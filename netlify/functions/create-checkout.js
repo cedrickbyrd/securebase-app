@@ -20,17 +20,26 @@ exports.handler = async (event) => {
     };
   }
 
+  let priceId, planName;
   try {
-    const { priceId, planName } = JSON.parse(event.body);
+    ({ priceId, planName } = JSON.parse(event.body));
+  } catch {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'Invalid JSON in request body' }),
+    };
+  }
 
-    if (!priceId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Missing priceId' }),
-      };
-    }
+  if (!priceId) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'Missing priceId' }),
+    };
+  }
 
+  try {
     const origin =
       event.headers.origin ||
       (event.headers.referer && new URL(event.headers.referer).origin) ||
@@ -39,7 +48,6 @@ exports.handler = async (event) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { plan: planName || '' },
       success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
