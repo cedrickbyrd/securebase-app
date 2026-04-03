@@ -15,6 +15,8 @@ import {
   mockComplianceData,
   mockAlertData,
   mockEnvironmentData,
+  mockComplianceScore,
+  mockFintechComplianceStatus,
 } from '../utils/demoData';
 
 /** Detect whether the current session should run in demo mode. */
@@ -79,5 +81,35 @@ export const demoAwareApiService = {
     }
     const { apiService } = await import('./apiService');
     return apiService.request('/environments');
+  },
+
+  /** Returns overall compliance score and category breakdown. */
+  async getComplianceScore() {
+    if (isDemoMode()) {
+      await delay(DEMO_DELAY);
+      return { data: mockComplianceScore };
+    }
+    const { apiService } = await import('./apiService');
+    return apiService.request('/compliance/score');
+  },
+
+  /** Returns Texas DOB / fintech-specific compliance controls. */
+  async getFintechComplianceStatus() {
+    if (isDemoMode()) {
+      await delay(DEMO_DELAY);
+      return { data: mockFintechComplianceStatus };
+    }
+    const { apiService } = await import('./apiService');
+    return apiService.request('/compliance/fintech');
+  },
+
+  /** Downloads a compliance PDF report. In production returns a binary blob. */
+  async downloadComplianceReport() {
+    if (isDemoMode()) {
+      await delay(DEMO_DELAY);
+      return { data: null };
+    }
+    const { apiService } = await import('./apiService');
+    return apiService.request('/compliance/report/download', { responseType: 'blob' });
   },
 };
