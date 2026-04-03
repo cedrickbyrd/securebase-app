@@ -106,7 +106,7 @@ const Signup = () => {
           name: formData.company,
           use_pilot_coupon: formData.usePilot,
           successUrl: `${window.location.origin}/thank-you`,
-          cancelUrl: `${window.location.origin}/signup`,
+          cancelUrl: `${window.location.origin}/pricing`,
         }),
       });
 
