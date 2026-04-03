@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Shield, ArrowRight, Loader, Lock } from 'lucide-react';
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
@@ -123,6 +124,7 @@ export default function SecureBaseLandingZone() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   const fetchLatestAudit = async (token) => {
     setLoading(true);
@@ -226,6 +228,7 @@ export default function SecureBaseLandingZone() {
           <nav className="flex items-center gap-6">
             <button onClick={() => setActiveTab('overview')} className={`text-sm font-semibold transition-colors ${activeTab === 'overview' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Overview</button>
             <button onClick={() => handleTabChange('compliance')} className={`text-sm font-semibold transition-colors ${activeTab === 'compliance' ? 'text-[#667eea]' : 'text-slate-600 hover:text-[#667eea]'}`}>Compliance</button>
+            <button onClick={() => navigate('/pricing')} className="text-sm font-semibold text-slate-600 hover:text-[#667eea] transition-colors">Pricing</button>
             {user && <AdminLink user={user} />}
             {user && <button onClick={handleSignOut} className="text-xs font-bold text-slate-400 hover:text-red-500 uppercase ml-4">Sign Out</button>}
           </nav>
@@ -236,8 +239,8 @@ export default function SecureBaseLandingZone() {
         {activeTab === 'overview' && (
           <div className="text-center pt-12">
             <h1 className="text-5xl md:text-7xl font-black mb-8 italic">Audit-Ready AWS <br /><span className="bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent not-italic">In Under 48 Hours</span></h1>
-            <button onClick={() => handleTabChange('compliance')} className="px-8 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold text-lg mx-auto flex items-center gap-2 hover:shadow-xl transition-all transform hover:scale-105">
-              View Compliance Vault <ArrowRight className="w-5 h-5" />
+            <button onClick={() => navigate('/pricing')} className="px-8 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold text-lg mx-auto flex items-center gap-2 hover:shadow-xl transition-all transform hover:scale-105">
+              View Plans &amp; Pricing <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         )}
