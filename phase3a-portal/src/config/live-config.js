@@ -22,7 +22,7 @@ const PRICING_TIERS = {
     name: 'Standard',
     price: 2000,
     pilotPrice: 1000,
-    priceId: 'price_STANDARD_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgqW5bg6XXXrmNzkk8O5E5', // Stripe test-mode price ID
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
@@ -37,7 +37,7 @@ const PRICING_TIERS = {
     name: 'Fintech',
     price: 8000,
     pilotPrice: 4000,
-    priceId: 'price_FINTECH_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgqV5bg6XXXrmNL6XoLDcD', // Stripe test-mode price ID
     description: 'SOC2 Type II compliant infrastructure',
     features: [
       'SOC2 Type II controls',
@@ -52,7 +52,7 @@ const PRICING_TIERS = {
     name: 'Healthcare',
     price: 15000,
     pilotPrice: 7500,
-    priceId: 'price_HEALTHCARE_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgqU5bg6XXXrmNKA43A08i', // Stripe test-mode price ID
     description: 'HIPAA-compliant AWS Landing Zone',
     features: [
       'HIPAA compliance framework',
@@ -67,7 +67,7 @@ const PRICING_TIERS = {
     name: 'Government', 
     price: 25000,
     pilotPrice: 12500,
-    priceId: 'price_GOVERNMENT_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgqW5bg6XXXrmN4Tdhkqku', // Stripe test-mode price ID
     description: 'FedRAMP-aligned AWS Landing Zone',
     features: [
       'FedRAMP compliance framework',
