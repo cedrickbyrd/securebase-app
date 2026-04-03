@@ -11,11 +11,7 @@ export default defineConfig(({ mode }) => ({
     port: 3000,
     open: true,
   },
-  css: {
-    postcss: {
-      plugins: []
-    }
-  },
+  // Removed css.postcss section - now uses postcss.config.cjs
   build: {
     outDir: 'dist',
     emptyOutDir: true,
