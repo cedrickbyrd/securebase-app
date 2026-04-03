@@ -12,6 +12,7 @@ import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
 import LandingPage from './pages/LandingPage';
 import ThankYou from './pages/ThankYou';
+import Pricing from './pages/Pricing';
 import './App.css';
 
 function OnboardingRoute() {
@@ -61,6 +62,7 @@ function App() {
         <Route path="/fintech-portal" element={isAuthenticated ? <TexasExaminerPortal /> : <Navigate to="/login" />} />
         <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
       </Routes>
