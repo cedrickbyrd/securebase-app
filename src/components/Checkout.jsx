@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackCheckoutStarted } from '../utils/analytics';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const PLAN_LABELS = {
   standard: 'Standard',
@@ -15,63 +19,109 @@ const PLAN_PRICES = {
   enterprise: 3999,
 };
 
+function CheckoutForm({ plan, email, setEmail, error, setError }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+
+    try {
+      // 1. Request the Session from your Netlify Function
+      const response = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: plan.id,
+          planName: plan.name,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const { sessionId } = await response.json();
+
+      // 2. Redirect to Stripe's hosted checkout page
+      const result = await stripe.redirectToCheckout({ sessionId });
+
+      if (result.error) {
+        setError(result.error.message);
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error('Checkout Error:', err);
+      setError(err.message || 'Something went wrong. Please try again.');
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label
+          htmlFor="checkout-email"
+          className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
+        >
+          Work Email
+        </label>
+        <input
+          id="checkout-email"
+          type="email"
+          placeholder="name@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+        />
+      </div>
+
+      {error && (
+        <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={isProcessing || !stripe}
+        className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {isProcessing ? (
+          <>
+            <Loader className="animate-spin w-5 h-5" />
+            Redirecting to Stripe…
+          </>
+        ) : (
+          <>
+            Continue to Payment
+            <ArrowLeft className="w-4 h-4 rotate-180" />
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const plan = searchParams.get('plan') || 'standard';
+  const planKey = searchParams.get('plan') || 'standard';
   const priceId = searchParams.get('priceId') || '';
-  const planName = searchParams.get('planName') || PLAN_LABELS[plan] || plan;
+  const planName = searchParams.get('planName') || PLAN_LABELS[planKey] || planKey;
+
+  const plan = { id: priceId, name: planName };
 
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    trackCheckoutStarted(plan);
-  }, [plan]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Use window.location.origin so the redirect URLs work correctly
-      // in every environment (localhost, staging, production, Netlify preview).
-      const origin = window.location.origin;
-
-      const response = await fetch('/.netlify/functions/securebase-checkout-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer_email: email,
-          price_id: priceId,
-          plan_name: planName,
-          success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
-          cancel_url: `${origin}/pricing`,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const { checkout_url } = await response.json();
-
-      if (!checkout_url) {
-        throw new Error('No checkout URL returned from server.');
-      }
-
-      // Redirect to Stripe Checkout
-      window.location.href = checkout_url;
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setError(err.message || 'Something went wrong. Please try again.');
-      setLoading(false);
-    }
-  };
+    trackCheckoutStarted(planKey);
+  }, [planKey]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
@@ -107,11 +157,11 @@ export default function Checkout() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
-                <p className="text-xl font-bold">{PLAN_LABELS[plan] || planName}</p>
+                <p className="text-xl font-bold">{PLAN_LABELS[planKey] || planName}</p>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-black">
-                  ${PLAN_PRICES[plan]?.toLocaleString() ?? '—'}
+                  ${PLAN_PRICES[planKey]?.toLocaleString() ?? '—'}
                 </p>
                 <p className="text-purple-200 text-xs">/month</p>
               </div>
@@ -125,49 +175,15 @@ export default function Checkout() {
               Enter your work email. You will be redirected to Stripe to complete payment securely.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="checkout-email"
-                  className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
-                >
-                  Work Email
-                </label>
-                <input
-                  id="checkout-email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
-                />
-              </div>
-
-              {error && (
-                <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader className="animate-spin w-5 h-5" />
-                    Redirecting to Stripe…
-                  </>
-                ) : (
-                  <>
-                    Continue to Payment
-                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                  </>
-                )}
-              </button>
-            </form>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm
+                plan={plan}
+                email={email}
+                setEmail={setEmail}
+                error={error}
+                setError={setError}
+              />
+            </Elements>
 
             {/* Trust signals */}
             <div className="mt-6 pt-5 border-t border-slate-100">
