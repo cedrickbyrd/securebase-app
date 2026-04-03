@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, ArrowRight, Loader, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import 'antd/dist/reset.css';
 import ComplianceScreen from './components/compliance/ComplianceScreen';
 import MFAEnrollment from './components/auth/MFAEnrollment';
@@ -119,6 +120,7 @@ const MFAChallenge = ({ onVerifySuccess }) => {
 
 // --- Main Component ---
 export default function SecureBaseLandingZone() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -236,9 +238,14 @@ export default function SecureBaseLandingZone() {
         {activeTab === 'overview' && (
           <div className="text-center pt-12">
             <h1 className="text-5xl md:text-7xl font-black mb-8 italic">Audit-Ready AWS <br /><span className="bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent not-italic">In Under 48 Hours</span></h1>
-            <button onClick={() => handleTabChange('compliance')} className="px-8 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold text-lg mx-auto flex items-center gap-2 hover:shadow-xl transition-all transform hover:scale-105">
-              View Compliance Vault <ArrowRight className="w-5 h-5" />
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button onClick={() => navigate('/pricing')} className="px-8 py-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold text-lg flex items-center gap-2 hover:shadow-xl transition-all transform hover:scale-105">
+                See Pricing <ArrowRight className="w-5 h-5" />
+              </button>
+              <button onClick={() => handleTabChange('compliance')} className="px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-lg flex items-center gap-2 hover:shadow-md transition-all">
+                View Compliance Vault <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
 
