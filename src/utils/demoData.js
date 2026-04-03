@@ -159,3 +159,74 @@ export const mockAuditReport = {
     { id: 'P2.1', title: 'Privacy — Choice & Consent', status: 'passed', category: 'Privacy', remediation: null },
   ],
 };
+
+export const mockComplianceScore = {
+  overallScore: 94,
+  passedControls: 197,
+  totalControls: 209,
+  criticalFindings: 0,
+  highFindings: 0,
+  mediumFindings: 12,
+  categories: [
+    { name: 'Security', passed: 59, total: 60, percentage: 98 },
+    { name: 'Availability', passed: 40, total: 42, percentage: 95 },
+    { name: 'Processing Integrity', passed: 32, total: 35, percentage: 91 },
+    { name: 'Confidentiality', passed: 38, total: 40, percentage: 95 },
+    { name: 'Privacy', passed: 28, total: 32, percentage: 88 },
+  ],
+};
+
+export const mockFintechComplianceStatus = {
+  passingControls: 8,
+  totalControls: 8,
+  controls: [
+    {
+      id: '7TAC-33.1',
+      name: 'Cybersecurity Program',
+      summary: 'Documented cybersecurity program aligned to NIST CSF covering all required domains.',
+      lastAssessedAt: '2026-03-15T10:00:00Z',
+    },
+    {
+      id: '7TAC-33.2',
+      name: 'Annual Risk Assessment',
+      summary: 'Annual risk assessment completed; residual risks documented and accepted by CISO.',
+      lastAssessedAt: '2026-03-15T10:00:00Z',
+    },
+    {
+      id: '7TAC-33.3',
+      name: 'Incident Response Plan',
+      summary: 'IRP tested semi-annually; last tabletop exercise completed Jan 2026.',
+      lastAssessedAt: '2026-03-15T10:00:00Z',
+    },
+    {
+      id: '31CFR-1022.1',
+      name: 'BSA / AML Controls',
+      summary: 'FinCEN CTR and SAR filing procedures in place; automated monitoring active.',
+      lastAssessedAt: '2026-02-28T10:00:00Z',
+    },
+    {
+      id: '31CFR-1022.2',
+      name: 'Customer Identification Program',
+      summary: 'CIP implemented with KYC controls; identity verification vendor integrated.',
+      lastAssessedAt: '2026-02-28T10:00:00Z',
+    },
+    {
+      id: 'TXHB1666-1',
+      name: 'TX HB 1666 Data Residency',
+      summary: 'Customer financial data stored exclusively in us-east-1 and us-west-2 regions.',
+      lastAssessedAt: '2026-03-01T10:00:00Z',
+    },
+    {
+      id: 'TXHB1666-2',
+      name: 'TX HB 1666 Breach Notification',
+      summary: '72-hour breach notification workflow configured with automatic DOB alert.',
+      lastAssessedAt: '2026-03-01T10:00:00Z',
+    },
+    {
+      id: 'TXHB1666-3',
+      name: 'TX HB 1666 Examiner Access',
+      summary: 'Read-only examiner portal provisioned; audit logs exported to tamper-evident S3.',
+      lastAssessedAt: '2026-03-15T10:00:00Z',
+    },
+  ],
+};
