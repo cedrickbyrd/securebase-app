@@ -36,9 +36,14 @@ const LandingPage = () => {
           SecureBase delivers enterprise-grade SOC 2, HIPAA, and FedRAMP-ready AWS Landing Zones
           as a managed service — without the million-dollar consulting bill.
         </p>
-        <a href="#request-access" className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition">
-          🚀 Request Early Access
-        </a>
+        <div className="flex gap-4 justify-center flex-wrap">
+          <a href="#request-access" className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition">
+            🚀 Request Early Access
+          </a>
+          <a href="/pricing" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition border-2 border-blue-400">
+            💰 View Pricing
+          </a>
+        </div>
       </header>
 
       {/* Value Props */}
