@@ -1,28 +1,20 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-// Live mode Stripe configuration
-// IMPORTANT: This should be set via environment variable VITE_STRIPE_PUBLIC_KEY
-// The hardcoded value here is only a fallback and should be replaced
 const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_YOUR_KEY_HERE';
 
-// Validate Stripe key is configured
 if (LIVE_STRIPE_PUBLIC_KEY === 'pk_live_YOUR_KEY_HERE') {
-  console.error('⚠️ CRITICAL: VITE_STRIPE_PUBLIC_KEY not configured! Signup will fail.');
-  console.error('Please set VITE_STRIPE_PUBLIC_KEY in your .env file');
+  console.error('⚠️ CRITICAL: VITE_STRIPE_PUBLIC_KEY not configured!');
 }
 
 const stripePromise = loadStripe(LIVE_STRIPE_PUBLIC_KEY);
-
-// API Configuration for production
 const API_BASE_URL = 'https://api.securebase.tximhotep.com';
 
-// Pricing configuration (live mode)
 const PRICING_TIERS = {
   standard: {
     name: 'Standard',
     price: 2000,
     pilotPrice: 1000,
-    priceId: 'price_STANDARD_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1Srgn65bg6XXXrmNXXXXXXXX', // Add Standard price ID from Stripe
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
@@ -37,7 +29,7 @@ const PRICING_TIERS = {
     name: 'Fintech',
     price: 8000,
     pilotPrice: 4000,
-    priceId: 'price_FINTECH_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgoQ5bg6XXXrmNwsdnTwrW',
     description: 'SOC2 Type II compliant infrastructure',
     features: [
       'SOC2 Type II controls',
@@ -52,7 +44,7 @@ const PRICING_TIERS = {
     name: 'Healthcare',
     price: 15000,
     pilotPrice: 7500,
-    priceId: 'price_HEALTHCARE_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgoQ5bg6XXXrmNQvC2YnmT',
     description: 'HIPAA-compliant AWS Landing Zone',
     features: [
       'HIPAA compliance framework',
@@ -67,7 +59,7 @@ const PRICING_TIERS = {
     name: 'Government', 
     price: 25000,
     pilotPrice: 12500,
-    priceId: 'price_GOVERNMENT_LIVE_ID', // Replace with actual Stripe price ID
+    priceId: 'price_1SrgoR5bg6XXXrmNUUveBMDw',
     description: 'FedRAMP-aligned AWS Landing Zone',
     features: [
       'FedRAMP compliance framework',
@@ -80,8 +72,6 @@ const PRICING_TIERS = {
   },
 };
 
-// Pilot program configuration
-// IMPORTANT: This should match the backend STRIPE_PILOT_COUPON environment variable
 const PILOT_COUPON_ID = import.meta.env.VITE_STRIPE_PILOT_COUPON || 'coupon_PILOT_LIVE_ID';
 
 export {
