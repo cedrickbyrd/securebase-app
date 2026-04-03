@@ -14,7 +14,7 @@ const PRICING_TIERS = {
     name: 'Standard',
     price: 2000,
     pilotPrice: 1000,
-    priceId: 'price_1Srgn65bg6XXXrmNXXXXXXXX', // Add Standard price ID from Stripe
+    priceId: 'price_1Srgn65bg6XXXrmNXXXXXXXX',
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
