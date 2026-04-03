@@ -74,6 +74,8 @@ def lambda_handler(event, context):
         customer_email = body.get('email')
         customer_name = body.get('name')
         use_pilot = body.get('use_pilot_coupon', False)
+        success_url = body.get('successUrl') if body.get('successUrl') is not None else f"{os.environ.get('PORTAL_URL', '')}/thank-you?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = body.get('cancelUrl') if body.get('cancelUrl') is not None else f"{os.environ.get('PORTAL_URL', '')}/signup?cancelled=true"
         
         # Validate inputs
         validation_error = validate_inputs(tier, customer_email, customer_name)
@@ -165,8 +167,8 @@ def lambda_handler(event, context):
                 'quantity': 1,
             }],
             'mode': 'subscription',
-            'success_url': f"{os.environ.get('PORTAL_URL')}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            'cancel_url': f"{os.environ.get('PORTAL_URL')}/signup?cancelled=true",
+            'success_url': success_url,
+            'cancel_url': cancel_url,
             'customer_email': customer_email,
             'client_reference_id': customer_email,  # For idempotency
             'metadata': {
