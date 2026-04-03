@@ -6,6 +6,8 @@ import SecureBaseLandingZone from './SecureBaseLandingZone';
 import TrustCenter from './components/TrustCenter';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import Alerts from './components/Alerts';
+import Pricing from './components/Pricing';
+import Checkout from './components/Checkout';
 import { Loader } from 'lucide-react';
 
 // 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
@@ -41,6 +43,10 @@ function App() {
         <Routes>
           {/* Public Sales View */}
           <Route path="/trust" element={<TrustCenter />} />
+
+          {/* Public Golden Sales Path — no auth required */}
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/checkout" element={<Checkout />} />
 
           <Route 
             path="/login" 
