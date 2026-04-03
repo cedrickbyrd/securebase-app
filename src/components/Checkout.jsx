@@ -56,13 +56,13 @@ const Checkout = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start checkout. Please try again.');
+        throw new Error('Failed to start checkout. Please try again or contact support.');
       }
 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned.');
+        throw new Error('Something went wrong. Please try again.');
       }
     } catch (err) {
       setError(err.message);
@@ -207,7 +207,7 @@ const Checkout = () => {
               By continuing you agree to our{' '}
               <a href="#" className="underline hover:text-[#667eea]">Terms of Service</a>
               {' '}and{' '}
-              <a href="#" className="underline hover:text-[#667eea]">Privacy Policy</a>.
+              <a href="#" className="underline hover:text-[#667eea]">Privacy Policy</a>.{' '}
             </p>
           </form>
 
