@@ -224,3 +224,17 @@ export function trackCTAClick(ctaType, location) {
 export function trackFeatureInteraction(featureName, action) {
   trackEvent('feature_interaction', { feature_name: featureName, action });
 }
+
+/**
+ * Track a compliance scan event (demo scan initiated or completed).
+ * @param {Object} params
+ * @param {string} params.status         - 'started' | 'completed'
+ * @param {string} params.scanType       - e.g. 'demo'
+ * @param {boolean} [params.isDemoMode]  - whether in demo mode
+ * @param {number}  [params.currentScore]- score before scan
+ * @param {number}  [params.newScore]    - score after scan
+ * @param {number}  [params.metricsScanned] - number of controls scanned
+ */
+export function trackComplianceScan(params) {
+  trackEvent('compliance_scan', params);
+}

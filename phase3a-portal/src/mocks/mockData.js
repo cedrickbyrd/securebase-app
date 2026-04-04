@@ -608,3 +608,54 @@ export const mockRoles = [
     permissions: ["read"]
   }
 ];
+
+/**
+ * SOC2 compliance categories used during animated scan progress.
+ */
+export const SOC2_SCAN_CATEGORIES = [
+  'Identity & Access Management',
+  'Data Encryption',
+  'Network Security',
+  'Logging & Monitoring',
+  'Backup & Recovery',
+  'Incident Response',
+  'Change Management',
+  'Vendor Management',
+];
+
+/**
+ * Generate a fresh dynamic compliance scan result.
+ * Returns a result compatible with what demoAwareApiService.getComplianceScore() returns (i.e. { data: {...} }).
+ * Score varies ±2–3% from 94 base, clamped to [88, 98].
+ * Total controls = 92 (SOC2).
+ */
+export function generateDemoScanResult() {
+  const baseScore = 94;
+  const variance = Math.floor(Math.random() * 6) - 2; // -2 to +3
+  const newScore = Math.max(88, Math.min(98, baseScore + variance));
+  const totalControls = 92;
+  const passedControls = Math.round((newScore / 100) * totalControls);
+
+  return {
+    data: {
+      overallScore: newScore,
+      totalControls,
+      passedControls,
+      criticalFindings: 0,
+      highFindings: newScore < 91 ? 1 : 0,
+      mediumFindings: newScore < 93 ? 2 : newScore < 96 ? 1 : 0,
+      categories: SOC2_SCAN_CATEGORIES.map((name, i) => {
+        const catScore = Math.max(85, Math.min(100, newScore + Math.floor(Math.random() * 6) - 2));
+        const total = Math.floor(totalControls / SOC2_SCAN_CATEGORIES.length) + (i === 0 ? totalControls % SOC2_SCAN_CATEGORIES.length : 0);
+        return {
+          name,
+          total,
+          passed: Math.round((catScore / 100) * total),
+          percentage: catScore,
+        };
+      }),
+      lastScanDate: new Date().toISOString(),
+      scanDuration: `${(Math.random() * 1.5 + 2.5).toFixed(1)}s`,
+    }
+  };
+}
