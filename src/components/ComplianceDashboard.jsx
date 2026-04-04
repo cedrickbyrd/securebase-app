@@ -458,13 +458,12 @@ export default function ComplianceDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleCardClick = (label) => {
+  const handleCardClick = (_label) => {
     // TODO: Navigate to framework-specific drill-down view (Phase 3b).
-    console.log(`[ComplianceDashboard] Drill-down requested for: ${label}`);
   };
 
-  const handleAction = (label, result) => {
-    console.log(`[ComplianceDashboard] Action completed: ${label}`, result);
+  const handleAction = (_label, _result) => {
+    // Actions are handled by QuickActions; post-scan flow is triggered via onScanComplete.
   };
 
   // Derived: use animated score when post-scan flow is active
@@ -548,6 +547,7 @@ export default function ComplianceDashboard() {
             ctaVariant={ctaVariant}
             onDismiss={dismissCTA}
             onButtonClick={trackCTAClick}
+            onGeneratePDF={mockAPI.generatePDFReport}
           />
         )}
 

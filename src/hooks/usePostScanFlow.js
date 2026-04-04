@@ -9,7 +9,12 @@
  */
 
 import { useState, useRef, useCallback } from 'react';
-import { trackEvent } from '../utils/analytics';
+import {
+  trackDemoScanComplete,
+  trackDemoFindingsViewed,
+  trackDemoCTAShown,
+  trackDemoCTAClick,
+} from '../utils/analytics';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -184,7 +189,7 @@ export function usePostScanFlow({ initialScore = 73, finalScore = 94 } = {}) {
 
     // --- Phase 1: Scan Complete ---
     setPhase('complete');
-    trackEvent('Demo', 'ScanComplete', 'Success');
+    trackDemoScanComplete();
 
     if (finalScore > initialScore) {
       fireConfetti();
@@ -205,14 +210,14 @@ export function usePostScanFlow({ initialScore = 73, finalScore = 94 } = {}) {
       newIssues: 0,
       details: RESOLVED_FINDINGS,
     });
-    trackEvent('Demo', 'FindingsViewed', `${RESOLVED_FINDINGS.length} issues`);
+    trackDemoFindingsViewed(RESOLVED_FINDINGS.length);
 
     await sleep(5000);
 
     // --- Phase 4: CTA ---
     setPhase('cta');
     setShowCTA(true);
-    trackEvent('Demo', 'CTAShown', ctaVariant);
+    trackDemoCTAShown(ctaVariant);
 
     // --- Phase 5: Engagement loop — comparison banner after 30 s idle ---
     idleTimerRef.current = setTimeout(() => {
@@ -226,11 +231,6 @@ export function usePostScanFlow({ initialScore = 73, finalScore = 94 } = {}) {
   const dismissCTA = useCallback(() => setShowCTA(false), []);
   const dismissComparison = useCallback(() => setShowComparison(false), []);
 
-  const trackCTAClick = useCallback(
-    (trackKey) => trackEvent('Demo', 'CTAClick', trackKey),
-    [],
-  );
-
   return {
     phase,
     score,
@@ -243,6 +243,6 @@ export function usePostScanFlow({ initialScore = 73, finalScore = 94 } = {}) {
     dismissFindings,
     dismissCTA,
     dismissComparison,
-    trackCTAClick,
+    trackCTAClick: trackDemoCTAClick,
   };
 }

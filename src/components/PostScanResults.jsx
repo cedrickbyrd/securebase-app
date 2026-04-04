@@ -87,16 +87,19 @@ export function FindingsToast({ findings, onDismiss }) {
 // Phase 4: CTA banner
 // ---------------------------------------------------------------------------
 
-export function CTABanner({ ctaVariant, onDismiss, onButtonClick }) {
+export function CTABanner({ ctaVariant, onDismiss, onButtonClick, onGeneratePDF }) {
   const navigate = useNavigate();
   const copy = CTA_VARIANTS[ctaVariant] ?? CTA_VARIANTS.a;
 
   const handleButton = (btn) => {
     onButtonClick && onButtonClick(btn.track);
+    if (btn.action === 'generatePDF') {
+      onGeneratePDF && onGeneratePDF();
+      return;
+    }
     if (btn.href) {
       navigate(btn.href);
     }
-    // 'generatePDF' action is handled by the parent component if needed
   };
 
   return (
