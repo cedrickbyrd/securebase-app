@@ -11,6 +11,13 @@ import {
   Legend,
 } from 'chart.js';
 import { mockAPI, complianceScoreHistory, mockControls } from '../mock-api';
+import { usePostScanFlow } from '../hooks/usePostScanFlow';
+import {
+  ScanCompleteCheck,
+  FindingsToast,
+  CTABanner,
+  ComparisonBanner,
+} from './PostScanResults';
 
 // Register Chart.js components once at module level (Architect's note: required
 // for react-chartjs-2; omitting this causes blank chart renders).
@@ -334,7 +341,7 @@ function formatCountdown(isoString) {
   return `${hours}h ${mins}m`;
 }
 
-function QuickActions({ scanInfo, onAction }) {
+function QuickActions({ scanInfo, onAction, onScanComplete }) {
   const [actionStatus, setActionStatus] = useState(null);
 
   const handleAction = async (label, apiFn) => {
@@ -343,6 +350,9 @@ function QuickActions({ scanInfo, onAction }) {
       const result = await apiFn();
       setActionStatus({ label, loading: false, message: result.message });
       onAction && onAction(label, result);
+      if (label === 'Run Full Scan' && onScanComplete) {
+        onScanComplete();
+      }
     } catch {
       setActionStatus({ label, loading: false, message: 'Action failed. Please retry.' });
     }
@@ -418,6 +428,21 @@ export default function ComplianceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const {
+    phase,
+    score,
+    findings,
+    showCTA,
+    ctaVariant,
+    showComparison,
+    finalScore,
+    runPostScanFlow,
+    dismissFindings,
+    dismissCTA,
+    dismissComparison,
+    trackCTAClick,
+  } = usePostScanFlow({ initialScore: 73, finalScore: 94 });
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -433,19 +458,32 @@ export default function ComplianceDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleCardClick = (label) => {
+  const handleCardClick = () => {
     // TODO: Navigate to framework-specific drill-down view (Phase 3b).
-    console.log(`[ComplianceDashboard] Drill-down requested for: ${label}`);
   };
 
-  const handleAction = (label, result) => {
-    // TODO: Replace with toast notification system once UI library is integrated.
-    console.log(`[ComplianceDashboard] Action completed: ${label}`, result);
+  const handleAction = () => {
+    // Actions are handled by QuickActions; post-scan flow is triggered via onScanComplete.
   };
+
+  // Derived: use animated score when post-scan flow is active
+  const displayScore = phase !== 'idle' ? score : (summary?.overall?.score ?? null);
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+
+        {/* Phase 1: scan-complete checkmark */}
+        <ScanCompleteCheck visible={phase === 'complete'} scanTimeSeconds={3.6} />
+
+        {/* Phase 3: findings toast */}
+        <FindingsToast findings={findings} onDismiss={dismissFindings} />
+
+        {/* Phase 5: industry comparison */}
+        {showComparison && (
+          <ComparisonBanner yourScore={finalScore} onDismiss={dismissComparison} />
+        )}
+
         <header className="mb-8">
           <h1 className="text-2xl font-black text-slate-900">Compliance Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Real-time overview across SOC 2, HIPAA, and FedRAMP frameworks</p>
@@ -465,7 +503,7 @@ export default function ComplianceDashboard() {
             <>
               <ScoreCard
                 label="Overall"
-                score={summary.overall.score}
+                score={displayScore ?? summary.overall.score}
                 trend={summary.overall.trend}
                 passing={summary.overall.passing}
                 failing={summary.overall.failing}
@@ -503,8 +541,18 @@ export default function ComplianceDashboard() {
           ) : null}
         </section>
 
+        {/* Phase 4: CTA banner (rendered below score cards) */}
+        {showCTA && (
+          <CTABanner
+            ctaVariant={ctaVariant}
+            onDismiss={dismissCTA}
+            onButtonClick={trackCTAClick}
+            onGeneratePDF={mockAPI.generatePDFReport}
+          />
+        )}
+
         {/* Trend Chart */}
-        <section aria-label="90-day compliance trend" className="mb-6">
+        <section aria-label="90-day compliance trend" className="mb-6 mt-6">
           {loading ? <ChartSkeleton /> : <TrendChart />}
         </section>
 
@@ -523,6 +571,7 @@ export default function ComplianceDashboard() {
               <QuickActions
                 scanInfo={summary ? { ...summary.lastScan, nextScan: summary.nextScan } : null}
                 onAction={handleAction}
+                onScanComplete={runPostScanFlow}
               />
             )}
           </div>

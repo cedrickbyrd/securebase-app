@@ -429,3 +429,41 @@ if (IS_PROD && typeof window !== 'undefined') {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Post-scan demo analytics helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Track the completion of a demo compliance scan.
+ */
+export function trackDemoScanComplete() {
+  trackEvent('Demo', 'ScanComplete', 'Success');
+}
+
+/**
+ * Track when the post-scan CTA is shown to a visitor.
+ *
+ * @param {'a'|'b'} variant - A/B test variant identifier.
+ */
+export function trackDemoCTAShown(variant) {
+  trackEvent('Demo', 'CTAShown', variant);
+}
+
+/**
+ * Track when a visitor clicks a post-scan CTA button.
+ *
+ * @param {string} trackKey - Button track identifier (e.g. 'demo_cta_trial').
+ */
+export function trackDemoCTAClick(trackKey) {
+  trackEvent('Demo', 'CTAClick', trackKey);
+}
+
+/**
+ * Track when a visitor views the post-scan findings toast.
+ *
+ * @param {number} count - Number of resolved issues shown.
+ */
+export function trackDemoFindingsViewed(count) {
+  trackEvent('Demo', 'FindingsViewed', `${count} issues`);
+}
+
