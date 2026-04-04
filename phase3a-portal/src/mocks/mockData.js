@@ -631,7 +631,7 @@ export const SOC2_SCAN_CATEGORIES = [
  */
 export function generateDemoScanResult() {
   const baseScore = 94;
-  const variance = Math.floor(Math.random() * 6) - 2; // -2 to +3
+  const variance = Math.floor(Math.random() * 6) - 2; // -2 to +3 (6 possible values)
   const newScore = Math.max(88, Math.min(98, baseScore + variance));
   const totalControls = 92;
   const passedControls = Math.round((newScore / 100) * totalControls);

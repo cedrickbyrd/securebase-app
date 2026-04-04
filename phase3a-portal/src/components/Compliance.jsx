@@ -8,6 +8,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
+const MAX_SCANS_PER_SESSION = 5;
+const TOTAL_SOC2_CONTROLS = 92;
 
 function getCustomerTier() {
   return localStorage.getItem('customerTier') || '';
@@ -28,7 +30,7 @@ export default function Compliance() {
   const [currentCategory, setCurrentCategory] = useState('');
   const [scanComplete, setScanComplete] = useState(false);
   const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'warning', text: string }
-  const [scanCount, setScanCount] = useState(0); // Rate limiting: max 5 scans per session
+  const [scanCount, setScanCount] = useState(0); // Rate limiting: max scans per session
   const SCAN_COOLDOWN_MS = 30_000; // 30 seconds between scans
   const lastScanTimeRef = useRef(null);
 
@@ -117,8 +119,8 @@ export default function Compliance() {
 
   const handleRunScan = async () => {
     // Rate limiting
-    if (scanCount >= 5) {
-      setToastMessage({ type: 'warning', text: 'Maximum scans per session reached (5). Please refresh to continue.' });
+    if (scanCount >= MAX_SCANS_PER_SESSION) {
+      setToastMessage({ type: 'warning', text: `Maximum scans per session reached (${MAX_SCANS_PER_SESSION}). Please refresh to continue.` });
       setTimeout(() => setToastMessage(null), 4000);
       return;
     }
@@ -164,7 +166,7 @@ export default function Compliance() {
       status: 'completed',
       scanType: 'demo',
       newScore,
-      metricsScanned: 92,
+      metricsScanned: TOTAL_SOC2_CONTROLS,
     });
     trackFeatureInteraction('Demo_Scan', 'completed');
 
@@ -181,7 +183,7 @@ export default function Compliance() {
       : 'No change in score.';
     setToastMessage({
       type: scoreChange >= 0 ? 'success' : 'warning',
-      text: `✅ Scan complete! 92 controls analyzed. ${changeText}`,
+      text: `✅ Scan complete! ${TOTAL_SOC2_CONTROLS} controls analyzed. ${changeText}`,
     });
     setTimeout(() => setToastMessage(null), 5000);
 
@@ -261,7 +263,7 @@ export default function Compliance() {
             />
           </div>
           <div className="mt-2 text-xs text-blue-700">
-            Analyzing 92 SOC2 controls across 8 categories...
+            Analyzing {TOTAL_SOC2_CONTROLS} SOC2 controls across {SOC2_SCAN_CATEGORIES.length} categories...
           </div>
         </div>
       )}
@@ -322,7 +324,7 @@ export default function Compliance() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Scanning 92 SOC2 Controls...
+              Scanning {TOTAL_SOC2_CONTROLS} SOC2 Controls...
             </>
           ) : (
             <>
@@ -337,7 +339,7 @@ export default function Compliance() {
         {/* Scan count indicator (shown when approaching limit) */}
         {scanCount >= 3 && (
           <span className="text-xs text-gray-400">
-            {5 - scanCount} scan{5 - scanCount !== 1 ? 's' : ''} remaining this session
+            {MAX_SCANS_PER_SESSION - scanCount} scan{MAX_SCANS_PER_SESSION - scanCount !== 1 ? 's' : ''} remaining this session
           </span>
         )}
       </div>
