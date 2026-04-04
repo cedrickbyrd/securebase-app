@@ -458,11 +458,11 @@ export default function ComplianceDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleCardClick = (_label) => {
+  const handleCardClick = () => {
     // TODO: Navigate to framework-specific drill-down view (Phase 3b).
   };
 
-  const handleAction = (_label, _result) => {
+  const handleAction = () => {
     // Actions are handled by QuickActions; post-scan flow is triggered via onScanComplete.
   };
 
