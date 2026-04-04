@@ -161,7 +161,7 @@ export default function Pricing() {
   useEffect(() => {
     const interval = setInterval(() => {
       setDaysRemaining(getDaysUntil(PILOT_DEADLINE));
-    }, 60 * 60 * 1000); // recalculate once per hour; days only change daily
+    }, 24 * 60 * 60 * 1000); // recalculate once per day; value only changes daily
     return () => clearInterval(interval);
   }, []);
 

@@ -434,10 +434,12 @@ export default function ComplianceDashboard() {
   }, []);
 
   const handleCardClick = (label) => {
+    // TODO: Navigate to framework-specific drill-down view (Phase 3b).
     console.log(`[ComplianceDashboard] Drill-down requested for: ${label}`);
   };
 
   const handleAction = (label, result) => {
+    // TODO: Replace with toast notification system once UI library is integrated.
     console.log(`[ComplianceDashboard] Action completed: ${label}`, result);
   };
 
