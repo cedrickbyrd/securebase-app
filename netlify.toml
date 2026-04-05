@@ -8,98 +8,54 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
 
-# 1. AUTH
+# API REDIRECTS - Clean, no headers
 [[redirects]]
   from = "/api/login"
   to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
   status = 200
   force = true
-  headers = {X-From = "Netlify-SecureBase"}
 
-# 2. CHECKOUT (AWS Lambda)
 [[redirects]]
   from = "/api/checkout"
   to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
   status = 200
   force = true
-  headers = {X-From = "Netlify-SecureBase"}
 
-# 3. SIGNUP / ONBOARDING
 [[redirects]]
   from = "/api/signup"
   to = "https://api.securebase.tximhotep.com/signup"
   status = 200
   force = true
-  headers = {X-From = "Netlify-SecureBase"}
 
 [[redirects]]
   from = "/api/verify-email"
   to = "https://api.securebase.tximhotep.com/verify-email"
   status = 200
   force = true
-  headers = {X-From = "Netlify-SecureBase"}
 
 [[redirects]]
   from = "/api/onboarding/*"
   to = "https://api.securebase.tximhotep.com/onboarding/:splat"
   status = 200
   force = true
-  headers = {X-From = "Netlify-SecureBase"}
 
-# 5. ADMIN METRICS
+# ADMIN REDIRECTS
 [[redirects]]
-  from = "/admin/metrics"
+  from = "/admin/*"
   to = "/.netlify/functions/get-admin-metrics"
   status = 200
   force = true
 
-[[redirects]]
-  from = "/admin/customers"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/api-performance"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/infrastructure"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/security"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/costs"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/deployments"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
-
-# 4. SPA FALLBACK (MUST BE LAST)
+# SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# 6. CSP HEADERS - FIXED FOR STRIPE
+# CSP HEADERS
 [[headers]]
   for = "/*"
   [headers.values]
-    # Updated CSP to allow Stripe Checkout
     Content-Security-Policy = """
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com;
@@ -117,7 +73,6 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
-# Specific CSP for checkout page (more permissive for Stripe)
 [[headers]]
   for = "/checkout"
   [headers.values]
