@@ -17,6 +17,8 @@
     "@aws-sdk/client-s3": "^3.995.0",
     "@aws-sdk/client-ses": "^3.995.0",
     "@aws-sdk/lib-dynamodb": "^3.992.0",
+    "@stripe/react-stripe-js": "^6.1.0",
+    "@stripe/stripe-js": "^9.0.1",
     "@supabase/supabase-js": "^2.97.0",
     "antd": "^6.3.0",
     "chart.js": "^4.5.1",
@@ -25,9 +27,9 @@
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
+    "react-ga4": "^2.1.0",
     "react-router-dom": "^7.13.1",
-    "stripe": "^20.4.1",
-    "react-ga4": "^2.1.0"
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
