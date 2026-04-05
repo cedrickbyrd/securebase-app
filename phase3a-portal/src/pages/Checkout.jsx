@@ -1,197 +1,192 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { PRICING_TIERS } from '../config/live-config';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
+import { trackCheckoutStarted } from '../utils/analytics';
+
+const PLAN_LABELS = {
+  standard: 'Standard',
+  fintech: 'Fintech / Healthcare',
+  enterprise: 'Enterprise / FedRAMP',
+};
+
+const PLAN_PRICES = {
+  standard: 499,
+  fintech: 1499,
+  enterprise: 3999,
+};
 
 export default function Checkout() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { tier, priceId } = location.state || {};
+  const [searchParams] = useSearchParams();
 
-  const [formData, setFormData] = useState({
-    email: '',
-    company: '',
-    usePilot: true,
-  });
+  const plan = searchParams.get('plan') || 'standard';
+  const priceId = searchParams.get('priceId') || '';
+  const planName = searchParams.get('planName') || PLAN_LABELS[plan] || plan;
+
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Redirect to pricing if no tier selected
-    if (!tier || !priceId) {
-      navigate('/pricing');
-    }
-  }, [tier, priceId, navigate]);
-
-  const selectedTier = PRICING_TIERS[tier];
-  if (!selectedTier) return null;
+    trackCheckoutStarted(plan);
+  }, [plan]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/checkout`, {
+      // Use window.location.origin so the redirect URLs work correctly
+      // in every environment (localhost, staging, production, Netlify preview).
+      const origin = window.location.origin;
+
+      const response = await fetch('/.netlify/functions/securebase-checkout-api', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tier: tier,
-          email: formData.email,
-          name: formData.company,
-          use_pilot_coupon: formData.usePilot,
-          successUrl: `${window.location.origin}/thank-you`,
-          cancelUrl: `${window.location.origin}/pricing`,
+          customer_email: email,
+          price_id: priceId,
+          plan_name: planName,
+          success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
+          cancel_url: `${origin}/pricing`,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        if (response.status === 429) {
-          const nextDate = data.next_signup_date;
-          const errorMsg = nextDate 
-            ? `This email was recently used. You can sign up again on ${nextDate}.`
-            : data.error || 'Rate limit exceeded. Please try again later.';
-          throw new Error(errorMsg);
-        }
-        throw new Error(data.error || 'Failed to create checkout session');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const { checkout_url } = await response.json();
+
+      if (!checkout_url) {
+        throw new Error('No checkout URL returned from server.');
       }
 
       // Redirect to Stripe Checkout
-      window.location.href = data.checkout_url;
+      window.location.href = checkout_url;
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
 
-  const displayPrice = formData.usePilot ? selectedTier.pilotPrice : selectedTier.price;
-  const savings = selectedTier.price - selectedTier.pilotPrice;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 py-12">
-      <div className="max-w-3xl mx-auto px-6">
-        {/* Back to Pricing */}
-        <button
-          onClick={() => navigate('/pricing')}
-          className="text-blue-300 hover:text-blue-200 mb-6 flex items-center gap-2"
-        >
-          ← Back to Pricing
-        </button>
-
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Complete Your Order</h1>
-            <p className="text-gray-300">You're one step away from enterprise-grade security</p>
-          </div>
-
-          {/* Selected Plan Summary */}
-          <div className="bg-blue-900/30 rounded-lg p-6 mb-8 border border-blue-500/30">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-2xl font-bold text-white">{selectedTier.name}</h3>
-                <p className="text-gray-300 text-sm mt-1">{selectedTier.description}</p>
-              </div>
-              {formData.usePilot && (
-                <span className="bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-bold">
-                  🎉 Pilot Pricing
-                </span>
-              )}
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-3"
+          >
+            <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] p-2 rounded-lg shadow-md">
+              <Shield className="text-white w-5 h-5" />
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-white">
-                ${displayPrice.toLocaleString()}
-              </span>
-              <span className="text-gray-400">/month</span>
+            <div className="text-left">
+              <div className="text-lg font-bold">SecureBase</div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
             </div>
-            {formData.usePilot && (
-              <p className="text-yellow-400 text-sm mt-2">
-                Save ${savings.toLocaleString()}/month with pilot program pricing
-              </p>
-            )}
-          </div>
-
-          {/* Checkout Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-300 text-sm">{error}</p>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-white font-semibold mb-2">
-                Work Email *
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white font-semibold mb-2">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Acme Corporation"
-              />
-            </div>
-
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.usePilot}
-                  onChange={(e) => setFormData({ ...formData, usePilot: e.target.checked })}
-                  className="mt-1"
-                />
-                <div>
-                  <span className="text-white font-semibold">Apply Pilot Program Discount (50% off)</span>
-                  <p className="text-gray-300 text-sm mt-1">
-                    Early adopters save ${savings.toLocaleString()}/month
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                `Continue to Payment →`
-              )}
-            </button>
-
-            <p className="text-gray-400 text-sm text-center">
-              You'll be redirected to Stripe for secure payment processing
-            </p>
-          </form>
+          </button>
+          <button
+            onClick={() => navigate('/pricing')}
+            className="flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-[#667eea] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Pricing
+          </button>
         </div>
-      </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Plan summary */}
+          <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-2xl p-6 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
+                <p className="text-xl font-bold">{PLAN_LABELS[plan] || planName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-black">
+                  ${PLAN_PRICES[plan]?.toLocaleString() ?? '—'}
+                </p>
+                <p className="text-purple-200 text-xs">/month</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Checkout form */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
+            <p className="text-slate-500 text-sm mb-6">
+              Enter your work email. You will be redirected to Stripe to complete payment securely.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="checkout-email"
+                  className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
+                >
+                  Work Email
+                </label>
+                <input
+                  id="checkout-email"
+                  type="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader className="animate-spin w-5 h-5" />
+                    Redirecting to Stripe…
+                  </>
+                ) : (
+                  <>
+                    Continue to Payment
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Trust signals */}
+            <div className="mt-6 pt-5 border-t border-slate-100">
+              <div className="flex flex-col gap-2">
+                {[
+                  'Secured by Stripe — PCI DSS Level 1',
+                  '14-day free trial, cancel anytime',
+                  'SOC 2 Type II certified infrastructure',
+                ].map((line) => (
+                  <div key={line} className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="text-xs text-slate-500">{line}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
