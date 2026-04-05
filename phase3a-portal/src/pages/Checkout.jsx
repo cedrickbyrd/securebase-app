@@ -23,9 +23,9 @@ export default function Checkout() {
   const planName = searchParams.get('planName') || PLAN_LABELS[plan] || plan;
 
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,19 +33,19 @@ export default function Checkout() {
     setError(null);
 
     try {
-      // Use window.location.origin so the redirect URLs work correctly
-      // in every environment (localhost, staging, production, Netlify preview).
       const origin = window.location.origin;
 
-      const response = await fetch('/.netlify/functions/securebase-checkout-api', {
+      // ✅ FIXED: Use /api/checkout (routes to AWS Lambda via netlify.toml)
+      const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_email: email,
-          price_id: priceId,
-          plan_name: planName,
-          success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
-          cancel_url: `${origin}/pricing`,
+          // ✅ FIXED: AWS Lambda expects 'email' and 'name' (not customer_email, price_id)
+          email: email,
+          name: name || email.split('@')[0], // Use name if provided, otherwise extract from email
+          priceId: priceId, // ✅ FIXED: camelCase for AWS Lambda
+          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
+          cancelUrl: `${origin}/pricing`,
         }),
       });
 
@@ -118,10 +118,30 @@ export default function Checkout() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
             <p className="text-slate-500 text-sm mb-6">
-              Enter your work email. You will be redirected to Stripe to complete payment securely.
+              Enter your details. You will be redirected to Stripe to complete payment securely.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Name field - NEW */}
+              <div>
+                <label
+                  htmlFor="checkout-name"
+                  className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
+                >
+                  Full Name
+                </label>
+                <input
+                  id="checkout-name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+                />
+              </div>
+
+              {/* Email field */}
               <div>
                 <label
                   htmlFor="checkout-email"
