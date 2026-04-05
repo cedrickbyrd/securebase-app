@@ -46,7 +46,7 @@
   force = true
   headers = {X-From = "Netlify-SecureBase"}
 
-# 5. ADMIN METRICS (Phase 5.1) - proxy to Netlify functions
+# 5. ADMIN METRICS
 [[redirects]]
   from = "/admin/metrics"
   to = "/.netlify/functions/get-admin-metrics"
@@ -93,7 +93,11 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200[[headers]]
+  status = 200
+  force = true
+
+# 6. CSP HEADERS
+[[headers]]
   for = "/*"
   [headers.values]
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com https://*.netlify.app https://*.netlify.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';"
