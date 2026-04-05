@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
-import { trackCheckoutStarted } from '../utils/analytics';
 
 const PLAN_LABELS = {
   standard: 'Standard',
