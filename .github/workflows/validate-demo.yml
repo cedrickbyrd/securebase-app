@@ -19,6 +19,8 @@ jobs:
     name: Validate demo.securebase.tximhotep.com
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -241,6 +243,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-demo
     if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
 
     steps:
       - name: Create issue on failure
