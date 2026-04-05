@@ -444,7 +444,7 @@ export const sreService = {
       return results;
     }
 
-    const query = Array.isArray(frameworks) ? frameworks.join(',') : frameworks;
+    const query = frameworks.join(',');
     const response = await fetch(`/api/sre/compliance/score?frameworks=${query}`, {
       headers: buildHeaders()
     });
