@@ -16,9 +16,11 @@ on:
 
 jobs:
   validate-demo:
-    name: Validate demo.securebase.io
+    name: Validate demo.securebase.tximhotep.com
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -33,7 +35,7 @@ jobs:
           echo "🔍 Checking demo site accessibility..."
 
           # Check HTTP 200 response
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.io/)
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.tximhotep.com/)
           if [ "$response_code" -eq 200 ]; then
             echo "✅ Site is accessible (HTTP $response_code)"
           else
@@ -42,7 +44,7 @@ jobs:
           fi
 
           # Check HTTPS redirect
-          http_redirect=$(curl -s -o /dev/null -w "%{http_code}" http://demo.securebase.io/)
+          http_redirect=$(curl -s -o /dev/null -w "%{http_code}" http://demo.securebase.tximhotep.com/)
           if [ "$http_redirect" -eq 301 ] || [ "$http_redirect" -eq 308 ]; then
             echo "✅ HTTP → HTTPS redirect works (HTTP $http_redirect)"
           else
@@ -53,7 +55,7 @@ jobs:
         run: |
           echo "🔒 Validating security headers..."
 
-          headers=$(curl -sI https://demo.securebase.io/)
+          headers=$(curl -sI https://demo.securebase.tximhotep.com/)
 
           # Check Content-Security-Policy
           if echo "$headers" | grep -qi "Content-Security-Policy"; then
@@ -119,7 +121,7 @@ jobs:
         run: |
           echo "📄 Checking security.txt file..."
 
-          response=$(curl -s https://demo.securebase.io/.well-known/security.txt)
+          response=$(curl -s https://demo.securebase.tximhotep.com/.well-known/security.txt)
 
           if [ -z "$response" ]; then
             echo "❌ security.txt file not found"
@@ -178,7 +180,7 @@ jobs:
               console.log('🔍 Testing demo login flow...');
 
               // Navigate to demo site
-              await page.goto('https://demo.securebase.io/', { timeout: 10000 });
+              await page.goto('https://demo.securebase.tximhotep.com/', { timeout: 10000 });
               console.log('✅ Demo site loaded');
 
               // Check for login form
@@ -208,7 +210,7 @@ jobs:
         uses: treosh/lighthouse-ci-action@v11
         continue-on-error: true
         with:
-          urls: 'https://demo.securebase.io/'
+          urls: 'https://demo.securebase.tximhotep.com/'
           uploadArtifacts: true
           temporaryPublicStorage: true
 
@@ -217,7 +219,7 @@ jobs:
         run: |
           echo "## 🎯 Demo Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** demo.securebase.io" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** demo.securebase.tximhotep.com" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Checks Performed" >> $GITHUB_STEP_SUMMARY
@@ -241,6 +243,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-demo
     if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
 
     steps:
       - name: Create issue on failure
@@ -249,7 +253,7 @@ jobs:
           script: |
             const title = `🚨 Demo Environment Validation Failed - ${new Date().toISOString().split('T')[0]}`;
             const body = `## Demo Validation Failure\n\n` +
-              `The automated validation of demo.securebase.io has failed.\n\n` +
+              `The automated validation of demo.securebase.tximhotep.com has failed.\n\n` +
               `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
               `**Timestamp:** ${new Date().toISOString()}\n\n` +
               `Please investigate and resolve the issue.`;
