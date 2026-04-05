@@ -26,9 +26,6 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    trackCheckoutStarted(plan);
-  }, [plan]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
