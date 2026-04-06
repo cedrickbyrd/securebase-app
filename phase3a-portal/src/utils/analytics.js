@@ -406,3 +406,68 @@ export function trackSandboxCTAClick() {
 export function trackAssessmentCTAClick() {
   trackEvent('assessment_cta_click', { page: 'compliance' });
 }
+
+// ---------------------------------------------------------------------------
+// Signup conversion tracking
+// ---------------------------------------------------------------------------
+
+/**
+ * Fire when a user successfully completes the signup form (account created).
+ * Uses GA4's recommended `sign_up` event so it can be marked as a conversion
+ * in the GA4 admin without any additional configuration.
+ *
+ * Also fires a `signup_form_submitted` custom event for richer segmentation.
+ *
+ * HIPAA NOTE: Do NOT pass email, name, or any PII in these parameters.
+ *
+ * @param {Object} [params]
+ * @param {string} [params.industry]        e.g. 'healthcare', 'fintech'
+ * @param {string} [params.org_size]        e.g. '11-50', '51-200'
+ * @param {string} [params.guardrails_level] e.g. 'standard', 'enhanced', 'sovereign'
+ */
+export function trackSignupConversion({ industry, org_size, guardrails_level } = {}) {
+  const utmParams = getUtmParams();
+
+  // GA4 recommended event — appears in Conversions reports automatically
+  // once marked as a conversion in GA4 Admin.
+  trackEvent('sign_up', {
+    method: 'email',
+    ...(industry && { industry }),
+    ...(org_size && { org_size }),
+    ...(guardrails_level && { guardrails_level }),
+    ...utmParams,
+  });
+
+  // Custom event for richer funnel analysis in Explore reports.
+  trackEvent('signup_form_submitted', {
+    ...(industry && { industry }),
+    ...(org_size && { org_size }),
+    ...(guardrails_level && { guardrails_level }),
+    ...utmParams,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Fire when a user initiates the Stripe checkout flow (tier selected, form
+ * validated, redirecting to Stripe).  Uses GA4's recommended `begin_checkout`
+ * e-commerce event so it integrates with the purchase funnel automatically.
+ *
+ * HIPAA NOTE: Do NOT pass email or company name here.
+ *
+ * @param {Object} params
+ * @param {string} params.tier    e.g. 'standard', 'fintech', 'healthcare', 'government'
+ * @param {number} params.value   Monthly price in USD (e.g. 2000)
+ * @param {boolean} params.pilot  Whether the pilot discount was applied
+ */
+export function trackCheckoutStarted({ tier, value, pilot = false } = {}) {
+  const utmParams = getUtmParams();
+
+  trackEvent('begin_checkout', {
+    currency: 'USD',
+    value,
+    items: [{ item_id: tier, item_name: `SecureBase ${tier}` }],
+    pilot_discount: pilot,
+    ...utmParams,
+  });
+}
