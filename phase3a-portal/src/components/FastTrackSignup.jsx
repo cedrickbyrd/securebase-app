@@ -248,8 +248,11 @@ export default function FastTrackSignup({ wave3Target = null, onSuccess }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: trimmed, magic_link: true }),
         });
-      } catch {
-        // Magic link delivery is best-effort; don't block the UX
+      } catch (magicLinkErr) {
+        // Magic link delivery is best-effort; don't block the UX, but log so
+        // on-call engineers can identify delivery issues in production logs.
+        console.warn('[FastTrackSignup] Magic link request failed (non-fatal):',
+          magicLinkErr instanceof Error ? magicLinkErr.message : 'Unknown error');
       }
 
       // 3. Analytics
@@ -263,7 +266,10 @@ export default function FastTrackSignup({ wave3Target = null, onSuccess }) {
       onSuccess?.({ email: trimmed });
     } catch (err) {
       setSubmitError('Something went wrong. Please try again.');
-      console.warn('[FastTrackSignup] submission error:', err);
+      // Log only the message (not the full error object) to avoid leaking
+      // any response body that may contain server-side details.
+      console.warn('[FastTrackSignup] submission error:',
+        err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSubmitting(false);
     }
