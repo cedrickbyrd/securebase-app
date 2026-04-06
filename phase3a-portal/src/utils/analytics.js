@@ -421,11 +421,11 @@ export function trackAssessmentCTAClick() {
  * HIPAA NOTE: Do NOT pass email, name, or any PII in these parameters.
  *
  * @param {Object} [params]
- * @param {string} [params.industry]        e.g. 'healthcare', 'fintech'
- * @param {string} [params.org_size]        e.g. '11-50', '51-200'
- * @param {string} [params.guardrails_level] e.g. 'standard', 'enhanced', 'sovereign'
+ * @param {string} [params.industry]       e.g. 'healthcare', 'fintech'
+ * @param {string} [params.orgSize]        e.g. '11-50', '51-200'
+ * @param {string} [params.guardrailsLevel] e.g. 'standard', 'enhanced', 'sovereign'
  */
-export function trackSignupConversion({ industry, org_size, guardrails_level } = {}) {
+export function trackSignupConversion({ industry, orgSize, guardrailsLevel } = {}) {
   const utmParams = getUtmParams();
 
   // GA4 recommended event — appears in Conversions reports automatically
@@ -433,16 +433,16 @@ export function trackSignupConversion({ industry, org_size, guardrails_level } =
   trackEvent('sign_up', {
     method: 'email',
     ...(industry && { industry }),
-    ...(org_size && { org_size }),
-    ...(guardrails_level && { guardrails_level }),
+    ...(orgSize && { org_size: orgSize }),
+    ...(guardrailsLevel && { guardrails_level: guardrailsLevel }),
     ...utmParams,
   });
 
   // Custom event for richer funnel analysis in Explore reports.
   trackEvent('signup_form_submitted', {
     ...(industry && { industry }),
-    ...(org_size && { org_size }),
-    ...(guardrails_level && { guardrails_level }),
+    ...(orgSize && { org_size: orgSize }),
+    ...(guardrailsLevel && { guardrails_level: guardrailsLevel }),
     ...utmParams,
     timestamp: new Date().toISOString(),
   });
