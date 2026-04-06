@@ -11,6 +11,7 @@ import { CUSTOMER_TIERS } from '../config/customerTiers';
 import { trackPageView, trackPageEngagement, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
 import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
 import PersonalizedBanner from './PersonalizedBanner';
+import { usePersonalization } from '../hooks/usePersonalization';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
