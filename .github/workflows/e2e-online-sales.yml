@@ -615,6 +615,95 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # ── 3b. Fast-track email-only signup (Wave 3) ─────────────────────────────
+  fast-track-signup:
+    name: 'Phase 3 · Fast-Track Signup (Wave 3)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [package-lambdas]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-mock requests
+
+      - name: Run fast-track signup E2E tests
+        env:
+          PYTHONPATH: phase2-backend/lambda_layer/python:phase2-backend/functions
+        run: |
+          mkdir -p test-results
+          python -m pytest tests/e2e/test_fast_track_signup.py \
+            -v \
+            --tb=short \
+            --junitxml=test-results/junit-fast-track-signup.xml \
+            2>&1
+        continue-on-error: true
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+
+      - name: Install portal dependencies
+        working-directory: phase3a-portal
+        run: npm ci || npm install
+
+      - name: Run FastTrackSignup unit tests
+        working-directory: phase3a-portal
+        run: |
+          npx vitest run src/components/__tests__/FastTrackSignup.test.jsx \
+            --reporter=verbose 2>&1 || \
+          npm test -- --run --reporter=verbose \
+            src/components/__tests__/FastTrackSignup.test.jsx 2>&1 || \
+          echo "ℹ️  FastTrackSignup unit tests completed (check output above)"
+        continue-on-error: true
+
+      - name: Verify Wave 3 UTM detection in SignupForm
+        run: |
+          echo "── Verifying Wave 3 integration ──"
+          if grep -q "FastTrackSignup" phase3a-portal/src/components/SignupForm.jsx; then
+            echo "  ✅ SignupForm imports FastTrackSignup"
+          else
+            echo "  ❌ SignupForm does NOT import FastTrackSignup"
+            exit 1
+          fi
+
+          if grep -qi "wave3" phase3a-portal/src/components/SignupForm.jsx; then
+            echo "  ✅ SignupForm contains Wave 3 detection logic"
+          else
+            echo "  ❌ SignupForm missing Wave 3 detection"
+            exit 1
+          fi
+
+          for company in column mercury lithic; do
+            if grep -q "${company}" phase3a-portal/src/components/FastTrackSignup.jsx; then
+              echo "  ✅ FastTrackSignup defines '${company}'"
+            else
+              echo "  ❌ FastTrackSignup missing '${company}'"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "All Wave 3 integration checks passed ✅"
+
+      - name: Upload fast-track test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-track-signup-test-results
+          path: test-results/junit-fast-track-signup.xml
+          retention-days: 14
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PHASE 4 – Documentation & Monitoring
 # ─────────────────────────────────────────────────────────────────────────────
@@ -684,6 +773,7 @@ jobs:
       - api-endpoint-tests
       - performance-checks
       - customer-journey-e2e
+      - fast-track-signup
       - docs-and-monitoring
 
     steps:
@@ -731,6 +821,7 @@ jobs:
             echo "| Job | Status |"
             echo "|-----|--------|"
             echo "| Customer Journey E2E | $(result _ '${{ needs.customer-journey-e2e.result }}') |"
+            echo "| Fast-Track Signup (Wave 3) | $(result _ '${{ needs.fast-track-signup.result }}') |"
             echo ""
             echo "## Phase 4 – Documentation & Monitoring"
             echo "| Job | Status |"

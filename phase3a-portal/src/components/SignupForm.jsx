@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
-import { trackSignupView } from '../utils/analytics';
+import { trackSignupView, getWave3Target } from '../utils/analytics';
+import FastTrackSignup from './FastTrackSignup';
 import './SignupForm.css';
 
 const TIERS = [
@@ -326,6 +327,20 @@ function validate(step, form) {
   return errs;
 }
 
+/**
+ * Detect Wave 3 UTM campaign from the URL or sessionStorage.
+ * Returns the target slug (e.g. 'column') for wave3_* campaigns, else null.
+ */
+function detectWave3Target() {
+  const params = new URLSearchParams(window.location.search);
+  const campaign = params.get('utm_campaign') || '';
+  if (campaign.startsWith('wave3_')) {
+    return campaign.slice(6);
+  }
+  // Fall back to session state set by analytics.js initializeSessionTracking()
+  return getWave3Target();
+}
+
 export default function SignupForm({ onSuccess }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -334,9 +349,17 @@ export default function SignupForm({ onSuccess }) {
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // Detect Wave 3 once on mount (URL takes precedence over session).
+  const wave3Target = detectWave3Target();
+
   useEffect(() => {
     trackSignupView();
   }, []);
+
+  // Fast-track path: Wave 3 visitors see the single-field email form.
+  if (wave3Target) {
+    return <FastTrackSignup wave3Target={wave3Target} onSuccess={onSuccess} />;
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
