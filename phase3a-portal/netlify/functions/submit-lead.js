@@ -18,6 +18,12 @@ const CORS_HEADERS = {
 };
 
 exports.handler = async (event) => {
+// DEBUG: Log environment variables (remove after debugging)
+  console.log('[DEBUG] VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL ? 'SET' : 'NOT SET');
+  console.log('[DEBUG] SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
+  console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET');
+  console.log('[DEBUG] SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT SET');
+
   // ── CORS preflight ──────────────────────────────────────────────────────
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' };
