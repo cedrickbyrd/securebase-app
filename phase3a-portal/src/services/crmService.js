@@ -40,9 +40,11 @@ export function getStoredLead() {
  */
 function saveLeadLocally(fields) {
   const existing = getStoredLead() || {};
+  const isReturning = !!existing.firstSeenAt; // truthy after the first save
   const merged = { ...existing, ...fields, updatedAt: new Date().toISOString() };
   if (!merged.firstSeenAt) merged.firstSeenAt = new Date().toISOString();
-  merged.returnVisits = (existing.returnVisits || 0) + (existing.email ? 0 : 1);
+  // Increment returnVisits only on visits after the first capture
+  merged.returnVisits = (existing.returnVisits || 0) + (isReturning ? 1 : 0);
   try {
     localStorage.setItem(LEAD_STORAGE_KEY, JSON.stringify(merged));
   } catch {
@@ -126,7 +128,8 @@ export async function submitLead(fields) {
     });
 
     if (!response.ok) {
-      console.warn('[CRM] Lead submission returned non-OK status:', response.status);
+      const body = await response.text().catch(() => '');
+      console.warn('[CRM] Lead submission returned non-OK status:', response.status, body);
     }
   } catch (err) {
     // Network error — lead is already saved locally, so no data is lost

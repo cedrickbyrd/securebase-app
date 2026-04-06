@@ -57,6 +57,11 @@ export default function LeadCaptureForm({ trigger = 'default', onSuccess, onDism
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
+  const [emailError, setEmailError] = useState(null);
+
+  // Basic email format validation
+  const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const isEmailReadOnly = !!stored?.email;
 
   const copy = COPY[trigger] || DEFAULT_COPY;
 
@@ -71,6 +76,13 @@ export default function LeadCaptureForm({ trigger = 'default', onSuccess, onDism
 
     setSubmitting(true);
     setError(null);
+
+    if (!EMAIL_RE.test(email.trim())) {
+      setEmailError('Please enter a valid work email address.');
+      setSubmitting(false);
+      return;
+    }
+    setEmailError(null);
 
     try {
       const lead = await submitLead({
@@ -127,11 +139,22 @@ export default function LeadCaptureForm({ trigger = 'default', onSuccess, onDism
           required
           placeholder="work@company.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError(null);
+          }}
+          className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+            isEmailReadOnly
+              ? 'bg-gray-100 cursor-not-allowed text-gray-500 border-gray-200'
+              : emailError
+              ? 'border-red-400 bg-red-50'
+              : 'border-gray-300'
+          }`}
           autoComplete="email"
-          readOnly={!!stored?.email}
+          readOnly={isEmailReadOnly}
+          aria-label={isEmailReadOnly ? 'Email address (pre-filled)' : 'Email address'}
         />
+        {emailError && <p className="text-xs text-red-600 -mt-1">{emailError}</p>}
 
         {showCompany && (
           <input

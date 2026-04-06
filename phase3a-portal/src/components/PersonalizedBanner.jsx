@@ -7,7 +7,7 @@
  * Renders nothing for non-Wave-3 sessions.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { getWave3Target, trackWave3HighValueAction } from '../utils/analytics';
 
@@ -53,14 +53,9 @@ const WAVE3_CONFIGS = {
 // ---------------------------------------------------------------------------
 
 export default function PersonalizedBanner() {
-  const [target, setTarget] = useState(null);
+  // Read synchronously from sessionStorage on initial render — no effect needed.
+  const [target] = useState(() => getWave3Target());
   const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    // getWave3Target() reads sessionStorage populated by initializeSessionTracking()
-    // which is called inside the app on mount before this component renders.
-    setTarget(getWave3Target());
-  }, []);
 
   if (!target || dismissed) return null;
 

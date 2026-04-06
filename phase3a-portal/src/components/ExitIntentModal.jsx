@@ -23,9 +23,10 @@ export default function ExitIntentModal() {
 
   const handleMouseLeave = useCallback(
     (e) => {
-      // Only trigger when cursor exits via the top of the viewport
-      // relatedTarget === null means cursor left the browser window entirely
-      if (e.relatedTarget !== null || e.clientY > 0) return;
+      // Only trigger when cursor exits strictly above the viewport top.
+      // relatedTarget === null means the cursor left the browser window entirely.
+      // clientY < 0 ensures we only respond to upward exits (towards address bar).
+      if (e.relatedTarget !== null || e.clientY >= 0) return;
 
       const alreadyShown = sessionStorage.getItem(SESSION_KEY);
       const alreadyConverted = !!getStoredLead()?.email;
