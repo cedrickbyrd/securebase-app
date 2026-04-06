@@ -15,6 +15,7 @@ import LandingPage from './pages/LandingPage';
 import ThankYou from './pages/ThankYou';
 import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
+import ExitIntentModal from './components/ExitIntentModal';
 import './App.css';
 
 function OnboardingRoute() {
@@ -52,7 +53,8 @@ function App() {
 
   return (
     <Router>
-      <ExitIntentModal />
+      {/* Exit-intent modal — rendered globally for all authenticated routes */}
+      {isAuthenticated && <ExitIntentModal />}
       <Routes>
         <Route path="/login"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login setAuth={setIsAuthenticated} />} />
         <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) =>

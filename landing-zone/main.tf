@@ -202,6 +202,8 @@ module "api_gateway" {
   forecasting_lambda_name = module.lambda_functions.cost_forecasting_name
   health_check_lambda_arn  = module.lambda_functions.health_check_arn
   health_check_lambda_name = module.lambda_functions.health_check_name
+  submit_lead_lambda_arn   = module.lambda_functions.submit_lead_arn
+  submit_lead_lambda_name  = module.lambda_functions.submit_lead_name
   tags = merge(var.tags, { Phase = "Phase3-API" })
   depends_on = [module.lambda_functions]
 }

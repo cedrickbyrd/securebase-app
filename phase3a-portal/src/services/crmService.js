@@ -1,35 +1,42 @@
 /**
- * CRM Service
- * Persists lead data to localStorage, fires a webhook/Netlify function, and
- * optionally sends an urgent Slack-style notification for HOT leads.
+ * crmService.js
+ *
+ * Handles lead capture submission:
+ *   1. Persists lead data locally (localStorage) for progressive profiling.
+ *   2. POSTs to the AWS Lambda endpoint (via API Gateway /leads) for backend
+ *      notification and webhook forwarding.
+ *
+ * HIPAA NOTE: Email and company data are stored in localStorage only — they
+ * are never sent to GA4 or any analytics endpoint. The server-side Lambda
+ * is responsible for secure handling and notification delivery.
  */
 
-import { calculateLeadScore, getSessionBehaviouralSignals } from './leadScoringService';
-
-const LEAD_KEY = 'sb_lead';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getUtmParams() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    campaign: params.get('utm_campaign') || '',
-    source:   params.get('utm_source')   || '',
-    medium:   params.get('utm_medium')   || '',
-    content:  params.get('utm_content')  || '',
-  };
-}
+import { calculateLeadScore } from './leadScoringService';
 
 /**
- * Read the persisted lead object from localStorage.
- * Returns null when no lead has been captured yet.
+ * The lead capture endpoint.
+ *
+ * Points to the API Gateway /leads route backed by the submit_lead Lambda.
+ * In demo mode (VITE_DEMO_MODE=true) or when the env var is absent, falls
+ * back to a no-op so local development works without AWS credentials.
+ *
+ * Set VITE_LEAD_CAPTURE_URL in .env / .env.demo / Netlify environment to the
+ * full API Gateway invoke URL, e.g.:
+ *   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/leads
+ */
+const LEAD_CAPTURE_URL = import.meta.env.VITE_LEAD_CAPTURE_URL || '';
+
+// ---------------------------------------------------------------------------
+// Local persistence helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the stored lead object from localStorage, or null.
  * @returns {Object|null}
  */
-export function getLeadFromLocalStorage() {
+export function getStoredLead() {
   try {
-    const raw = localStorage.getItem(LEAD_KEY);
+    const raw = localStorage.getItem(LEAD_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -37,96 +44,110 @@ export function getLeadFromLocalStorage() {
 }
 
 /**
- * Merge new fields into the persisted lead and write it back to localStorage.
- * @param {Object} updates
- * @returns {Object} Updated lead object
+ * Merges new fields into the stored lead and persists.
+ * Existing fields are preserved (progressive profiling).
+ * @param {Object} fields
+ * @returns {Object} merged lead
  */
-function updatePersistedLead(updates) {
-  const current = getLeadFromLocalStorage() || {};
-  const updated  = { ...current, ...updates };
+function saveLeadLocally(fields) {
+  const existing = getStoredLead() || {};
+  const isReturning = !!existing.firstSeenAt; // truthy after the first save
+  const merged = { ...existing, ...fields, updatedAt: new Date().toISOString() };
+  if (!merged.firstSeenAt) merged.firstSeenAt = new Date().toISOString();
+  // Increment returnVisits only on visits after the first capture
+  merged.returnVisits = (existing.returnVisits || 0) + (isReturning ? 1 : 0);
   try {
-    localStorage.setItem(LEAD_KEY, JSON.stringify(updated));
+    localStorage.setItem(LEAD_STORAGE_KEY, JSON.stringify(merged));
   } catch {
-    // Storage quota exceeded — ignore
+    // localStorage unavailable — degrade gracefully
   }
-  return updated;
+  return merged;
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// UTM helpers (duplicated here to avoid circular import with analytics.js)
+// ---------------------------------------------------------------------------
+
+function getUtmParams() {
+  const search = new URLSearchParams(window.location.search);
+  const keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  const params = {};
+  keys.forEach((k) => {
+    const v = search.get(k);
+    if (v) params[k] = v;
+  });
+  return params;
+}
+
+// ---------------------------------------------------------------------------
+// Main submission
 // ---------------------------------------------------------------------------
 
 /**
- * Submit a lead captured from any form or CTA.
- * - Enriches with UTM params, session signals, and a lead score.
- * - Persists to localStorage for progressive profiling on repeat visits.
- * - Posts to the /api/leads Netlify function when available.
- * - Fires an urgent notification for HOT leads.
+ * Submit a lead:
+ *   - Merges with any previously stored lead data (progressive profiling).
+ *   - Calculates lead score.
+ *   - Persists enriched lead to localStorage.
+ *   - POSTs to the Netlify function for backend notification.
  *
- * @param {Object} formData  Fields collected from the lead capture form
- * @returns {Promise<Object>} The enriched lead object
+ * @param {Object} fields  Fields collected from the form (email, company, role, trigger, …).
+ * @returns {Promise<Object>} Enriched lead object (including score + grade).
  */
-export async function submitLead(formData = {}) {
+export async function submitLead(fields) {
   const utmParams = getUtmParams();
-  const signals   = getSessionBehaviouralSignals();
+  const stored = getStoredLead() || {};
 
-  const existing = getLeadFromLocalStorage() || {};
+  // Merge new fields with stored state
+  const mergedFields = { ...stored, ...fields };
 
-  // Merge: keep existing values unless the new submission provides them
-  const merged = {
-    ...existing,
-    ...formData,
-    utmParams:    { ...existing.utmParams, ...utmParams },
-    campaign:     utmParams.campaign || existing.campaign || '',
-    visitCount:   (existing.visitCount || 0) + 1,
-    lastSeenAt:   new Date().toISOString(),
-    firstSeenAt:  existing.firstSeenAt || new Date().toISOString(),
-    sourceUrl:    existing.sourceUrl || window.location.href,
-  };
-
-  const scoringInput = { ...merged, ...signals };
-  const scoring = calculateLeadScore(scoringInput);
-
+  // Enrich with session context
   const enrichedLead = {
-    ...merged,
-    ...scoring,
-    sessionSignals: signals,
+    ...mergedFields,
+    campaign: utmParams.utm_campaign || stored.campaign || '',
+    source: utmParams.utm_source || stored.source || 'direct',
+    medium: utmParams.utm_medium || stored.medium || 'none',
+    content: utmParams.utm_content || stored.content || '',
+    pageUrl: window.location.pathname,
+    submittedAt: new Date().toISOString(),
   };
 
-  // Persist for progressive profiling
-  updatePersistedLead(enrichedLead);
+  // Score the lead
+  const { score, grade, priority } = calculateLeadScore({
+    email: enrichedLead.email,
+    company: enrichedLead.company,
+    role: enrichedLead.role,
+    campaign: enrichedLead.campaign,
+    viewedPricing: enrichedLead.viewedPricing,
+    exploredAPIDocs: enrichedLead.exploredAPIDocs,
+    pagesViewed: enrichedLead.pagesViewed,
+    timeOnSite: enrichedLead.timeOnSite,
+    returnVisits: enrichedLead.returnVisits,
+    exitIntentCaptured: fields.trigger === 'exit_intent',
+  });
 
-  // Fire and forget — do not block the UI
-  _sendToBackend(enrichedLead).catch(() => {});
+  const finalLead = { ...enrichedLead, score, grade, priority };
 
-  return enrichedLead;
-}
+  // Persist locally
+  saveLeadLocally(finalLead);
 
-/**
- * Update a single field on the persisted lead without sending to the backend.
- * Useful for recording incremental signals (e.g. "viewed pricing").
- * @param {Object} updates
- */
-export function updateLead(updates = {}) {
-  updatePersistedLead(updates);
-}
+  // Submit to backend (non-blocking failure — UX should not suffer)
+  if (LEAD_CAPTURE_URL) {
+    try {
+      const response = await fetch(LEAD_CAPTURE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalLead),
+      });
 
-// ---------------------------------------------------------------------------
-// Internal: backend submission
-// ---------------------------------------------------------------------------
-
-async function _sendToBackend(lead) {
-  try {
-    const res = await fetch('/api/leads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(lead),
-    });
-
-    if (!res.ok) {
-      console.warn('[CRM] Lead submission returned', res.status);
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        console.warn('[CRM] Lead submission returned non-OK status:', response.status, body);
+      }
+    } catch (err) {
+      // Network error — lead is already saved locally, so no data is lost
+      console.warn('[CRM] Lead submission failed (network):', err.message);
     }
-  } catch (err) {
-    console.warn('[CRM] Lead submission failed (offline?):', err.message);
   }
+
+  return finalLead;
 }

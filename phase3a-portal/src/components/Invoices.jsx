@@ -13,11 +13,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
-import { usePersonalization } from '../hooks/usePersonalization';
-import LeadCaptureForm from './LeadCaptureForm';
-import SocialProof from './SocialProof';
-import { recordSignal } from '../services/leadScoringService';
+import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed, getWave3Target, trackWave3HighValueAction } from '../utils/analytics';
 
 export const Invoices = () => {
   const personalization = usePersonalization();
@@ -33,6 +29,7 @@ export const Invoices = () => {
   });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const startTimeRef = useRef(null);
+  const wave3Target = getWave3Target();
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -181,29 +178,58 @@ export const Invoices = () => {
           </div>
         </div>
 
-        {/* Pricing / Custom Pricing CTA */}
-        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 flex flex-col lg:flex-row gap-6 items-start">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-indigo-900 mb-1">
-              {personalization.isWave3
-                ? `Custom pricing for ${personalization.companyName} partners`
-                : 'See custom pricing for your company'}
-            </h3>
-            <p className="text-sm text-indigo-700 mb-3">
-              Volume discounts, enterprise features, and a dedicated success manager. Let&apos;s build the right plan together.
-            </p>
-            <SocialProof context="pricing" />
-          </div>
-          <div className="w-full lg:w-72 flex-shrink-0">
-            <LeadCaptureForm
-              trigger="pricing"
-              onSuccess={() => {
-                trackCTAClick('custom_pricing', 'invoices_page');
-                if (personalization.isWave3) trackWave3HighValueAction('pricing_lead_captured');
+        {/* Wave 3 personalized pricing CTA */}
+        {wave3Target === 'column' && (
+          <div className="mb-6 bg-gradient-to-r from-purple-700 to-purple-500 text-white rounded-lg p-4 flex items-center justify-between gap-4 flex-wrap shadow">
+            <div>
+              <p className="font-semibold text-sm">🎯 Exclusive Column Partner Pricing</p>
+              <p className="text-xs opacity-80 mt-0.5">First 10 customers get 50% off Year 1 — spots filling fast.</p>
+            </div>
+            <button
+              onClick={() => {
+                trackWave3HighValueAction('clicked_invoice_pricing_cta');
+                window.open('https://calendly.com/securebase/column-partnership', '_blank', 'noopener,noreferrer');
               }}
-            />
+              className="bg-white/20 hover:bg-white/30 transition border border-white/40 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+            >
+              Claim Partner Discount →
+            </button>
           </div>
-        </div>
+        )}
+        {wave3Target === 'mercury' && (
+          <div className="mb-6 bg-gradient-to-r from-blue-700 to-cyan-500 text-white rounded-lg p-4 flex items-center justify-between gap-4 flex-wrap shadow">
+            <div>
+              <p className="font-semibold text-sm">🚀 Free Compliance Architecture Review</p>
+              <p className="text-xs opacity-80 mt-0.5">Schedule a 30-min technical review — no commitment required.</p>
+            </div>
+            <button
+              onClick={() => {
+                trackWave3HighValueAction('clicked_invoice_pricing_cta');
+                window.open('https://calendly.com/securebase/mercury-walkthrough', '_blank', 'noopener,noreferrer');
+              }}
+              className="bg-white/20 hover:bg-white/30 transition border border-white/40 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+            >
+              Book Free Review →
+            </button>
+          </div>
+        )}
+        {wave3Target === 'lithic' && (
+          <div className="mb-6 bg-gradient-to-r from-emerald-700 to-teal-500 text-white rounded-lg p-4 flex items-center justify-between gap-4 flex-wrap shadow">
+            <div>
+              <p className="font-semibold text-sm">🤝 Co-Marketing Opportunities Available</p>
+              <p className="text-xs opacity-80 mt-0.5">Partner with SecureBase to reach audit-ready card issuing teams.</p>
+            </div>
+            <button
+              onClick={() => {
+                trackWave3HighValueAction('clicked_invoice_pricing_cta');
+                window.open('https://calendly.com/securebase/lithic-partnership', '_blank', 'noopener,noreferrer');
+              }}
+              className="bg-white/20 hover:bg-white/30 transition border border-white/40 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+            >
+              Explore Partnership →
+            </button>
+          </div>
+        )}
 
         {/* Invoices Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">

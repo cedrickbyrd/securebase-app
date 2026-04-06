@@ -17,11 +17,8 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatDate } from '../utils/formatters';
-import { trackPageView, trackAPIDocsView, trackFeatureInteraction, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
-import { usePersonalization } from '../hooks/usePersonalization';
+import { trackPageView, trackAPIDocsView, trackFeatureInteraction, incrementPagesViewed, trackSandboxCTAClick } from '../utils/analytics';
 import LeadCaptureForm from './LeadCaptureForm';
-import SocialProof from './SocialProof';
-import { recordSignal } from '../services/leadScoringService';
 
 export const ApiKeys = () => {
   const personalization = usePersonalization();
@@ -36,6 +33,7 @@ export const ApiKeys = () => {
   const [newKeyScopes, setNewKeyScopes] = useState(['read', 'write']);
   const [createdKey, setCreatedKey] = useState(null);
   const [deletingKeyId, setDeletingKeyId] = useState(null);
+  const [showSandboxForm, setShowSandboxForm] = useState(false);
 
   useEffect(() => {
     trackPageView('API Keys', '/api-keys');
@@ -130,6 +128,39 @@ export const ApiKeys = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Developer Sandbox CTA */}
+        <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-bold text-lg">👨‍💻 Try the SecureBase API in 60 seconds</p>
+              <p className="text-blue-100 text-sm mt-1">
+                Get a sandbox API key delivered to your inbox — no credit card, instant access.
+              </p>
+            </div>
+            {!showSandboxForm && (
+              <button
+                onClick={() => {
+                  trackSandboxCTAClick();
+                  setShowSandboxForm(true);
+                }}
+                className="shrink-0 bg-white text-blue-600 font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-50 transition text-sm whitespace-nowrap"
+              >
+                Get Sandbox API Key →
+              </button>
+            )}
+          </div>
+          {showSandboxForm && (
+            <div className="mt-5 bg-white rounded-lg p-5">
+              <LeadCaptureForm
+                trigger="api_sandbox"
+                onSuccess={() => setShowSandboxForm(false)}
+                onDismiss={() => setShowSandboxForm(false)}
+                compact={false}
+              />
+            </div>
+          )}
+        </div>
+
         {/* Error Alert */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
