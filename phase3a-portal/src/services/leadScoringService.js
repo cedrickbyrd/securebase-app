@@ -1,103 +1,126 @@
 /**
- * Lead Scoring Service
- * Calculates a numeric score and grade for each captured lead based on
- * demographic data and behavioural signals stored in the session.
+ * leadScoringService.js
+ *
+ * Pure functions for calculating a behavioural lead score.
+ * No side-effects, no PII stored — safe to import anywhere.
+ *
+ * HIPAA NOTE: This module never transmits or logs PII. Email domain
+ * is inspected only to distinguish work vs. personal accounts (no email
+ * address is retained or sent to any analytics endpoint).
  */
 
+// ---------------------------------------------------------------------------
+// Free e-mail domain list (abbreviated; extend as needed)
+// ---------------------------------------------------------------------------
+
 const FREE_EMAIL_DOMAINS = new Set([
-  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
-  'icloud.com', 'aol.com', 'protonmail.com', 'mail.com',
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
+  'aol.com', 'protonmail.com', 'mail.com', 'zoho.com', 'yandex.com',
+  'live.com', 'msn.com', 'me.com',
 ]);
 
 /**
- * Score a lead and return an enriched scoring object.
+ * Returns true when the email belongs to a well-known free provider.
+ * @param {string} email
+ * @returns {boolean}
+ */
+function isFreeEmailDomain(email) {
+  if (typeof email !== 'string' || !email.includes('@')) return true;
+  const domain = email.split('@')[1]?.toLowerCase() || '';
+  return FREE_EMAIL_DOMAINS.has(domain);
+}
+
+// ---------------------------------------------------------------------------
+// Plan tier helper
+// ---------------------------------------------------------------------------
+
+/** Maps plan names to numeric tiers for upgrade/downgrade calculations. */
+export const PLAN_TIERS = { Starter: 1, Professional: 2, Enterprise: 3 };
+
+/** Monthly list prices used for plan-change value delta. */
+export const PLAN_PRICES = { Starter: 99, Professional: 299, Enterprise: 999 };
+
+export function getPlanTier(planName) {
+  return PLAN_TIERS[planName] || 0;
+}
+
+export function getPlanPrice(planName) {
+  return PLAN_PRICES[planName] || 0;
+}
+
+// ---------------------------------------------------------------------------
+// Lead scoring
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} LeadData
+ * @property {string}  [email]              - Visitor's email address.
+ * @property {string}  [company]            - Company name.
+ * @property {string}  [role]               - Self-reported role (ceo, cto, etc.).
+ * @property {string}  [campaign]           - utm_campaign value.
+ * @property {boolean} [viewedPricing]      - Whether the visitor viewed pricing.
+ * @property {boolean} [exploredAPIDocs]    - Whether the visitor explored API docs.
+ * @property {number}  [pagesViewed]        - Number of pages seen in session.
+ * @property {number}  [timeOnSite]         - Seconds spent on site.
+ * @property {number}  [returnVisits]       - How many times they've visited.
+ * @property {boolean} [downloadedWhitepaper]
+ * @property {boolean} [requestedDemo]
+ * @property {boolean} [exitIntentCaptured] - Whether exit intent was triggered.
+ */
+
+/**
+ * Calculate a 0–100+ lead score based on demographic and behavioural signals.
  *
- * @param {Object} leadData
- * @param {string}  leadData.email
- * @param {string}  [leadData.company]
- * @param {string}  [leadData.role]
- * @param {string}  [leadData.campaign]
- * @param {number}  [leadData.pagesViewed]
- * @param {number}  [leadData.timeOnSite]        seconds
- * @param {number}  [leadData.returnVisits]
- * @param {boolean} [leadData.viewedPricing]
- * @param {boolean} [leadData.exploredAPIDocs]
- * @param {boolean} [leadData.downloadedWhitepaper]
- * @param {boolean} [leadData.requestedDemo]
- * @param {boolean} [leadData.exitIntentCaptured]
- *
- * @returns {{ score: number, grade: string, priority: string }}
+ * @param {LeadData} leadData
+ * @returns {{ score: number, grade: 'HOT'|'WARM'|'QUALIFIED'|'NURTURE', priority: string }}
  */
 export function calculateLeadScore(leadData = {}) {
   let score = 0;
 
-  // ── Demographic scoring ───────────────────────────────────────────────────
+  // --- Demographic signals ---
   if (leadData.company) score += 10;
 
   const role = (leadData.role || '').toLowerCase();
-  if (role.includes('cto') || role.includes('ceo') || role.includes('founder')) score += 20;
-  if (role.includes('security') || role.includes('compliance') || role.includes('vp')) score += 10;
+  // Split on common delimiters to avoid substring false-positives
+  // (e.g. "factory" incorrectly matching "cto", "concept" matching "ceo").
+  const roleTokens = role.split(/[\s/_\-,]+/);
+  const isSeniorRole = roleTokens.some((t) =>
+    ['cto', 'ceo', 'vp', 'founder', 'president', 'owner'].includes(t),
+  );
+  const isComplianceRole = roleTokens.some((t) =>
+    ['security', 'compliance', 'ciso', 'dpo', 'auditor'].includes(t),
+  );
+  if (isSeniorRole)     score += 20;
+  else if (isComplianceRole) score += 15;
 
-  if (leadData.email) {
-    const domain = leadData.email.split('@')[1] || '';
-    if (domain && !FREE_EMAIL_DOMAINS.has(domain.toLowerCase())) score += 15;
+  if (leadData.email && !isFreeEmailDomain(leadData.email)) {
+    score += 15; // Work email → higher intent
   }
 
-  // ── Behavioural scoring ───────────────────────────────────────────────────
-  if (leadData.viewedPricing)      score += 25;
-  if (leadData.exploredAPIDocs)    score += 20;
-  if ((leadData.pagesViewed  || 0) > 5)   score += 15;
-  if ((leadData.timeOnSite   || 0) > 300)  score += 10;   // 5+ minutes
-  if ((leadData.returnVisits || 0) > 1)    score += 20;
+  // --- Behavioural signals ---
+  if (leadData.viewedPricing)    score += 25;
+  if (leadData.exploredAPIDocs)  score += 20;
+  if ((leadData.pagesViewed || 0) > 5)  score += 15;
+  if ((leadData.timeOnSite || 0) > 300) score += 10; // 5+ minutes
+  if ((leadData.returnVisits || 0) > 1) score += 20;
 
-  // ── Campaign scoring ──────────────────────────────────────────────────────
+  // --- Campaign signals ---
   if ((leadData.campaign || '').startsWith('wave3_')) score += 30;
 
-  // ── Urgency / intent signals ──────────────────────────────────────────────
-  if (leadData.downloadedWhitepaper) score += 15;
-  if (leadData.requestedDemo)        score += 40;
-  if (leadData.exitIntentCaptured)   score +=  5;
+  // --- Conversion signals ---
+  if (leadData.downloadedWhitepaper)  score += 15;
+  if (leadData.requestedDemo)         score += 40;
+  if (leadData.exitIntentCaptured)    score += 5;
 
-  // ── Grade & priority ──────────────────────────────────────────────────────
-  const grade = score >= 80 ? 'HOT'
-    : score >= 50 ? 'WARM'
-    : score >= 20 ? 'QUALIFIED'
-    : 'NURTURE';
+  const grade =
+    score >= 80 ? 'HOT' :
+    score >= 50 ? 'WARM' :
+    score >= 20 ? 'QUALIFIED' : 'NURTURE';
 
-  const priority = score >= 80 ? 'Immediate follow-up required'
-    : score >= 50 ? 'Follow up within 24 hours'
-    : 'Add to nurture sequence';
+  const priority =
+    score >= 80 ? 'Immediate follow-up' :
+    score >= 50 ? 'Follow up within 24h' :
+    'Add to nurture sequence';
 
   return { score, grade, priority };
-}
-
-/**
- * Read the session-level behavioural signals from localStorage so they
- * can be merged into the lead scoring payload automatically.
- *
- * @returns {Object}
- */
-export function getSessionBehaviouralSignals() {
-  try {
-    const raw = localStorage.getItem('sb_session_signals');
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Record a behavioural signal in the current session.
- * Safe to call multiple times — signals are merged, not replaced.
- *
- * @param {string}  key    e.g. 'viewedPricing', 'exploredAPIDocs'
- * @param {*}       value  Typically true or a number
- */
-export function recordSignal(key, value = true) {
-  try {
-    const existing = getSessionBehaviouralSignals();
-    localStorage.setItem('sb_session_signals', JSON.stringify({ ...existing, [key]: value }));
-  } catch {
-    // localStorage unavailable — silently ignore
-  }
 }

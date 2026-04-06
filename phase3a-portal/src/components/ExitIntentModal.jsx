@@ -1,144 +1,110 @@
 /**
  * ExitIntentModal
- * Detects when the user's cursor moves above the viewport (typical tab-close
- * gesture) and presents a last-chance lead-capture offer.
  *
- * Shows at most once per browser session.
+ * Detects when a user's cursor leaves the top of the viewport (heading towards
+ * the address bar / tab bar) and presents a last-chance lead capture offer.
+ *
+ * Guards:
+ *   - Only shown once per browser session (sessionStorage key 'sb_exit_shown').
+ *   - Skipped when the visitor has already submitted a lead (localStorage).
+ *   - Respects prefers-reduced-motion via CSS (no JS-level suppression needed).
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { X } from 'lucide-react';
 import LeadCaptureForm from './LeadCaptureForm';
-import { trackWave3HighValueAction, trackCTAClick } from '../utils/analytics';
+import { trackExitIntentShown, trackExitIntentDismissed, trackWave3HighValueAction } from '../utils/analytics';
+import { getStoredLead } from '../services/crmService';
 
-const SESSION_KEY = 'sb_exit_intent_shown';
-const EXIT_THRESHOLD = 10; // pixels from top of viewport
+const SESSION_KEY = 'sb_exit_shown';
 
 export default function ExitIntentModal() {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(
-    () => !!sessionStorage.getItem(SESSION_KEY)
-  );
 
-  const handleMouseOut = useCallback(
+  const handleMouseLeave = useCallback(
     (e) => {
-      // Only trigger when cursor exits through the top of the viewport
-      if (e.clientY < EXIT_THRESHOLD && !dismissed) {
-        setVisible(true);
-        setDismissed(true);
-        sessionStorage.setItem(SESSION_KEY, '1');
+      // Only trigger when cursor exits strictly above the viewport top.
+      // relatedTarget === null means the cursor left the browser window entirely.
+      // clientY < 0 ensures we only respond to upward exits (towards address bar).
+      if (e.relatedTarget !== null || e.clientY >= 0) return;
+
+      const alreadyShown = sessionStorage.getItem(SESSION_KEY);
+      const alreadyConverted = !!getStoredLead()?.email;
+
+      if (alreadyShown || alreadyConverted) return;
+
+      sessionStorage.setItem(SESSION_KEY, '1');
+      setVisible(true);
+      trackExitIntentShown();
+
+      // If this is a Wave 3 session, record it as a high-value action too
+      try {
         trackWave3HighValueAction('exit_intent_triggered');
+      } catch {
+        // trackWave3HighValueAction silently no-ops for non-Wave-3 sessions
       }
     },
-    [dismissed]
+    [],
   );
 
   useEffect(() => {
-    if (dismissed) return;
-    document.addEventListener('mouseout', handleMouseOut);
-    return () => document.removeEventListener('mouseout', handleMouseOut);
-  }, [dismissed, handleMouseOut]);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+  }, [handleMouseLeave]);
 
-  if (!visible) return null;
-
-  const handleClose = () => {
+  const handleDismiss = () => {
     setVisible(false);
-    trackCTAClick('exit_intent_dismiss', 'exit_intent_modal');
+    trackExitIntentDismissed();
   };
 
   const handleSuccess = () => {
+    // Keep modal visible briefly so the success state is seen, then close
     setTimeout(() => setVisible(false), 2500);
   };
 
+  if (!visible) return null;
+
   return (
-    <div style={styles.overlay} role="dialog" aria-modal="true" aria-label="Before you go">
-      <div style={styles.modal}>
-        {/* Close button */}
+    // Backdrop
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Before you go — free resource offer"
+      className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleDismiss();
+      }}
+    >
+      {/* Modal card */}
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Dismiss button */}
         <button
-          onClick={handleClose}
-          style={styles.closeBtn}
+          type="button"
+          onClick={handleDismiss}
           aria-label="Close"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
         >
-          ✕
+          <X className="w-5 h-5" />
         </button>
 
-        {/* Content */}
-        <div style={styles.icon}>📘</div>
-        <h2 style={styles.heading}>Wait! Before you go…</h2>
-        <p style={styles.subheading}>
-          Get our <strong>"SOC 2 in 90 Days"</strong> implementation guide — free.
-        </p>
-        <p style={styles.copy}>
-          Practical steps, control mappings, and audit-readiness templates used by
-          500+ regulated companies.
-        </p>
+        {/* Illustration / icon */}
+        <div className="text-center mb-6">
+          <span className="text-5xl" role="img" aria-label="document">📋</span>
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mt-2">
+            Wait — before you go
+          </p>
+        </div>
 
-        <LeadCaptureForm trigger="exit_intent" onSuccess={handleSuccess} />
-
-        <p style={styles.privacy}>
-          No spam. Unsubscribe any time.
-        </p>
+        <LeadCaptureForm
+          trigger="exit_intent"
+          onSuccess={handleSuccess}
+          onDismiss={handleDismiss}
+        />
       </div>
     </div>
   );
 }
-
-const styles = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.55)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999,
-    padding: '1rem',
-  },
-  modal: {
-    position: 'relative',
-    background: '#fff',
-    borderRadius: '1rem',
-    padding: '2rem',
-    maxWidth: '460px',
-    width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-    textAlign: 'center',
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: '1rem',
-    right: '1rem',
-    background: 'none',
-    border: 'none',
-    fontSize: '1.1rem',
-    cursor: 'pointer',
-    color: '#6b7280',
-    lineHeight: 1,
-    padding: '0.25rem 0.5rem',
-  },
-  icon: {
-    fontSize: '3rem',
-    marginBottom: '0.5rem',
-  },
-  heading: {
-    fontSize: '1.4rem',
-    fontWeight: 700,
-    color: '#111827',
-    margin: '0 0 0.5rem',
-  },
-  subheading: {
-    fontSize: '1rem',
-    color: '#374151',
-    margin: '0 0 0.5rem',
-  },
-  copy: {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    margin: '0 0 1.25rem',
-    lineHeight: 1.5,
-  },
-  privacy: {
-    fontSize: '0.75rem',
-    color: '#9ca3af',
-    marginTop: '0.75rem',
-  },
-};

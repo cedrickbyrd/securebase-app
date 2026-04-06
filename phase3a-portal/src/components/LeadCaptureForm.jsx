@@ -1,89 +1,103 @@
 /**
  * LeadCaptureForm
- * A progressive-profiling form that asks for more information on each successive
- * visit. On the first visit it collects email (+ optional company); on the second
- * it adds role; on the third it offers a phone field.
+ *
+ * Reusable progressive-profiling lead capture form.
+ * Fields shown depend on what's already been captured in localStorage:
+ *   - First visit: email (required) + company (optional)
+ *   - Return visits: email pre-filled; role dropdown shown if missing
+ *
+ * Props:
+ *   trigger   {string}   Context: 'exit_intent' | 'api_sandbox' | 'assessment' | 'wave3_invoice'
+ *   onSuccess {Function} Called with the enriched lead object after submission.
+ *   onDismiss {Function} Called when the user dismisses/cancels.
+ *   compact   {boolean}  Render in compact (inline) mode without description copy.
  */
 
 import React, { useState } from 'react';
-import { submitLead, getLeadFromLocalStorage } from '../services/crmService';
-import { extractCompanyFromEmail } from '../hooks/usePersonalization';
-import { trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
+import { CheckCircle, Loader } from 'lucide-react';
+import { submitLead, getStoredLead } from '../services/crmService';
+import { trackLeadCapture } from '../utils/analytics';
 
-const ROLES = [
-  { value: 'ceo',       label: 'CEO / Founder' },
-  { value: 'cto',       label: 'CTO / VP Engineering' },
-  { value: 'security',  label: 'Security / Compliance Officer' },
-  { value: 'engineer',  label: 'Software Engineer' },
-  { value: 'other',     label: 'Other' },
-];
+// Copy map: trigger → {heading, body, submitLabel}
+const COPY = {
+  exit_intent: {
+    heading: 'Get our "SOC 2 in 90 Days" guide',
+    body: 'We\'ll send you our step-by-step implementation guide — used by 50+ regulated companies.',
+    submitLabel: 'Send Me the Guide →',
+  },
+  api_sandbox: {
+    heading: 'Try SecureBase API in 60 seconds',
+    body: 'Get instant sandbox access with a test API key delivered to your inbox.',
+    submitLabel: 'Get Sandbox API Key →',
+  },
+  assessment: {
+    heading: 'Get your Audit Readiness Score',
+    body: 'We\'ll analyse your infrastructure profile and send a personalised compliance readiness report.',
+    submitLabel: 'Get My Score →',
+  },
+  wave3_invoice: {
+    heading: 'See custom pricing for your company',
+    body: 'Let\'s discuss volume discounts and enterprise features tailored to your stack.',
+    submitLabel: 'See Custom Pricing →',
+  },
+};
 
-/**
- * @param {Object}   props
- * @param {string}   props.trigger      Context key used for the submit button label
- *                                       e.g. 'api_sandbox' | 'pricing' | 'assessment' | 'exit_intent'
- * @param {string}   [props.className]  Additional class names for the wrapper
- * @param {Function} [props.onSuccess]  Called with the enriched lead after submission
- */
-export default function LeadCaptureForm({ trigger = 'default', className = '', onSuccess }) {
-  const existingLead = getLeadFromLocalStorage();
-  const visitCount   = (existingLead?.visitCount || 0);
+const DEFAULT_COPY = {
+  heading: 'Stay in the loop',
+  body: 'Get updates about SecureBase features and compliance insights.',
+  submitLabel: 'Continue →',
+};
 
-  const [email,        setEmail]        = useState(existingLead?.email   || '');
-  const [company,      setCompany]      = useState(existingLead?.company || '');
-  const [role,         setRole]         = useState(existingLead?.role    || '');
-  const [phone,        setPhone]        = useState(existingLead?.phone   || '');
-  const [submitting,   setSubmitting]   = useState(false);
-  const [submitted,    setSubmitted]    = useState(false);
-  const [error,        setError]        = useState('');
+export default function LeadCaptureForm({ trigger = 'default', onSuccess, onDismiss, compact = false }) {
+  const stored = getStoredLead();
 
-  const showCompany  = !existingLead?.company;
-  const showRole     = visitCount >= 1 && !existingLead?.role;
-  const showPhone    = visitCount >= 2 && !existingLead?.phone;
+  const [email, setEmail] = useState(stored?.email || '');
+  const [company, setCompany] = useState(stored?.company || '');
+  const [role, setRole] = useState(stored?.role || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(null);
+  const [emailError, setEmailError] = useState(null);
 
-  const ctaLabel = {
-    api_sandbox:  'Get Sandbox API Key →',
-    pricing:      'See Custom Pricing →',
-    assessment:   'Get My Compliance Score →',
-    exit_intent:  'Send Me the Guide →',
-    demo:         'Book My Demo →',
-  }[trigger] || 'Continue →';
+  // Basic email format validation
+  const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const isEmailReadOnly = !!stored?.email;
 
-  const handleEmailBlur = () => {
-    if (email && !company) {
-      const derived = extractCompanyFromEmail(email);
-      if (derived) setCompany(derived);
-    }
-  };
+  const copy = COPY[trigger] || DEFAULT_COPY;
+
+  // Progressive profiling: show company if not already stored
+  const showCompany = !stored?.company;
+  // Show role on return visits (email already captured) but role not yet known
+  const showRole = !!stored?.email && !stored?.role;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid work email address.');
-      return;
-    }
+    if (!email.trim()) return;
 
     setSubmitting(true);
+    setError(null);
+
+    if (!EMAIL_RE.test(email.trim())) {
+      setEmailError('Please enter a valid work email address.');
+      setSubmitting(false);
+      return;
+    }
+    setEmailError(null);
+
     try {
       const lead = await submitLead({
-        email,
-        ...(company && { company }),
-        ...(role    && { role }),
-        ...(phone   && { phone }),
+        email: email.trim(),
+        company: company.trim() || undefined,
+        role: role || undefined,
         trigger,
       });
 
-      trackCTAClick(trigger, 'lead_capture_form');
-      if (lead.campaign?.startsWith('wave3_')) {
-        trackWave3HighValueAction(`lead_captured_${trigger}`);
-      }
-
+      trackLeadCapture(trigger);
       setSubmitted(true);
-      if (onSuccess) onSuccess(lead);
+      onSuccess?.(lead);
     } catch (err) {
       setError('Something went wrong. Please try again.');
+      console.warn('[LeadCaptureForm] submission error:', err);
     } finally {
       setSubmitting(false);
     }
@@ -91,129 +105,114 @@ export default function LeadCaptureForm({ trigger = 'default', className = '', o
 
   if (submitted) {
     return (
-      <div className={`lcf-success ${className}`} style={styles.success}>
-        <span style={styles.successIcon}>✅</span>
-        <div>
-          <p style={styles.successHeading}>You're all set!</p>
-          <p style={styles.successSub}>Check your inbox — we'll be in touch shortly.</p>
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+          <CheckCircle className="w-6 h-6 text-green-600" />
         </div>
+        <p className="font-semibold text-gray-900">You're all set!</p>
+        <p className="text-sm text-gray-500">Check your inbox — we'll be in touch shortly.</p>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="text-sm text-gray-400 hover:text-gray-600 transition mt-1"
+          >
+            Close
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`lcf-form ${className}`} style={styles.form} noValidate>
-      {/* Email — always required */}
-      <input
-        type="email"
-        placeholder="work@company.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        onBlur={handleEmailBlur}
-        required
-        disabled={submitting}
-        style={styles.input}
-      />
-
-      {/* Company — first visit or missing */}
-      {showCompany && (
-        <input
-          type="text"
-          placeholder="Company name"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          disabled={submitting}
-          style={styles.input}
-        />
+    <form onSubmit={handleSubmit} noValidate>
+      {!compact && (
+        <div className="mb-4">
+          <h3 className="font-bold text-gray-900 text-lg leading-snug">{copy.heading}</h3>
+          <p className="text-sm text-gray-500 mt-1">{copy.body}</p>
+        </div>
       )}
 
-      {/* Role — second visit or missing */}
-      {showRole && (
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          disabled={submitting}
-          style={{ ...styles.input, ...styles.select }}
+      <div className="space-y-3">
+        <input
+          type="email"
+          required
+          placeholder="work@company.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError(null);
+          }}
+          className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+            isEmailReadOnly
+              ? 'bg-gray-100 cursor-not-allowed text-gray-500 border-gray-200'
+              : emailError
+              ? 'border-red-400 bg-red-50'
+              : 'border-gray-300'
+          }`}
+          autoComplete="email"
+          readOnly={isEmailReadOnly}
+          aria-label={isEmailReadOnly ? 'Email address (pre-filled)' : 'Email address'}
+        />
+        {emailError && <p className="text-xs text-red-600 -mt-1">{emailError}</p>}
+
+        {showCompany && (
+          <input
+            type="text"
+            placeholder="Company name (optional)"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            autoComplete="organization"
+          />
+        )}
+
+        {showRole && (
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+          >
+            <option value="">What's your role? (optional)</option>
+            <option value="ceo">CEO / Founder</option>
+            <option value="cto">CTO / VP Engineering</option>
+            <option value="security">Security / Compliance Officer</option>
+            <option value="engineer">Software Engineer</option>
+            <option value="other">Other</option>
+          </select>
+        )}
+
+        {error && <p className="text-xs text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={submitting || !email.trim()}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition flex items-center justify-center gap-2"
         >
-          <option value="">What's your role? (optional)</option>
-          {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>{r.label}</option>
-          ))}
-        </select>
-      )}
+          {submitting ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Sending…
+            </>
+          ) : (
+            copy.submitLabel
+          )}
+        </button>
 
-      {/* Phone — third visit or missing */}
-      {showPhone && (
-        <input
-          type="tel"
-          placeholder="Phone (optional — fast-tracks your trial)"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          disabled={submitting}
-          style={styles.input}
-        />
-      )}
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="w-full text-xs text-gray-400 hover:text-gray-600 transition py-1"
+          >
+            No thanks
+          </button>
+        )}
+      </div>
 
-      {error && <p style={styles.error}>{error}</p>}
-
-      <button type="submit" disabled={submitting} style={styles.button}>
-        {submitting ? 'Submitting…' : ctaLabel}
-      </button>
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        No spam. Unsubscribe anytime.
+      </p>
     </form>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Inline styles (Tailwind classes are available but inline keeps this
-// component self-contained and usable in both modal and inline contexts)
-// ---------------------------------------------------------------------------
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  input: {
-    width: '100%',
-    padding: '0.625rem 0.875rem',
-    border: '1px solid #d1d5db',
-    borderRadius: '0.5rem',
-    fontSize: '0.9rem',
-    outline: 'none',
-    boxSizing: 'border-box',
-    backgroundColor: '#fff',
-  },
-  select: {
-    appearance: 'none',
-    cursor: 'pointer',
-  },
-  button: {
-    padding: '0.75rem 1.25rem',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '0.5rem',
-    fontSize: '0.95rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: '0.8rem',
-    margin: 0,
-  },
-  success: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '1rem',
-    background: '#f0fdf4',
-    borderRadius: '0.5rem',
-    border: '1px solid #bbf7d0',
-  },
-  successIcon: { fontSize: '1.5rem' },
-  successHeading: { fontWeight: 700, margin: 0, color: '#065f46' },
-  successSub: { margin: 0, fontSize: '0.85rem', color: '#047857' },
-};
