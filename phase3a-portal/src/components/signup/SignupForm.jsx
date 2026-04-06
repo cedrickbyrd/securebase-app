@@ -75,8 +75,8 @@ export default function SignupForm({ onSuccess }) {
       if (!res.ok) throw new Error(data.message || "Signup failed.");
       trackSignupConversion({
         industry: form.industry,
-        org_size: form.orgSize,
-        guardrails_level: form.guardrailsLevel,
+        orgSize: form.orgSize,
+        guardrailsLevel: form.guardrailsLevel,
       });
       trackWave3Conversion();
       setJobId(data.jobId);
