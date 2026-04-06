@@ -213,6 +213,18 @@ function getWave3Session() {
   }
 }
 
+/**
+ * Returns the Wave 3 target company for the current session (e.g. "column",
+ * "mercury", "lithic"), or `null` when the visitor did not arrive via a
+ * Wave 3 campaign.  Safe to call from UI components.
+ *
+ * @returns {string|null}
+ */
+export function getWave3Target() {
+  const session = getWave3Session();
+  return session ? session.target : null;
+}
+
 function setWave3Session(data) {
   try {
     sessionStorage.setItem('wave3_session', JSON.stringify(data));
@@ -346,4 +358,51 @@ export function trackCTAClick(ctaType, location) {
  */
 export function trackFeatureInteraction(featureName, action) {
   trackEvent('feature_interaction', { feature_name: featureName, action });
+}
+
+// ---------------------------------------------------------------------------
+// Lead capture analytics
+// HIPAA NOTE: these events must NEVER include email, name, phone, or any PII.
+// ---------------------------------------------------------------------------
+
+/**
+ * Fire when a lead capture form is successfully submitted.
+ * @param {string} trigger  Context where the form appeared, e.g. 'exit_intent',
+ *                          'api_sandbox', 'assessment', 'wave3_invoice'.
+ */
+export function trackLeadCapture(trigger) {
+  const wave3Target = getWave3Target();
+  trackEvent('lead_captured', {
+    trigger,
+    ...(wave3Target ? { wave3_target: wave3Target } : {}),
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Fire when the exit-intent modal is displayed.
+ */
+export function trackExitIntentShown() {
+  trackEvent('exit_intent_shown', { timestamp: new Date().toISOString() });
+}
+
+/**
+ * Fire when the exit-intent modal is dismissed without submitting.
+ */
+export function trackExitIntentDismissed() {
+  trackEvent('exit_intent_dismissed');
+}
+
+/**
+ * Fire when a visitor clicks the Developer Sandbox CTA on the API Keys page.
+ */
+export function trackSandboxCTAClick() {
+  trackEvent('sandbox_cta_click', { page: 'api_keys' });
+}
+
+/**
+ * Fire when a visitor clicks the Audit Readiness Assessment CTA.
+ */
+export function trackAssessmentCTAClick() {
+  trackEvent('assessment_cta_click', { page: 'compliance' });
 }
