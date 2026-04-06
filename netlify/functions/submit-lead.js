@@ -27,9 +27,9 @@
 const ALLOWED_ORIGIN =
   process.env.ALLOWED_ORIGIN || 'https://demo.securebase.tximhotep.com';
 
-// Regex to validate e-mail format (not a full RFC 5322 parser, but sufficient
-// for a server-side sanity check before forwarding to the webhook).
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Regex to validate e-mail format. Requires at least one character before @,
+// a domain with standard characters, and a TLD of 2+ letters.
+const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // Fields we allow through to the webhook. All others are stripped.
 const ALLOWED_FIELDS = [
@@ -116,26 +116,30 @@ exports.handler = async (event) => {
     submittedAt: payload.submittedAt,
   }));
 
-  // ── Webhook notification ──────────────────────────────────────────────────
+  // ── Webhook notification (fire-and-forget with 3 s timeout) ─────────────
   const webhookUrl = process.env.LEAD_NOTIFICATION_WEBHOOK_URL;
   if (webhookUrl) {
-    try {
-      const webhookRes = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payload,
-          source_system: 'securebase-demo',
-          environment: process.env.CONTEXT || 'production',
-        }),
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...payload,
+        source_system: 'securebase-demo',
+        environment: process.env.CONTEXT || 'production',
+      }),
+      signal: controller.signal,
+    })
+      .then((res) => {
+        clearTimeout(timer);
+        if (!res.ok) console.warn('[submit-lead] webhook returned non-OK:', res.status);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        console.error('[submit-lead] webhook error:', err.message);
       });
-      if (!webhookRes.ok) {
-        console.warn('[submit-lead] webhook returned non-OK:', webhookRes.status);
-      }
-    } catch (err) {
-      // Log non-PII error — webhook failure must not break the user experience
-      console.error('[submit-lead] webhook error:', err.message);
-    }
+    // Do NOT await — return immediately so the user gets a fast response
   }
 
   return jsonResponse(200, { success: true }, origin);

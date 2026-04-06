@@ -81,11 +81,17 @@ export function calculateLeadScore(leadData = {}) {
   if (leadData.company) score += 10;
 
   const role = (leadData.role || '').toLowerCase();
-  if (role.includes('cto') || role.includes('ceo') || role.includes('vp') || role.includes('founder')) {
-    score += 20;
-  } else if (role.includes('security') || role.includes('compliance')) {
-    score += 15;
-  }
+  // Split on common delimiters to avoid substring false-positives
+  // (e.g. "factory" incorrectly matching "cto", "concept" matching "ceo").
+  const roleTokens = role.split(/[\s/_\-,]+/);
+  const isSeniorRole = roleTokens.some((t) =>
+    ['cto', 'ceo', 'vp', 'founder', 'president', 'owner'].includes(t),
+  );
+  const isComplianceRole = roleTokens.some((t) =>
+    ['security', 'compliance', 'ciso', 'dpo', 'auditor'].includes(t),
+  );
+  if (isSeniorRole)     score += 20;
+  else if (isComplianceRole) score += 15;
 
   if (leadData.email && !isFreeEmailDomain(leadData.email)) {
     score += 15; // Work email → higher intent
