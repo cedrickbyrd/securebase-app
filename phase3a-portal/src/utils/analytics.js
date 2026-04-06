@@ -54,6 +54,7 @@ function getUtmParams() {
  * - Configures the GA4 property with the measurement ID.
  * - Forwards any UTM parameters present in the URL to GA4.
  * - Fires a `session_start` event so Realtime reports show active users immediately.
+ * - Auto-detects Wave 3 outreach campaigns and fires `wave3_outreach_visit`.
  *
  * Call this once on application mount (e.g. inside a root-level useEffect).
  */
@@ -72,6 +73,11 @@ export function initializeSessionTracking() {
   trackEvent('session_start', {
     ...utmParams,
   });
+
+  const campaign = utmParams.utm_campaign || '';
+  if (campaign.startsWith('wave3_')) {
+    trackWave3Outreach(utmParams);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -139,16 +145,20 @@ export function trackComplianceView(framework) {
 
 /**
  * Track when the Invoices page is viewed (billing / pricing interest signal).
+ * Also fires `wave3_high_value_action` for Wave 3 prospects.
  */
 export function trackInvoiceView() {
   trackEvent('invoice_view');
+  trackWave3HighValueAction('viewed_pricing');
 }
 
 /**
  * Track when the API Keys page is viewed (technical evaluation signal).
+ * Also fires `wave3_high_value_action` for Wave 3 prospects.
  */
 export function trackAPIDocsView() {
   trackEvent('api_docs_view');
+  trackWave3HighValueAction('explored_api_docs');
 }
 
 /**
@@ -172,6 +182,119 @@ export function trackSREDashboardView() {
  */
 export function trackCustomerSampleView(customerType) {
   trackEvent('customer_sample_view', { customer_type: customerType });
+}
+
+// ---------------------------------------------------------------------------
+// Wave 3 outreach tracking
+// ---------------------------------------------------------------------------
+
+/**
+ * Sanitize a UTM parameter value to prevent accidental PII leakage through
+ * manipulated campaign URLs.  Keeps only alphanumeric characters, hyphens,
+ * underscores, and dots; truncates to 100 characters.
+ * @param {string} value
+ * @returns {string}
+ */
+function sanitizeUtmValue(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[^a-zA-Z0-9\-_.]/g, '').slice(0, 100);
+}
+
+/**
+ * Persistent Wave 3 session state (stored in sessionStorage so it survives
+ * in-app navigation but resets on new browser sessions).
+ */
+function getWave3Session() {
+  try {
+    const raw = sessionStorage.getItem('wave3_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setWave3Session(data) {
+  try {
+    sessionStorage.setItem('wave3_session', JSON.stringify(data));
+  } catch {
+    // sessionStorage unavailable — degrade gracefully
+  }
+}
+
+/**
+ * Fire the `wave3_outreach_visit` event when a user arrives from a Wave 3
+ * campaign and persist session context for downstream events.
+ *
+ * Called automatically by `initializeSessionTracking()` when
+ * `utm_campaign` starts with "wave3_".
+ *
+ * @param {Object} utmParams  Raw UTM parameters from `getUtmParams()`
+ */
+export function trackWave3Outreach(utmParams) {
+  const campaign = sanitizeUtmValue(utmParams.utm_campaign || '');
+  const target = campaign.replace(/^wave3_/, '');
+  const sessionData = {
+    campaign,
+    target,
+    source: sanitizeUtmValue(utmParams.utm_source || ''),
+    content: sanitizeUtmValue(utmParams.utm_content || ''),
+    medium: sanitizeUtmValue(utmParams.utm_medium || ''),
+  };
+
+  setWave3Session(sessionData);
+
+  trackEvent('wave3_outreach_visit', {
+    ...sessionData,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Fire the `wave3_high_value_action` event for a Wave 3 prospect.
+ * No-ops silently when the current session is not a Wave 3 session.
+ *
+ * @param {string} action  e.g. 'viewed_pricing', 'explored_api_docs',
+ *                         'downloaded_whitepaper', 'watched_demo_video'
+ */
+export function trackWave3HighValueAction(action) {
+  const session = getWave3Session();
+  if (!session) return;
+
+  trackEvent('wave3_high_value_action', {
+    campaign: session.campaign,
+    target: session.target,
+    action,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Fire the `wave3_outreach_conversion` event when a Wave 3 prospect
+ * completes signup.  This function no-ops silently for non-Wave-3 sessions.
+ *
+ * Call this **after** a successful signup API response (account created),
+ * before redirecting the user:
+ * ```js
+ * import { trackWave3Conversion } from '@/utils/analytics';
+ *
+ * const handleSignup = async (data) => {
+ *   await submitSignup(data);   // account created
+ *   trackWave3Conversion();     // attribute conversion
+ *   navigate('/dashboard');
+ * };
+ * ```
+ */
+export function trackWave3Conversion() {
+  const session = getWave3Session();
+  if (!session) return;
+
+  trackEvent('wave3_outreach_conversion', {
+    campaign: session.campaign,
+    target: session.target,
+    content: session.content,
+    conversion_type: 'signup',
+    timestamp: new Date().toISOString(),
+  });
 }
 
 // ---------------------------------------------------------------------------
