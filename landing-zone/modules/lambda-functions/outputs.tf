@@ -107,5 +107,16 @@ output "all_lambda_arns" {
     billing_worker   = aws_lambda_function.billing_worker.arn
     support_tickets  = aws_lambda_function.support_tickets.arn
     cost_forecasting = aws_lambda_function.cost_forecasting.arn
+    submit_lead      = aws_lambda_function.submit_lead.arn
   }
+}
+
+output "submit_lead_arn" {
+  description = "ARN of the submit_lead Lambda function"
+  value       = aws_lambda_function.submit_lead.arn
+}
+
+output "submit_lead_name" {
+  description = "Name of the submit_lead Lambda function"
+  value       = aws_lambda_function.submit_lead.function_name
 }

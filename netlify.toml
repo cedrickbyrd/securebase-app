@@ -46,13 +46,6 @@
   status = 200
   force = true
 
-# LEAD CAPTURE
-[[redirects]]
-  from = "/api/leads"
-  to = "/.netlify/functions/submit-lead"
-  status = 200
-  force = true
-
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
