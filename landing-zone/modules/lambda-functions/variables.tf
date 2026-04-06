@@ -58,3 +58,16 @@ variable "netlify_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "lead_capture_allowed_origin" {
+  description = "CORS allowed origin for the submit-lead Lambda (e.g. https://demo.securebase.tximhotep.com)"
+  type        = string
+  default     = "https://demo.securebase.tximhotep.com"
+}
+
+variable "lead_notification_webhook_url" {
+  description = "Outbound webhook URL for lead notifications (Zapier, Make, n8n, etc.). Leave empty to disable."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

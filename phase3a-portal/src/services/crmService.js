@@ -3,17 +3,28 @@
  *
  * Handles lead capture submission:
  *   1. Persists lead data locally (localStorage) for progressive profiling.
- *   2. POSTs to the Netlify function `/api/leads` for backend notification.
+ *   2. POSTs to the AWS Lambda endpoint (via API Gateway /leads) for backend
+ *      notification and webhook forwarding.
  *
  * HIPAA NOTE: Email and company data are stored in localStorage only — they
- * are never sent to GA4 or any analytics endpoint. The server-side function
+ * are never sent to GA4 or any analytics endpoint. The server-side Lambda
  * is responsible for secure handling and notification delivery.
  */
 
 import { calculateLeadScore } from './leadScoringService';
 
-const LEAD_STORAGE_KEY = 'sb_lead';
-const LEAD_SUBMIT_ENDPOINT = '/api/leads';
+/**
+ * The lead capture endpoint.
+ *
+ * Points to the API Gateway /leads route backed by the submit_lead Lambda.
+ * In demo mode (VITE_DEMO_MODE=true) or when the env var is absent, falls
+ * back to a no-op so local development works without AWS credentials.
+ *
+ * Set VITE_LEAD_CAPTURE_URL in .env / .env.demo / Netlify environment to the
+ * full API Gateway invoke URL, e.g.:
+ *   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/leads
+ */
+const LEAD_CAPTURE_URL = import.meta.env.VITE_LEAD_CAPTURE_URL || '';
 
 // ---------------------------------------------------------------------------
 // Local persistence helpers
@@ -120,20 +131,22 @@ export async function submitLead(fields) {
   saveLeadLocally(finalLead);
 
   // Submit to backend (non-blocking failure — UX should not suffer)
-  try {
-    const response = await fetch(LEAD_SUBMIT_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(finalLead),
-    });
+  if (LEAD_CAPTURE_URL) {
+    try {
+      const response = await fetch(LEAD_CAPTURE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalLead),
+      });
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      console.warn('[CRM] Lead submission returned non-OK status:', response.status, body);
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        console.warn('[CRM] Lead submission returned non-OK status:', response.status, body);
+      }
+    } catch (err) {
+      // Network error — lead is already saved locally, so no data is lost
+      console.warn('[CRM] Lead submission failed (network):', err.message);
     }
-  } catch (err) {
-    // Network error — lead is already saved locally, so no data is lost
-    console.warn('[CRM] Lead submission failed (network):', err.message);
   }
 
   return finalLead;

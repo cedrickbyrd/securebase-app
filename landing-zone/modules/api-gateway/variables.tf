@@ -200,3 +200,13 @@ variable "allowed_origins" {
   type        = list(string)
   default     = ["https://portal.securebase.com"]
 }
+
+variable "submit_lead_lambda_arn" {
+  description = "ARN of the submit_lead Lambda function"
+  type        = string
+}
+
+variable "submit_lead_lambda_name" {
+  description = "Name of the submit_lead Lambda function"
+  type        = string
+}

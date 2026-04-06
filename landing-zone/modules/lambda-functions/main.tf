@@ -338,6 +338,42 @@ resource "aws_cloudwatch_log_group" "cost_forecasting" {
   tags              = var.tags
 }
 
+# ============================================================================
+# Lead Capture Lambda
+# ============================================================================
+
+resource "aws_lambda_function" "submit_lead" {
+  filename         = var.lambda_packages["submit_lead"]
+  function_name    = "securebase-${var.environment}-submit-lead"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "submit_lead.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["submit_lead"])
+  runtime          = "python3.11"
+  timeout          = 10
+  memory_size      = 256
+
+  environment {
+    variables = {
+      ENVIRONMENT                    = var.environment
+      ALLOWED_ORIGIN                 = var.lead_capture_allowed_origin
+      LEAD_NOTIFICATION_WEBHOOK_URL  = var.lead_notification_webhook_url
+    }
+  }
+
+  # This function is intentionally NOT placed in the VPC — it does not need
+  # database access and benefits from faster cold starts without VPC overhead.
+
+  tags = merge(var.tags, {
+    Name = "securebase-${var.environment}-submit-lead"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "submit_lead" {
+  name              = "/aws/lambda/securebase-${var.environment}-submit-lead"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
 #
 # MODULES
 #
