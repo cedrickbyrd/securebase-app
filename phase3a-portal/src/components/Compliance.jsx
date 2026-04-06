@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode } from '../utils/demoData';
 import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick } from '../utils/analytics';
-import LeadCaptureForm from './LeadCaptureForm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { usePersonalization } from '../hooks/usePersonalization';
 import LeadCaptureForm from './LeadCaptureForm';
-import SocialProof from './SocialProof';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
 
