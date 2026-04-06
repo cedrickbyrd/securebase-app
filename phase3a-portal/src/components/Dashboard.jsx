@@ -10,6 +10,7 @@ import DemoCustomerIndicator from './DemoCustomerIndicator';
 import { CUSTOMER_TIERS } from '../config/customerTiers';
 import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
 import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
+import PersonalizedBanner from './PersonalizedBanner';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -113,6 +114,9 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
+      {/* Wave 3 personalized outreach banner */}
+      <PersonalizedBanner />
+
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 

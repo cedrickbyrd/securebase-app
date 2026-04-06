@@ -213,6 +213,18 @@ function getWave3Session() {
   }
 }
 
+/**
+ * Returns the Wave 3 target company for the current session (e.g. "column",
+ * "mercury", "lithic"), or `null` when the visitor did not arrive via a
+ * Wave 3 campaign.  Safe to call from UI components.
+ *
+ * @returns {string|null}
+ */
+export function getWave3Target() {
+  const session = getWave3Session();
+  return session ? session.target : null;
+}
+
 function setWave3Session(data) {
   try {
     sessionStorage.setItem('wave3_session', JSON.stringify(data));
