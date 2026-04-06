@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode } from '../utils/demoData';
-import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
+import { trackPageView, trackPageEngagement, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { usePersonalization } from '../hooks/usePersonalization';
+import LeadCaptureForm from './LeadCaptureForm';
+import SocialProof from './SocialProof';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
 
@@ -14,6 +17,7 @@ function getCustomerTier() {
 
 export default function Compliance() {
   const navigate = useNavigate();
+  const personalization = usePersonalization();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [complianceData, setComplianceData] = useState(null);
@@ -314,6 +318,42 @@ export default function Compliance() {
             </div>
           </div>
         )}
+
+        {/* Compliance Assessment CTA */}
+        <div style={{
+          marginTop: '2rem',
+          background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+          border: '1px solid #bbf7d0',
+          borderRadius: '0.75rem',
+          padding: '1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+        }}>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#065f46' }}>
+                🔍 How audit-ready is your infrastructure?
+              </h3>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>
+                Answer 5 questions and get your personalised compliance readiness score — plus a prioritised remediation roadmap.
+              </p>
+              <SocialProof context="compliance" />
+            </div>
+            <div style={{ width: '100%', maxWidth: '320px', flexShrink: 0 }}>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#065f46' }}>
+                Get your free audit readiness score:
+              </p>
+              <LeadCaptureForm
+                trigger="assessment"
+                onSuccess={() => {
+                  trackCTAClick('compliance_assessment', 'compliance_page');
+                  if (personalization.isWave3) trackWave3HighValueAction('assessment_lead_captured');
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

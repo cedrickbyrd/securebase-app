@@ -10,6 +10,7 @@ import Compliance from './components/Compliance';
 import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
+import ExitIntentModal from './components/ExitIntentModal';
 import LandingPage from './pages/LandingPage';
 import ThankYou from './pages/ThankYou';
 import Pricing from './pages/Pricing';
@@ -51,6 +52,7 @@ function App() {
 
   return (
     <Router>
+      <ExitIntentModal />
       <Routes>
         <Route path="/login"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login setAuth={setIsAuthenticated} />} />
         <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) =>
