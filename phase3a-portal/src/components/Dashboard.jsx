@@ -8,7 +8,7 @@ import BRANDING from '../config/branding';
 import { useDemoCustomer } from '../hooks/useDemoCustomer';
 import DemoCustomerIndicator from './DemoCustomerIndicator';
 import { CUSTOMER_TIERS } from '../config/customerTiers';
-import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
+import { trackPageView, trackPageEngagement, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
 import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
 import PersonalizedBanner from './PersonalizedBanner';
 import './Dashboard.css';
@@ -21,6 +21,7 @@ function getCustomerTier() {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const personalization = usePersonalization();
   const [metrics, setMetrics] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [apiKeys, setApiKeys] = useState([]);
@@ -142,6 +143,87 @@ function Dashboard() {
         {isDemoMode && customer && customerIndex !== null && (
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
         )}
+        {/* Wave 3 Personalization Hero */}
+        {personalization.isWave3 && (
+          <section style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '1rem',
+            padding: '2rem',
+            marginBottom: '1.5rem',
+            color: '#fff',
+          }}>
+            {/* Urgency banner */}
+            {personalization.urgencyMessage && (
+              <div style={{
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                marginBottom: '1.25rem',
+                fontSize: '0.875rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}>
+                <span>{personalization.urgencyMessage}</span>
+                {personalization.urgencyExpiry && (
+                  <span style={{ opacity: 0.85 }}>⏰ {personalization.urgencyExpiry}</span>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {/* Hero copy */}
+              <div style={{ flex: '1 1 280px' }}>
+                <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.3 }}>
+                  {personalization.heroHeading}
+                </h2>
+                <p style={{ margin: '0 0 1rem', opacity: 0.9, fontSize: '0.95rem' }}>
+                  {personalization.heroParagraph}
+                </p>
+                <p style={{ margin: '0 0 1rem', opacity: 0.8, fontSize: '0.82rem' }}>
+                  {personalization.socialProof}
+                </p>
+                <button
+                  onClick={() => {
+                    trackCTAClick('wave3_primary_cta', 'dashboard_hero');
+                    trackWave3HighValueAction('primary_cta_clicked');
+                  }}
+                  style={{
+                    background: '#fff',
+                    color: '#764ba2',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '0.7rem 1.25rem',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {personalization.primaryCTA}
+                </button>
+              </div>
+
+              {/* Inline lead capture */}
+              <div style={{
+                flex: '1 1 260px',
+                background: 'rgba(255,255,255,0.12)',
+                borderRadius: '0.75rem',
+                padding: '1.25rem',
+              }}>
+                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Get a personalized demo →
+                </p>
+                <LeadCaptureForm
+                  trigger="demo"
+                  onSuccess={() => trackWave3HighValueAction('demo_lead_captured')}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Metrics Grid */}
         <section className="metrics-grid">
           <div className="metric-card">

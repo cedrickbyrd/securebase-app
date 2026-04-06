@@ -16,6 +16,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed, getWave3Target, trackWave3HighValueAction } from '../utils/analytics';
 
 export const Invoices = () => {
+  const personalization = usePersonalization();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,6 +36,7 @@ export const Invoices = () => {
     trackPageView('Invoices', '/invoices');
     trackInvoiceView();
     incrementPagesViewed();
+    recordSignal('viewedPricing', true);
     return () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Invoices', timeSpent);

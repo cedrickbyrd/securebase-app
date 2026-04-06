@@ -10,6 +10,7 @@ import Compliance from './components/Compliance';
 import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
+import ExitIntentModal from './components/ExitIntentModal';
 import LandingPage from './pages/LandingPage';
 import ThankYou from './pages/ThankYou';
 import Pricing from './pages/Pricing';
