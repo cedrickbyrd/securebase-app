@@ -336,7 +336,7 @@ export default function Compliance() {
                 🔍 How audit-ready is your infrastructure?
               </h3>
               <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>
-                Answer 5 questions and get your personalised compliance readiness score — plus a prioritised remediation roadmap.
+                Answer 5 questions and get your personalized compliance readiness score — plus a prioritized remediation roadmap.
               </p>
               <SocialProof context="compliance" />
             </div>

@@ -11,6 +11,7 @@ import LeadCaptureForm from './LeadCaptureForm';
 import { trackWave3HighValueAction, trackCTAClick } from '../utils/analytics';
 
 const SESSION_KEY = 'sb_exit_intent_shown';
+const EXIT_THRESHOLD = 10; // pixels from top of viewport
 
 export default function ExitIntentModal() {
   const [visible, setVisible] = useState(false);
@@ -21,7 +22,7 @@ export default function ExitIntentModal() {
   const handleMouseOut = useCallback(
     (e) => {
       // Only trigger when cursor exits through the top of the viewport
-      if (e.clientY < 10 && !dismissed) {
+      if (e.clientY < EXIT_THRESHOLD && !dismissed) {
         setVisible(true);
         setDismissed(true);
         sessionStorage.setItem(SESSION_KEY, '1');

@@ -94,8 +94,8 @@ export default function LeadCaptureForm({ trigger = 'default', className = '', o
       <div className={`lcf-success ${className}`} style={styles.success}>
         <span style={styles.successIcon}>✅</span>
         <div>
-          <p style={styles.successHeading}>You&apos;re all set!</p>
-          <p style={styles.successSub}>Check your inbox — we&apos;ll be in touch shortly.</p>
+          <p style={styles.successHeading}>You're all set!</p>
+          <p style={styles.successSub}>Check your inbox — we'll be in touch shortly.</p>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export default function LeadCaptureForm({ trigger = 'default', className = '', o
           disabled={submitting}
           style={{ ...styles.input, ...styles.select }}
         >
-          <option value="">What&apos;s your role? (optional)</option>
+          <option value="">What's your role? (optional)</option>
           {ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}

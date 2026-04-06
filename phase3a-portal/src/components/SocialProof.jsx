@@ -10,11 +10,11 @@ const PROOF_DATA = {
   pricing: [
     { icon: '💼', text: 'Trusted by 500+ regulated companies' },
     { icon: '⚡', text: '90-day average time to SOC 2 certification' },
-    { icon: '🏆', text: '4.9 / 5 rating from compliance officers' },
+    { icon: '🏆', text: '4.9/5 rating from compliance officers' },
   ],
   api: [
     { icon: '👨‍💻', text: 'Built by ex-AWS compliance engineers' },
-    { icon: '🔐', text: '99.99 % API uptime SLA' },
+    { icon: '🔐', text: '99.99% API uptime SLA' },
     { icon: '📊', text: 'Processes 1M+ compliance checks daily' },
   ],
   compliance: [
