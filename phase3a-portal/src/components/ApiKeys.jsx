@@ -17,9 +17,14 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatDate } from '../utils/formatters';
-import { trackPageView, trackAPIDocsView, trackFeatureInteraction, incrementPagesViewed } from '../utils/analytics';
+import { trackPageView, trackAPIDocsView, trackFeatureInteraction, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
+import { usePersonalization } from '../hooks/usePersonalization';
+import LeadCaptureForm from './LeadCaptureForm';
+import SocialProof from './SocialProof';
+import { recordSignal } from '../services/leadScoringService';
 
 export const ApiKeys = () => {
+  const personalization = usePersonalization();
   const [apiKeys, setApiKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,6 +41,7 @@ export const ApiKeys = () => {
     trackPageView('API Keys', '/api-keys');
     trackAPIDocsView();
     incrementPagesViewed();
+    recordSignal('exploredAPIDocs', true);
     loadApiKeys();
   }, []);
 
@@ -381,23 +387,39 @@ export const ApiKeys = () => {
           )}
         </div>
 
-        {/* Documentation */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">API Key Usage</h3>
-          <div className="text-sm text-blue-800 space-y-2">
-            <p>
-              Include your API key in the Authorization header of all requests:
+        {/* Developer Sandbox CTA */}
+        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex-1">
+            <h3 className="font-semibold text-blue-900 mb-1 text-lg">
+              Try the SecureBase API in 60 seconds
+            </h3>
+            <p className="text-sm text-blue-800 mb-3">
+              Get instant sandbox access with pre-loaded compliance data. No credit card required.
             </p>
-            <code className="block bg-blue-100 px-3 py-2 rounded font-mono text-xs mt-2">
-              Authorization: Bearer sb_YOUR_API_KEY_HERE
-            </code>
-            <p className="mt-3">
-              For more details, see our{' '}
-              <a href="/docs/api" className="underline font-medium">
-                API documentation
-              </a>
-              .
-            </p>
+            <SocialProof context="api" />
+            <div className="mt-4">
+              <p className="text-sm text-blue-800 font-medium mb-1">API Key Usage</p>
+              <p className="text-sm text-blue-800 mb-1">
+                Include your API key in the Authorization header:
+              </p>
+              <code className="block bg-blue-100 px-3 py-2 rounded font-mono text-xs">
+                Authorization: Bearer sb_YOUR_API_KEY_HERE
+              </code>
+              <p className="text-xs text-blue-700 mt-2">
+                For more details, see our{' '}
+                <a href="/docs/api" className="underline font-medium">API documentation</a>.
+              </p>
+            </div>
+          </div>
+          <div className="w-full lg:w-72 flex-shrink-0">
+            <p className="text-sm font-semibold text-blue-900 mb-2">Get your sandbox API key:</p>
+            <LeadCaptureForm
+              trigger="api_sandbox"
+              onSuccess={() => {
+                trackCTAClick('api_sandbox', 'api_keys_page');
+                if (personalization.isWave3) trackWave3HighValueAction('api_sandbox_lead_captured');
+              }}
+            />
           </div>
         </div>
       </div>

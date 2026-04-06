@@ -13,9 +13,14 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed } from '../utils/analytics';
+import { trackPageView, trackPageEngagement, trackInvoiceView, trackFeatureInteraction, incrementPagesViewed, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
+import { usePersonalization } from '../hooks/usePersonalization';
+import LeadCaptureForm from './LeadCaptureForm';
+import SocialProof from './SocialProof';
+import { recordSignal } from '../services/leadScoringService';
 
 export const Invoices = () => {
+  const personalization = usePersonalization();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +39,7 @@ export const Invoices = () => {
     trackPageView('Invoices', '/invoices');
     trackInvoiceView();
     incrementPagesViewed();
+    recordSignal('viewedPricing', true);
     return () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Invoices', timeSpent);
@@ -172,6 +178,30 @@ export const Invoices = () => {
             <div className="px-4 py-2 bg-blue-50 rounded-lg">
               <p className="text-2xl font-bold text-blue-600">{pagination.total}</p>
             </div>
+          </div>
+        </div>
+
+        {/* Pricing / Custom Pricing CTA */}
+        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-indigo-900 mb-1">
+              {personalization.isWave3
+                ? `Custom pricing for ${personalization.companyName} partners`
+                : 'See custom pricing for your company'}
+            </h3>
+            <p className="text-sm text-indigo-700 mb-3">
+              Volume discounts, enterprise features, and a dedicated success manager. Let&apos;s build the right plan together.
+            </p>
+            <SocialProof context="pricing" />
+          </div>
+          <div className="w-full lg:w-72 flex-shrink-0">
+            <LeadCaptureForm
+              trigger="pricing"
+              onSuccess={() => {
+                trackCTAClick('custom_pricing', 'invoices_page');
+                if (personalization.isWave3) trackWave3HighValueAction('pricing_lead_captured');
+              }}
+            />
           </div>
         </div>
 
