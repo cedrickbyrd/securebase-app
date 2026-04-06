@@ -1007,3 +1007,53 @@ resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
   })
 }
 
+# ============================================================================
+# API Resources - Lead Capture (public, no auth required)
+# ============================================================================
+
+resource "aws_api_gateway_resource" "leads" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "leads"
+}
+
+resource "aws_api_gateway_method" "leads_options" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.leads.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "leads_post" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.leads.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "leads_options" {
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.leads.id
+  http_method             = aws_api_gateway_method.leads_options.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.submit_lead_lambda_arn}/invocations"
+}
+
+resource "aws_api_gateway_integration" "leads_post" {
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.leads.id
+  http_method             = aws_api_gateway_method.leads_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.submit_lead_lambda_arn}/invocations"
+}
+
+resource "aws_lambda_permission" "leads_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvokeLeads"
+  action        = "lambda:InvokeFunction"
+  function_name = var.submit_lead_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+
