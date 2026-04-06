@@ -189,6 +189,18 @@ export function trackCustomerSampleView(customerType) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Sanitize a UTM parameter value to prevent accidental PII leakage through
+ * manipulated campaign URLs.  Keeps only alphanumeric characters, hyphens,
+ * underscores, and dots; truncates to 100 characters.
+ * @param {string} value
+ * @returns {string}
+ */
+function sanitizeUtmValue(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[^a-zA-Z0-9\-_.]/g, '').slice(0, 100);
+}
+
+/**
  * Persistent Wave 3 session state (stored in sessionStorage so it survives
  * in-app navigation but resets on new browser sessions).
  */
@@ -219,14 +231,14 @@ function setWave3Session(data) {
  * @param {Object} utmParams  Raw UTM parameters from `getUtmParams()`
  */
 export function trackWave3Outreach(utmParams) {
-  const campaign = utmParams.utm_campaign || '';
+  const campaign = sanitizeUtmValue(utmParams.utm_campaign || '');
   const target = campaign.replace(/^wave3_/, '');
   const sessionData = {
     campaign,
     target,
-    source: utmParams.utm_source || '',
-    content: utmParams.utm_content || '',
-    medium: utmParams.utm_medium || '',
+    source: sanitizeUtmValue(utmParams.utm_source || ''),
+    content: sanitizeUtmValue(utmParams.utm_content || ''),
+    medium: sanitizeUtmValue(utmParams.utm_medium || ''),
   };
 
   setWave3Session(sessionData);
@@ -258,12 +270,18 @@ export function trackWave3HighValueAction(action) {
 
 /**
  * Fire the `wave3_outreach_conversion` event when a Wave 3 prospect
- * completes signup.
+ * completes signup.  This function no-ops silently for non-Wave-3 sessions.
  *
- * Call this in your signup form on successful submission:
+ * Call this **after** a successful signup API response (account created),
+ * before redirecting the user:
  * ```js
  * import { trackWave3Conversion } from '@/utils/analytics';
- * trackWave3Conversion();
+ *
+ * const handleSignup = async (data) => {
+ *   await submitSignup(data);   // account created
+ *   trackWave3Conversion();     // attribute conversion
+ *   navigate('/dashboard');
+ * };
  * ```
  */
 export function trackWave3Conversion() {
