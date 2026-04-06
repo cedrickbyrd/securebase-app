@@ -156,4 +156,3 @@ exports.handler = async (event) => {
     body: JSON.stringify({ ok: true, grade: safePayload.grade, leadId }),
   };
 };
-EOF    EOF 
