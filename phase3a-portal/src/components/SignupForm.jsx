@@ -335,7 +335,7 @@ function detectWave3Target() {
   const params = new URLSearchParams(window.location.search);
   const campaign = params.get('utm_campaign') || '';
   if (campaign.startsWith('wave3_')) {
-    return campaign.replace(/^wave3_/, '');
+    return campaign.slice(6);
   }
   // Fall back to session state set by analytics.js initializeSessionTracking()
   return getWave3Target();
