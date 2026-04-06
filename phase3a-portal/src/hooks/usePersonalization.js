@@ -66,7 +66,7 @@ export function usePersonalization() {
       : 'Trusted by 500+ regulated companies';
 
     const urgencyMessage = isWave3
-      ? `🎯 Exclusive offer for ${companyName} partners — first 10 customers get 50 % off Year 1`
+      ? `🎯 Exclusive offer for ${companyName} partners — first 10 customers get 50% off Year 1`
       : null;
 
     const urgencyExpiry = isWave3 ? 'Offer expires April 30, 2026' : null;

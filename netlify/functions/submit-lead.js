@@ -12,10 +12,13 @@
 
 'use strict';
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://demo.securebase.tximhotep.com';
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
+if (!ALLOWED_ORIGIN) {
+  console.warn('[submit-lead] ALLOWED_ORIGIN env var is not set — CORS will block all origins');
+}
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
+  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN || '',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -81,16 +84,20 @@ exports.handler = async (event) => {
   const webhookUrl = process.env.LEAD_NOTIFICATION_WEBHOOK_URL;
   if (webhookUrl) {
     try {
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 5000); // 5 s timeout
       const res = await fetch(webhookUrl, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(safePayload),
+        signal:  controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         console.warn('[submit-lead] Webhook returned', res.status);
       }
     } catch (err) {
-      // Log but don't fail the request
+      // Log but don't fail the request — lead is already logged above
       console.error('[submit-lead] Webhook error:', err.message);
     }
   }

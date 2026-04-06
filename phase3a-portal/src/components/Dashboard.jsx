@@ -210,8 +210,8 @@ function Dashboard() {
                 borderRadius: '0.75rem',
                 padding: '1.25rem',
               }}>
-                <p style={{ margin: '0 0 0.75rem', fontWeight: 600, fontSize: '0.9rem' }}>
-                  Get a personalised demo →
+                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Get a personalized demo →
                 </p>
                 <LeadCaptureForm
                   trigger="demo"
