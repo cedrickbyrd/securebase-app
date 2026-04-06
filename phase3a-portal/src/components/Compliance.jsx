@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode } from '../utils/demoData';
-import { trackPageView, trackPageEngagement, incrementPagesViewed } from '../utils/analytics';
+import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick } from '../utils/analytics';
+import LeadCaptureForm from './LeadCaptureForm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -20,6 +21,7 @@ export default function Compliance() {
   const [findings, setFindings] = useState([]);
   const [texasData, setTexasData] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const startTimeRef = useRef(null);
   const reportRef = useRef(null);
 
@@ -154,6 +156,39 @@ export default function Compliance() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">SOC 2 Compliance</h1>
         <p className="text-gray-600">Trust Service Criteria Status</p>
+      </div>
+
+      {/* Audit Readiness Assessment CTA */}
+      <div className="mb-6 bg-gradient-to-r from-purple-700 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
+            <p className="text-purple-200 text-sm mt-1">
+              Answer 5 questions and get an instant audit readiness score sent to your inbox.
+            </p>
+          </div>
+          {!showAssessmentForm && (
+            <button
+              onClick={() => {
+                trackAssessmentCTAClick();
+                setShowAssessmentForm(true);
+              }}
+              className="shrink-0 bg-white text-purple-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-50 transition text-sm whitespace-nowrap"
+            >
+              Start Free Assessment →
+            </button>
+          )}
+        </div>
+        {showAssessmentForm && (
+          <div className="mt-5 bg-white rounded-lg p-5">
+            <LeadCaptureForm
+              trigger="assessment"
+              onSuccess={() => setShowAssessmentForm(false)}
+              onDismiss={() => setShowAssessmentForm(false)}
+              compact={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* PDF Download Button - Outside of captured area */}
