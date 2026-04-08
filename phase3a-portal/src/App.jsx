@@ -57,13 +57,17 @@ function App() {
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         <Route path="/login"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login setAuth={setIsAuthenticated} />} />
-        <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) =>
-          window.location.href = `/onboarding?jobId=${jobId}&email=${encodeURIComponent(email)}`
-        } />} />
+        <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) => {
+          if (jobId) {
+            window.location.href = `/onboarding?jobId=${jobId}&email=${encodeURIComponent(email)}`;
+          } else {
+            window.location.href = '/compliance';
+          }
+        }} />} />
         <Route path="/register"   element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<OnboardingRoute />} />
         <Route path="/dashboard"     element={isAuthenticated ? <Dashboard />       : <Navigate to="/login" />} />
-        <Route path="/compliance"    element={isAuthenticated ? <Compliance />      : <Navigate to="/login" />} />
+        <Route path="/compliance"    element={<Compliance isPublic={!isAuthenticated} />} />
         <Route path="/fintech-portal" element={isAuthenticated ? <TexasExaminerPortal /> : <Navigate to="/login" />} />
         <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />

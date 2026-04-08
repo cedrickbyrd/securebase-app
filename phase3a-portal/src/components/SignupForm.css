@@ -400,3 +400,31 @@
   .form-row  { grid-template-columns: 1fr; }
   .config-row { grid-template-columns: 1fr; }
 }
+
+/* ── Live Capacity scarcity banner ───────────── */
+.signup-capacity-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.85rem;
+  color: #fde68a;
+  margin-bottom: 1.25rem;
+}
+
+.capacity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f87171;
+  flex-shrink: 0;
+  animation: capacity-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes capacity-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.35); }
+}
