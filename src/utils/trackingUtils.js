@@ -106,7 +106,7 @@ export function isLinkedInTraffic() {
  * Return the pilot pricing config when the visitor is eligible (LinkedIn source).
  * Returns null if the visitor is not eligible for the pilot discount.
  *
- * Pilot pricing: $2,000/month (50 % off the $4,000 full price).
+ * Pilot pricing: $2,000/month (50% off the $4,000 full price).
  *
  * @returns {{ priceId: string, monthlyPrice: number, fullPrice: number, label: string }|null}
  */
@@ -148,13 +148,11 @@ export function getRemainingPilotSpots() {
  */
 export function buildAttributionMetadata() {
   const attribution = getStoredAttribution() || {};
+  const utmFields = Object.fromEntries(
+    [...UTM_KEYS, 'landing_path'].map((key) => [key, attribution[key] || null])
+  );
   return {
-    utm_source: attribution.utm_source || null,
-    utm_medium: attribution.utm_medium || null,
-    utm_campaign: attribution.utm_campaign || null,
-    utm_content: attribution.utm_content || null,
-    utm_term: attribution.utm_term || null,
-    landing_path: attribution.landing_path || null,
+    ...utmFields,
     pilot_eligible: isLinkedInTraffic(),
   };
 }

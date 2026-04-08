@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import {
@@ -8,6 +8,8 @@ import {
   getRemainingPilotSpots,
 } from '../utils/trackingUtils';
 import { trackEvent } from '../utils/analytics';
+
+const IS_DEV = import.meta.env.DEV;
 
 const TRUST_BADGES = [
   'SOC 2 Type II certified infrastructure',
@@ -60,7 +62,7 @@ export default function Signup() {
       setMagicLinkSent(true);
       trackEvent('Signup', 'MagicLinkSent', linkedIn ? 'linkedin' : 'organic');
     } catch (err) {
-      console.error('Magic link error:', err);
+      if (IS_DEV) console.error('Magic link error:', err);
       setError(err.message || 'Failed to send magic link. Please try again.');
     } finally {
       setLoading(false);
@@ -89,7 +91,7 @@ export default function Signup() {
       trackEvent('Signup', 'LinkedInOAuthStarted', 'oauth');
       // Supabase redirects the browser — no further action needed.
     } catch (err) {
-      console.error('LinkedIn OAuth error:', err);
+      if (IS_DEV) console.error('LinkedIn OAuth error:', err);
       setError(err.message || 'LinkedIn sign-in failed. Please try again.');
       setOauthLoading(false);
     }
