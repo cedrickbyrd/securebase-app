@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Shield, Loader, CheckCircle, ArrowLeft, Zap } from 'lucide-react';
 import { trackCheckoutStarted } from '../utils/analytics';
+import { getPilotPricing } from '../utils/trackingUtils';
 
 const PLAN_LABELS = {
   standard: 'Standard',
   fintech: 'Fintech / Healthcare',
   enterprise: 'Enterprise / FedRAMP',
+  pilot: 'Pilot Program',
 };
 
 const PLAN_PRICES = {
   standard: 499,
   fintech: 1499,
   enterprise: 3999,
+  pilot: 2000,
 };
 
 export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const plan = searchParams.get('plan') || 'standard';
-  const priceId = searchParams.get('priceId') || '';
-  const planName = searchParams.get('planName') || PLAN_LABELS[plan] || plan;
+  // Resolve plan — prefer URL params, fall back to attribution-based pilot pricing.
+  const pilotPricing = getPilotPricing();
+  const rawPlan = searchParams.get('plan') || (pilotPricing ? 'pilot' : 'standard');
+  const plan = rawPlan;
+  const priceId =
+    searchParams.get('priceId') ||
+    (pilotPricing ? pilotPricing.priceId : '');
+  const planName =
+    searchParams.get('planName') || PLAN_LABELS[plan] || plan;
+
+  const isPilot = plan === 'pilot' && !!pilotPricing;
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -104,6 +115,12 @@ export default function Checkout() {
         <div className="w-full max-w-md">
           {/* Plan summary */}
           <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-2xl p-6 mb-6 text-white">
+            {isPilot && (
+              <div className="flex items-center gap-2 mb-3 bg-white/20 rounded-lg px-3 py-2">
+                <Zap className="w-4 h-4 text-yellow-300 shrink-0" />
+                <span className="text-sm font-bold">LinkedIn Discount Applied! — 50% savings</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
@@ -113,6 +130,11 @@ export default function Checkout() {
                 <p className="text-3xl font-black">
                   ${PLAN_PRICES[plan]?.toLocaleString() ?? '—'}
                 </p>
+                {isPilot && (
+                  <p className="text-purple-200 text-xs line-through">
+                    ${pilotPricing.fullPrice.toLocaleString()}
+                  </p>
+                )}
                 <p className="text-purple-200 text-xs">/month</p>
               </div>
             </div>
