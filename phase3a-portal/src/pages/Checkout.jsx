@@ -1,31 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
-
-const PLAN_LABELS = {
-  standard: 'Standard',
-  fintech: 'Fintech / Healthcare',
-  enterprise: 'Enterprise / FedRAMP',
-};
-
-const PLAN_PRICES = {
-  standard: 499,
-  fintech: 1499,
-  enterprise: 3999,
-};
+import { PRICING_TIERS } from '../config/live-config';
+import { isDemoMode } from '../utils/demoData';
+import { validatePriceConsistency } from '../utils/stripeValidation';
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const plan = searchParams.get('plan') || 'standard';
-  const priceId = searchParams.get('priceId') || '';
-  const planName = searchParams.get('planName') || PLAN_LABELS[plan] || plan;
+  // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
+  const locationState = location.state || {};
+  const plan = locationState.tier || searchParams.get('plan') || 'standard';
+  const priceId = locationState.priceId || searchParams.get('priceId') || '';
+
+  const tierConfig = PRICING_TIERS[plan] || {};
+  const planName = tierConfig.name || plan;
+  const displayPrice = tierConfig.pilotPrice ?? tierConfig.price ?? null;
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Redirect demo environment away from live checkout
+  useEffect(() => {
+    if (isDemoMode()) {
+      navigate('/contact-sales', { replace: true });
+    }
+  }, [navigate]);
+
+  // Validate price consistency on mount
+  useEffect(() => {
+    if (!isDemoMode() && plan) {
+      const validation = validatePriceConsistency(plan, priceId, undefined);
+      if (!validation.valid) {
+        setError(validation.error);
+      }
+    }
+  }, [plan, priceId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,13 +117,16 @@ export default function Checkout() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
-                <p className="text-xl font-bold">{PLAN_LABELS[plan] || planName}</p>
+                <p className="text-xl font-bold">{planName}</p>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-black">
-                  ${PLAN_PRICES[plan]?.toLocaleString() ?? '—'}
+                  {displayPrice != null ? `$${displayPrice.toLocaleString()}` : '—'}
                 </p>
                 <p className="text-purple-200 text-xs">/month</p>
+                {tierConfig.pilotPrice && tierConfig.price && (
+                  <p className="text-purple-300 text-xs line-through">${tierConfig.price.toLocaleString()}</p>
+                )}
               </div>
             </div>
           </div>
