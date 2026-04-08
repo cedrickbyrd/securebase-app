@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { isLinkedInTraffic, buildAttributionMetadata } from '../utils/trackingUtils';
 import { trackEvent } from '../utils/analytics';
 
+const IS_DEV = import.meta.env.DEV;
+
 /**
  * AuthCallback
  *
@@ -38,7 +40,7 @@ export default function AuthCallback() {
       if (cancelled) return;
 
       if (sessionError) {
-        console.error('AuthCallback: session error', sessionError);
+        if (IS_DEV) console.error('AuthCallback: session error', sessionError);
         setError('Authentication failed. Please try signing in again.');
         return;
       }
@@ -75,7 +77,7 @@ export default function AuthCallback() {
         }
       } catch (metaErr) {
         // Non-fatal — attribution enrichment failure should not block the user.
-        console.warn('AuthCallback: failed to update user metadata', metaErr);
+        if (IS_DEV) console.warn('AuthCallback: failed to update user metadata', metaErr);
       }
 
       // Build checkout URL with appropriate plan
