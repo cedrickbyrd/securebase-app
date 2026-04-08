@@ -41,8 +41,7 @@ export default function Compliance({ isPublic = false }) {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Compliance', timeSpent);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // runs once on mount
 
   // 60-second "value absorption" redirect for anonymous visitors
   useEffect(() => {
@@ -70,16 +69,10 @@ export default function Compliance({ isPublic = false }) {
       // Anonymous visitors get the Texas Fintech Pro demo data directly —
       // no API call needed, no auth required.
       if (isPublic) {
-        setComplianceData({
-          overallScore: mockComplianceData.overallScore,
-          totalControls: mockComplianceData.totalControls,
-          passedControls: mockComplianceData.passedControls,
-          failedControls: mockComplianceData.failedControls,
-          criticalFindings: mockComplianceData.criticalFindings,
-          highFindings: mockComplianceData.highFindings,
-          mediumFindings: mockComplianceData.mediumFindings,
-          categories: mockComplianceData.categories,
-        });
+        const { overallScore, totalControls, passedControls, failedControls,
+                criticalFindings, highFindings, mediumFindings, categories } = mockComplianceData;
+        setComplianceData({ overallScore, totalControls, passedControls, failedControls,
+                            criticalFindings, highFindings, mediumFindings, categories });
         setFindings(mockComplianceData.findings);
         setTexasData(mockTexasComplianceData);
         return;
