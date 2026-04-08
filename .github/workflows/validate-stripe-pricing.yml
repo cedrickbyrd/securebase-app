@@ -1,0 +1,63 @@
+name: Validate Stripe Checkout Configuration
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'phase3a-portal/src/config/**'
+      - 'phase2-backend/functions/create_checkout_session.py'
+      - '.github/scripts/validate-pricing.js'
+  push:
+    branches: [main]
+    paths:
+      - 'phase3a-portal/src/config/**'
+      - 'phase2-backend/functions/create_checkout_session.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tiers:
+    name: Validate ${{ matrix.tier }} Tier
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        tier: [standard, fintech, healthcare, government]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate Pricing Logic — ${{ matrix.tier }}
+        run: node .github/scripts/validate-pricing.js ${{ matrix.tier }}
+
+  route-integrity:
+    name: Route & Auth-Guard Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for automatic /pricing redirects
+        run: |
+          if grep -rn "window\.location.*['\"/pricing" \
+               phase3a-portal/src/pages/ src/pages/ 2>/dev/null; then
+            echo "❌ Hardcoded window.location redirect to /pricing detected."
+            exit 1
+          fi
+          echo "✅ No automatic /pricing redirects found."
+
+  pricing-gate:
+    name: Pricing Gate (All Tiers Passed)
+    runs-on: ubuntu-latest
+    needs: [validate-tiers, route-integrity]
+    steps:
+      - name: All validations passed
+        run: echo "✅ All market-tier pricing and route validations passed."
