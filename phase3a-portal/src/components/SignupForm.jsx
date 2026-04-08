@@ -426,6 +426,14 @@ export default function SignupForm({ onSuccess }) {
   return (
     <div className="signup-page">
       <div className="signup-container">
+        {/* Live Capacity scarcity banner */}
+        <div className="signup-capacity-banner">
+          <span className="capacity-dot" aria-hidden="true" />
+          <span>
+            <strong>LIVE:</strong> 8 of 10 pilot spots remaining at founder pricing ($2,000/mo)
+          </span>
+        </div>
+
         <div className="signup-header">
           <a href="/" className="signup-logo">SecureBase</a>
           <p className="signup-tagline">Enterprise AWS compliance, zero friction.</p>

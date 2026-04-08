@@ -1,21 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { demoAwareApiService } from '../services/demoApiService';
-import { isDemoMode } from '../utils/demoData';
-import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick } from '../utils/analytics';
+import { isDemoMode, mockComplianceData, mockTexasComplianceData } from '../utils/demoData';
+import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { usePersonalization } from '../hooks/usePersonalization';
 import LeadCaptureForm from './LeadCaptureForm';
+import SocialProof from './SocialProof';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
+
+// Pilot spots — update this number as spots fill
+const PILOT_SPOTS_REMAINING = 8;
 
 function getCustomerTier() {
   return localStorage.getItem('customerTier') || '';
 }
 
-export default function Compliance() {
-  const navigate = useNavigate();
+export default function Compliance({ isPublic = false }) {
   const personalization = usePersonalization();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,10 +26,11 @@ export default function Compliance() {
   const [texasData, setTexasData] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
+  const [secondsViewed, setSecondsViewed] = useState(0);
   const startTimeRef = useRef(null);
   const reportRef = useRef(null);
 
-  const isTexasTier = TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
+  const isTexasTier = isPublic || TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -38,12 +41,49 @@ export default function Compliance() {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Compliance', timeSpent);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 60-second "value absorption" redirect for anonymous visitors
+  useEffect(() => {
+    if (!isPublic) return;
+
+    const tick = setInterval(() => {
+      setSecondsViewed((s) => s + 1);
+    }, 1000);
+
+    const redirect = setTimeout(() => {
+      window.location.href = '/signup?intent=lock_pilot_pricing';
+    }, 60000);
+
+    return () => {
+      clearInterval(tick);
+      clearTimeout(redirect);
+    };
+  }, [isPublic]);
 
   const loadComplianceData = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Anonymous visitors get the Texas Fintech Pro demo data directly —
+      // no API call needed, no auth required.
+      if (isPublic) {
+        setComplianceData({
+          overallScore: mockComplianceData.overallScore,
+          totalControls: mockComplianceData.totalControls,
+          passedControls: mockComplianceData.passedControls,
+          failedControls: mockComplianceData.failedControls,
+          criticalFindings: mockComplianceData.criticalFindings,
+          highFindings: mockComplianceData.highFindings,
+          mediumFindings: mockComplianceData.mediumFindings,
+          categories: mockComplianceData.categories,
+        });
+        setFindings(mockComplianceData.findings);
+        setTexasData(mockTexasComplianceData);
+        return;
+      }
 
       const requests = [
         demoAwareApiService.getComplianceScore(),
@@ -138,9 +178,52 @@ export default function Compliance() {
     );
   }
 
+  // Seconds remaining before auto-redirect (only shown to public visitors)
+  const secondsLeft = Math.max(0, 60 - secondsViewed);
+
   return (
     <div className="p-6">
-      {isDemoMode() && (
+      {/* ── Trust Gate Banner (anonymous visitors only) ─────────────────── */}
+      {isPublic && (
+        <div className="rounded-xl mb-6 shadow-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)' }}>
+          <div className="px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl mt-0.5">🔐</span>
+              <div>
+                <p className="font-bold text-white text-sm leading-snug">
+                  Live Demo Audit — Fintech Pro Framework
+                </p>
+                <p className="text-indigo-300 text-xs mt-0.5">
+                  Texas DOB · SOC 2 Type II · AML/KYC · Digital Asset Segregation
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {secondsLeft > 0 && (
+                <span className="text-indigo-300 text-xs hidden sm:block">
+                  Auto-redirecting in {secondsLeft}s
+                </span>
+              )}
+              <a
+                href="/signup?intent=lock_pilot_pricing"
+                className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg transition text-sm whitespace-nowrap shadow"
+              >
+                🔒 {PILOT_SPOTS_REMAINING} Pilot Spots Left — Claim Founder Pricing
+              </a>
+            </div>
+          </div>
+          {/* Progress bar showing time remaining */}
+          <div className="h-1 bg-indigo-900">
+            <div
+              className="h-1 bg-yellow-400 transition-all duration-1000"
+              style={{ width: `${(secondsLeft / 60) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Demo mode banner (authenticated demo users) */}
+      {!isPublic && isDemoMode() && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -161,39 +244,41 @@ export default function Compliance() {
       </div>
 
       {/* Audit Readiness Assessment CTA */}
-      <div className="mb-6 bg-gradient-to-r from-purple-700 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
-            <p className="text-purple-200 text-sm mt-1">
-              Answer 5 questions and get an instant audit readiness score sent to your inbox.
-            </p>
+      {!isPublic && (
+        <div className="mb-6 bg-gradient-to-r from-purple-700 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
+              <p className="text-purple-200 text-sm mt-1">
+                Answer 5 questions and get an instant audit readiness score sent to your inbox.
+              </p>
+            </div>
+            {!showAssessmentForm && (
+              <button
+                onClick={() => {
+                  trackAssessmentCTAClick();
+                  setShowAssessmentForm(true);
+                }}
+                className="shrink-0 bg-white text-purple-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-50 transition text-sm whitespace-nowrap"
+              >
+                Start Free Assessment →
+              </button>
+            )}
           </div>
-          {!showAssessmentForm && (
-            <button
-              onClick={() => {
-                trackAssessmentCTAClick();
-                setShowAssessmentForm(true);
-              }}
-              className="shrink-0 bg-white text-purple-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-50 transition text-sm whitespace-nowrap"
-            >
-              Start Free Assessment →
-            </button>
+          {showAssessmentForm && (
+            <div className="mt-5 bg-white rounded-lg p-5">
+              <LeadCaptureForm
+                trigger="assessment"
+                onSuccess={() => setShowAssessmentForm(false)}
+                onDismiss={() => setShowAssessmentForm(false)}
+                compact={false}
+              />
+            </div>
           )}
         </div>
-        {showAssessmentForm && (
-          <div className="mt-5 bg-white rounded-lg p-5">
-            <LeadCaptureForm
-              trigger="assessment"
-              onSuccess={() => setShowAssessmentForm(false)}
-              onDismiss={() => setShowAssessmentForm(false)}
-              compact={false}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* PDF Download Button - Outside of captured area */}
+      {/* PDF Download Button */}
       <div className="mb-6">
         <button
           onClick={handleDownloadReport}
@@ -219,7 +304,7 @@ export default function Compliance() {
         </button>
       </div>
 
-      {/* Report Content - This will be captured in PDF */}
+      {/* Report Content — also captured in PDF */}
       <div ref={reportRef} style={{ backgroundColor: 'white', padding: '20px' }}>
         {/* Overall Score */}
         <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200">
@@ -352,42 +437,77 @@ export default function Compliance() {
           </div>
         )}
 
-        {/* Compliance Assessment CTA */}
+        {/* Bottom CTA — varies by auth state */}
         <div style={{
           marginTop: '2rem',
-          background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-          border: '1px solid #bbf7d0',
+          background: isPublic
+            ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)'
+            : 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+          border: isPublic ? 'none' : '1px solid #bbf7d0',
           borderRadius: '0.75rem',
           padding: '1.75rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.5rem',
         }}>
-          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ flex: '1 1 260px' }}>
-              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#065f46' }}>
-                🔍 How audit-ready is your infrastructure?
-              </h3>
-              <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>
-                Answer 5 questions and get your personalized compliance readiness score — plus a prioritized remediation roadmap.
-              </p>
-              <SocialProof context="compliance" />
-            </div>
-            <div style={{ width: '100%', maxWidth: '320px', flexShrink: 0 }}>
-              <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#065f46' }}>
-                Get your free audit readiness score:
-              </p>
-              <LeadCaptureForm
-                trigger="assessment"
-                onSuccess={() => {
-                  trackCTAClick('compliance_assessment', 'compliance_page');
-                  if (personalization.isWave3) trackWave3HighValueAction('assessment_lead_captured');
+          {isPublic ? (
+            /* Public: hard conversion CTA */
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#fff' }}>
+                  🚀 Ready to own infrastructure like this?
+                </h3>
+                <p style={{ margin: '0', fontSize: '0.9rem', color: '#a5b4fc' }}>
+                  {PILOT_SPOTS_REMAINING} founder pricing spots remaining · $2,000/mo · SOC 2 + Texas DOB ready in 48 hrs
+                </p>
+              </div>
+              <a
+                href="/signup?intent=lock_pilot_pricing"
+                style={{
+                  display: 'inline-block',
+                  padding: '0.875rem 1.75rem',
+                  background: '#facc15',
+                  color: '#000',
+                  fontWeight: 700,
+                  borderRadius: '0.5rem',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  whiteSpace: 'nowrap',
                 }}
-              />
+                onClick={() => trackCTAClick('pilot_pricing_bottom', 'compliance_public')}
+              >
+                Claim Your Pilot Spot →
+              </a>
             </div>
-          </div>
+          ) : (
+            /* Authenticated / demo: assessment lead gen */
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div style={{ flex: '1 1 260px' }}>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#065f46' }}>
+                  🔍 How audit-ready is your infrastructure?
+                </h3>
+                <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>
+                  Answer 5 questions and get your personalized compliance readiness score — plus a prioritized remediation roadmap.
+                </p>
+                <SocialProof context="compliance" />
+              </div>
+              <div style={{ width: '100%', maxWidth: '320px', flexShrink: 0 }}>
+                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#065f46' }}>
+                  Get your free audit readiness score:
+                </p>
+                <LeadCaptureForm
+                  trigger="assessment"
+                  onSuccess={() => {
+                    trackCTAClick('compliance_assessment', 'compliance_page');
+                    if (personalization.isWave3) trackWave3HighValueAction('assessment_lead_captured');
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
