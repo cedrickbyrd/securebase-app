@@ -15,6 +15,7 @@ import LandingPage from './pages/LandingPage';
 import ThankYou from './pages/ThankYou';
 import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
+import ContactSales from './pages/ContactSales';
 import './App.css';
 
 function OnboardingRoute() {
@@ -68,8 +69,10 @@ function App() {
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/contact-sales" element={<ContactSales />} />
         <Route path="/thank-you" element={<ThankYou />} />
-        <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        {/* Root: always show landing page in demo mode; otherwise redirect authenticated users to dashboard */}
+        <Route path="/" element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />
       </Routes>
     </Router>
   );
