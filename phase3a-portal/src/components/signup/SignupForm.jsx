@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { trackSignupView } from "../../utils/analytics";
+import { trackSignupView, trackSignupConversion, trackWave3Conversion } from "../../utils/analytics";
 import "./SignupForm.css";
 
 const STEPS = ["Account", "Organization", "Configuration", "Verify"];
@@ -73,6 +73,12 @@ export default function SignupForm({ onSuccess }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Signup failed.");
+      trackSignupConversion({
+        industry: form.industry,
+        orgSize: form.orgSize,
+        guardrailsLevel: form.guardrailsLevel,
+      });
+      trackWave3Conversion();
       setJobId(data.jobId);
       setStep(3);
     } catch (e) { setError(e.message); }

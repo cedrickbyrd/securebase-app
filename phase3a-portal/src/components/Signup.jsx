@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { trackSignupView } from '../utils/analytics';
+import { trackSignupView, trackCheckoutStarted } from '../utils/analytics';
 
 // Stripe integration for payment (loaded dynamically when needed)
 // const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -123,6 +123,14 @@ const Signup = () => {
         }
         throw new Error(data.error || 'Failed to create checkout session');
       }
+
+      // Fire conversion event before leaving the page (redirect clears session)
+      const price = formData.usePilot ? TIERS[selectedTier].pilotPrice : TIERS[selectedTier].price;
+      trackCheckoutStarted({
+        tier: selectedTier,
+        value: price,
+        pilot: formData.usePilot,
+      });
 
       // Redirect to Stripe Checkout
       window.location.href = data.checkout_url;
