@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import { usePersonalization } from '../hooks/usePersonalization';
 import LeadCaptureForm from './LeadCaptureForm';
 import SocialProof from './SocialProof';
+import SignatureBadge from './SignatureBadge';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
 
@@ -374,6 +375,9 @@ export default function Compliance({ isPublic = false }) {
                       <span className="text-sm text-gray-700">{control.name}</span>
                     </div>
                     <p className="text-xs text-gray-500 ml-6">{control.summary}</p>
+                    <div className="ml-6 mt-1">
+                      <SignatureBadge id={control.id} />
+                    </div>
                   </div>
                   <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">
                     {new Date(control.lastAssessedAt).toLocaleDateString()}
@@ -412,6 +416,9 @@ export default function Compliance({ isPublic = false }) {
                         <p className="text-sm text-gray-600 mt-1">{finding.description}</p>
                       )}
                       <p className="text-sm text-gray-500 mt-1">{finding.date}</p>
+                      <div className="mt-1">
+                        <SignatureBadge id={String(finding.id)} />
+                      </div>
                     </div>
                   </div>
                 </div>
