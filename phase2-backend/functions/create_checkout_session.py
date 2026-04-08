@@ -27,6 +27,16 @@ PRICE_IDS = {
     'standard': os.environ.get('STRIPE_PRICE_STANDARD'),
 }
 
+# Per-tier compliance metadata added to Stripe checkout session.
+# These fields are validated by .github/scripts/validate-pricing.js in CI.
+# Stripe metadata values must be strings.
+TIER_COMPLIANCE_METADATA = {
+    'standard':   {'internal_audit_enabled': 'true'},
+    'fintech':    {'compliance_framework': 'SOC2'},
+    'healthcare': {'compliance_framework': 'HIPAA'},
+    'government': {'audit_signature': 'required'},
+}
+
 # Validate price IDs are configured
 missing_prices = [tier for tier, price_id in PRICE_IDS.items() if not price_id]
 if missing_prices:
