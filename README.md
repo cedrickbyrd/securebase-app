@@ -1,8 +1,11 @@
 # SecureBase
 
 ### Sovereign AI Infrastructure & Security Orchestration
-**Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com)  
+**Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)  
 **Developer:** [Cedrick J. Byrd / TxImhotep LLC](https://tximhotep.com)
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-securebase.tximhotep.com-blue?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
+[![Book a Demo](https://img.shields.io/badge/Book%20a%20Demo-Schedule%20Now-green?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo)
 
 ---
 
@@ -35,15 +38,16 @@ In an era where AI agents and autonomous systems interact with critical infrastr
 Clone the repository and install dependencies. To ensure environment stability with our visualization suite, use the legacy peer dependency flag:
 
 ```bash
-git clone [https://github.com/cedrickbyrd/securebase-app.git](https://github.com/cedrickbyrd/securebase-app.git)
+git clone https://github.com/cedrickbyrd/securebase-app.git
 cd securebase-app
 npm install react-chartjs-2 chart.js --save --legacy-peer-deps
+```
 
-🚀 Book a Demo | 📞 Sales Inquiries
+[🚀 Book a Demo](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo) | 📞 Sales Inquiries
 🌐 The Two Portals
 
 We maintain two distinct environments to serve both prospects and active pilot partners:
-1. The Interactive Demo Endpoint: demo.securebase.tximhotep.com
+1. The Interactive Demo Endpoint: [demo.securebase.tximhotep.com](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
 
     Purpose: A high-fidelity, read-only "Sandbox" for prospects to explore the UI.
 
@@ -53,7 +57,7 @@ We maintain two distinct environments to serve both prospects and active pilot p
 
 2. The Production Audit Portal
 
-Endpoint: tximhotep.com/compliance
+Endpoint: [tximhotep.com/compliance](https://tximhotep.com/compliance?utm_source=github&utm_medium=readme&utm_campaign=portal)
 
     Purpose: The live "Source of Truth" for SecureBase customers.
 
