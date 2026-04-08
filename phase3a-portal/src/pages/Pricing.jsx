@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRICING_TIERS } from '../config/live-config';
+import { isDemoMode } from '../utils/demoData';
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const demoMode = isDemoMode();
 
   const plans = [
     { key: 'standard', ...PRICING_TIERS.standard, mostPopular: false },
@@ -38,8 +40,12 @@ const Pricing = () => {
               <ul className="mt-8 space-y-3 text-sm">
                 {plan.features.map((f, i) => <li key={i} className="flex gap-2 text-gray-300"><span className="text-green-400">✓</span>{f}</li>)}
               </ul>
-              <button onClick={() => navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId }})} className={`mt-8 w-full py-3 rounded-lg font-semibold ${plan.mostPopular ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black' : 'bg-blue-600 text-white'}`}>
-                Get Started
+              <button
+                onClick={() => demoMode
+                  ? navigate('/contact-sales')
+                  : navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId }})}
+                className={`mt-8 w-full py-3 rounded-lg font-semibold ${plan.mostPopular ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black' : 'bg-blue-600 text-white'}`}>
+                {demoMode ? 'Contact Sales' : 'Get Started'}
               </button>
             </div>
           ))}
