@@ -41,12 +41,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate Pilot Pricing ($2,000)
+        working-directory: .
+        run: node .github/scripts/validate-pricing.js standard
+
       - name: Build demo portal
         run: npm run build
         env:
-          VITE_USE_MOCK_API: true
-          VITE_ENV: demo
-          VITE_ANALYTICS_ENABLED: false
+          VITE_USE_MOCK_API: false
+          VITE_ENV: production
+          VITE_ANALYTICS_ENABLED: true
+          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
 
       - name: Copy demo data
         run: |
@@ -86,7 +91,7 @@ jobs:
 
   verify-demo:
     name: Verify Netlify Deployment
-    needs: deploy-demo
+    needs: deploy-demo-portal
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,7 +103,7 @@ jobs:
 
       - name: Test Netlify deployment
         run: |
-          DEPLOY_URL="${{ needs.deploy-demo.outputs.deployment-url }}"
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
           echo "🧪 Testing $DEPLOY_URL..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
 
@@ -115,7 +120,7 @@ jobs:
           echo "## 📊 Demo Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          DEPLOY_URL="${{ needs.deploy-demo.outputs.deployment-url }}"
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
           DEMO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL")
           if [ "$DEMO_STATUS" -eq 200 ]; then
             echo "- ✅ **Demo **: $DEPLOY_URL (HTTP $DEMO_STATUS)" >> $GITHUB_STEP_SUMMARY
