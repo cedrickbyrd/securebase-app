@@ -430,6 +430,101 @@ if (IS_PROD && typeof window !== 'undefined') {
 }
 
 // ---------------------------------------------------------------------------
+// Compliance scan events
+// ---------------------------------------------------------------------------
+
+/**
+ * Namespace object grouping compliance policy-scan tracking helpers.
+ *
+ * HIPAA safeguards:
+ *   - Only framework names and aggregate numeric counts are sent.
+ *   - Error messages are capped at 150 characters to reduce the risk of
+ *     accidentally including PII buried in a verbose error string.
+ *   - No customer identifiers, individual findings text, or remediation
+ *     details are ever included in these events.
+ *
+ * @example
+ * import { ComplianceEvents } from '../utils/analytics';
+ *
+ * ComplianceEvents.policyScanInitiated('SOC2', 'full');
+ * ComplianceEvents.policyScanCompleted('SOC2', { total: 12, critical: 1, score: 94 });
+ * ComplianceEvents.policyScanFailed('SOC2', 'NetworkError', 'Scan API timed out');
+ */
+export const ComplianceEvents = {
+  /**
+   * Track when a policy scan is initiated.
+   *
+   * @param {string} policyType  - Framework identifier, e.g. 'SOC2', 'HIPAA',
+   *                               'FedRAMP', 'full_scan'.
+   * @param {string} [scanScope='full'] - Scan breadth: 'full' | 'incremental' |
+   *                                      'specific_control'.
+   */
+  policyScanInitiated(policyType, scanScope = 'full') {
+    trackEvent('policy_scan_initiated', {
+      policy_type: policyType,
+      scan_scope: scanScope,
+    });
+  },
+
+  /**
+   * Track when a policy scan completes successfully.
+   *
+   * HIPAA note: only aggregate counts are sent — never individual finding details.
+   *
+   * @param {string} policyType
+   * @param {Object} [results]
+   * @param {number} [results.total=0]     - Total findings count.
+   * @param {number} [results.critical=0]  - Critical severity count.
+   * @param {number} [results.high=0]      - High severity count.
+   * @param {number} [results.medium=0]    - Medium severity count.
+   * @param {number} [results.low=0]       - Low severity count.
+   * @param {number} [results.duration=0]  - Scan duration in milliseconds.
+   * @param {number} [results.score=0]     - Resulting compliance score (0–100).
+   */
+  policyScanCompleted(policyType, {
+    total = 0,
+    critical = 0,
+    high = 0,
+    medium = 0,
+    low = 0,
+    duration = 0,
+    score = 0,
+  } = {}) {
+    trackEvent('policy_scan_completed', {
+      policy_type: policyType,
+      findings_total: total,
+      findings_critical: critical,
+      findings_high: high,
+      findings_medium: medium,
+      findings_low: low,
+      scan_duration_ms: duration,
+      compliance_score: score,
+    });
+  },
+
+  /**
+   * Track when a policy scan fails.
+   *
+   * HIPAA note: error messages are capped at 150 characters.
+   *
+   * @param {string} policyType
+   * @param {string} [errorType='Error']  - Error name / category (e.g. 'NetworkError').
+   *                                        Never pass a full stack trace.
+   * @param {string} [errorMessage='']   - Sanitised, human-readable description. No PII.
+   */
+  policyScanFailed(policyType, errorType = 'Error', errorMessage = '') {
+    const safeMessage = typeof errorMessage === 'string'
+      ? errorMessage.substring(0, 150)
+      : 'unknown';
+    trackEvent('policy_scan_failed', {
+      policy_type: policyType,
+      error_type: errorType,
+      error_message: safeMessage,
+    });
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Post-scan demo analytics helpers
 // ---------------------------------------------------------------------------
 
