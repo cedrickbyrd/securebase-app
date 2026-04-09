@@ -1,10 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  const msg =
+    '[SecureBase] Missing Supabase environment variables.\n' +
+    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file or deployment config.';
+  if (import.meta.env.DEV) {
+    throw new Error(msg);
+  } else {
+    console.error(msg);
+  }
+}
 
 // 1. Initialize the client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
 
 // 2. EXPOSE TO WINDOW: This fixes your console "ReferenceError"
 if (typeof window !== 'undefined') {
