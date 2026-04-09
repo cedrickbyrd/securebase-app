@@ -31,9 +31,10 @@ function Login({ setAuth }) {
       // Request the HttpOnly JWT cookie from the server.  The token is never
       // exposed to JavaScript — the browser stores it automatically.
       await loginDemo(DEMO_EMAIL, DEMO_PASSWORD);
-    } catch {
+    } catch (err) {
       // Non-blocking: demo UX continues even if the cookie endpoint is
       // temporarily unavailable (e.g. local dev without Netlify functions).
+      console.warn('[Login] Demo JWT cookie request failed (non-blocking):', err?.message);
     }
     setAuth(true);
     trackDemoLogin();

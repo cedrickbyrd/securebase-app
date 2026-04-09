@@ -62,7 +62,11 @@ export async function loginDemo(email, password) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error || 'Demo authentication failed');
+    throw new Error(
+      data.error
+        ? `Demo login failed (HTTP ${response.status}): ${data.error}`
+        : `Demo login failed with status ${response.status}. Please verify credentials or contact support.`
+    );
   }
 
   // Store only non-secret session metadata (role, access level)
@@ -81,8 +85,10 @@ export async function logoutDemo() {
       method:      'POST',
       credentials: 'include',
     });
-  } catch {
-    // Best-effort — always clear local state regardless
+  } catch (err) {
+    // Best-effort — always clear local state regardless.
+    // Log so deployment issues are visible in the browser console.
+    console.warn('[jwtService] logout request failed (non-blocking):', err?.message);
   }
   clearSession();
 }

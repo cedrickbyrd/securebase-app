@@ -27,13 +27,26 @@ const jwt = require('jsonwebtoken');
 // ---------------------------------------------------------------------------
 
 const ALLOWED_ORIGIN  = process.env.ALLOWED_ORIGIN  || 'https://demo.securebase.tximhotep.com';
-const JWT_SECRET      = process.env.JWT_SECRET       || 'demo-dev-secret-replace-in-production';
 const TOKEN_TTL_SECS  = 60 * 60; // 1 hour
 
-// Demo credentials are intentionally not secret — they exist solely so
-// prospects can access the read-only demo environment without creating accounts.
-const DEMO_EMAIL    = 'demo@securebase.tximhotep.com';
-const DEMO_PASSWORD = 'SecureBaseDemo2026!';
+// Fail fast if the JWT signing secret is missing rather than fall back to a
+// known weak default.  Set JWT_SECRET as a Netlify environment variable.
+// A development fallback is accepted only when NODE_ENV is explicitly "development".
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[demo-auth] WARNING: JWT_SECRET not set — using insecure development default. Do NOT use in production.');
+  } else {
+    throw new Error('JWT_SECRET environment variable is required. Set it in Netlify environment variables.');
+  }
+}
+const SIGNING_SECRET = JWT_SECRET || 'demo-dev-secret-REPLACE-IN-PRODUCTION';
+
+// Demo credentials are loaded from environment variables so they can be
+// rotated without a code change.  The defaults below match the values
+// shown in Login.jsx for local development convenience only.
+const DEMO_EMAIL    = process.env.DEMO_EMAIL    || 'demo@securebase.tximhotep.com';
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'SecureBaseDemo2026!';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':      ALLOWED_ORIGIN,
@@ -117,7 +130,7 @@ exports.handler = async (event) => {
     tenant_id: 'demo-tenant',
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, {
+  const token = jwt.sign(payload, SIGNING_SECRET, {
     expiresIn: TOKEN_TTL_SECS,
     issuer:    'securebase-demo',
     audience:  'securebase-portal',
