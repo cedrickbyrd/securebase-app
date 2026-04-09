@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'chart.js';
 import { mockAPI, complianceScoreHistory, mockControls } from '../mock-api';
+import { ComplianceEvents } from '../utils/analytics';
 import { usePostScanFlow } from '../hooks/usePostScanFlow';
 import {
   ScanCompleteCheck,
@@ -345,16 +346,37 @@ function QuickActions({ scanInfo, onAction, onScanComplete }) {
   const [actionStatus, setActionStatus] = useState(null);
 
   const handleAction = async (label, apiFn) => {
+    const isFullScan = label === 'Run Full Scan';
+    if (isFullScan) {
+      ComplianceEvents.policyScanInitiated('full_scan', 'full');
+    }
+    const scanStartTime = Date.now();
     setActionStatus({ label, loading: true });
     try {
       const result = await apiFn();
       setActionStatus({ label, loading: false, message: result.message });
       onAction && onAction(label, result);
-      if (label === 'Run Full Scan' && onScanComplete) {
+      if (isFullScan && onScanComplete) {
+        ComplianceEvents.policyScanCompleted('full_scan', {
+          total: result.findings?.length ?? 0,
+          critical: result.criticalCount ?? 0,
+          high: result.highCount ?? 0,
+          medium: result.mediumCount ?? 0,
+          low: result.lowCount ?? 0,
+          duration: Date.now() - scanStartTime,
+          score: result.complianceScore ?? 0,
+        });
         onScanComplete();
       }
-    } catch {
+    } catch (err) {
       setActionStatus({ label, loading: false, message: 'Action failed. Please retry.' });
+      if (isFullScan) {
+        ComplianceEvents.policyScanFailed(
+          'full_scan',
+          err?.name ?? 'Error',
+          err?.message ?? '',
+        );
+      }
     }
     setTimeout(() => setActionStatus(null), 3000);
   };
