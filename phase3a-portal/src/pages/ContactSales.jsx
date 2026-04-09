@@ -31,17 +31,18 @@ export default function ContactSales({ setAuth }) {
   useEffect(() => {
     if (status !== 'success') return;
     setCountdown(REDIRECT_DELAY_MS / 1000);
-    countdownRef.current = setInterval(() => {
+    const intervalId = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
-          clearInterval(countdownRef.current);
+          clearInterval(intervalId);
           navigate('/sre-dashboard');
           return 0;
         }
         return c - 1;
       });
     }, 1000);
-    return () => clearInterval(countdownRef.current);
+    countdownRef.current = intervalId;
+    return () => clearInterval(intervalId);
   }, [status, navigate]);
 
   function handleChange(e) {
@@ -69,12 +70,15 @@ export default function ContactSales({ setAuth }) {
 
     // Request a limited-time JWT cookie for immediate SRE Dashboard access
     try {
-      await fetch(LEAD_PREVIEW_URL, {
+      const previewRes = await fetch(LEAD_PREVIEW_URL, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email }),
       });
+      if (!previewRes.ok) {
+        console.warn('[CONTACT_SALES] lead-preview-auth returned status:', previewRes.status);
+      }
     } catch (err) {
       // Non-blocking: cookie is best-effort; demo_mode localStorage is the
       // primary auth signal for the SPA.
@@ -86,7 +90,7 @@ export default function ContactSales({ setAuth }) {
     localStorage.setItem('demo_user', JSON.stringify({
       email: formData.email,
       customerId: DEMO_CUSTOMER_ID,
-      orgName: formData.company || 'Your Organisation',
+      orgName: formData.company || 'Your Organization',
     }));
     if (typeof setAuth === 'function') {
       setAuth(true);
