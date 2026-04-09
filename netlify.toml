@@ -46,6 +46,13 @@
   status = 200
   force = true
 
+# DEMO AUTH - JWT cookie issuance (must be before SPA fallback)
+[[redirects]]
+  from = "/api/demo-auth"
+  to = "/.netlify/functions/demo-auth"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"

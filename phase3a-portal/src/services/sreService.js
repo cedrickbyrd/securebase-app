@@ -32,11 +32,11 @@ function isDemoMode() {
 
 function getAuthToken() {
   try {
-    return (
-      localStorage.getItem('authToken') ||
-      sessionStorage.getItem('authToken') ||
-      ''
-    );
+    // Read from sessionStorage only — localStorage tokens are no longer used.
+    // HttpOnly JWT cookies are sent automatically by the browser via
+    // credentials:'include'; no explicit Authorization header is required for
+    // same-origin /api/* routes.
+    return sessionStorage.getItem('authToken') || sessionStorage.getItem('sessionToken') || '';
   } catch (_) {
     return '';
   }
@@ -45,6 +45,23 @@ function getAuthToken() {
 function buildHeaders() {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Returns fetch options with credentials:'include' so the browser sends the
+ * HttpOnly JWT cookie automatically on every same-origin /api/* request.
+ * An explicit Authorization header is added when a sessionStorage token is
+ * present (supports external API Gateway routes in production).
+ *
+ * @param {Object} [extra={}]  Additional fetch options (e.g. body, method)
+ * @returns {Object}
+ */
+function buildFetchOptions(extra = {}) {
+  return {
+    credentials: 'include',
+    headers: buildHeaders(),
+    ...extra,
+  };
 }
 
 // ============================================================================
@@ -327,9 +344,7 @@ export const sreService = {
   async getInfrastructureMetrics(timeRange = '1h') {
     if (isDemoMode()) return getMockInfrastructureMetrics(timeRange);
 
-    const response = await fetch(`/api/sre/infrastructure?range=${timeRange}`, {
-      headers: buildHeaders()
-    });
+    const response = await fetch(`/api/sre/infrastructure?range=${timeRange}`, buildFetchOptions());
     if (!response.ok) throw new Error(`Infrastructure metrics failed: ${response.status}`);
     return response.json();
   },
@@ -340,7 +355,7 @@ export const sreService = {
   async getDeploymentMetrics() {
     if (isDemoMode()) return getMockDeploymentMetrics();
 
-    const response = await fetch('/api/sre/deployments', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/deployments', buildFetchOptions());
     if (!response.ok) throw new Error(`Deployment metrics failed: ${response.status}`);
     return response.json();
   },
@@ -351,7 +366,7 @@ export const sreService = {
   async getScalingMetrics() {
     if (isDemoMode()) return getMockScalingMetrics();
 
-    const response = await fetch('/api/sre/scaling', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/scaling', buildFetchOptions());
     if (!response.ok) throw new Error(`Scaling metrics failed: ${response.status}`);
     return response.json();
   },
@@ -362,7 +377,7 @@ export const sreService = {
   async getDatabaseMetrics() {
     if (isDemoMode()) return getMockDatabaseMetrics();
 
-    const response = await fetch('/api/sre/database', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/database', buildFetchOptions());
     if (!response.ok) throw new Error(`Database metrics failed: ${response.status}`);
     return response.json();
   },
@@ -373,7 +388,7 @@ export const sreService = {
   async getCacheMetrics() {
     if (isDemoMode()) return getMockCacheMetrics();
 
-    const response = await fetch('/api/sre/cache', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/cache', buildFetchOptions());
     if (!response.ok) throw new Error(`Cache metrics failed: ${response.status}`);
     return response.json();
   },
@@ -384,7 +399,7 @@ export const sreService = {
   async getErrorMetrics() {
     if (isDemoMode()) return getMockErrorMetrics();
 
-    const response = await fetch('/api/sre/errors', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/errors', buildFetchOptions());
     if (!response.ok) throw new Error(`Error metrics failed: ${response.status}`);
     return response.json();
   },
@@ -395,7 +410,7 @@ export const sreService = {
   async getLambdaMetrics() {
     if (isDemoMode()) return getMockLambdaMetrics();
 
-    const response = await fetch('/api/sre/lambda', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/lambda', buildFetchOptions());
     if (!response.ok) throw new Error(`Lambda metrics failed: ${response.status}`);
     return response.json();
   },
@@ -406,7 +421,7 @@ export const sreService = {
   async getCostMetrics() {
     if (isDemoMode()) return getMockCostMetrics();
 
-    const response = await fetch('/api/sre/cost', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/cost', buildFetchOptions());
     if (!response.ok) throw new Error(`Cost metrics failed: ${response.status}`);
     return response.json();
   },
@@ -418,7 +433,7 @@ export const sreService = {
   async getSecurityMetrics() {
     if (isDemoMode()) return getMockSecurityMetrics();
 
-    const response = await fetch('/api/sre/security', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/security', buildFetchOptions());
     if (!response.ok) throw new Error(`Security metrics failed: ${response.status}`);
     return response.json();
   },
@@ -445,9 +460,7 @@ export const sreService = {
     }
 
     const query = frameworks.join(',');
-    const response = await fetch(`/api/sre/compliance/score?frameworks=${query}`, {
-      headers: buildHeaders()
-    });
+    const response = await fetch(`/api/sre/compliance/score?frameworks=${query}`, buildFetchOptions());
     if (!response.ok) throw new Error(`Compliance score failed: ${response.status}`);
     return response.json();
   },
@@ -503,7 +516,7 @@ export const sreService = {
       };
     }
 
-    const response = await fetch('/api/sre/storage', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/storage', buildFetchOptions());
     if (!response.ok) throw new Error(`Storage metrics failed: ${response.status}`);
     return response.json();
   },
@@ -530,7 +543,7 @@ export const sreService = {
       };
     }
 
-    const response = await fetch('/api/sre/queues', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/queues', buildFetchOptions());
     if (!response.ok) throw new Error(`Queue metrics failed: ${response.status}`);
     return response.json();
   },
@@ -560,7 +573,7 @@ export const sreService = {
       };
     }
 
-    const response = await fetch('/api/sre/ml', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/ml', buildFetchOptions());
     if (!response.ok) throw new Error(`ML metrics failed: ${response.status}`);
     return response.json();
   },
@@ -592,7 +605,7 @@ export const sreService = {
       };
     }
 
-    const response = await fetch('/api/sre/video', { headers: buildHeaders() });
+    const response = await fetch('/api/sre/video', buildFetchOptions());
     if (!response.ok) throw new Error(`Video metrics failed: ${response.status}`);
     return response.json();
   },
