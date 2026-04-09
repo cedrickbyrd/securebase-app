@@ -4,8 +4,11 @@ class ApiService {
   constructor() { this.baseURL = API_BASE; }
 
   request = async (endpoint, options = {}) => {
-    const sessionToken = localStorage.getItem('sessionToken');
+    // Read token from sessionStorage only (not localStorage) to limit XSS exposure.
+    // HttpOnly cookies are sent automatically via credentials:'include'.
+    const sessionToken = sessionStorage.getItem('sessionToken');
     const config = {
+      credentials: 'include', // send HttpOnly JWT cookie on same-origin requests
       headers: {
         'Content-Type': 'application/json',
         ...(sessionToken && { Authorization: `Bearer ${sessionToken}` }),
@@ -17,7 +20,7 @@ class ApiService {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       if (response.status === 401) {
         if (sessionToken) {
-          localStorage.removeItem('sessionToken');
+          sessionStorage.removeItem('sessionToken');
           window.location.href = '/login';
           throw new Error('Session expired. Please log in again.');
         }
@@ -42,7 +45,9 @@ class ApiService {
     try {
       const response = await this.post('/auth/login', payload);
       if (response.token) {
-        localStorage.setItem('sessionToken', response.token);
+        // Store in sessionStorage (cleared when the tab closes) rather than
+        // localStorage to reduce the XSS attack surface.
+        sessionStorage.setItem('sessionToken', response.token);
         localStorage.setItem('userEmail', response.user?.email || email);
         localStorage.setItem('userRole', response.user?.role || 'user');
       }

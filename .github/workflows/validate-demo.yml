@@ -121,6 +121,52 @@ jobs:
             echo "⚠️ Missing Expires field"
           fi
 
+      - name: Verify JWT demo auth cookie
+        # Confirms the demo-auth Netlify function is reachable and issues an
+        # HttpOnly JWT cookie when presented with valid demo credentials.
+        # The cookie value is never printed — only its presence and flags are checked.
+        run: |
+          echo "🔐 Verifying JWT demo auth cookie issuance..."
+          SITE="https://demo.securebase.tximhotep.com"
+          FAILED=0
+
+          response=$(curl -si --max-time 15 \
+            -X POST "${SITE}/api/demo-auth" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"demo@securebase.tximhotep.com","password":"SecureBaseDemo2026!"}')
+
+          http_code=$(echo "$response" | grep -i "^HTTP" | tail -1 | awk '{print $2}')
+          if [ "$http_code" = "200" ]; then
+            echo "✅ demo-auth endpoint returned HTTP 200"
+          else
+            echo "❌ demo-auth returned HTTP $http_code (expected 200)"
+            FAILED=1
+          fi
+
+          if echo "$response" | grep -qi "set-cookie:.*demo_jwt="; then
+            echo "✅ JWT cookie present in response"
+          else
+            echo "❌ JWT cookie (demo_jwt) missing from Set-Cookie header"
+            FAILED=1
+          fi
+
+          if echo "$response" | grep -qi "set-cookie:.*httponly"; then
+            echo "✅ HttpOnly flag confirmed"
+          else
+            echo "❌ HttpOnly flag missing from JWT cookie"
+            FAILED=1
+          fi
+
+          if echo "$response" | grep -qi "set-cookie:.*samesite=lax"; then
+            echo "✅ SameSite=Lax flag confirmed"
+          else
+            echo "⚠️ SameSite flag not detected — verify Netlify function headers"
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
