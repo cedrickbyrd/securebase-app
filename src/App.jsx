@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'; // Added Suspense & lazy
+import React, { Suspense, lazy, useEffect } from 'react'; // Added Suspense & lazy
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
@@ -11,6 +11,7 @@ import Alerts from './components/Alerts';
 import Pricing from './components/Pricing';
 import Checkout from './components/Checkout';
 import { Loader } from 'lucide-react';
+import { initializeAnalytics, SessionTracking } from './utils/analytics';
 
 // 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -23,6 +24,11 @@ const LoadingFallback = () => (
 
 function App() {
   const { aal, isLoading } = useMFAStatus();
+
+  useEffect(() => {
+    initializeAnalytics();
+    SessionTracking.logSessionStart();
+  }, []);
 
   if (isLoading) {
     return (
