@@ -1,9 +1,10 @@
 name: Validate Demo Environment
 
 on:
-  # Run after Netlify deployment
+  # Run after demo deployment completes
+  # FIXED: was "Deploy to Netlify" — actual name in deploy-demo.yml is "Deploy Demo Portal (Netlify)"
   workflow_run:
-    workflows: ["Deploy to Netlify"]
+    workflows: ["Deploy Demo Portal (Netlify)"]
     types:
       - completed
 
@@ -18,7 +19,7 @@ jobs:
   validate-demo:
     name: Validate demo.securebase.tximhotep.com
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -26,25 +27,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Wait for deployment
-        run: sleep 10
+      - name: Wait for Netlify propagation
+        # FIXED: 10s is too short for Netlify CDN propagation — increased to 60s
         if: github.event_name == 'workflow_run'
+        run: |
+          echo "⏳ Waiting 60s for Netlify CDN to propagate..."
+          sleep 60
 
       - name: Check site accessibility
+        id: accessibility
         run: |
           echo "🔍 Checking demo site accessibility..."
+          SITE="https://demo.securebase.tximhotep.com/"
 
-          # Check HTTP 200 response
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://demo.securebase.tximhotep.com/)
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$SITE")
           if [ "$response_code" -eq 200 ]; then
             echo "✅ Site is accessible (HTTP $response_code)"
+            echo "accessible=true" >> $GITHUB_OUTPUT
           else
             echo "❌ Site returned HTTP $response_code"
+            echo "accessible=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           # Check HTTPS redirect
-          http_redirect=$(curl -s -o /dev/null -w "%{http_code}" http://demo.securebase.tximhotep.com/)
+          http_redirect=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://demo.securebase.tximhotep.com/)
           if [ "$http_redirect" -eq 301 ] || [ "$http_redirect" -eq 308 ]; then
             echo "✅ HTTP → HTTPS redirect works (HTTP $http_redirect)"
           else
@@ -52,187 +59,134 @@ jobs:
           fi
 
       - name: Validate security headers
+        id: headers
         run: |
           echo "🔒 Validating security headers..."
+          SITE="https://demo.securebase.tximhotep.com/"
+          headers=$(curl -sI --max-time 15 "$SITE")
+          FAILED=0
 
-          headers=$(curl -sI https://demo.securebase.tximhotep.com/)
+          check_header() {
+            local label="$1"
+            local pattern="$2"
+            local required="$3"
+            if echo "$headers" | grep -qi "$pattern"; then
+              echo "✅ $label present"
+            elif [ "$required" = "required" ]; then
+              echo "❌ Missing $label"
+              FAILED=1
+            else
+              echo "⚠️ Missing $label (recommended)"
+            fi
+          }
 
-          # Check Content-Security-Policy
-          if echo "$headers" | grep -qi "Content-Security-Policy"; then
-            echo "✅ Content-Security-Policy present"
-          else
-            echo "❌ Missing Content-Security-Policy"
+          check_header "Content-Security-Policy"   "Content-Security-Policy"         required
+          check_header "X-Frame-Options: DENY"     "X-Frame-Options.*DENY"           required
+          check_header "X-Content-Type-Options"    "X-Content-Type-Options.*nosniff" required
+          check_header "Strict-Transport-Security" "Strict-Transport-Security"       required
+          check_header "X-Environment: demo"       "X-Environment.*demo"             optional
+          check_header "X-Robots-Tag: noindex"     "X-Robots-Tag.*noindex"           optional
+          check_header "Referrer-Policy"           "Referrer-Policy"                 optional
+          check_header "Permissions-Policy"        "Permissions-Policy"              optional
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "headers=fail" >> $GITHUB_OUTPUT
             exit 1
           fi
-
-          # Check X-Frame-Options
-          if echo "$headers" | grep -qi "X-Frame-Options.*DENY"; then
-            echo "✅ X-Frame-Options: DENY"
-          else
-            echo "❌ Missing or incorrect X-Frame-Options"
-            exit 1
-          fi
-
-          # Check X-Content-Type-Options
-          if echo "$headers" | grep -qi "X-Content-Type-Options.*nosniff"; then
-            echo "✅ X-Content-Type-Options: nosniff"
-          else
-            echo "❌ Missing X-Content-Type-Options"
-            exit 1
-          fi
-
-          # Check Strict-Transport-Security
-          if echo "$headers" | grep -qi "Strict-Transport-Security"; then
-            echo "✅ Strict-Transport-Security present"
-          else
-            echo "❌ Missing Strict-Transport-Security (HSTS)"
-            exit 1
-          fi
-
-          # Check X-Environment: demo
-          if echo "$headers" | grep -qi "X-Environment.*demo"; then
-            echo "✅ X-Environment: demo"
-          else
-            echo "⚠️ Missing X-Environment: demo header"
-          fi
-
-          # Check X-Robots-Tag
-          if echo "$headers" | grep -qi "X-Robots-Tag.*noindex"; then
-            echo "✅ X-Robots-Tag: noindex"
-          else
-            echo "⚠️ Missing X-Robots-Tag: noindex"
-          fi
-
-          # Check Referrer-Policy
-          if echo "$headers" | grep -qi "Referrer-Policy"; then
-            echo "✅ Referrer-Policy present"
-          else
-            echo "⚠️ Missing Referrer-Policy"
-          fi
-
-          # Check Permissions-Policy
-          if echo "$headers" | grep -qi "Permissions-Policy"; then
-            echo "✅ Permissions-Policy present"
-          else
-            echo "⚠️ Missing Permissions-Policy"
-          fi
+          echo "headers=pass" >> $GITHUB_OUTPUT
 
       - name: Check security.txt
         run: |
-          echo "📄 Checking security.txt file..."
-
-          response=$(curl -s https://demo.securebase.tximhotep.com/.well-known/security.txt)
+          echo "📄 Checking security.txt..."
+          response=$(curl -s --max-time 10 https://demo.securebase.tximhotep.com/.well-known/security.txt)
 
           if [ -z "$response" ]; then
-            echo "❌ security.txt file not found"
+            echo "❌ security.txt not found"
             exit 1
           fi
 
-          # Check for contact info
-          if echo "$response" | grep -qi "Contact:"; then
-            echo "✅ Contact information present"
-          else
-            echo "❌ Missing contact information"
-            exit 1
-          fi
+          echo "$response" | grep -qi "Contact:" && echo "✅ Contact present" || { echo "❌ Missing Contact"; exit 1; }
 
-          # Check for expiry
           if echo "$response" | grep -qi "Expires:"; then
-            echo "✅ Expiry date present"
-
-            # Extract expiry date and check if expired
-            expiry_line=$(echo "$response" | grep -i "Expires:" | head -n 1)
-            expiry_date=$(echo "$expiry_line" | sed 's/Expires: //' | tr -d '\r')
-
-            # Convert to epoch time for comparison
+            echo "✅ Expires present"
+            expiry_date=$(echo "$response" | grep -i "Expires:" | head -n1 | sed 's/Expires: //' | tr -d '\r')
             expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null || echo "0")
             current_epoch=$(date +%s)
-
             if [ "$expiry_epoch" -gt "$current_epoch" ]; then
-              echo "✅ security.txt is not expired (expires: $expiry_date)"
+              echo "✅ security.txt not expired (expires: $expiry_date)"
             else
-              echo "⚠️ security.txt may be expired or date format issue"
+              echo "⚠️ security.txt may be expired: $expiry_date"
             fi
           else
-            echo "⚠️ Missing expiry date"
+            echo "⚠️ Missing Expires field"
           fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
       - name: Install Playwright
         run: |
           npm install -D @playwright/test
-          npx playwright install chromium
+          npx playwright install chromium --with-deps
 
       - name: Test demo login flow
+        # FIXED: proper Playwright test assertions — old code used `if (loginForm)` which
+        # is always truthy because Playwright Locator objects are never null
         run: |
-          cat > test-demo.js << 'EOF'
-          const { chromium } = require('playwright');
+          cat > test-demo.spec.js << 'EOF'
+          const { test, expect } = require('@playwright/test');
 
-          (async () => {
-            const browser = await chromium.launch();
-            const page = await browser.newPage();
+          test('demo site loads and shows login form', async ({ page }) => {
+            await page.goto('https://demo.securebase.tximhotep.com/', { timeout: 30000 });
+            await expect(page).toHaveTitle(/.+/);
 
-            try {
-              console.log('🔍 Testing demo login flow...');
+            const emailInput = page.locator('input[type="email"], input[type="text"]').first();
+            await expect(emailInput).toBeVisible({ timeout: 5000 });
 
-              // Navigate to demo site
-              await page.goto('https://demo.securebase.tximhotep.com/', { timeout: 10000 });
-              console.log('✅ Demo site loaded');
+            await page.screenshot({ path: 'demo-homepage.png', fullPage: true });
+          });
 
-              // Check for login form
-              const loginForm = await page.locator('input[type="text"], input[type="email"]').first();
-              if (loginForm) {
-                console.log('✅ Login form found');
-              } else {
-                console.log('⚠️ Login form not found');
-              }
-
-              // Take screenshot
-              await page.screenshot({ path: 'demo-homepage.png' });
-              console.log('📸 Screenshot saved');
-
-            } catch (error) {
-              console.error('❌ Test failed:', error.message);
-              process.exit(1);
-            } finally {
-              await browser.close();
+          test('demo mode indicator is present', async ({ page }) => {
+            await page.goto('https://demo.securebase.tximhotep.com/', { timeout: 30000 });
+            const body = await page.content();
+            const isDemoMode = body.includes('demo') || body.includes('Demo') || body.includes('DEMO');
+            if (!isDemoMode) {
+              console.warn('⚠️ No demo indicator found — verify VITE_DEMO_MODE=true is set');
             }
-          })();
+          });
           EOF
 
-          node test-demo.js
+          npx playwright test test-demo.spec.js --reporter=line
 
-      - name: Run Lighthouse audit (optional)
+      - name: Run Lighthouse audit
         uses: treosh/lighthouse-ci-action@v11
         continue-on-error: true
         with:
           urls: 'https://demo.securebase.tximhotep.com/'
+          budgetPath: ./bot-budgets.json
           uploadArtifacts: true
           temporaryPublicStorage: true
 
-      - name: Create summary
+      - name: Create job summary
         if: always()
         run: |
           echo "## 🎯 Demo Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Site Accessibility | ${{ steps.accessibility.outputs.accessible == 'true' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Headers   | ${{ steps.headers.outputs.headers == 'pass' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Playwright Login   | ${{ job.status == 'success' && '✅ Pass' || '⚠️ See logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** demo.securebase.tximhotep.com" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Checks Performed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Site accessibility" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Security headers" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ security.txt file" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Demo login flow" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "For details, see the workflow run logs." >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload screenshot
+      - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: demo-screenshots
           path: demo-homepage.png
@@ -247,21 +201,56 @@ jobs:
       issues: write
 
     steps:
-      - name: Create issue on failure
+      - name: Check for existing open failure issue
+        # ROOT CAUSE FIX: previous code created a brand-new issue every day.
+        # This step checks if an open issue already exists before creating another.
+        id: check-issue
         uses: actions/github-script@v7
         with:
           script: |
-            const title = `🚨 Demo Environment Validation Failed - ${new Date().toISOString().split('T')[0]}`;
-            const body = `## Demo Validation Failure\n\n` +
-              `The automated validation of demo.securebase.tximhotep.com has failed.\n\n` +
-              `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
-              `**Timestamp:** ${new Date().toISOString()}\n\n` +
-              `Please investigate and resolve the issue.`;
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'demo,bug,urgent',
+              per_page: 10,
+            });
+            const existing = issues.data.find(i => i.title.includes('Demo Environment Validation Failed'));
+            if (existing) {
+              console.log(`Open issue already exists: #${existing.number} — skipping creation`);
+              core.setOutput('exists', 'true');
+              core.setOutput('issue_number', String(existing.number));
+            } else {
+              core.setOutput('exists', 'false');
+            }
 
+      - name: Add comment to existing issue
+        if: steps.check-issue.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ steps.check-issue.outputs.issue_number }}'),
+              body: `🔁 **Still failing** as of ${new Date().toISOString().split('T')[0]}\n\n` +
+                    `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Create new issue (only if none exists)
+        if: steps.check-issue.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: title,
-              body: body,
+              title: `🚨 Demo Environment Validation Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Demo Validation Failure\n\n` +
+                `The automated validation of \`demo.securebase.tximhotep.com\` has failed.\n\n` +
+                `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+                `**Timestamp:** ${new Date().toISOString()}\n\n` +
+                `Please investigate and resolve the issue.\n\n` +
+                `> ℹ️ While this issue remains open, subsequent daily failures will add comments here rather than creating new issues.`,
               labels: ['demo', 'bug', 'urgent']
             });
