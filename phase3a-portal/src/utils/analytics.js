@@ -472,6 +472,30 @@ export function trackCheckoutStarted({ tier, value, pilot = false } = {}) {
   });
 }
 
+/**
+ * Fire when a prospect clicks a pricing CTA to express sales interest.
+ * Replaces `begin_checkout` for demo/prospect flows so we capture buying
+ * intent without requiring a credit card.  This event feeds the
+ * "contact_sales_intent" conversion goal in GA4.
+ *
+ * HIPAA NOTE: Do NOT pass email, company name, or any PII here.
+ *
+ * @param {Object} params
+ * @param {string} params.tier      e.g. 'standard', 'fintech', 'healthcare', 'government'
+ * @param {number} [params.value]   Approximate monthly value in USD
+ * @param {string} [params.source]  Where the CTA appeared, e.g. 'pricing_page', 'demo_banner'
+ */
+export function trackContactSalesIntent({ tier, value, source = 'pricing_page' } = {}) {
+  const utmParams = getUtmParams();
+
+  trackEvent('contact_sales_intent', {
+    tier,
+    ...(value !== undefined && { value, currency: 'USD' }),
+    source,
+    ...utmParams,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Compliance scan events
 // ---------------------------------------------------------------------------
