@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { trackSignupView, trackSignupConversion, trackWave3Conversion } from "../../utils/analytics";
 import "./SignupForm.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 const STEPS = ["Account", "Organization", "Configuration", "Verify"];
 
 const REGIONS = [
@@ -61,7 +63,7 @@ export default function SignupForm({ onSuccess }) {
     if (err) { setError(err); return; }
     setLoading(true); setError("");
     try {
-      const res = await fetch(`/api/signup`, {
+      const res = await fetch(`${API_BASE}/api/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,7 +90,7 @@ export default function SignupForm({ onSuccess }) {
   const resendVerification = async () => {
     setLoading(true);
     try {
-      await fetch(`/api/signup/resend-verification`, {
+      await fetch(`${API_BASE}/api/signup/resend-verification`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email }),
       });
