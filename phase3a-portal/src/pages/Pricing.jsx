@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
+import { trackContactSalesIntent, trackCheckoutStarted } from '../utils/analytics';
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -41,9 +42,15 @@ const Pricing = () => {
                 {plan.features.map((f, i) => <li key={i} className="flex gap-2 text-gray-300"><span className="text-green-400">✓</span>{f}</li>)}
               </ul>
               <button
-                onClick={() => demoMode
-                  ? navigate('/contact-sales')
-                  : navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId }})}
+                onClick={() => {
+                  if (demoMode) {
+                    trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price });
+                    navigate('/contact-sales');
+                  } else {
+                    trackCheckoutStarted({ tier: plan.key, value: plan.pilotPrice || plan.price, pilot: !!plan.pilotPrice });
+                    navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId } });
+                  }
+                }}
                 className={`mt-8 w-full py-3 rounded-lg font-semibold ${plan.mostPopular ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black' : 'bg-blue-600 text-white'}`}>
                 {demoMode ? 'Contact Sales' : 'Get Started'}
               </button>

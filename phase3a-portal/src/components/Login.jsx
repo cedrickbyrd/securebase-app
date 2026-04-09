@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import { loginDemo } from '../services/jwtService';
 import BRANDING from '../config/branding';
 import { trackPageView, trackDemoLogin, incrementPagesViewed } from '../utils/analytics';
 import './Login.css';
@@ -25,9 +26,19 @@ function Login({ setAuth }) {
   // Show landing page first for demo visitors; they can switch to manual login
   const [showDemoLanding, setShowDemoLanding] = useState(isDemo);
 
-  const authenticateDemoUser = () => {
+  const authenticateDemoUser = async () => {
+    try {
+      // Request the HttpOnly JWT cookie from the server.  The token is never
+      // exposed to JavaScript — the browser stores it automatically.
+      await loginDemo(DEMO_EMAIL, DEMO_PASSWORD);
+    } catch (err) {
+      // Non-blocking: demo UX continues even if the cookie endpoint is
+      // temporarily unavailable (e.g. local dev without Netlify functions).
+      console.warn('[Login] Demo JWT cookie request failed (non-blocking):', err?.message);
+    }
     setAuth(true);
     trackDemoLogin();
+    // Store only non-sensitive demo context (no tokens/credentials)
     localStorage.setItem('demo_mode', 'true');
     localStorage.setItem('demo_user', JSON.stringify({
       email: DEMO_EMAIL,
