@@ -388,22 +388,106 @@ export function trackError(errorType, errorMessage) {
 }
 
 /**
+ * Track when a user begins the signup flow.
+ *
+ * HIPAA note: only the authentication method is sent — never the user's email
+ * or any other identifier.
+ *
+ * @param {'email'|'google'|'sso'} [method='email'] - Sign-up method.
+ */
+export function trackSignupStarted(method = 'email') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('signup_started', { signup_method: method });
+    devLog('Event tracked: signup_started', { method });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: signup_started', error);
+  }
+}
+
+/**
  * Track a pricing-page CTA click.
  *
- * @param {string} plan - Plan identifier (e.g. 'standard', 'fintech', 'enterprise').
+ * @param {string} plan           - Plan identifier (e.g. 'standard', 'fintech', 'enterprise').
+ * @param {string} [location=''] - CTA location on the page (e.g. 'hero', 'comparison_table', 'footer').
  */
-export function trackPricingCTA(plan) {
-  trackEvent('Pricing', 'CTAClicked', plan);
+export function trackPricingCTA(plan, location = '') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('pricing_cta_clicked', { plan_type: plan, cta_location: location });
+    devLog('Event tracked: pricing_cta_clicked', { plan, location });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: pricing_cta_clicked', error);
+  }
 }
 
 /**
  * Track checkout initiation.
  *
- * @param {string} plan - Plan identifier.
+ * @param {string} plan                        - Plan identifier.
+ * @param {'annual'|'monthly'} [billingCycle='monthly'] - Billing cadence.
  */
-export function trackCheckoutStarted(plan) {
-  trackEvent('Checkout', 'Started', plan);
+export function trackCheckoutStarted(plan, billingCycle = 'monthly') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('checkout_started', { plan_type: plan, billing_cycle: billingCycle });
+    devLog('Event tracked: checkout_started', { plan, billingCycle });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: checkout_started', error);
+  }
 }
+
+/**
+ * Track a completed purchase / conversion.
+ *
+ * HIPAA note: only the plan name and a numeric revenue value are sent — no
+ * payment card details, user PII, or order identifiers.
+ *
+ * @param {string} plan    - Plan identifier (e.g. 'enterprise').
+ * @param {number} revenue - Transaction value in USD (e.g. 299.99).
+ */
+export function trackCheckoutCompleted(plan, revenue) {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('checkout_completed', {
+      plan_type: plan,
+      value: typeof revenue === 'number' ? revenue : 0,
+      currency: 'USD',
+    });
+    devLog('Event tracked: checkout_completed', { plan, revenue });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: checkout_completed', error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Session tracking
+// ---------------------------------------------------------------------------
+
+/**
+ * Namespace object grouping session lifecycle helpers.
+ *
+ * @example
+ * import { SessionTracking } from '../utils/analytics';
+ *
+ * // In App.jsx useEffect (runs once on mount)
+ * SessionTracking.logSessionStart();
+ */
+export const SessionTracking = {
+  /**
+   * Track the start of a new user session.
+   * Call once in a top-level useEffect with an empty dependency array.
+   */
+  logSessionStart() {
+    if (!canTrack()) return;
+    try {
+      ReactGA.event('session_start');
+      devLog('Event tracked: session_start');
+    } catch (error) {
+      console.error('[Analytics] Error tracking event: session_start', error);
+    }
+  },
+};
 
 // ---------------------------------------------------------------------------
 // UTM helpers (internal, used by initializeAnalytics if needed)
