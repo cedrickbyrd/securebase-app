@@ -46,6 +46,13 @@ base = "phase3a-portal"
   status = 200
   force = true
 
+# LEAD PREVIEW AUTH - issues a limited-time JWT after Contact Sales form submission
+[[redirects]]
+  from = "/api/lead-preview-auth"
+  to = "/.netlify/functions/lead-preview-auth"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
