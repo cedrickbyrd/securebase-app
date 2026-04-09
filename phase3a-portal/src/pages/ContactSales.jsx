@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Loader } from 'lucide-react';
+import { Shield, CheckCircle, Loader, BarChart2 } from 'lucide-react';
 import { submitLead } from '../services/crmService';
 
 const FRAMEWORK_OPTIONS = [
@@ -10,7 +10,11 @@ const FRAMEWORK_OPTIONS = [
   { value: 'cis', label: 'CIS Foundations (General)' },
 ];
 
-export default function ContactSales() {
+const LEAD_PREVIEW_URL = '/api/lead-preview-auth';
+const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
+const REDIRECT_DELAY_MS = 4000;
+
+export default function ContactSales({ setAuth }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +24,26 @@ export default function ContactSales() {
     message: '',
   });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
-  const [errorMsg, setErrorMsg] = useState('');
+  const [countdown, setCountdown] = useState(REDIRECT_DELAY_MS / 1000);
+  const countdownRef = useRef(null);
+
+  // Auto-redirect countdown after success
+  useEffect(() => {
+    if (status !== 'success') return;
+    setCountdown(REDIRECT_DELAY_MS / 1000);
+    const intervalId = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(intervalId);
+          navigate('/sre-dashboard');
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    countdownRef.current = intervalId;
+    return () => clearInterval(intervalId);
+  }, [status, navigate]);
 
   function handleChange(e) {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -29,7 +52,6 @@ export default function ContactSales() {
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus('loading');
-    setErrorMsg('');
 
     try {
       await submitLead({
@@ -41,12 +63,40 @@ export default function ContactSales() {
         trigger: 'contact_sales',
         viewedPricing: true,
       });
-      setStatus('success');
     } catch (err) {
-      console.error('[CONTACT_SALES] submission error:', err);
-      setErrorMsg('Something went wrong. Please email sales@securebase.tximhotep.com directly.');
-      setStatus('error');
+      console.error('[CONTACT_SALES] lead submission error:', err);
+      // Non-blocking: continue to issue preview even if lead save fails
     }
+
+    // Request a limited-time JWT cookie for immediate SRE Dashboard access
+    try {
+      const previewRes = await fetch(LEAD_PREVIEW_URL, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      if (!previewRes.ok) {
+        console.warn('[CONTACT_SALES] lead-preview-auth returned status:', previewRes.status);
+      }
+    } catch (err) {
+      // Non-blocking: cookie is best-effort; demo_mode localStorage is the
+      // primary auth signal for the SPA.
+      console.warn('[CONTACT_SALES] lead-preview-auth request failed (non-blocking):', err?.message);
+    }
+
+    // Seed demo session so the SPA's isAuthenticated guard passes
+    localStorage.setItem('demo_mode', 'true');
+    localStorage.setItem('demo_user', JSON.stringify({
+      email: formData.email,
+      customerId: DEMO_CUSTOMER_ID,
+      orgName: formData.company || 'Your Organization',
+    }));
+    if (typeof setAuth === 'function') {
+      setAuth(true);
+    }
+
+    setStatus('success');
   }
 
   return (
@@ -73,24 +123,30 @@ export default function ContactSales() {
               <CheckCircle className="w-14 h-14 text-green-400 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-white mb-2">Request Received!</h2>
               <p className="text-blue-200 mb-6">
-                Our team will reach out within one business day. In the meantime, explore the demo.
+                Our team will reach out within one business day. Your limited-time SRE Dashboard
+                preview is ready — no login needed.
+              </p>
+              <button
+                onClick={() => {
+                  clearInterval(countdownRef.current);
+                  navigate('/sre-dashboard');
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-[#667eea] hover:from-purple-500 hover:to-[#5a6fd6] text-white font-bold py-3 px-8 rounded-lg transition mb-4 shadow-lg"
+              >
+                <BarChart2 className="w-5 h-5" />
+                Launch SRE Dashboard
+              </button>
+              <p className="text-blue-400 text-xs mb-5">
+                Redirecting automatically in {countdown}s…
               </p>
               <a
                 href="https://calendly.com/securebase/white-glove-pilot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg transition mb-4"
+                className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg transition"
               >
                 📅 Book a Call Now
               </a>
-              <div>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-blue-300 hover:text-white text-sm underline transition"
-                >
-                  Or continue exploring the demo →
-                </button>
-              </div>
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 p-8">
@@ -177,12 +233,6 @@ export default function ContactSales() {
                   />
                 </div>
 
-                {status === 'error' && (
-                  <p className="text-red-400 text-sm bg-red-900/30 border border-red-500/30 p-3 rounded-lg">
-                    {errorMsg}
-                  </p>
-                )}
-
                 <button
                   type="submit"
                   disabled={status === 'loading'}
@@ -219,3 +269,4 @@ export default function ContactSales() {
     </div>
   );
 }
+

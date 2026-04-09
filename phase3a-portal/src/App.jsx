@@ -73,7 +73,7 @@ function App() {
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/contact-sales" element={<ContactSales />} />
+        <Route path="/contact-sales" element={<ContactSales setAuth={setIsAuthenticated} />} />
         <Route path="/thank-you" element={<ThankYou />} />
         {/* Root: always show landing page in demo mode; otherwise redirect authenticated users to dashboard */}
         <Route path="/" element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />
