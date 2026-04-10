@@ -1,4 +1,20 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * @deprecated Legacy checkout form for the root marketing app.
+ *
+ * This component is the fallback path for the root app's /checkout route and
+ * is preserved for direct-link and email-campaign traffic that lands on the
+ * marketing site rather than the portal.
+ *
+ * Preferred path: phase3a-portal/src/pages/Pricing.jsx → one-click inline
+ * POST /api/checkout → Stripe redirect (no intermediate form).
+ *
+ * Fallback path: phase3a-portal/src/pages/Checkout.jsx form → POST /api/checkout.
+ *
+ * Both paths already target the AWS API Gateway endpoint via the /api/checkout
+ * Netlify redirect (netlify.toml:18-22). The archived Netlify function
+ * (archived/netlify-functions/securebase-checkout-api.js) is no longer used.
+ */
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft, Zap } from 'lucide-react';
 import { trackCheckoutStarted } from '../utils/analytics';
@@ -39,14 +55,13 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    trackCheckoutStarted(plan);
-  }, [plan]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Fire GA4 begin_checkout right before the POST — not on page load.
+    trackCheckoutStarted(plan);
 
     try {
       // Use window.location.origin so the redirect URLs work correctly

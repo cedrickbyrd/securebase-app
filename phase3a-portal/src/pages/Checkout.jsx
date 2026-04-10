@@ -4,6 +4,7 @@ import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { validatePriceConsistency } from '../utils/stripeValidation';
+import { trackCheckoutStarted } from '../utils/analytics';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -49,15 +50,15 @@ export default function Checkout() {
     try {
       const origin = window.location.origin;
 
-      // ✅ FIXED: Use /api/checkout (routes to AWS Lambda via netlify.toml)
+      // Fire GA4 begin_checkout right before the POST — not on page load.
+      trackCheckoutStarted({ tier: plan, value: displayPrice, method: 'form' });
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // ✅ FIXED: AWS Lambda expects 'email' and 'name' (not customer_email, price_id)
-          email: email,
-          name: name || email.split('@')[0], // Use name if provided, otherwise extract from email
-          priceId: priceId, // ✅ FIXED: camelCase for AWS Lambda
+          email,
+          name,
+          priceId,
           successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
           cancelUrl: `${origin}/pricing`,
         }),
