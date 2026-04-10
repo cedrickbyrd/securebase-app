@@ -1,3 +1,27 @@
+/**
+ * @file supabase.js
+ * @description Supabase client and MFA helpers for the root app.
+ *
+ * RETIREMENT NOTICE
+ * -----------------
+ * Supabase auth is slated for retirement in favour of the AWS API Gateway
+ * auth stack already in production:
+ *
+ *   POST /api/login   → https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login
+ *   POST /api/signup  → https://api.securebase.tximhotep.com/signup
+ *
+ * Migration checklist (do NOT remove Supabase until all items are done):
+ *   [ ] Replace Login.jsx Supabase signInWithPassword → POST /api/login (JWT cookie)
+ *   [ ] Replace Signup.jsx Supabase signUp → POST /api/signup
+ *   [ ] Replace useMFAStatus.js Supabase session check → validate JWT from cookie/sessionStorage
+ *   [ ] Replace useAuth.js profiles query → /api/profile endpoint
+ *   [ ] Replace AuthCallback.jsx OAuth handler → not needed with API-key auth
+ *   [ ] Remove MFAChallenge.jsx / MFAEnroll.jsx Supabase MFA → handled server-side
+ *   [ ] Remove VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY env vars
+ *   [ ] Remove @supabase/supabase-js from package.json
+ *
+ * The phase3a-portal already uses API-key + JWT auth exclusively (no Supabase).
+ */
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
