@@ -58,7 +58,7 @@ export default function Checkout() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          name: name || email.split('@')[0],
+          name,
           priceId,
           successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
           cancelUrl: `${origin}/pricing`,
