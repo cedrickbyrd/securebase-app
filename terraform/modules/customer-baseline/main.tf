@@ -93,6 +93,18 @@ variable "tags" {
   default     = {}
 }
 
+variable "app_role_arn" {
+  description = "IAM role ARN of the application (e.g. Lambda execution role) that may sign/verify with the CMK."
+  type        = string
+  default     = ""   # empty = no app-sign key created
+}
+
+variable "key_admin_role_arn" {
+  description = "IAM role ARN allowed to administer the KMS key (rotate, describe, update policy). Defaults to management account root."
+  type        = string
+  default     = ""   # empty = derived from management_account_id
+}
+
 # ── Locals ─────────────────────────────────────────────────
 
 locals {
@@ -134,20 +146,167 @@ locals {
   pub_cidrs  = [cidrsubnet(var.vpc_cidr, 4, 0), cidrsubnet(var.vpc_cidr, 4, 1)]
   priv_cidrs = [cidrsubnet(var.vpc_cidr, 4, 2), cidrsubnet(var.vpc_cidr, 4, 3)]
   data_cidrs = [cidrsubnet(var.vpc_cidr, 4, 4), cidrsubnet(var.vpc_cidr, 4, 5)]
+
+  # Key admin: prefer explicit role; fall back to management-account root
+  _key_admin_arn = (
+    var.key_admin_role_arn != ""
+    ? var.key_admin_role_arn
+    : "arn:aws:iam::${var.management_account_id}:root"
+  )
 }
 
 # ── KMS customer-managed key ───────────────────────────────
 
-resource "aws_kms_key" "main" {
-  description             = "SecureBase CMK – ${var.customer_id}"
+data "aws_caller_identity" "current" {}
+
+# ── KMS key policies ───────────────────────────────────────
+
+# Policy for the encrypt/decrypt key (symmetric AES-256)
+# Statements: RootFullAccess, KeyAdminAccess, DenyKeyDeletionForAdmin, AWSServiceEncryptDecrypt
+data "aws_iam_policy_document" "kms_encrypt_key_policy" {
+  # Statement 1: Root escape-hatch (AWS requirement)
+  statement {
+    sid    = "RootFullAccess"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  # Statement 2: Key administrators – can rotate/describe/update but NOT delete
+  statement {
+    sid    = "KeyAdminAccess"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [local._key_admin_arn]
+    }
+    actions = [
+      "kms:Create*",
+      "kms:Describe*",
+      "kms:Enable*",
+      "kms:List*",
+      "kms:Put*",
+      "kms:Update*",
+      "kms:RevokeGrant",
+      "kms:GetKeyPolicy",
+      "kms:GetKeyRotationStatus",
+      "kms:TagResource",
+      "kms:UntagResource",
+    ]
+    resources = ["*"]
+  }
+
+  # Statement 3: Explicit deny of deletion for key admin – only root can delete
+  statement {
+    sid    = "DenyKeyDeletionForAdmin"
+    effect = "Deny"
+    principals {
+      type        = "AWS"
+      identifiers = [local._key_admin_arn]
+    }
+    actions = [
+      "kms:ScheduleKeyDeletion",
+      "kms:DeleteKey",
+    ]
+    resources = ["*"]
+  }
+
+  # Statement 5 (per spec): AWS services – encrypt/decrypt only
+  # Note: Statement 4 (AppSignVerifyOnly) applies to the sign key, not this key.
+  # CloudTrail, Config, S3 need GenerateDataKey + Decrypt
+  statement {
+    sid    = "AWSServiceEncryptDecrypt"
+    effect = "Allow"
+    principals {
+      type = "Service"
+      identifiers = [
+        "cloudtrail.amazonaws.com",
+        "config.amazonaws.com",
+        "s3.amazonaws.com",
+      ]
+    }
+    actions = [
+      "kms:GenerateDataKey",
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = ["*"]
+  }
+}
+
+# Policy for the sign/verify key (asymmetric ECC_NIST_P256)
+# Statements: RootFullAccess, AppSignVerifyOnly
+# Only created when var.app_role_arn != ""
+data "aws_iam_policy_document" "kms_sign_key_policy" {
+  # Statement 1: Root escape-hatch (AWS requirement)
+  statement {
+    sid    = "RootFullAccess"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  # Statement 4: Application signing role – sign/verify only, no admin or encrypt/decrypt
+  dynamic "statement" {
+    for_each = var.app_role_arn != "" ? [var.app_role_arn] : []
+    content {
+      sid    = "AppSignVerifyOnly"
+      effect = "Allow"
+      principals {
+        type        = "AWS"
+        identifiers = [statement.value]
+      }
+      actions = [
+        "kms:Sign",
+        "kms:Verify",
+        "kms:GetPublicKey",
+        "kms:DescribeKey",
+      ]
+      resources = ["*"]
+    }
+  }
+}
+
+# Symmetric AES-256 key – used for S3 SSE, CloudTrail, EBS, Config
+# Replaces the former aws_kms_key.main
+resource "aws_kms_key" "encrypt" {
+  description             = "SecureBase Encrypt CMK – ${var.customer_id}"
   enable_key_rotation     = true
   deletion_window_in_days = 30
-  tags                    = merge(local.common_tags, { Name = "securebase-${var.customer_id}-cmk" })
+  policy                  = data.aws_iam_policy_document.kms_encrypt_key_policy.json
+  tags                    = merge(local.common_tags, { Name = "securebase-${var.customer_id}-cmk-encrypt" })
+}
+
+# Asymmetric ECC key – used by the application for signing tokens/JWTs
+# Only created when var.app_role_arn is supplied
+resource "aws_kms_key" "sign" {
+  count                    = var.app_role_arn != "" ? 1 : 0
+  description              = "SecureBase Sign CMK – ${var.customer_id}"
+  key_usage                = "SIGN_VERIFY"
+  customer_master_key_spec = "ECC_NIST_P256"
+  enable_key_rotation      = false   # asymmetric keys do not support automatic rotation
+  deletion_window_in_days  = 30
+  policy                   = data.aws_iam_policy_document.kms_sign_key_policy.json
+  tags                     = merge(local.common_tags, { Name = "securebase-${var.customer_id}-cmk-sign" })
 }
 
 resource "aws_kms_alias" "main" {
   name          = "alias/securebase-${var.customer_id}"
-  target_key_id = aws_kms_key.main.key_id
+  target_key_id = aws_kms_key.encrypt.key_id
+}
+
+resource "aws_kms_alias" "sign" {
+  count         = var.app_role_arn != "" ? 1 : 0
+  name          = "alias/securebase-${var.customer_id}-sign"
+  target_key_id = aws_kms_key.sign[0].key_id
 }
 
 # ── VPC ────────────────────────────────────────────────────
@@ -265,8 +424,8 @@ resource "aws_ebs_encryption_by_default" "main" {
 }
 
 resource "aws_ebs_default_kms_key" "main" {
-  key_arn    = aws_kms_key.main.arn
-  depends_on = [aws_kms_key.main]
+  key_arn    = aws_kms_key.encrypt.arn
+  depends_on = [aws_kms_key.encrypt]
 }
 
 # ── CloudTrail ─────────────────────────────────────────────
@@ -282,7 +441,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail" {
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.main.arn
+      kms_master_key_id = aws_kms_key.encrypt.arn
     }
   }
 }
@@ -347,7 +506,7 @@ resource "aws_cloudtrail" "main" {
   is_multi_region_trail         = true
   enable_log_file_validation    = true
   include_global_service_events = true
-  kms_key_id                    = aws_kms_key.main.arn
+  kms_key_id                    = aws_kms_key.encrypt.arn
   tags                          = local.common_tags
   depends_on                    = [aws_s3_bucket_policy.cloudtrail]
 }
@@ -400,7 +559,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "config" {
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.main.arn
+      kms_master_key_id = aws_kms_key.encrypt.arn
     }
   }
 }
@@ -521,13 +680,38 @@ output "public_subnet_ids" {
 }
 
 output "kms_key_arn" {
-  description = "ARN of the customer-managed KMS key."
-  value       = aws_kms_key.main.arn
+  description = "ARN of the customer-managed KMS encrypt key (symmetric AES-256)."
+  value       = aws_kms_key.encrypt.arn
 }
 
 output "kms_key_id" {
-  description = "ID of the customer-managed KMS key."
-  value       = aws_kms_key.main.key_id
+  description = "ID of the customer-managed KMS encrypt key (symmetric AES-256)."
+  value       = aws_kms_key.encrypt.key_id
+}
+
+output "kms_key_alias_arn" {
+  description = "Full ARN of the KMS encrypt key alias."
+  value       = aws_kms_alias.main.arn
+}
+
+output "kms_key_policy_summary" {
+  description = "Human-readable summary of key policy statements applied to the encrypt key."
+  value = join(", ", compact([
+    "RootFullAccess",
+    "KeyAdminAccess",
+    "DenyKeyDeletionForAdmin",
+    "AWSServiceEncryptDecrypt",
+  ]))
+}
+
+output "kms_sign_key_arn" {
+  description = "ARN of the KMS sign key (asymmetric ECC_NIST_P256). Empty string when app_role_arn is not set."
+  value       = var.app_role_arn != "" ? aws_kms_key.sign[0].arn : ""
+}
+
+output "kms_sign_key_id" {
+  description = "ID of the KMS sign key (asymmetric ECC_NIST_P256). Empty string when app_role_arn is not set."
+  value       = var.app_role_arn != "" ? aws_kms_key.sign[0].key_id : ""
 }
 
 output "cloudtrail_bucket" {
