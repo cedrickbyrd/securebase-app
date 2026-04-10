@@ -8,7 +8,20 @@
 
 ## 🎯 Project Overview
 
-SecureBase is a compliance automation platform helping organizations achieve and maintain SOC 2, FedRAMP, and HIPAA certifications. Every code change must prioritize security, auditability, and regulatory compliance.
+SecureBase is a security-first, multi-tenant AWS PaaS platform that has evolved from an AWS landing zone orchestrator into a comprehensive suite for **compliance automation**, **AI Agent Authentication**, **Non-Human Identity Management (NHI/IAM)**, and **Sovereign Infrastructure Orchestration**. Every code change must prioritize security, auditability, and regulatory compliance.
+
+**Current Phase Status (April 2026):**
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | AWS Landing Zone (Terraform IaC) | ✅ Complete |
+| Phase 2 | Serverless Database & API Backend | ✅ Complete |
+| Phase 3a | Customer Portal (React) | ✅ Complete |
+| Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete |
+| Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete |
+| Phase 5.1 | Executive/Admin Dashboard | ✅ Complete |
+| Phase 5.2 | Tenant/Customer Dashboard & Compliance Drift | ✅ Complete |
+| Phase 5.3 | Multi-Region DR, Alerting & Cost Optimization | 🔨 In Progress |
+| Phase 6 | Compliance Automation & Operations Scale | 📅 Planned |
 
 **Core Principles:**
 - Security by default, not by addition
@@ -44,8 +57,17 @@ Store in `.env.local` (never commit):
 ```env
 VITE_SUPABASE_URL=your-project-url
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_API_ENDPOINT=https://api.securebase.app
+VITE_API_ENDPOINT=https://api.securebase.tximhotep.com
 VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_DEMO_MODE=false
+VITE_DEMO_USER_EMAIL=demo@securebase.tximhotep.com
+VITE_USE_MOCK_API=false
+```
+
+**Demo build** uses `.env.demo` (copied via `npm run build:demo`):
+```env
+VITE_DEMO_MODE=true
+VITE_DEMO_USER_EMAIL=demo@securebase.tximhotep.com
 ```
 
 ---
@@ -603,6 +625,37 @@ env:
 
 ---
 
+## 🔭 Phase 5 Observability Architecture
+
+Phase 5 adds enterprise-grade observability, dashboards, alerting, and multi-region DR to the platform. Key new modules and components introduced:
+
+### New Terraform Modules
+- `landing-zone/modules/phase5-admin-metrics/` — CloudWatch aggregation Lambda, DynamoDB tables for admin metrics; 7 API endpoints at `/admin/*`
+- `landing-zone/modules/phase5-tenant-metrics/` — Per-tenant DynamoDB tables (`securebase-metrics-history`, `securebase-compliance-violations`, `securebase-audit-trail`) with KMS encryption
+- `landing-zone/modules/multi-region/` *(In Progress)* — Aurora Global Database, DynamoDB Global Tables, Route 53 failover, S3 CRR, CloudFront multi-origin
+
+### New Lambda Functions
+- `phase2-backend/functions/metrics_aggregation.py` — CloudWatch + Cost Explorer aggregation for admin dashboard
+- `phase2-backend/functions/tenant_metrics.py` — Per-tenant compliance, usage, and cost metrics (6 endpoints, JWT auth)
+- `phase2-backend/functions/failover_orchestrator.py` *(Planned)* — Automated us-east-1 → us-west-2 failover
+- `phase2-backend/functions/health_check_aggregator.py` *(Planned)* — Custom Route 53 health checks
+
+### New Frontend Components
+- `phase3a-portal/src/components/admin/AdminDashboard.jsx` — Executive metrics (7 sections, exponential back-off auto-refresh)
+- `phase3a-portal/src/components/admin/SystemHealth.jsx` — Real-time system health widget
+- `phase3a-portal/src/services/adminService.js` — Admin API client (mock data via `VITE_USE_MOCK_API=true`)
+- `phase3a-portal/src/components/TenantDashboard.jsx` — Per-tenant compliance, usage, cost, alerts
+- `phase3a-portal/src/components/ComplianceDrift.jsx` — 90-day drift timeline with MTTR analytics
+- `phase3a-portal/src/components/SREDashboard.jsx` — SRE operations view (purple `#9333EA` accent for memory metrics)
+
+### SLA Targets (Phase 5.3)
+- **RTO:** < 15 minutes | **RPO:** < 1 minute
+- **Uptime SLA:** 99.95% (4.4 hours downtime/year)
+- **Dashboard load:** < 2 seconds (p95)
+- **Alert noise:** < 5% false positive rate
+
+---
+
 ## 🏗 Infrastructure as Code (Terraform)
 
 ### Required Variables for Compliance
@@ -758,6 +811,6 @@ This keeps credentials secure and maintains SOC 2 compliance."
 
 ---
 
-**Last Updated:** 2024-04-04  
+**Last Updated:** 2026-04-10  
 **Maintained By:** Cedrick Byrd (cedrickbyrd)  
 **Questions?** Open an issue in the repository.
