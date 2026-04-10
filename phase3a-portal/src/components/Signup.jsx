@@ -130,6 +130,7 @@ const Signup = () => {
         tier: selectedTier,
         value: price,
         pilot: formData.usePilot,
+        method: 'form',
       });
 
       // Redirect to Stripe Checkout
