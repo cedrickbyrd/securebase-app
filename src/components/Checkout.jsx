@@ -1,18 +1,17 @@
 /**
- * @deprecated Legacy checkout form for the root marketing app.
+ * @deprecated Legacy fallback checkout form for the root app's /checkout route.
  *
- * This component is the fallback path for the root app's /checkout route and
- * is preserved for direct-link and email-campaign traffic that lands on the
- * marketing site rather than the portal.
+ * This form is reached when traffic lands directly on the root marketing site
+ * (e.g. via email links or UTM campaigns) rather than on the portal.
  *
- * Preferred path: phase3a-portal/src/pages/Pricing.jsx → one-click inline
- * POST /api/checkout → Stripe redirect (no intermediate form).
+ * Preferred path (portal): phase3a-portal/src/pages/Pricing.jsx handles one-click
+ * checkout inline — POST /api/checkout → Stripe redirect, no intermediate form.
+ * If the one-click call fails, it falls back to phase3a-portal/src/pages/Checkout.jsx.
  *
- * Fallback path: phase3a-portal/src/pages/Checkout.jsx form → POST /api/checkout.
- *
- * Both paths already target the AWS API Gateway endpoint via the /api/checkout
- * Netlify redirect (netlify.toml:18-22). The archived Netlify function
- * (archived/netlify-functions/securebase-checkout-api.js) is no longer used.
+ * Both this component and the portal checkout now POST to the same AWS API Gateway
+ * endpoint via the /api/checkout Netlify redirect (netlify.toml:18-22).
+ * The archived Netlify function (archived/netlify-functions/securebase-checkout-api.js)
+ * is no longer used.
  */
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -61,7 +60,7 @@ export default function Checkout() {
     setError(null);
 
     // Fire GA4 begin_checkout right before the POST — not on page load.
-    trackCheckoutStarted(plan);
+    trackCheckoutStarted(plan, 'monthly', 'form');
 
     try {
       // Use window.location.origin so the redirect URLs work correctly
