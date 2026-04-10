@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
-import { trackContactSalesIntent, trackCheckoutStarted } from '../utils/analytics';
+import { trackContactSalesIntent, trackCheckoutStarted, trackCTAClick } from '../utils/analytics';
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -25,12 +25,15 @@ const Pricing = () => {
       return;
     }
 
-    trackCheckoutStarted({ tier: plan.key, value: plan.pilotPrice || plan.price, pilot: !!plan.pilotPrice, method: 'one_click' });
+    trackCTAClick('pricing', plan.key);
     setLoadingTier(plan.key);
     setErrorTier(null);
 
     try {
       const origin = window.location.origin;
+
+      // Fire GA4 begin_checkout right before the POST — not on button click.
+      trackCheckoutStarted({ tier: plan.key, value: plan.pilotPrice || plan.price, pilot: !!plan.pilotPrice, method: 'one_click' });
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

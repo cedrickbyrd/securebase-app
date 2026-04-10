@@ -408,36 +408,37 @@ export function trackSignupStarted(method = 'email') {
 /**
  * Track a pricing-page CTA click.
  *
+ * GA4 is intentionally NOT fired here — checkout intent is tracked by
+ * trackCheckoutStarted() which fires immediately before POST /api/checkout,
+ * ensuring the event corresponds to an actual checkout attempt rather than
+ * a button click that may be abandoned.
+ *
  * @param {string} plan           - Plan identifier (e.g. 'standard', 'fintech', 'enterprise').
  * @param {string} [location=''] - CTA location on the page (e.g. 'hero', 'comparison_table', 'footer').
  */
 export function trackPricingCTA(plan, location = '') {
-  if (!canTrack()) return;
-  try {
-    ReactGA.event('pricing_cta_clicked', { plan_type: plan, cta_location: location });
-    devLog('Event tracked: pricing_cta_clicked', { plan, location });
-  } catch (error) {
-    console.error('[Analytics] Error tracking event: pricing_cta_clicked', error);
-  }
+  devLog('Pricing CTA clicked', { plan, location });
 }
 
 /**
  * Track checkout initiation.
  *
+ * Fires the standard GA4 e-commerce event `begin_checkout` immediately before
+ * POST /api/checkout so the event corresponds to an actual checkout attempt.
+ *
  * @param {string} plan                                 - Plan identifier.
  * @param {'annual'|'monthly'} [billingCycle='monthly'] - Billing cadence.
- * @param {'legacy_form'|'one_click'|'form'} [method='legacy_form'] - Checkout path taken.
- *   'legacy_form' = root-app /checkout route (email-first form → Stripe redirect)
- *   'form'        = portal Signup component (full sign-up form → Stripe redirect)
- *   'one_click'   = portal Pricing page direct API call → Stripe redirect
+ * @param {'form'|'one_click'} [method='form']          - Checkout path taken.
+ *   'form'      = /checkout route form submit → POST /api/checkout
+ *   'one_click' = portal Pricing inline POST /api/checkout
  */
-export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'legacy_form') {
+export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'form') {
   if (!canTrack()) return;
   try {
-    ReactGA.event('checkout_started', { plan_type: plan, billing_cycle: billingCycle, checkout_method: method });
-    devLog('Event tracked: checkout_started', { plan, billingCycle, method });
+    ReactGA.event('begin_checkout', { plan_type: plan, billing_cycle: billingCycle, checkout_method: method });
+    devLog('Event tracked: begin_checkout', { plan, billingCycle, method });
   } catch (error) {
-    console.error('[Analytics] Error tracking event: checkout_started', error);
+    console.error('[Analytics] Error tracking event: begin_checkout', error);
   }
 }
 
