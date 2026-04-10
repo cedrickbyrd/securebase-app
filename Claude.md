@@ -625,6 +625,100 @@ env:
 
 ---
 
+## 💰 Cost Optimization: Avoid Netlify Functions
+
+> **Policy:** Do **NOT** introduce new Netlify Functions. Existing functions are grandfathered but should be migrated opportunistically. Netlify functions are billed per invocation and execution time — at scale this is significantly more expensive than the existing AWS Lambda + API Gateway infrastructure that is already live.
+
+### Why Netlify Functions Cost More
+
+| Factor | Netlify Functions | AWS Lambda (API Gateway) |
+|--------|-------------------|--------------------------|
+| Free tier | 125,000 req/month | 1M req/month (free tier) |
+| Pricing beyond free | $25/month Starter + overages | ~$0.20 per 1M requests |
+| Already deployed? | Requires Netlify hosting plan | ✅ Already live |
+| Execution timeout | 10s default (26s max) | Up to 15 minutes |
+| Trust signal | Netlify-branded URL | Custom domain via API Gateway |
+
+### Preferred Alternatives
+
+#### 1. AWS Lambda via API Gateway (primary — already live)
+All backend logic should go through the existing API Gateway, proxied by Netlify redirects at zero additional cost:
+
+```
+/api/checkout   → https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout
+/api/login      → https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login
+/api/signup     → https://api.securebase.tximhotep.com/signup
+```
+
+Add new Lambda functions in `phase2-backend/functions/` and wire them in `landing-zone/modules/api-gateway/main.tf`. Then expose them via a Netlify redirect in `netlify.toml` (see option 3 below).
+
+#### 2. Direct Supabase Client Calls (for simple data reads/writes)
+Use the Supabase JS SDK directly from the browser for non-sensitive operations. RLS policies enforce row-level security without needing a server intermediary.
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY  // Public anon key — safe in browser
+);
+
+// Lead capture — replaces the submit-lead Netlify function for simple cases
+const { error } = await supabase
+  .from('leads')
+  .upsert({ email, company, trigger }, { onConflict: 'email' });
+```
+
+#### 3. Netlify Redirects to AWS (zero cost, already configured)
+Use Netlify's redirect layer (`netlify.toml`) to proxy requests to AWS API Gateway at no additional cost. This is already used for `/api/checkout`, `/api/login`, etc. Add new routes here instead of writing a new function.
+
+```toml
+# netlify.toml — add new routes here instead of creating new Netlify functions
+[[redirects]]
+  from   = "/api/new-endpoint"
+  to     = "https://api.securebase.tximhotep.com/new-endpoint"
+  status = 200
+  force  = true
+```
+
+### Current Netlify Functions — Migration Status
+
+| Function | Purpose | Preferred Migration Path |
+|----------|---------|--------------------------|
+| `submit-lead.js` | Lead capture → Supabase | Direct `supabase.from('leads').upsert(...)` from frontend |
+| `checkout.js` | Stripe session creation | Already mirrored by AWS Lambda at `/api/checkout` — remove Netlify copy |
+| `lead-preview-auth.js` | JWT cookie after Contact Sales | Move JWT issuance to AWS Lambda in `phase2-backend/functions/` |
+| `demo-auth.js` | Demo login JWT | Move to AWS Lambda or Supabase Auth |
+| `get-admin-metrics.js` | Admin metrics proxy | Already served by `/admin/*` API Gateway routes |
+| `get-trust-metrics.js` | Trust metrics proxy | Already served by API Gateway |
+
+### ❌ What NOT to Do
+
+```javascript
+// ❌ AVOID: Creating a new Netlify function
+// netlify/functions/my-new-feature.js
+exports.handler = async (event) => { ... };
+
+// ❌ AVOID: Calling a Netlify function directly from a component
+const res = await fetch('/.netlify/functions/my-feature', { ... });
+```
+
+### ✅ What to Do Instead
+
+```javascript
+// ✅ GOOD: Call the existing API Gateway via the Netlify redirect proxy
+const res = await fetch('/api/my-feature', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+
+// ✅ GOOD: Direct Supabase client call for simple data operations
+const { data, error } = await supabase.from('table').insert(payload);
+```
+
+---
+
 ## 🔭 Phase 5 Observability Architecture
 
 Phase 5 adds enterprise-grade observability, dashboards, alerting, and multi-region DR to the platform. Key new modules and components introduced:
@@ -763,6 +857,11 @@ Before suggesting any code or configuration changes, **verify:**
 - [ ] Are changes reflected in `README.md` or `/docs`?
 - [ ] Is there a migration guide for breaking changes?
 - [ ] Are new environment variables documented?
+
+### 6. Cost Controls
+- [ ] Does this introduce a new Netlify Function? If yes, refactor to use AWS Lambda + API Gateway or a direct Supabase client call instead (see **Cost Optimization** section above).
+- [ ] If modifying an existing Netlify Function, assess whether it can be migrated to an existing AWS Lambda route.
+- [ ] Is a `netlify.toml` redirect to API Gateway sufficient instead of a new function?
 
 ---
 
