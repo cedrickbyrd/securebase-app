@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader } from 'lucide-react';
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { trackContactSalesIntent, trackCheckoutStarted } from '../utils/analytics';
@@ -7,6 +8,8 @@ import { trackContactSalesIntent, trackCheckoutStarted } from '../utils/analytic
 const Pricing = () => {
   const navigate = useNavigate();
   const demoMode = isDemoMode();
+  const [loadingTier, setLoadingTier] = useState(null);
+  const [errorTier, setErrorTier] = useState(null);
 
   const plans = [
     { key: 'standard', ...PRICING_TIERS.standard, mostPopular: false },
@@ -14,6 +17,50 @@ const Pricing = () => {
     { key: 'healthcare', ...PRICING_TIERS.healthcare, mostPopular: false },
     { key: 'government', ...PRICING_TIERS.government, mostPopular: false },
   ];
+
+  const handleGetStarted = async (plan) => {
+    if (demoMode) {
+      trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price });
+      navigate('/contact-sales');
+      return;
+    }
+
+    trackCheckoutStarted({ tier: plan.key, value: plan.pilotPrice || plan.price, pilot: !!plan.pilotPrice, method: 'one_click' });
+    setLoadingTier(plan.key);
+    setErrorTier(null);
+
+    try {
+      const origin = window.location.origin;
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: plan.priceId,
+          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
+          cancelUrl: `${origin}/pricing`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const { checkout_url } = await response.json();
+
+      if (!checkout_url) {
+        throw new Error('No checkout URL returned.');
+      }
+
+      window.location.href = checkout_url;
+    } catch (err) {
+      console.error('One-click checkout error:', err.message);
+      setErrorTier(plan.key);
+      setLoadingTier(null);
+      // Graceful fallback to the full checkout form
+      navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId } });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 py-24">
@@ -41,18 +88,19 @@ const Pricing = () => {
               <ul className="mt-8 space-y-3 text-sm">
                 {plan.features.map((f, i) => <li key={i} className="flex gap-2 text-gray-300"><span className="text-green-400">✓</span>{f}</li>)}
               </ul>
+              {errorTier === plan.key && (
+                <p className="mt-3 text-red-400 text-xs text-center">Connection error — redirecting to checkout form…</p>
+              )}
               <button
-                onClick={() => {
-                  if (demoMode) {
-                    trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price });
-                    navigate('/contact-sales');
-                  } else {
-                    trackCheckoutStarted({ tier: plan.key, value: plan.pilotPrice || plan.price, pilot: !!plan.pilotPrice });
-                    navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId } });
-                  }
-                }}
-                className={`mt-8 w-full py-3 rounded-lg font-semibold ${plan.mostPopular ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black' : 'bg-blue-600 text-white'}`}>
-                {demoMode ? 'Contact Sales' : 'Get Started'}
+                onClick={() => handleGetStarted(plan)}
+                disabled={loadingTier === plan.key}
+                className={`mt-8 w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-opacity ${plan.mostPopular ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black' : 'bg-blue-600 text-white'} disabled:opacity-60 disabled:cursor-not-allowed`}>
+                {loadingTier === plan.key ? (
+                  <>
+                    <Loader className="animate-spin w-4 h-4" />
+                    Connecting…
+                  </>
+                ) : demoMode ? 'Contact Sales' : 'Get Started →'}
               </button>
             </div>
           ))}
