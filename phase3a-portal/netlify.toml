@@ -1,6 +1,6 @@
 [build]
 base = "phase3a-portal"
-  command = "npm ci --legacy-peer-deps && npm run build && cd netlify/functions && npm install && cd ../.."
+  command = "npm ci --legacy-peer-deps && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
