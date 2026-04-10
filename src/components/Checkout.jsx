@@ -34,6 +34,7 @@ export default function Checkout() {
 
   const isPilot = plan === 'pilot' && !!pilotPricing;
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -52,15 +53,15 @@ export default function Checkout() {
       // in every environment (localhost, staging, production, Netlify preview).
       const origin = window.location.origin;
 
-      const response = await fetch('/.netlify/functions/securebase-checkout-api', {
+      const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_email: email,
-          price_id: priceId,
-          plan_name: planName,
-          success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
-          cancel_url: `${origin}/pricing`,
+          email,
+          name: name || email.split('@')[0],
+          priceId,
+          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
+          cancelUrl: `${origin}/pricing`,
         }),
       });
 
@@ -144,10 +145,28 @@ export default function Checkout() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
             <p className="text-slate-500 text-sm mb-6">
-              Enter your work email. You will be redirected to Stripe to complete payment securely.
+              Enter your details. You will be redirected to Stripe to complete payment securely.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="checkout-name"
+                  className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
+                >
+                  Full Name
+                </label>
+                <input
+                  id="checkout-name"
+                  type="text"
+                  placeholder="Jane Smith"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+                />
+              </div>
+
               <div>
                 <label
                   htmlFor="checkout-email"
