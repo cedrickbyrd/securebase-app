@@ -456,11 +456,12 @@ export function trackSignupConversion({ industry, orgSize, guardrailsLevel } = {
  * HIPAA NOTE: Do NOT pass email or company name here.
  *
  * @param {Object} params
- * @param {string} params.tier    e.g. 'standard', 'fintech', 'healthcare', 'government'
- * @param {number} params.value   Monthly price in USD (e.g. 2000)
- * @param {boolean} params.pilot  Whether the pilot discount was applied
+ * @param {string} params.tier           e.g. 'standard', 'fintech', 'healthcare', 'government'
+ * @param {number} params.value          Monthly price in USD (e.g. 2000)
+ * @param {boolean} params.pilot         Whether the pilot discount was applied
+ * @param {string} [params.method]       'one_click' | 'form' — checkout path taken
  */
-export function trackCheckoutStarted({ tier, value, pilot = false } = {}) {
+export function trackCheckoutStarted({ tier, value, pilot = false, method = 'form' } = {}) {
   const utmParams = getUtmParams();
 
   trackEvent('begin_checkout', {
@@ -468,6 +469,7 @@ export function trackCheckoutStarted({ tier, value, pilot = false } = {}) {
     value,
     items: [{ item_id: tier, item_name: `SecureBase ${tier}` }],
     pilot_discount: pilot,
+    checkout_method: method,
     ...utmParams,
   });
 }
