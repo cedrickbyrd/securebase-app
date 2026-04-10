@@ -424,14 +424,18 @@ export function trackPricingCTA(plan, location = '') {
 /**
  * Track checkout initiation.
  *
- * @param {string} plan                        - Plan identifier.
+ * @param {string} plan                                 - Plan identifier.
  * @param {'annual'|'monthly'} [billingCycle='monthly'] - Billing cadence.
+ * @param {'legacy_form'|'one_click'|'form'} [method='legacy_form'] - Checkout path taken.
+ *   'legacy_form' = root-app /checkout route (email-first form → Stripe redirect)
+ *   'form'        = portal Signup component (full sign-up form → Stripe redirect)
+ *   'one_click'   = portal Pricing page direct API call → Stripe redirect
  */
-export function trackCheckoutStarted(plan, billingCycle = 'monthly') {
+export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'legacy_form') {
   if (!canTrack()) return;
   try {
-    ReactGA.event('checkout_started', { plan_type: plan, billing_cycle: billingCycle });
-    devLog('Event tracked: checkout_started', { plan, billingCycle });
+    ReactGA.event('checkout_started', { plan_type: plan, billing_cycle: billingCycle, checkout_method: method });
+    devLog('Event tracked: checkout_started', { plan, billingCycle, method });
   } catch (error) {
     console.error('[Analytics] Error tracking event: checkout_started', error);
   }
