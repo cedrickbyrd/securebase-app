@@ -140,8 +140,10 @@ def handler(event: dict, context) -> dict:
             if data.get("subscription"):
                 subscription = _call_stripe(f"subscriptions/{data['subscription']}", stripe_secret)
                 customer = _call_stripe(f"customers/{data['customer']}", stripe_secret)
-                plan_name = (subscription.get("items", {}).get("data") or [{}])[0].get("price", {}).get("nickname") or "unknown"
-                amount = (subscription.get("items", {}).get("data") or [{}])[0].get("price", {}).get("unit_amount", 0) / 100
+                sub_items = (subscription.get("items", {}).get("data") or [{}])
+                sub_price = sub_items[0].get("price", {})
+                plan_name = sub_price.get("nickname") or "unknown"
+                amount = sub_price.get("unit_amount", 0) / 100
                 currency = subscription.get("currency", "usd").upper()
                 logger.info(
                     "CHECKOUT_CONFIRMED subscription_id=%s plan=%s amount=%.2f %s customer_id=%s",

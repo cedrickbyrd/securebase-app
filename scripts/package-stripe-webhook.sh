@@ -29,7 +29,7 @@ echo "📦 Packaging Stripe Webhook Lambda"
 echo "==================================="
 
 # Build in a temp directory so we don't pollute the source tree
-BUILD_DIR="$(mktemp -d)"
+BUILD_DIR="$(mktemp -d)" || { echo "❌ Failed to create temp directory"; exit 1; }
 trap 'rm -rf "$BUILD_DIR"' EXIT
 
 echo "  Source: $LAMBDA_DIR"

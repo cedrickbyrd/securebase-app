@@ -115,19 +115,11 @@ jobs:
 
           if [ -z "$WEBHOOK_URL" ]; then
             echo "Fetching webhook URL from Stripe..."
-            # Get the first registered webhook endpoint for this secret key
+            # Get the first registered webhook endpoint that matches our service
             WEBHOOK_URL=$(curl -s https://api.stripe.com/v1/webhook_endpoints \
               -u "$STRIPE_SECRET_KEY:" \
-              | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          endpoints = data.get('data', [])
-          for ep in endpoints:
-              url = ep.get('url', '')
-              if 'stripe-webhook' in url or 'securebase' in url:
-                  print(url)
-                  break
-          " 2>/dev/null || true)
+              | jq -r '.data[] | select(.url | test("stripe-webhook|securebase")) | .url' \
+              | head -1)
           fi
 
           if [ -z "$WEBHOOK_URL" ]; then
@@ -161,36 +153,39 @@ jobs:
             --override checkout_session:metadata='{"tier":"fintech","customer_name":"CI Test"}'
           echo "✅ Test event sent"
 
-      - name: Wait for Lambda to process event
-        run: |
-          echo "Waiting 15 seconds for Lambda to process event..."
-          sleep 15
-
-      - name: Check CloudWatch logs for confirmation marker
+      - name: Wait for Lambda to process event (poll CloudWatch)
         run: |
           LOG_GROUP="/aws/lambda/$LAMBDA_FUNCTION_NAME"
-          echo "Searching log group: $LOG_GROUP"
-          echo "Looking for: WEBHOOK_RECEIVED checkout.session.completed"
-          echo ""
+          MAX_WAIT=60
+          INTERVAL=5
+          ELAPSED=0
+          FOUND=""
 
-          # Search for the confirmation log entry
-          FOUND=$(aws logs filter-log-events \
-            --log-group-name "$LOG_GROUP" \
-            --start-time "$CW_START_TIME" \
-            --filter-pattern "WEBHOOK_RECEIVED checkout.session.completed" \
-            --region "$AWS_REGION" \
-            --query 'events[*].message' \
-            --output text 2>/dev/null || echo "")
+          echo "Polling CloudWatch for WEBHOOK_RECEIVED marker (max ${MAX_WAIT}s)..."
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            FOUND=$(aws logs filter-log-events \
+              --log-group-name "$LOG_GROUP" \
+              --start-time "$CW_START_TIME" \
+              --filter-pattern "WEBHOOK_RECEIVED checkout.session.completed" \
+              --region "$AWS_REGION" \
+              --query 'events[*].message' \
+              --output text 2>/dev/null || echo "")
 
-          if [ -n "$FOUND" ]; then
-            echo "✅ WEBHOOK RECEIPT CONFIRMED"
+            if [ -n "$FOUND" ]; then
+              echo "  ✅ Marker found after ${ELAPSED}s"
+              break
+            fi
+
+            printf "  ⏳ %ds elapsed — waiting...\r" $ELAPSED
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          if [ -z "$FOUND" ]; then
             echo ""
-            echo "Log entries:"
-            echo "$FOUND"
-          else
-            echo "❌ No WEBHOOK_RECEIVED marker found in CloudWatch logs"
+            echo "❌ WEBHOOK_RECEIVED marker not found after ${MAX_WAIT}s"
             echo ""
-            echo "Recent log output (last 30 entries):"
+            echo "Recent log output:"
             aws logs filter-log-events \
               --log-group-name "$LOG_GROUP" \
               --start-time "$CW_START_TIME" \
@@ -205,6 +200,12 @@ jobs:
             echo "  • Review Stripe Dashboard → Webhooks for delivery failures"
             exit 1
           fi
+
+          echo ""
+          echo "✅ WEBHOOK RECEIPT CONFIRMED"
+          echo ""
+          echo "Log entries:"
+          echo "$FOUND"
 
       - name: Output CloudWatch deep-link
         if: always()
