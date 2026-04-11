@@ -36,15 +36,25 @@ for p in (_LAYER, _FUNCTIONS):
         sys.path.insert(0, p)
 
 # ---------------------------------------------------------------------------
-# Preserve a reference to the *real* stripe module before the stub block
-# below replaces it.  TestStripeSandboxHandshake uses this reference so it
-# can make live API calls in sandbox mode without disturbing the mocks used
-# by every other test class.
+# Preserve a reference to the *real* stripe module and StripeTestCleaner
+# BEFORE the stub block below replaces sys.modules['stripe'] with a
+# MagicMock.  TestStripeSandboxHandshake uses these references so it can
+# make live API calls in sandbox mode without disturbing the mocks used by
+# every other test class.
 # ---------------------------------------------------------------------------
 try:
     import stripe as _real_stripe  # noqa: E402
 except ImportError:
     _real_stripe = None  # type: ignore[assignment]
+
+# Import the cleanup class while stripe is still real so StripeTestCleaner
+# receives the real module as its default (no injection needed in tearDown).
+try:
+    if _REPO_ROOT not in sys.path:
+        sys.path.insert(0, _REPO_ROOT)
+    from scripts.stripe_cleanup import StripeTestCleaner as _StripeTestCleaner
+except ImportError:
+    _StripeTestCleaner = None  # type: ignore[assignment]
 
 # Stub heavy C-extensions and AWS SDK **before** any Lambda module is imported
 for _mod in [
@@ -546,41 +556,35 @@ class TestStripeSandboxHandshake(unittest.TestCase):
 
     In sandbox mode this class makes live HTTPS calls to api.stripe.com
     using the restricted test key stored in the STRIPE_SECRET_KEY secret.
-    Every Stripe Customer object created during the run is tracked in
-    _created_customer_ids and deleted in tearDownClass to prevent test
-    data pollution.
+    All Stripe objects created during the run are tagged with
+    ``test_run_id = GITHUB_RUN_ID`` and cleaned up in ``tearDownClass``
+    via ``StripeTestCleaner.cleanup_by_run_id``.
 
     When STRIPE_MODE != 'sandbox' every test falls back to the mock path so
-    the suite continues to run fully offline.
+    the suite continues to run fully offline without any external calls.
 
     Environment variables required for sandbox mode:
         STRIPE_SECRET_KEY      – Stripe restricted test key (sk_test_…)
         STRIPE_PRICE_STANDARD  – ID of a real test-mode recurring Price object
     """
 
-    # Tracks Stripe Customer IDs created during this run for cleanup.
-    _created_customer_ids: list = []
-
     @classmethod
-    def tearDownClass(cls):
-        """Delete Stripe test Customers created during this run."""
+    def tearDownClass(cls) -> None:
+        """
+        Delegate cleanup to ``StripeTestCleaner.cleanup_by_run_id`` so that
+        the precise, run-scoped teardown logic lives in one place (the
+        standalone cleanup script) and is not duplicated here.
+        """
         if os.getenv('STRIPE_MODE') != 'sandbox':
             return
-        if _real_stripe is None:
+        if _StripeTestCleaner is None:
             return
         api_key = os.getenv('STRIPE_SECRET_KEY', '')
         if not api_key.startswith('sk_test_'):
             return
-        _real_stripe.api_key = api_key
-        deleted = 0
-        for cus_id in cls._created_customer_ids:
-            try:
-                _real_stripe.Customer.delete(cus_id)
-                deleted += 1
-            except Exception:
-                pass
-        if deleted:
-            print(f'\n  🧹 Cleanup: deleted {deleted} Stripe test customer(s)')
+        run_id = os.getenv('GITHUB_RUN_ID', 'local')
+        cleaner = _StripeTestCleaner(api_key=api_key)
+        cleaner.cleanup_by_run_id(run_id)
 
     # ------------------------------------------------------------------
     # Checkout session handshake
@@ -619,6 +623,7 @@ class TestStripeSandboxHandshake(unittest.TestCase):
             'for sandbox mode.',
         )
         _real_stripe.api_key = api_key
+        run_id = os.getenv('GITHUB_RUN_ID', 'local')
         session = _real_stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{'price': price_id, 'quantity': 1}],
@@ -629,7 +634,7 @@ class TestStripeSandboxHandshake(unittest.TestCase):
             ),
             cancel_url='https://portal.securebase.tximhotep.com/pricing',
             metadata={
-                'test_run': 'true',
+                'test_run_id': run_id,
                 'workflow': 'e2e-online-sales',
                 'sha': os.getenv('GITHUB_SHA', 'local'),
             },
@@ -665,46 +670,6 @@ class TestStripeSandboxHandshake(unittest.TestCase):
         print(
             f'✓ Mock handshake: checkout.Session.create wired correctly '
             f'→ {session.id}'
-        )
-
-    # ------------------------------------------------------------------
-    # Cleanup: purge remaining test customers from Stripe test environment
-    # ------------------------------------------------------------------
-
-    def test_zzz_sandbox_cleanup(self):
-        """
-        Deletes Stripe Customer objects tagged with metadata.test_run=true.
-
-        This runs last (lexicographic ordering ensures 'zzz' sorts after all
-        other tests) and guards against test data pollution across CI runs.
-        In mock mode this test is a no-op.
-        """
-        if os.getenv('STRIPE_MODE') != 'sandbox':
-            print('ℹ️  Mock mode – Stripe cleanup skipped')
-            return
-        if _real_stripe is None:
-            self.skipTest('stripe package not installed')
-        api_key = os.getenv('STRIPE_SECRET_KEY', '')
-        if not api_key.startswith('sk_test_'):
-            self.skipTest('Not a Stripe test key – cleanup skipped')
-        _real_stripe.api_key = api_key
-        customers = _real_stripe.Customer.list(limit=100)
-        deleted = 0
-        errors = 0
-        for customer in customers.auto_paging_iter():
-            meta = getattr(customer, 'metadata', {}) or {}
-            if meta.get('test_run') == 'true':
-                try:
-                    _real_stripe.Customer.delete(customer.id)
-                    deleted += 1
-                except Exception as exc:
-                    errors += 1
-                    print(
-                        f'  ⚠️  Could not delete customer {customer.id}: {exc}'
-                    )
-        print(
-            f'\n✓ Sandbox cleanup: {deleted} test customer(s) deleted'
-            + (f', {errors} error(s)' if errors else '')
         )
 
 
