@@ -285,7 +285,11 @@ export function teardown(data) {
 // Handle summary (custom report)
 export function handleSummary(data) {
   if (!data || !data.metrics) {
-    return { 'stdout': '\nNo metrics captured — test exited before collecting data (DNS failure or early crash).\n' };
+    const stub = JSON.stringify({ skipped: true, reason: 'No metrics — test exited before collecting data (DNS failure or early crash).' }, null, 2);
+    return {
+      'summary.json': stub,
+      'stdout': '\nNo metrics captured — test exited before collecting data (DNS failure or early crash).\n',
+    };
   }
   return {
     'summary.json': JSON.stringify(data, null, 2),
