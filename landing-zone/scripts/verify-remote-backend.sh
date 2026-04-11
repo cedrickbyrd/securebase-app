@@ -10,10 +10,10 @@ ROOT_DIR=$(cd "$(dirname "$0")"/.. && pwd)
 cd "$ROOT_DIR"
 
 BACKEND_HCL="environments/${ENV}/backend.hcl"
-MAIN_TF="main.tf"
+MAIN_TF="environments/${ENV}/main.tf"
 
-if ! grep -q 'backend\s*"s3"' "$MAIN_TF"; then
-  echo "❌ main.tf missing 'backend \"s3\" {}' block"
+if ! grep -q 'backend[[:space:]]*"s3"' "$MAIN_TF"; then
+  echo "❌ environments/${ENV}/main.tf missing 'backend \"s3\" {}' block"
   exit 1
 fi
 
