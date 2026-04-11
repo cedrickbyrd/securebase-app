@@ -7,8 +7,10 @@ import json
 import logging
 import hmac
 import hashlib
+import os
 import time
 import base64
+import uuid
 
 import boto3
 from botocore.exceptions import ClientError
@@ -20,8 +22,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 _ssm = boto3.client("ssm")
+_lambda = boto3.client("lambda")
 _stripe_secret_cache = None
 _webhook_secret_cache = None
+_provisioner_fn_cache = None
 
 
 def _get_ssm(name: str) -> str:
@@ -40,6 +44,35 @@ def _get_webhook_secret() -> str:
     if not _webhook_secret_cache:
         _webhook_secret_cache = _get_ssm("/securebase/stripe/webhook_secret")
     return _webhook_secret_cache
+
+
+def _get_provisioner_fn() -> str:
+    global _provisioner_fn_cache
+    if not _provisioner_fn_cache:
+        _provisioner_fn_cache = _get_ssm("/securebase/provisioner/function")
+    return _provisioner_fn_cache
+
+
+def _invoke_provisioner(customer_email: str, stripe_customer_id: str, metadata: dict) -> None:
+    job_id = str(uuid.uuid4())
+    payload = {
+        "jobId": job_id,
+        "customerId": stripe_customer_id,
+        "email": customer_email,
+        "orgName": metadata.get("org_name", ""),
+        "awsRegion": metadata.get("aws_region", "us-east-1"),
+        "mfaEnabled": metadata.get("mfa_enabled", True),
+        "guardrailsLevel": metadata.get("guardrails_level", "standard"),
+    }
+    _lambda.invoke(
+        FunctionName=_get_provisioner_fn(),
+        InvocationType="Event",
+        Payload=json.dumps(payload),
+    )
+    logger.info(
+        "PROVISIONER_INVOKED job_id=%s email=%s stripe_customer=%s",
+        job_id, customer_email, stripe_customer_id,
+    )
 
 
 def _verify_stripe_signature(payload: str, sig_header: str, secret: str) -> bool:
@@ -150,6 +183,21 @@ def handler(event: dict, context) -> dict:
                     data["subscription"], plan_name, amount, currency, data.get("customer"),
                 )
                 ga4_client.track_subscription_purchase(subscription, customer, data)
+                if payment_status == "paid" and customer_email:
+                    metadata = data.get("metadata") or {}
+                    try:
+                        _invoke_provisioner(
+                            customer_email=customer_email,
+                            stripe_customer_id=data.get("customer", ""),
+                            metadata=metadata,
+                        )
+                    except Exception as prov_err:
+                        # Non-fatal: log loudly but return 200 to Stripe so it does not retry.
+                        # Alert via CloudWatch alarm on PROVISIONER_INVOKE_FAILED log pattern.
+                        logger.error(
+                            "PROVISIONER_INVOKE_FAILED session_id=%s error=%s",
+                            session_id, prov_err, exc_info=True,
+                        )
 
         elif event_type == "customer.subscription.created":
             ga4_client.track_subscription_created(data)
