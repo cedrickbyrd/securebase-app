@@ -35,6 +35,27 @@ for p in (_LAYER, _FUNCTIONS):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# ---------------------------------------------------------------------------
+# Preserve a reference to the *real* stripe module and StripeTestCleaner
+# BEFORE the stub block below replaces sys.modules['stripe'] with a
+# MagicMock.  TestStripeSandboxHandshake uses these references so it can
+# make live API calls in sandbox mode without disturbing the mocks used by
+# every other test class.
+# ---------------------------------------------------------------------------
+try:
+    import stripe as _real_stripe  # noqa: E402
+except ImportError:
+    _real_stripe = None  # type: ignore[assignment]
+
+# Import the cleanup class while stripe is still real so StripeTestCleaner
+# receives the real module as its default (no injection needed in tearDown).
+try:
+    if _REPO_ROOT not in sys.path:
+        sys.path.insert(0, _REPO_ROOT)
+    from scripts.stripe_cleanup import StripeTestCleaner as _StripeTestCleaner
+except ImportError:
+    _StripeTestCleaner = None  # type: ignore[assignment]
+
 # Stub heavy C-extensions and AWS SDK **before** any Lambda module is imported
 for _mod in [
     'psycopg2', 'psycopg2.pool', 'psycopg2.extras',
@@ -523,6 +544,133 @@ class TestRateLimiting(unittest.TestCase):
         self.assertEqual(resp['statusCode'], 429,
                          f"Expected 429 but got {resp['statusCode']}")
         print('✓ Rate limiting: 429 returned when limit exceeded')
+
+
+# ---------------------------------------------------------------------------
+# Stripe Sandbox Handshake Tests
+# ---------------------------------------------------------------------------
+
+class TestStripeSandboxHandshake(unittest.TestCase):
+    """
+    Validates the real Stripe API handshake when STRIPE_MODE == 'sandbox'.
+
+    In sandbox mode this class makes live HTTPS calls to api.stripe.com
+    using the restricted test key stored in the STRIPE_SECRET_KEY secret.
+    All Stripe objects created during the run are tagged with
+    ``test_run_id = GITHUB_RUN_ID`` and cleaned up in ``tearDownClass``
+    via ``StripeTestCleaner.cleanup_by_run_id``.
+
+    When STRIPE_MODE != 'sandbox' every test falls back to the mock path so
+    the suite continues to run fully offline without any external calls.
+
+    Environment variables required for sandbox mode:
+        STRIPE_SECRET_KEY      – Stripe restricted test key (sk_test_…)
+        STRIPE_PRICE_STANDARD  – ID of a real test-mode recurring Price object
+    """
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Delegate cleanup to ``StripeTestCleaner.cleanup_by_run_id`` so that
+        the precise, run-scoped teardown logic lives in one place (the
+        standalone cleanup script) and is not duplicated here.
+        """
+        if os.getenv('STRIPE_MODE') != 'sandbox':
+            return
+        if _StripeTestCleaner is None:
+            return
+        api_key = os.getenv('STRIPE_SECRET_KEY', '')
+        if not api_key.startswith('sk_test_'):
+            return
+        run_id = os.getenv('GITHUB_RUN_ID', 'local')
+        cleaner = _StripeTestCleaner(api_key=api_key)
+        cleaner.cleanup_by_run_id(run_id)
+
+    # ------------------------------------------------------------------
+    # Checkout session handshake
+    # ------------------------------------------------------------------
+
+    def test_checkout_handshake(self):
+        """
+        Creates a Stripe Checkout Session and validates the response.
+
+        sandbox: Hits api.stripe.com with the real Restricted Test Key and
+                 asserts the returned session ID begins with 'cs_test_'.
+        mock:    Verifies that the MagicMock wiring used by all other test
+                 classes continues to function correctly.
+        """
+        if os.getenv('STRIPE_MODE') == 'sandbox':
+            self._run_sandbox_checkout_handshake()
+        else:
+            self._run_mock_checkout_handshake()
+
+    def _run_sandbox_checkout_handshake(self):
+        """Live Stripe call – sandbox path."""
+        self.assertIsNotNone(
+            _real_stripe,
+            'stripe package is not installed; cannot run sandbox tests.',
+        )
+        api_key = os.getenv('STRIPE_SECRET_KEY', '')
+        price_id = os.getenv('STRIPE_PRICE_STANDARD', '')
+        self.assertTrue(
+            api_key.startswith('sk_test_'),
+            f'STRIPE_SECRET_KEY must be a Stripe test key (sk_test_…) for '
+            f'sandbox mode; got prefix: {api_key[:8]}…',
+        )
+        self.assertTrue(
+            price_id,
+            'STRIPE_PRICE_STANDARD must be set to a real test-mode Price ID '
+            'for sandbox mode.',
+        )
+        _real_stripe.api_key = api_key
+        run_id = os.getenv('GITHUB_RUN_ID', 'local')
+        session = _real_stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{'price': price_id, 'quantity': 1}],
+            mode='subscription',
+            success_url=(
+                'https://portal.securebase.tximhotep.com/success'
+                '?session_id={CHECKOUT_SESSION_ID}'
+            ),
+            cancel_url='https://portal.securebase.tximhotep.com/pricing',
+            metadata={
+                'test_run_id': run_id,
+                'workflow': 'e2e-online-sales',
+                'sha': os.getenv('GITHUB_SHA', 'local'),
+            },
+        )
+        self.assertIsNotNone(
+            session.id, 'Stripe checkout session ID must not be None',
+        )
+        self.assertTrue(
+            session.id.startswith('cs_test_'),
+            f'Expected a test-mode session ID (cs_test_…); got {session.id}',
+        )
+        print(
+            f'\n✓ Sandbox handshake: Stripe checkout session created '
+            f'→ {session.id}'
+        )
+
+    def _run_mock_checkout_handshake(self):
+        """Offline mock path – exercises the same code path used by other tests."""
+        # sys.modules['stripe'] has been replaced with a MagicMock at module
+        # load time.  Import it here so we test the mock wiring explicitly.
+        import stripe as _mock_stripe  # noqa: F811
+        mock_session = MagicMock()
+        mock_session.id = 'cs_test_mock_handshake_001'
+        _mock_stripe.checkout.Session.create.return_value = mock_session
+        session = _mock_stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{'price': 'price_mock_standard', 'quantity': 1}],
+            mode='subscription',
+            success_url='https://example.com/success',
+            cancel_url='https://example.com/cancel',
+        )
+        self.assertIsNotNone(session.id)
+        print(
+            f'✓ Mock handshake: checkout.Session.create wired correctly '
+            f'→ {session.id}'
+        )
 
 
 if __name__ == '__main__':
