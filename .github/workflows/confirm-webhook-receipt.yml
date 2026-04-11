@@ -1,0 +1,216 @@
+name: Confirm Stripe Webhook Receipt
+
+# Confirms that the securebase-stripe-webhook Lambda receives and processes
+# a checkout.session.completed event.
+#
+# Run this workflow:
+#   • Manually via workflow_dispatch after every new Lambda deployment
+#   • Automatically after the Lambda is re-packaged and deployed
+#
+# It will:
+#   1. Package + deploy the latest Lambda code
+#   2. Send a test checkout.session.completed event via the Stripe CLI
+#   3. Tail CloudWatch logs for the CHECKOUT_CONFIRMED marker
+#   4. Report success or failure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - test
+          - production
+        default: test
+      function_name:
+        description: 'Lambda function name (leave blank for default)'
+        required: false
+        default: 'securebase-stripe-webhook'
+
+permissions:
+  contents: read
+  id-token: write   # Required for AWS OIDC auth
+
+env:
+  AWS_REGION: us-east-1
+  LAMBDA_FUNCTION_NAME: ${{ inputs.function_name || 'securebase-stripe-webhook' }}
+
+jobs:
+  package_and_deploy:
+    name: Package & Deploy Webhook Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package Stripe Webhook Lambda
+        run: |
+          chmod +x scripts/package-stripe-webhook.sh
+          bash scripts/package-stripe-webhook.sh
+          echo "Package SHA256: $(sha256sum lambda/stripe_webhook.zip | awk '{print $1}')"
+
+      - name: Deploy Lambda code
+        run: |
+          echo "Deploying to $LAMBDA_FUNCTION_NAME..."
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --zip-file "fileb://lambda/stripe_webhook.zip" \
+            --region "$AWS_REGION" \
+            --query 'FunctionArn' \
+            --output text
+
+          echo "Waiting for Lambda update to complete..."
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --region "$AWS_REGION"
+          echo "✅ Lambda deployed"
+
+      - name: Verify Lambda configuration
+        run: |
+          echo "Lambda configuration:"
+          aws lambda get-function-configuration \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --region "$AWS_REGION" \
+            --query '{Runtime: Runtime, Handler: Handler, LastModified: LastModified}' \
+            --output table
+
+  confirm_webhook_receipt:
+    name: Confirm checkout.session.completed Receipt
+    runs-on: ubuntu-latest
+    needs: package_and_deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Stripe CLI
+        run: |
+          curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
+          sudo apt-get update -qq
+          sudo apt-get install -qq stripe
+          stripe version
+
+      - name: Get webhook endpoint URL
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          # Resolve the API Gateway URL for the webhook endpoint
+          WEBHOOK_URL="${STRIPE_WEBHOOK_URL:-}"
+
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "Fetching webhook URL from Stripe..."
+            # Get the first registered webhook endpoint that matches our service
+            WEBHOOK_URL=$(curl -s https://api.stripe.com/v1/webhook_endpoints \
+              -u "$STRIPE_SECRET_KEY:" \
+              | jq -r '.data[] | select(.url | test("stripe-webhook|securebase")) | .url' \
+              | head -1)
+          fi
+
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "⚠️  Could not determine webhook URL from Stripe. Using STRIPE_WEBHOOK_URL secret."
+            WEBHOOK_URL="${{ secrets.STRIPE_WEBHOOK_URL }}"
+          fi
+
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "❌ No webhook URL found. Set STRIPE_WEBHOOK_URL secret or register the endpoint in Stripe."
+            exit 1
+          fi
+
+          echo "Webhook URL: $WEBHOOK_URL"
+          echo "WEBHOOK_URL=$WEBHOOK_URL" >> "$GITHUB_ENV"
+
+      - name: Record CloudWatch log timestamp (before trigger)
+        run: |
+          # Record current time so we only inspect logs emitted AFTER the trigger
+          START_TIME=$(date -u +%s)000
+          echo "CW_START_TIME=$START_TIME" >> "$GITHUB_ENV"
+          echo "Watching logs from epoch ms: $START_TIME"
+
+      - name: Trigger test checkout.session.completed event
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          echo "Sending test checkout.session.completed event to: $WEBHOOK_URL"
+          stripe trigger checkout.session.completed \
+            --api-key "$STRIPE_SECRET_KEY" \
+            --webhook-endpoint-url "$WEBHOOK_URL" \
+            --override checkout_session:metadata='{"tier":"fintech","customer_name":"CI Test"}'
+          echo "✅ Test event sent"
+
+      - name: Wait for Lambda to process event (poll CloudWatch)
+        run: |
+          LOG_GROUP="/aws/lambda/$LAMBDA_FUNCTION_NAME"
+          MAX_WAIT=60
+          INTERVAL=5
+          ELAPSED=0
+          FOUND=""
+
+          echo "Polling CloudWatch for WEBHOOK_RECEIVED marker (max ${MAX_WAIT}s)..."
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            FOUND=$(aws logs filter-log-events \
+              --log-group-name "$LOG_GROUP" \
+              --start-time "$CW_START_TIME" \
+              --filter-pattern "WEBHOOK_RECEIVED checkout.session.completed" \
+              --region "$AWS_REGION" \
+              --query 'events[*].message' \
+              --output text 2>/dev/null || echo "")
+
+            if [ -n "$FOUND" ]; then
+              echo "  ✅ Marker found after ${ELAPSED}s"
+              break
+            fi
+
+            printf "  ⏳ %ds elapsed — waiting...\r" $ELAPSED
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          if [ -z "$FOUND" ]; then
+            echo ""
+            echo "❌ WEBHOOK_RECEIVED marker not found after ${MAX_WAIT}s"
+            echo ""
+            echo "Recent log output:"
+            aws logs filter-log-events \
+              --log-group-name "$LOG_GROUP" \
+              --start-time "$CW_START_TIME" \
+              --region "$AWS_REGION" \
+              --query 'events[*].message' \
+              --output text 2>/dev/null | head -30 || echo "(no log output)"
+            echo ""
+            echo "Troubleshooting checklist:"
+            echo "  • Verify /securebase/stripe/webhook_secret SSM parameter matches Stripe dashboard"
+            echo "  • Check API Gateway deployment for /stripe-webhook POST method"
+            echo "  • Confirm Lambda has permission to be invoked from API Gateway"
+            echo "  • Review Stripe Dashboard → Webhooks for delivery failures"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ WEBHOOK RECEIPT CONFIRMED"
+          echo ""
+          echo "Log entries:"
+          echo "$FOUND"
+
+      - name: Output CloudWatch deep-link
+        if: always()
+        run: |
+          ENCODED_GROUP=$(python3 -c "import urllib.parse; print(urllib.parse.quote('/aws/lambda/$LAMBDA_FUNCTION_NAME', safe=''))")
+          echo ""
+          echo "🔗 CloudWatch Logs:"
+          echo "   https://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/$ENCODED_GROUP"
