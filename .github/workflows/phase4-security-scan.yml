@@ -152,6 +152,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Install system dependencies for lxml
+        run: sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt-dev
+
       - name: Install SSO testing dependencies
         run: |
           pip install requests python-saml xmlsec pytest pytest-mock
