@@ -250,7 +250,7 @@ export default function ContactSales({ setAuth }) {
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
                         Company Size

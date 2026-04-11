@@ -53,16 +53,16 @@ const Pricing = () => {
   ];
 
   const handleGetStarted = async (plan) => {
-    trackCTAClick('pricing', plan.key);
-
     // Enterprise tiers → Contact Sales
     if (plan.isEnterprise || demoMode) {
-      trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price, source: 'pricing_page' });
+      trackCTAClick('pricing', plan.key);
+      trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price, source: 'pricing' });
       navigate(`/contact-sales?tier=${plan.key}&source=pricing`);
       return;
     }
 
     // Self-service tiers → Stripe Checkout
+    trackCTAClick('pricing', plan.key);
     setLoadingTier(plan.key);
     setErrorTier(null);
 
