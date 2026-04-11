@@ -605,14 +605,20 @@ jobs:
       - name: Start Stripe CLI webhook listener
         if: env.STRIPE_MODE == 'sandbox'
         run: |
+          # --print-secret writes the signing secret to stdout and any
+          # diagnostic messages to stderr.  Capture stderr to a log file so
+          # failures are visible in the workflow while keeping stdout clean
+          # for secret extraction.
           WHSEC=$(stripe listen \
             --api-key "$RESOLVED_STRIPE_SECRET_KEY" \
-            --print-secret 2>/dev/null || true)
+            --print-secret 2>/tmp/stripe-print-secret.log || true)
           if [ -n "$WHSEC" ]; then
             echo "STRIPE_WEBHOOK_SECRET=${WHSEC}" >> "$GITHUB_ENV"
             echo "✅ Webhook signing secret captured via --print-secret"
           else
             echo "::warning::Could not capture webhook signing secret – using placeholder"
+            echo "::debug::stripe listen --print-secret stderr output:"
+            cat /tmp/stripe-print-secret.log || true
             echo "STRIPE_WEBHOOK_SECRET=whsec_placeholder" >> "$GITHUB_ENV"
           fi
           # Start background listener for live event forwarding
