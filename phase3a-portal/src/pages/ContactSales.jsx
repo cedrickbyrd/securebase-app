@@ -359,7 +359,7 @@ export default function ContactSales({ setAuth }) {
                   {tierParam === 'healthcare' && (
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                      Signed Business Associate Agreement (BAA) provided immediately upon demo completion
+                      Signed Business Associate Agreement (BAA) provided for execution immediately upon demo completion
                     </li>
                   )}
                   {tierParam === 'government' && (
