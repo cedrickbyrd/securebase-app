@@ -184,7 +184,26 @@ export default function ContactSales({ setAuth }) {
             <>
               <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 p-8 mb-6">
                 <h1 className="text-3xl font-bold text-white mb-2">{messaging.heading}</h1>
-                <p className="text-blue-200 text-sm mb-8">{messaging.subheading}</p>
+                <p className="text-blue-200 text-sm mb-4">{messaging.subheading}</p>
+
+                {/* AWS BAA / ATO trust signal */}
+                {(tierParam === 'healthcare' || tierParam === 'government') && (
+                  <div className="mb-6 flex items-start gap-3 bg-purple-500/10 border border-purple-400/30 rounded-xl p-4">
+                    <Shield className="w-5 h-5 text-purple-300 shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-purple-200 font-semibold">
+                        {tierParam === 'healthcare'
+                          ? 'AWS Business Associate Agreement (BAA) included'
+                          : 'FedRAMP-aligned AWS infrastructure included'}
+                      </p>
+                      <p className="text-purple-400 text-xs mt-1">
+                        {tierParam === 'healthcare'
+                          ? 'SecureBase signs and manages your HIPAA BAA on AWS, covering PHI in S3, RDS, and CloudTrail — delivered within 48 hours of your demo.'
+                          : 'Authority to Operate (ATO) support and FIPS 140-2 encryption on dedicated AWS infrastructure, tailored to your agency\'s requirements.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
