@@ -31,8 +31,8 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
 try:
     import stripe as _default_stripe_module
@@ -63,6 +63,7 @@ class StripeTestCleaner:
         self,
         api_key: str,
         dry_run: bool = False,
+        force: bool = False,
         stripe_module=None,
     ) -> None:
         if stripe_module is not None:
@@ -76,6 +77,7 @@ class StripeTestCleaner:
             )
         self._stripe.api_key = api_key
         self.dry_run = dry_run
+        self.force = force
         self.stats: Dict[str, int] = {
             "customers_deleted": 0,
             "sessions_expired": 0,
@@ -90,7 +92,7 @@ class StripeTestCleaner:
     def cleanup_by_time_range(self, hours: int = 1) -> None:
         """Clean up test data created within the last *hours* hours."""
         cutoff_time = int(
-            (datetime.utcnow() - timedelta(hours=hours)).timestamp()
+            (datetime.now(timezone.utc) - timedelta(hours=hours)).timestamp()
         )
         print(f"\n{'=' * 70}")
         print(f"Cleaning up test data from last {hours} hour(s)")
@@ -114,7 +116,13 @@ class StripeTestCleaner:
         print(f"\n{'=' * 70}")
         print("WARNING: Cleaning up ALL test data")
         print(f"{'=' * 70}\n")
-        if not self.dry_run:
+        if not self.dry_run and not self.force:
+            if not sys.stdin.isatty():
+                print(
+                    "❌ Non-interactive environment detected. "
+                    "Pass --force to bypass confirmation in CI."
+                )
+                return
             confirm = input(
                 "Are you sure? This will delete all test customers (y/N): "
             )
@@ -253,7 +261,12 @@ class StripeTestCleaner:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _should_process(obj, created_after, metadata_filter, all_test_data) -> bool:
+    def _should_process(
+        obj: Any,
+        created_after: Optional[int],
+        metadata_filter: Optional[Dict[str, str]],
+        all_test_data: bool,
+    ) -> bool:
         """Return True if *obj* meets the deletion/expiration criteria."""
         metadata = getattr(obj, "metadata", {}) or {}
         if all_test_data:
@@ -336,6 +349,14 @@ examples:
         action="store_true",
         help="Log what would be deleted without making any API calls.",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "Skip the interactive confirmation prompt when using --all-test-data. "
+            "Required when running in non-TTY environments such as GitHub Actions."
+        ),
+    )
     return parser
 
 
@@ -357,7 +378,11 @@ def main(argv=None) -> int:
         )
 
     try:
-        cleaner = StripeTestCleaner(api_key=api_key, dry_run=args.dry_run)
+        cleaner = StripeTestCleaner(
+            api_key=api_key,
+            dry_run=args.dry_run,
+            force=args.force,
+        )
     except ImportError as exc:
         print(f"❌ {exc}", file=sys.stderr)
         return 1
