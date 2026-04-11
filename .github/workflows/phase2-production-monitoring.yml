@@ -32,7 +32,7 @@ jobs:
         if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/SecureBaseMonitoringRole
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (static keys fallback)
@@ -42,6 +42,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Collect Aurora Metrics
         id: aurora-metrics
         run: |
           CLUSTER_ID="securebase-production-cluster"
@@ -164,7 +166,7 @@ jobs:
         if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/SecureBaseMonitoringRole
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (static keys fallback)
@@ -273,7 +275,7 @@ jobs:
         if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/SecureBaseMonitoringRole
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (static keys fallback)
@@ -367,7 +369,7 @@ jobs:
         if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/SecureBaseMonitoringRole
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials (static keys fallback)
