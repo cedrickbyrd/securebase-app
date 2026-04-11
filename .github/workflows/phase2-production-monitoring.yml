@@ -19,6 +19,7 @@ env:
 permissions:
   contents: read  # Read repository contents
   actions: read   # Read workflow run data
+  id-token: write # OIDC token for AWS authentication
 
 jobs:
   # Job 1: Monitor Aurora Database
@@ -30,8 +31,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Get Aurora Cluster Metrics
@@ -156,8 +156,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor Phase 2 Lambda Functions
@@ -257,8 +256,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor API Gateway Metrics
@@ -343,8 +341,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor DynamoDB Metrics
