@@ -263,7 +263,8 @@ export function setup() {
   });
   
   if (healthRes.status !== 200) {
-    throw new Error(`API health check failed: ${healthRes.status}`);
+    console.error(`API health check failed with status ${healthRes.status}. Error: ${healthRes.error || 'none'}`);
+    throw new Error(`API health check failed: ${healthRes.status} (${healthRes.error || 'no error detail'})`);
   }
   
   console.log('API is healthy, starting load test...');
@@ -283,6 +284,13 @@ export function teardown(data) {
 
 // Handle summary (custom report)
 export function handleSummary(data) {
+  if (!data || !data.metrics) {
+    const stub = JSON.stringify({ skipped: true, reason: 'No metrics — test exited before collecting data (DNS failure or early crash).' }, null, 2);
+    return {
+      'summary.json': stub,
+      'stdout': '\nNo metrics captured — test exited before collecting data (DNS failure or early crash).\n',
+    };
+  }
   return {
     'summary.json': JSON.stringify(data, null, 2),
     'stdout': generateTextSummary(data, { indent: ' ', enableColors: true }),
