@@ -257,7 +257,7 @@ resource "aws_lambda_function" "auth" {
   
   environment {
     variables = {
-      JWT_SECRET = var.jwt_secret
+      KMS_KEY_ID  = aws_kms_key.jwt_signing.arn
       ENVIRONMENT = var.environment
     }
   }
@@ -861,3 +861,73 @@ resource "null_resource" "populate_data" {
 
 # Get current region
 data "aws_region" "current" {}
+
+# Get current account ID (used in KMS key policy)
+data "aws_caller_identity" "current" {}
+
+#############################################################################
+# KMS Key for JWT Signing (RS256)
+#############################################################################
+
+resource "aws_kms_key" "jwt_signing" {
+  description              = "SecureBase demo-auth JWT signing key (RS256 / RSASSA_PKCS1_V1_5_SHA_256)"
+  key_usage                = "SIGN_VERIFY"
+  customer_master_key_spec = "RSA_2048"
+  deletion_window_in_days  = var.kms_deletion_window_in_days
+  enable_key_rotation      = false  # asymmetric keys do not support automatic rotation
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid    = "AllowLambdaSignVerify"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.lambda_role.arn
+        }
+        Action = [
+          "kms:Sign",
+          "kms:Verify",
+          "kms:GetPublicKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "SecureBase Demo JWT Signing Key"
+  })
+}
+
+resource "aws_kms_alias" "jwt_signing" {
+  name          = "alias/${var.project_name}-demo-jwt-${var.environment}"
+  target_key_id = aws_kms_key.jwt_signing.key_id
+}
+
+resource "aws_iam_role_policy" "lambda_kms" {
+  name = "${var.project_name}-demo-lambda-kms-${var.environment}"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Sign",
+          "kms:Verify",
+          "kms:GetPublicKey"
+        ]
+        Resource = aws_kms_key.jwt_signing.arn
+      }
+    ]
+  })
+}
