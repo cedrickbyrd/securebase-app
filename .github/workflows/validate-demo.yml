@@ -163,6 +163,87 @@ jobs:
             exit 1
           fi
 
+      - name: Verify isEnterprise flag in token response
+        run: |
+          echo "🏢 Verifying isEnterprise flag in demo-auth response..."
+          SITE="https://demo.securebase.tximhotep.com"
+          FAILED=0
+
+          response=$(curl -si --max-time 15 \
+            -X POST "${SITE}/api/demo-auth" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"login","email":"admin@healthcorp.example.com","password":"demo-healthcare-2026"}')
+
+          body=$(echo "$response" | tail -1)
+
+          if echo "$body" | grep -q '"isEnterprise"'; then
+            echo "✅ isEnterprise flag present in response body"
+          else
+            echo "❌ isEnterprise flag missing from response body"
+            FAILED=1
+          fi
+
+          # For healthcare tier, isEnterprise must be true
+          if echo "$body" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('customer',{}).get('isEnterprise') == True else 1)" 2>/dev/null; then
+            echo "✅ isEnterprise=true for healthcare (enterprise) tier"
+          else
+            echo "❌ isEnterprise is not true for healthcare tier"
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+      - name: Verify JWT header uses RS256 (KMS signing)
+        run: |
+          echo "🔑 Verifying JWT is signed with RS256 (KMS)..."
+          SITE="https://demo.securebase.tximhotep.com"
+          FAILED=0
+
+          response=$(curl -si --max-time 15 \
+            -X POST "${SITE}/api/demo-auth" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"login","email":"admin@healthcorp.example.com","password":"demo-healthcare-2026"}')
+
+          body=$(echo "$response" | tail -1)
+
+          # Extract the token value from the JSON body
+          token=$(echo "$body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+
+          if [ -z "$token" ]; then
+            echo "❌ Could not extract token from response body"
+            exit 1
+          fi
+
+          # Decode the JWT header (first segment)
+          header_b64=$(echo "$token" | cut -d'.' -f1)
+          # Add padding and decode
+          header_json=$(python3 -c "
+          import base64, sys
+          s = sys.argv[1]
+          s += '=' * (4 - len(s) % 4)
+          print(base64.urlsafe_b64decode(s).decode())
+          " "$header_b64" 2>/dev/null || echo "")
+
+          echo "JWT header: $header_json"
+
+          if echo "$header_json" | grep -q '"RS256"'; then
+            echo "✅ JWT is signed with RS256 (KMS)"
+          else
+            echo "❌ JWT alg is not RS256 — KMS signing may not be active"
+            FAILED=1
+          fi
+
+          if echo "$header_json" | grep -q '"HS256"'; then
+            echo "❌ JWT is using HS256 (HMAC fallback) — KMS_KEY_ID env var may not be set on Lambda"
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

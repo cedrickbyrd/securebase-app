@@ -8,8 +8,8 @@ module "demo_backend" {
   project_name = "securebase"
   environment  = "demo"
   
-  # JWT secret (change in production!)
-  jwt_secret = "demo-secret-change-in-production-2026"
+  # KMS key deletion window (7–30 days)
+  kms_deletion_window_in_days = 30
   
   # Automatic data population
   auto_populate_data = true
