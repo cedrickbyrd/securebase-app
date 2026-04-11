@@ -60,6 +60,13 @@
   status = 200
   force = true
 
+# S3 PROXY SHIELD - prevents direct S3 URL exposure (security guardrail)
+[[redirects]]
+  from = "/storage/*"
+  to = "/.netlify/functions/s3-proxy/:splat"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
