@@ -447,21 +447,25 @@ jobs:
           for asset in assets:
               url = f"{CDN_URL}{asset}"
               
-              # First request (likely cache miss)
-              resp1 = requests.get(url)
-              time.sleep(0.1)
-              
-              # Second request (should be cache hit)
-              resp2 = requests.get(url)
-              
-              cache_status = resp2.headers.get('X-Cache', 'Unknown')
-              
-              if 'Hit' in cache_status:
-                  cache_hits += 1
-                  print(f"✅ {asset}: Cache HIT")
-              else:
+              try:
+                  # First request (likely cache miss)
+                  resp1 = requests.get(url, timeout=5)
+                  time.sleep(0.1)
+                  
+                  # Second request (should be cache hit)
+                  resp2 = requests.get(url, timeout=5)
+                  
+                  cache_status = resp2.headers.get('X-Cache', 'Unknown')
+                  
+                  if 'Hit' in cache_status:
+                      cache_hits += 1
+                      print(f"✅ {asset}: Cache HIT")
+                  else:
+                      cache_misses += 1
+                      print(f"❌ {asset}: Cache MISS")
+              except requests.exceptions.ConnectionError:
+                  print(f"❌ {asset}: Could not resolve host {CDN_URL}")
                   cache_misses += 1
-                  print(f"❌ {asset}: Cache MISS")
           
           total_requests = cache_hits + cache_misses
           hit_rate = (cache_hits / total_requests * 100) if total_requests > 0 else 0
