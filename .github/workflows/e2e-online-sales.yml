@@ -571,6 +571,22 @@ jobs:
         run: |
           pip install pytest pytest-mock PyJWT stripe requests python-dateutil bcrypt pyotp
 
+      # ── Resolve credentials once to avoid duplicating conditional logic ──
+      # STRIPE_SECRET_KEY  – real key in sandbox mode, placeholder in mock mode
+      # STRIPE_PRICE_STD   – real price ID in sandbox mode, placeholder otherwise
+      - name: Resolve Stripe credentials
+        env:
+          _SK: ${{ secrets.STRIPE_SECRET_KEY }}
+          _PRICE_STD: ${{ secrets.STRIPE_PRICE_STANDARD }}
+        run: |
+          if [ "$STRIPE_MODE" = "sandbox" ]; then
+            echo "RESOLVED_STRIPE_SECRET_KEY=${_SK}" >> "$GITHUB_ENV"
+            echo "RESOLVED_STRIPE_PRICE_STANDARD=${_PRICE_STD}" >> "$GITHUB_ENV"
+          else
+            echo "RESOLVED_STRIPE_SECRET_KEY=sk_test_mock" >> "$GITHUB_ENV"
+            echo "RESOLVED_STRIPE_PRICE_STANDARD=price_mock_standard" >> "$GITHUB_ENV"
+          fi
+
       # ── Stripe CLI (used only in sandbox mode for webhook forwarding) ────
       - name: Install Stripe CLI
         if: env.STRIPE_MODE == 'sandbox'
@@ -583,36 +599,33 @@ jobs:
           sudo mv /tmp/stripe /usr/local/bin/stripe
           stripe version
 
-      # Start the Stripe CLI listener in the background so it can forward
-      # checkout.session.completed events to the local runner endpoint.
-      # The dynamic webhook signing secret is captured from its output and
-      # exported as STRIPE_WEBHOOK_SECRET for the test run.
+      # Capture the webhook signing secret via --print-secret (exits
+      # immediately, no sleep required) then start the listener in the
+      # background for real event forwarding during the test run.
       - name: Start Stripe CLI webhook listener
         if: env.STRIPE_MODE == 'sandbox'
-        env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
-          stripe listen \
-            --api-key "$STRIPE_SECRET_KEY" \
-            --forward-to http://localhost:9090/stripe-webhook \
-            2>&1 | tee /tmp/stripe-cli.log &
-          # Allow the CLI time to authenticate and print the signing secret.
-          sleep 10
-          WHSEC=$(grep -oP 'whsec_\w+' /tmp/stripe-cli.log | head -1)
+          WHSEC=$(stripe listen \
+            --api-key "$RESOLVED_STRIPE_SECRET_KEY" \
+            --print-secret 2>/dev/null || true)
           if [ -n "$WHSEC" ]; then
             echo "STRIPE_WEBHOOK_SECRET=${WHSEC}" >> "$GITHUB_ENV"
-            echo "✅ Stripe CLI listening – webhook signing secret captured"
+            echo "✅ Webhook signing secret captured via --print-secret"
           else
-            echo "::warning::Could not extract webhook signing secret from Stripe CLI output"
+            echo "::warning::Could not capture webhook signing secret – using placeholder"
             echo "STRIPE_WEBHOOK_SECRET=whsec_placeholder" >> "$GITHUB_ENV"
           fi
+          # Start background listener for live event forwarding
+          stripe listen \
+            --api-key "$RESOLVED_STRIPE_SECRET_KEY" \
+            --forward-to http://localhost:9090/stripe-webhook \
+            > /tmp/stripe-cli.log 2>&1 &
+          echo "✅ Stripe CLI webhook listener started (PID $!)"
 
       - name: Run existing pilot signup E2E test
         env:
           PYTHONPATH: phase2-backend/lambda_layer/python:phase2-backend/functions
-          # In mock mode fall back to a placeholder key; in sandbox mode the
-          # real key is passed so the test suite can make live API calls.
-          STRIPE_SECRET_KEY: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_SECRET_KEY || 'sk_test_mock' }}
+          STRIPE_SECRET_KEY: ${{ env.RESOLVED_STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET || 'whsec_mock' }}
           STRIPE_PRICE_HEALTHCARE: price_mock_healthcare
           STRIPE_PILOT_COUPON: pilot50off
@@ -632,9 +645,9 @@ jobs:
       - name: Run complete sales journey E2E tests
         env:
           PYTHONPATH: phase2-backend/lambda_layer/python:phase2-backend/functions
-          STRIPE_SECRET_KEY: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_SECRET_KEY || 'sk_test_mock' }}
+          STRIPE_SECRET_KEY: ${{ env.RESOLVED_STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET || 'whsec_mock' }}
-          STRIPE_PRICE_STANDARD: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_PRICE_STANDARD || 'price_mock_standard' }}
+          STRIPE_PRICE_STANDARD: ${{ env.RESOLVED_STRIPE_PRICE_STANDARD }}
           STRIPE_PRICE_HEALTHCARE: price_mock_healthcare
           STRIPE_PRICE_FINTECH: price_mock_fintech
           STRIPE_PRICE_GOVERNMENT: price_mock_government
@@ -650,40 +663,45 @@ jobs:
             2>&1
         continue-on-error: true
 
-      # ── Sandbox cleanup: remove Stripe test objects created during this run ─
-      # Runs only in sandbox mode so the nightly mock run has zero latency.
+      # ── Sandbox cleanup: use the StripeTestCleaner CLI to delete objects ──
+      # tagged with test_run_id == github.run_id.  Runs only in sandbox mode
+      # and always executes (even if tests failed) to prevent data pollution.
       - name: Clean up Stripe test data
         if: env.STRIPE_MODE == 'sandbox' && always()
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_SECRET_KEY: ${{ env.RESOLVED_STRIPE_SECRET_KEY }}
         run: |
-          python3 - << 'PYEOF'
-          import os
-          import stripe
+          python scripts/stripe_cleanup.py \
+            --run-id="${{ github.run_id }}" \
+            2>&1 || echo "::warning::Stripe cleanup encountered errors – see output above"
+        continue-on-error: true
 
-          api_key = os.getenv("STRIPE_SECRET_KEY", "")
-          if not api_key.startswith("sk_test_"):
-              print("⚠️  Skipping cleanup: STRIPE_SECRET_KEY is not a test key")
-              raise SystemExit(0)
-
-          stripe.api_key = api_key
-          customers = stripe.Customer.list(limit=100)
-          deleted = 0
-          errors = 0
-          for customer in customers.auto_paging_iter():
-              meta = getattr(customer, "metadata", {}) or {}
-              if meta.get("test_run") == "true":
-                  try:
-                      stripe.Customer.delete(customer.id)
-                      deleted += 1
-                  except stripe.error.StripeError as exc:
-                      errors += 1
-                      print(f"  ⚠️  Could not delete {customer.id}: {exc}")
-          print(
-              f"✅ Cleanup complete: {deleted} test customer(s) deleted"
-              + (f", {errors} error(s)" if errors else "")
-          )
-          PYEOF
+      # ── Alert on sandbox failures so on-call engineers are notified ──────
+      - name: Notify Slack on SANDBOX failure
+        if: failure() && env.STRIPE_MODE == 'sandbox'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "ℹ️  SLACK_WEBHOOK_URL not configured – skipping notification"
+            exit 0
+          fi
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data-binary @- << 'PAYLOAD'
+          {
+            "text": "🚨 SANDBOX E2E tests failed on main branch",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*SecureBase · SANDBOX E2E Test Failure*\nBranch: `${{ github.ref_name }}`\nTriggered by: `${{ github.actor }}`\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
+                }
+              }
+            ]
+          }
+          PAYLOAD
         continue-on-error: true
 
       - name: Upload customer journey test results
