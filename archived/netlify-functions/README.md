@@ -42,3 +42,53 @@ If you need to switch back to Netlify Functions:
 - See MIGRATION_NOTES.md for technical details
 - Frontend updated: phase3a-portal/src/pages/Checkout.jsx
 - CSP headers updated in netlify.toml for Stripe
+
+---
+
+## demo-auth.js
+
+**Archived:** April 2026  
+**Reason:** Migrated to AWS Lambda for HIPAA/FedRAMP compliance and single-cloud consistency
+
+### Why AWS Lambda?
+- HIPAA BAA ✅, FedRAMP ✅
+- CloudTrail audit integration
+- Single-cloud narrative (AWS-only stack)
+- Consistent credential management via AWS Secrets Manager
+
+### Current Architecture
+- `/api/demo-auth` → `https://api.securebase.tximhotep.com/demo-auth` (AWS Lambda via netlify.toml redirect)
+- AWS Lambda handler: `landing-zone/modules/demo-backend/lambda/auth.py`
+
+### Auth Flow Change
+- **Before:** HttpOnly JWT cookie (`demo_jwt`) set in `Set-Cookie` response header
+- **After:** JWT Bearer token returned in response body as `{ "token": "...", "customer": {...}, "expires_in": 86400 }`
+
+### Restore Instructions
+If you need to switch back to the Netlify function:
+
+1. Copy function back:
+```bash
+   cp archived/netlify-functions/demo-auth.js netlify/functions/
+```
+
+2. Install dependencies:
+```bash
+   npm install jsonwebtoken --legacy-peer-deps
+```
+
+3. Update netlify.toml redirect:
+```toml
+   [[redirects]]
+     from = "/api/demo-auth"
+     to = "/.netlify/functions/demo-auth"
+     status = 200
+```
+
+4. Set `JWT_SECRET`, `DEMO_EMAIL`, and `DEMO_PASSWORD` as Netlify environment variables
+
+5. Deploy
+
+### Migration Details
+- See MIGRATION_NOTES.md for technical details
+- Workflow updated: `.github/workflows/validate-demo.yml`
