@@ -121,21 +121,23 @@ jobs:
             echo "⚠️ Missing Expires field"
           fi
 
-      - name: Verify JWT demo auth cookie
-        # Confirms the demo-auth Netlify function is reachable and issues an
-        # HttpOnly JWT cookie when presented with valid demo credentials.
-        # The cookie value is never printed — only its presence and flags are checked.
+      - name: Verify demo auth JWT endpoint
+        # Confirms the AWS Lambda demo-auth endpoint is reachable and returns a
+        # JWT token in the response body when presented with valid demo credentials.
+        # The token value is never printed — only its presence is checked.
         run: |
-          echo "🔐 Verifying JWT demo auth cookie issuance..."
+          echo "🔐 Verifying demo auth JWT endpoint..."
           SITE="https://demo.securebase.tximhotep.com"
           FAILED=0
 
           response=$(curl -si --max-time 15 \
             -X POST "${SITE}/api/demo-auth" \
             -H "Content-Type: application/json" \
-            -d '{"email":"demo@securebase.tximhotep.com","password":"SecureBaseDemo2026!"}')
+            -d '{"action":"login","email":"admin@healthcorp.example.com","password":"demo-healthcare-2026"}')
 
           http_code=$(echo "$response" | grep -i "^HTTP" | tail -1 | awk '{print $2}')
+          body=$(echo "$response" | tail -1)
+
           if [ "$http_code" = "200" ]; then
             echo "✅ demo-auth endpoint returned HTTP 200"
           else
@@ -143,24 +145,18 @@ jobs:
             FAILED=1
           fi
 
-          if echo "$response" | grep -qi "set-cookie:.*demo_jwt="; then
-            echo "✅ JWT cookie present in response"
+          if echo "$body" | grep -q '"token"'; then
+            echo "✅ JWT token present in response body"
           else
-            echo "❌ JWT cookie (demo_jwt) missing from Set-Cookie header"
+            echo "❌ JWT token missing from response body"
             FAILED=1
           fi
 
-          if echo "$response" | grep -qi "set-cookie:.*httponly"; then
-            echo "✅ HttpOnly flag confirmed"
+          if echo "$body" | grep -q '"customer"'; then
+            echo "✅ Customer object present in response body"
           else
-            echo "❌ HttpOnly flag missing from JWT cookie"
+            echo "❌ Customer object missing from response body"
             FAILED=1
-          fi
-
-          if echo "$response" | grep -qi "set-cookie:.*samesite=lax"; then
-            echo "✅ SameSite=Lax flag confirmed"
-          else
-            echo "⚠️ SameSite flag not detected — verify Netlify function headers"
           fi
 
           if [ "$FAILED" -eq 1 ]; then
