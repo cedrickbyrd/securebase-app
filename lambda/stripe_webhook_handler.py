@@ -48,9 +48,16 @@ def _verify_stripe_signature(payload: str, sig_header: str, secret: str) -> bool
     https://stripe.com/docs/webhooks/signatures
     """
     try:
-        parts = {k: v for k, v in (p.split("=", 1) for p in sig_header.split(","))}
-        timestamp = int(parts["t"])
-        signatures = [v for k, v in parts.items() if k == "v1"]
+        # Build pairs list — keep all v1= entries (supports secret rotation)
+        pairs = [p.split("=", 1) for p in sig_header.split(",") if "=" in p]
+        timestamp_values = [v for k, v in pairs if k == "t"]
+        signatures = [v for k, v in pairs if k == "v1"]
+
+        if not timestamp_values or not signatures:
+            logger.warning("Stripe signature header missing required fields")
+            return False
+
+        timestamp = int(timestamp_values[0])
 
         # Reject events older than 5 minutes
         if abs(time.time() - timestamp) > 300:
@@ -61,7 +68,7 @@ def _verify_stripe_signature(payload: str, sig_header: str, secret: str) -> bool
         expected = hmac.new(
             secret.encode("utf-8"),
             signed_payload.encode("utf-8"),
-            hashlib.sha256
+            hashlib.sha256,
         ).hexdigest()
 
         return any(hmac.compare_digest(expected, sig) for sig in signatures)
@@ -123,9 +130,23 @@ def handler(event: dict, context) -> dict:
 
     try:
         if event_type == "checkout.session.completed":
+            session_id = data.get("id", "unknown")
+            payment_status = data.get("payment_status", "unknown")
+            customer_email = data.get("customer_email") or data.get("customer_details", {}).get("email", "unknown")
+            logger.info(
+                "WEBHOOK_RECEIVED checkout.session.completed session_id=%s payment_status=%s customer=%s",
+                session_id, payment_status, customer_email,
+            )
             if data.get("subscription"):
                 subscription = _call_stripe(f"subscriptions/{data['subscription']}", stripe_secret)
                 customer = _call_stripe(f"customers/{data['customer']}", stripe_secret)
+                plan_name = (subscription.get("items", {}).get("data") or [{}])[0].get("price", {}).get("nickname") or "unknown"
+                amount = (subscription.get("items", {}).get("data") or [{}])[0].get("price", {}).get("unit_amount", 0) / 100
+                currency = subscription.get("currency", "usd").upper()
+                logger.info(
+                    "CHECKOUT_CONFIRMED subscription_id=%s plan=%s amount=%.2f %s customer_id=%s",
+                    data["subscription"], plan_name, amount, currency, data.get("customer"),
+                )
                 ga4_client.track_subscription_purchase(subscription, customer, data)
 
         elif event_type == "customer.subscription.created":
