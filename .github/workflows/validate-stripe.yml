@@ -11,6 +11,10 @@ on:
           - test
           - production
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   stripe_api_validation:
     name: Stripe API Configuration Check
@@ -69,8 +73,7 @@ jobs:
       - name: Setup AWS authentication
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
       - name: Verify checkout session Lambda exists
