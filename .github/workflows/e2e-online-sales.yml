@@ -46,6 +46,9 @@ env:
   PYTHON_VERSION: '3.11'
   NODE_VERSION: '20'
   ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  # sandbox on direct pushes to main; mock for PRs, scheduled runs, and
+  # workflow_dispatch so nightly cron stays fast and fully offline.
+  STRIPE_MODE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'sandbox' || 'mock' }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PHASE 1 – Infrastructure Setup
@@ -552,7 +555,7 @@ jobs:
   customer-journey-e2e:
     name: 'Phase 3 · Complete Customer Journey'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: [backend-unit-tests, auth-flow-tests]
 
     steps:
@@ -568,11 +571,49 @@ jobs:
         run: |
           pip install pytest pytest-mock PyJWT stripe requests python-dateutil bcrypt pyotp
 
+      # ── Stripe CLI (used only in sandbox mode for webhook forwarding) ────
+      - name: Install Stripe CLI
+        if: env.STRIPE_MODE == 'sandbox'
+        run: |
+          set -e
+          STRIPE_CLI_VER="1.21.0"
+          curl -sLo /tmp/stripe-cli.tar.gz \
+            "https://github.com/stripe/stripe-cli/releases/download/v${STRIPE_CLI_VER}/stripe_${STRIPE_CLI_VER}_linux_x86_64.tar.gz"
+          tar -xzf /tmp/stripe-cli.tar.gz -C /tmp
+          sudo mv /tmp/stripe /usr/local/bin/stripe
+          stripe version
+
+      # Start the Stripe CLI listener in the background so it can forward
+      # checkout.session.completed events to the local runner endpoint.
+      # The dynamic webhook signing secret is captured from its output and
+      # exported as STRIPE_WEBHOOK_SECRET for the test run.
+      - name: Start Stripe CLI webhook listener
+        if: env.STRIPE_MODE == 'sandbox'
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          stripe listen \
+            --api-key "$STRIPE_SECRET_KEY" \
+            --forward-to http://localhost:9090/stripe-webhook \
+            2>&1 | tee /tmp/stripe-cli.log &
+          # Allow the CLI time to authenticate and print the signing secret.
+          sleep 10
+          WHSEC=$(grep -oP 'whsec_\w+' /tmp/stripe-cli.log | head -1)
+          if [ -n "$WHSEC" ]; then
+            echo "STRIPE_WEBHOOK_SECRET=${WHSEC}" >> "$GITHUB_ENV"
+            echo "✅ Stripe CLI listening – webhook signing secret captured"
+          else
+            echo "::warning::Could not extract webhook signing secret from Stripe CLI output"
+            echo "STRIPE_WEBHOOK_SECRET=whsec_placeholder" >> "$GITHUB_ENV"
+          fi
+
       - name: Run existing pilot signup E2E test
         env:
           PYTHONPATH: phase2-backend/lambda_layer/python:phase2-backend/functions
-          STRIPE_SECRET_KEY: sk_test_mock
-          STRIPE_WEBHOOK_SECRET: whsec_mock
+          # In mock mode fall back to a placeholder key; in sandbox mode the
+          # real key is passed so the test suite can make live API calls.
+          STRIPE_SECRET_KEY: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_SECRET_KEY || 'sk_test_mock' }}
+          STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET || 'whsec_mock' }}
           STRIPE_PRICE_HEALTHCARE: price_mock_healthcare
           STRIPE_PILOT_COUPON: pilot50off
           PORTAL_URL: https://portal.test.securebase.io
@@ -583,6 +624,7 @@ jobs:
           mkdir -p test-results
           python -m pytest tests/e2e/test_pilot_signup.py -v \
             --tb=short \
+            --stripe-mode=${{ env.STRIPE_MODE }} \
             --junitxml=test-results/junit-pilot-signup.xml \
             2>&1
         continue-on-error: true
@@ -590,9 +632,9 @@ jobs:
       - name: Run complete sales journey E2E tests
         env:
           PYTHONPATH: phase2-backend/lambda_layer/python:phase2-backend/functions
-          STRIPE_SECRET_KEY: sk_test_mock
-          STRIPE_WEBHOOK_SECRET: whsec_mock
-          STRIPE_PRICE_STANDARD: price_mock_standard
+          STRIPE_SECRET_KEY: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_SECRET_KEY || 'sk_test_mock' }}
+          STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET || 'whsec_mock' }}
+          STRIPE_PRICE_STANDARD: ${{ env.STRIPE_MODE == 'sandbox' && secrets.STRIPE_PRICE_STANDARD || 'price_mock_standard' }}
           STRIPE_PRICE_HEALTHCARE: price_mock_healthcare
           STRIPE_PRICE_FINTECH: price_mock_fintech
           STRIPE_PRICE_GOVERNMENT: price_mock_government
@@ -603,8 +645,45 @@ jobs:
         run: |
           python -m pytest tests/e2e/test_sales_journey_e2e.py -v \
             --tb=short \
+            --stripe-mode=${{ env.STRIPE_MODE }} \
             --junitxml=test-results/junit-sales-journey.xml \
             2>&1
+        continue-on-error: true
+
+      # ── Sandbox cleanup: remove Stripe test objects created during this run ─
+      # Runs only in sandbox mode so the nightly mock run has zero latency.
+      - name: Clean up Stripe test data
+        if: env.STRIPE_MODE == 'sandbox' && always()
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import os
+          import stripe
+
+          api_key = os.getenv("STRIPE_SECRET_KEY", "")
+          if not api_key.startswith("sk_test_"):
+              print("⚠️  Skipping cleanup: STRIPE_SECRET_KEY is not a test key")
+              raise SystemExit(0)
+
+          stripe.api_key = api_key
+          customers = stripe.Customer.list(limit=100)
+          deleted = 0
+          errors = 0
+          for customer in customers.auto_paging_iter():
+              meta = getattr(customer, "metadata", {}) or {}
+              if meta.get("test_run") == "true":
+                  try:
+                      stripe.Customer.delete(customer.id)
+                      deleted += 1
+                  except stripe.error.StripeError as exc:
+                      errors += 1
+                      print(f"  ⚠️  Could not delete {customer.id}: {exc}")
+          print(
+              f"✅ Cleanup complete: {deleted} test customer(s) deleted"
+              + (f", {errors} error(s)" if errors else "")
+          )
+          PYEOF
         continue-on-error: true
 
       - name: Upload customer journey test results
