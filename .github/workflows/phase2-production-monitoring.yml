@@ -28,13 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
           aws-region: ${{ env.AWS_REGION }}
-      
-      - name: Get Aurora Cluster Metrics
+
+      - name: Configure AWS credentials (static keys fallback)
+        if: ${{ vars.AWS_AUTH_METHOD == 'static' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
         id: aurora-metrics
         run: |
           CLUSTER_ID="securebase-production-cluster"
@@ -153,10 +160,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (static keys fallback)
+        if: ${{ vars.AWS_AUTH_METHOD == 'static' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor Phase 2 Lambda Functions
@@ -253,10 +269,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (static keys fallback)
+        if: ${{ vars.AWS_AUTH_METHOD == 'static' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor API Gateway Metrics
@@ -338,10 +363,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ vars.AWS_AUTH_METHOD != 'static' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (static keys fallback)
+        if: ${{ vars.AWS_AUTH_METHOD == 'static' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Monitor DynamoDB Metrics
