@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, Loader, BarChart2 } from 'lucide-react';
 import { submitLead } from '../services/crmService';
 
@@ -10,17 +10,49 @@ const FRAMEWORK_OPTIONS = [
   { value: 'cis', label: 'CIS Foundations (General)' },
 ];
 
+const TIER_TO_FRAMEWORK = {
+  healthcare: 'hipaa',
+  government: 'fedramp',
+  fintech: 'soc2',
+  standard: 'cis',
+};
+
+const TIER_MESSAGING = {
+  healthcare: {
+    heading: 'Schedule Your Healthcare Demo',
+    subheading: "Let's discuss your HIPAA compliance requirements, BAA needs, and PHI protection strategy.",
+  },
+  government: {
+    heading: 'Schedule Your Government Demo',
+    subheading: "Let's discuss FedRAMP alignment, Authority to Operate (ATO) support, and FIPS 140-2 requirements.",
+  },
+};
+
+const DEFAULT_MESSAGING = {
+  heading: 'Talk to Sales',
+  subheading: "Tell us about your compliance needs and we'll tailor a pilot program for you.",
+};
+
 const LEAD_PREVIEW_URL = '/api/lead-preview-auth';
 const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
 const REDIRECT_DELAY_MS = 4000;
 
 export default function ContactSales({ setAuth }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const tierParam = searchParams.get('tier') || '';
+
+  const messaging = TIER_MESSAGING[tierParam] || DEFAULT_MESSAGING;
+  const defaultFramework = TIER_TO_FRAMEWORK[tierParam] || 'soc2';
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     company: '',
-    framework: 'soc2',
+    framework: defaultFramework,
+    employees: '',
+    timeline: '',
     message: '',
   });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
@@ -149,120 +181,196 @@ export default function ContactSales({ setAuth }) {
               </a>
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 p-8">
-              <h1 className="text-3xl font-bold text-white mb-2">Talk to Sales</h1>
-              <p className="text-blue-200 text-sm mb-8">
-                Tell us about your compliance needs and we'll tailor a pilot program for you.
-              </p>
+            <>
+              <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 p-8 mb-6">
+                <h1 className="text-3xl font-bold text-white mb-2">{messaging.heading}</h1>
+                <p className="text-blue-200 text-sm mb-8">{messaging.subheading}</p>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Jane Smith"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
-                  />
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Jane Smith"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
-                    Work Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="jane@company.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                      Work Email
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="jane@company.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    name="company"
-                    placeholder="Acme Corp"
-                    value={formData.company}
-                    onChange={handleChange}
-                    required
-                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      name="company"
+                      placeholder="Acme Corp"
+                      value={formData.company}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
-                    Compliance Framework
-                  </label>
-                  <select
-                    name="framework"
-                    value={formData.framework}
-                    onChange={handleChange}
-                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                      Compliance Framework
+                    </label>
+                    <select
+                      name="framework"
+                      value={formData.framework}
+                      onChange={handleChange}
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                    >
+                      {FRAMEWORK_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                        Company Size
+                      </label>
+                      <select
+                        name="employees"
+                        value={formData.employees}
+                        onChange={handleChange}
+                        className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                      >
+                        <option value="" className="bg-gray-900 text-white">Select…</option>
+                        <option value="1-50" className="bg-gray-900 text-white">1–50 employees</option>
+                        <option value="51-200" className="bg-gray-900 text-white">51–200 employees</option>
+                        <option value="201-1000" className="bg-gray-900 text-white">201–1,000 employees</option>
+                        <option value="1000+" className="bg-gray-900 text-white">1,000+ employees</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                        Timeline
+                      </label>
+                      <select
+                        name="timeline"
+                        value={formData.timeline}
+                        onChange={handleChange}
+                        className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-[#667eea] focus:outline-none transition"
+                      >
+                        <option value="" className="bg-gray-900 text-white">Select…</option>
+                        <option value="immediate" className="bg-gray-900 text-white">Immediate (0–30 days)</option>
+                        <option value="quarter" className="bg-gray-900 text-white">This quarter (1–3 months)</option>
+                        <option value="planning" className="bg-gray-900 text-white">Planning phase (3+ months)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
+                      Compliance Requirements (optional)
+                    </label>
+                    <textarea
+                      name="message"
+                      rows={3}
+                      placeholder="Tell us about your compliance timeline, team size, or any questions…"
+                      value={formData.message}
+                      onChange={handleChange}
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={status === 'loading'}
+                    className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {FRAMEWORK_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                    {status === 'loading' ? (
+                      <>
+                        <Loader className="animate-spin w-5 h-5" />
+                        Sending…
+                      </>
+                    ) : (
+                      'Request Enterprise Demo'
+                    )}
+                  </button>
+
+                  <p className="text-xs text-blue-400 text-center">
+                    Response within 24 hours · Custom pricing available
+                  </p>
+                </form>
+
+                <div className="mt-6 pt-5 border-t border-white/10 text-center">
+                  <p className="text-blue-300 text-xs">
+                    Prefer to self-schedule?{' '}
+                    <a
+                      href="https://calendly.com/securebase/white-glove-pilot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-300 hover:text-yellow-200 underline font-semibold"
+                    >
+                      Book a time on Calendly
+                    </a>
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-blue-300 mb-1">
-                    Message (optional)
-                  </label>
-                  <textarea
-                    name="message"
-                    rows={3}
-                    placeholder="Tell us about your compliance timeline, team size, or any questions…"
-                    value={formData.message}
-                    onChange={handleChange}
-                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-400 focus:ring-2 focus:ring-[#667eea] focus:outline-none transition resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={status === 'loading'}
-                  className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {status === 'loading' ? (
-                    <>
-                      <Loader className="animate-spin w-5 h-5" />
-                      Sending…
-                    </>
-                  ) : (
-                    'Request a Demo Call'
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 pt-5 border-t border-white/10 text-center">
-                <p className="text-blue-300 text-xs">
-                  Prefer to self-schedule?{' '}
-                  <a
-                    href="https://calendly.com/securebase/white-glove-pilot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-yellow-300 hover:text-yellow-200 underline font-semibold"
-                  >
-                    Book a time on Calendly
-                  </a>
-                </p>
               </div>
-            </div>
+
+              {/* What to Expect */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h3 className="font-semibold text-white mb-4">What to Expect:</h3>
+                <ul className="space-y-3 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    30-minute consultation with a compliance expert
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    Custom demo of your compliance framework
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    Tailored proposal with implementation timeline
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    Pricing aligned to your organization size
+                  </li>
+                  {tierParam === 'healthcare' && (
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                      Business Associate Agreement (BAA) review and execution
+                    </li>
+                  )}
+                  {tierParam === 'government' && (
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                      Authority to Operate (ATO) roadmap and FedRAMP documentation support
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </>
           )}
         </div>
       </main>
