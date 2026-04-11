@@ -24,6 +24,15 @@ WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 # Initialize AWS clients
 secretsmanager = boto3.client('secretsmanager')
 sns = boto3.client('sns')
+ses = boto3.client('ses', region_name='us-east-1')
+dynamodb = boto3.resource('dynamodb')
+
+# Handshake test configuration
+HANDSHAKE_TEST_EMAIL = os.environ.get('HANDSHAKE_TEST_EMAIL', 'cedrickbyrd@me.com')
+HANDSHAKE_REPORT_RECIPIENT = os.environ.get('HANDSHAKE_REPORT_RECIPIENT', 'cedrickbyrd@me.com')
+HANDSHAKE_REPORT_SENDER = os.environ.get('HANDSHAKE_REPORT_SENDER', 'noreply@tximhotep.com')
+HANDSHAKE_IDEMPOTENCY_TABLE = os.environ.get('HANDSHAKE_IDEMPOTENCY_TABLE', 'securebase-handshake-tests')
+KMS_KEY_ID = os.environ.get('KMS_KEY_ID', '')
 
 
 def get_stripe_key():
@@ -188,15 +197,21 @@ def handle_checkout_completed(session):
         if result:
             customer_id, customer_name = result[0]
             print(f"Customer activated: {customer_name} ({customer_email})")
-            
-            # Send notification
-            send_notification(
-                subject=f"New Customer: {customer_name}",
-                message=f"Customer {customer_name} ({customer_email}) signed up for {tier} tier.\nCustomer ID: {customer_id}"
-            )
-            
-            # Trigger onboarding workflow
-            trigger_onboarding(customer_id, tier)
+
+            # Sovereign Heartbeat: detect scheduled handshake test
+            if customer_email == HANDSHAKE_TEST_EMAIL:
+                test_id = session.get('metadata', {}).get('test_id', f"v3_handshake_{datetime.utcnow().date()}")
+                is_enterprise = session.get('metadata', {}).get('isEnterprise', 'false').lower() == 'true'
+                handle_handshake_test(session, customer_id, tier, test_id, is_enterprise)
+            else:
+                # Send notification only for real (non-test) customers
+                send_notification(
+                    subject=f"New Customer: {customer_name}",
+                    message=f"Customer {customer_name} ({customer_email}) signed up for {tier} tier.\nCustomer ID: {customer_id}"
+                )
+
+                # Trigger onboarding workflow
+                trigger_onboarding(customer_id, tier)
         
     except Exception as e:
         print(f"Error in checkout completion: {e}")
@@ -449,6 +464,114 @@ def trigger_onboarding(customer_id, tier):
         print(f"Error triggering onboarding: {e}")
         # Don't fail webhook if onboarding trigger fails
         pass
+
+
+def handle_handshake_test(session, customer_id, tier, test_id, is_enterprise):
+    """
+    Process a scheduled Sovereign Heartbeat handshake test.
+
+    - Logs the KMS KeyId used for token generation (v.3 compliance check).
+    - Uses DynamoDB idempotency keyed on test_id to avoid creating duplicate
+      records; only the 'last_verified' timestamp is updated on repeat runs.
+    - Sends a structured SES report to the operator inbox.
+    """
+    timestamp = datetime.utcnow().isoformat() + 'Z'
+    kms_key_used = KMS_KEY_ID or 'NOT_CONFIGURED'
+    metadata = session.get('metadata', {})
+
+    print(f"[HANDSHAKE] test_id={test_id} tier={tier} isEnterprise={is_enterprise} kms_key={kms_key_used}")
+
+    # --- KMS sovereignty check ---
+    kms_status = 'NOT_CONFIGURED'
+    if KMS_KEY_ID:
+        try:
+            kms_client = boto3.client('kms')
+            key_meta = kms_client.describe_key(KeyId=KMS_KEY_ID)
+            key_state = key_meta['KeyMetadata']['KeyState']
+            key_usage = key_meta['KeyMetadata']['KeyUsage']
+            kms_status = f"KeyState={key_state} KeyUsage={key_usage} KeyId={KMS_KEY_ID}"
+            print(f"[HANDSHAKE] KMS check passed — {kms_status}")
+        except Exception as exc:
+            kms_status = f"ERROR: {exc}"
+            print(f"[HANDSHAKE] KMS check failed — {kms_status}")
+
+    # --- isEnterprise logic verification ---
+    logic_status = 'PASS' if not is_enterprise else 'UNEXPECTED_ENTERPRISE_FLAG'
+    if is_enterprise:
+        print(f"[HANDSHAKE] WARNING: isEnterprise=true on standard-tier test — logic may be mis-routing")
+
+    # --- DynamoDB idempotency upsert ---
+    dynamodb_status = 'OK'
+    try:
+        table = dynamodb.Table(HANDSHAKE_IDEMPOTENCY_TABLE)
+        table.put_item(
+            Item={
+                'test_id': test_id,
+                'customer_id': customer_id,
+                'tier': tier,
+                'is_enterprise': is_enterprise,
+                'kms_key_id': kms_key_used,
+                'last_verified': timestamp,
+                'stripe_metadata': metadata,
+            },
+        )
+        print(f"[HANDSHAKE] Idempotency record upserted — test_id={test_id}")
+    except Exception as exc:
+        dynamodb_status = f"ERROR: {exc}"
+        print(f"[HANDSHAKE] DynamoDB upsert failed — {dynamodb_status}")
+
+    # --- SES report ---
+    overall_status = 'SUCCESS' if (logic_status == 'PASS' and 'ERROR' not in kms_status and 'ERROR' not in dynamodb_status) else 'DEGRADED'
+    send_v3_report(
+        status=overall_status,
+        test_id=test_id,
+        tier=tier,
+        is_enterprise=is_enterprise,
+        kms_status=kms_status,
+        logic_status=logic_status,
+        dynamodb_status=dynamodb_status,
+        timestamp=timestamp,
+        raw_metadata=metadata,
+    )
+
+
+def send_v3_report(status, test_id, tier, is_enterprise, kms_status,
+                   logic_status, dynamodb_status, timestamp, raw_metadata):
+    """Send a SecureBase v.3 Handshake Report via SES."""
+    subject = f"SecureBase v.3 Health: {status} [{test_id}]"
+    body_lines = [
+        "SecureBase v.3 Handshake Report",
+        "=" * 40,
+        f"Status       : {status}",
+        f"Test ID      : {test_id}",
+        f"Timestamp    : {timestamp}",
+        "",
+        "Verification Results",
+        "-" * 40,
+        f"Tier         : {tier}",
+        f"isEnterprise : {is_enterprise}",
+        f"Logic Check  : {logic_status}",
+        f"KMS Check    : {kms_status}",
+        f"DynamoDB     : {dynamodb_status}",
+        "",
+        "Raw Stripe Metadata",
+        "-" * 40,
+        json.dumps(raw_metadata, indent=2),
+    ]
+    body = "\n".join(body_lines)
+
+    try:
+        ses.send_email(
+            Source=HANDSHAKE_REPORT_SENDER,
+            Destination={'ToAddresses': [HANDSHAKE_REPORT_RECIPIENT]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': body}},
+            },
+        )
+        print(f"[HANDSHAKE] SES report sent → {HANDSHAKE_REPORT_RECIPIENT} ({status})")
+    except Exception as exc:
+        print(f"[HANDSHAKE] SES report delivery failed — {exc}")
 
 
 if __name__ == "__main__":

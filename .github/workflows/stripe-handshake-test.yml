@@ -1,0 +1,43 @@
+name: Stripe Handshake Test
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # 09:00 CDT (UTC-5, Mar–Nov). Runs at 08:00 CST (UTC-6, Nov–Mar) due to DST.
+  workflow_dispatch: # Allows manual trigger for immediate verification
+
+permissions:
+  contents: read
+
+jobs:
+  test-handshake:
+    name: Verify Stripe ↔ AWS Sovereign Handshake
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate test ID
+        id: test_id
+        run: echo "value=v3_handshake_$(date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Live Handshake via Stripe CLI
+        uses: stripe/stripe-cli-action@v1.1.0
+        with:
+          stripe-key: ${{ secrets.STRIPE_SECRET_KEY_LIVE }}
+          command: >
+            trigger checkout.session.completed
+            --override checkout_session:customer_details.email="cedrickbyrd@me.com"
+            --override checkout_session:metadata.tier="standard"
+            --override checkout_session:metadata.isEnterprise="false"
+            --override checkout_session:metadata.test_id="${{ steps.test_id.outputs.value }}"
+
+      - name: Report handshake result
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Stripe Handshake SUCCEEDED — test_id: ${{ steps.test_id.outputs.value }}"
+          else
+            echo "❌ Stripe Handshake FAILED — check Lambda logs and Stripe Workbench"
+            exit 1
+          fi
