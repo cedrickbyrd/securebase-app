@@ -10,11 +10,15 @@ variable "environment" {
   default     = "demo"
 }
 
-variable "jwt_secret" {
-  description = "JWT secret for token signing (change in production)"
-  type        = string
-  default     = "demo-secret-change-in-production-2026"
-  sensitive   = true
+variable "kms_deletion_window_in_days" {
+  description = "Number of days before KMS key is deleted after destroy (7–30)"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.kms_deletion_window_in_days >= 7 && var.kms_deletion_window_in_days <= 30
+    error_message = "kms_deletion_window_in_days must be between 7 and 30."
+  }
 }
 
 variable "log_retention_days" {
