@@ -10,7 +10,7 @@ import Alerts from './components/Alerts';
 import Pricing from './components/Pricing';
 import Checkout from './components/Checkout';
 import { Loader } from 'lucide-react';
-import { initializeAnalytics, SessionTracking } from './utils/analytics';
+import { initializeAnalytics, SessionTracking, trackPurchase } from './utils/analytics';
 
 // 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -27,6 +27,19 @@ function App() {
   useEffect(() => {
     initializeAnalytics();
     SessionTracking.logSessionStart();
+  }, []);
+
+  useEffect(() => {
+    // Fire the standard GA4 `purchase` event when Stripe redirects back with
+    // a checkout session ID and tab=success. Plan and value are appended to the
+    // success URL in Checkout.jsx so we can report accurate revenue.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'success' && params.get('session_id')) {
+      const sessionId = params.get('session_id');
+      const plan = params.get('plan') || 'unknown';
+      const value = parseFloat(params.get('value')) || 0;
+      trackPurchase(sessionId, plan, value);
+    }
   }, []);
 
   if (isLoading) {

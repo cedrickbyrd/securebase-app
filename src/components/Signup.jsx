@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
+import { trackSignupCompleted } from '../utils/analytics';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -400,7 +401,6 @@ function FastTrackForm({ wave3Target }) {
           magicLinkErr instanceof Error ? magicLinkErr.message : 'Unknown error');
       }
 
-      // 3. GA4 event
       if (typeof window.gtag === 'function') {
         window.gtag('event', 'lead_captured', {
           method: 'fast_track',
@@ -579,9 +579,7 @@ function StandardSignupForm({ navigate }) {
 
       const data = await res.json().catch(() => ({}));
 
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'sign_up', { method: 'email', tier: form.tier });
-      }
+      trackSignupCompleted(form.tier);
 
       if (data.jobId) {
         navigate(`/onboarding?jobId=${data.jobId}&email=${encodeURIComponent(form.email)}`);
