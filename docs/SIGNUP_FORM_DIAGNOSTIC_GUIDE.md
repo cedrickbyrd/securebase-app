@@ -343,10 +343,12 @@ Based on impact to the 99.6% drop-off:
 | File | Purpose |
 |------|---------|
 | `signup-form-diagnostic.js` | Browser console diagnostic script — paste into DevTools |
-| `phase3a-portal/src/components/SignupForm.jsx` | Primary multi-step signup form component |
+| `phase3a-portal/src/components/SignupForm.jsx` | Portal multi-step signup form component (source of truth, unchanged) |
 | `phase3a-portal/src/components/SignupForm.css` | Signup form styles (check for `display:none`, viewport issues) |
-| `phase3a-portal/src/components/Signup.jsx` | Stripe checkout component (routes to this after signup) |
-| `phase3a-portal/src/App.jsx` | Router — `/signup` → `<SignupForm />` |
+| `phase3a-portal/src/components/Signup.jsx` | Portal Stripe checkout component (routes to this after portal signup) |
+| `phase3a-portal/src/App.jsx` | Portal router — `/signup` → `<SignupForm />` |
+| `src/components/Signup.jsx` | **Marketing site** signup — rewritten 4-step form + Wave 3 FastTrack; calls Lambda `/signup` (not Supabase) |
+| `src/App.jsx` | Marketing site router — `/signup` → `<Signup />`; note: `/auth/callback` route has been **removed** |
 | `phase3a-portal/src/utils/analytics.js` | `trackSignupView()` and `trackFormStart()` helpers |
 | `docs/SIGNUP_WORKFLOW.md` | High-level signup flow documentation |
 
@@ -374,7 +376,7 @@ A: No - warnings like "below fold" explain the 99.6% drop-off.
 A: Fix all CRITICAL first, then HIGH priority. See Priority Order above.
 
 **Q: Which App.jsx is relevant for the signup page?**  
-A: `phase3a-portal/src/App.jsx` — not `src/App.jsx`. The root `src/` app is the internal dashboard and has no `/signup` route.
+A: Both. `phase3a-portal/src/App.jsx` routes `/signup` → `<SignupForm />` for the customer portal. `src/App.jsx` routes `/signup` → `<Signup />` for the marketing site. The marketing site's `src/components/Signup.jsx` was rewritten in PR #508 to use a 4-step form + Wave 3 FastTrack path; the old Supabase magic-link flow and `src/pages/AuthCallback.jsx` have been removed.
 
 ---
 

@@ -2,9 +2,65 @@
 
 ## Overview
 
-This document describes the end-to-end self-service customer signup workflow for SecureBase. The workflow enables customers to sign up, pay via Stripe, and have their AWS infrastructure automatically provisioned.
+This document describes the end-to-end self-service customer signup workflow for SecureBase. There are **two distinct signup paths** depending on which app the user is in:
+
+- **Marketing site** (`src/`) — 4-step form + Wave 3 FastTrack path, calls Lambda `/signup` backend directly
+- **Customer portal** (`phase3a-portal/`) — 4-step form + Stripe checkout, calls Lambda `/checkout` backend
 
 ## Architecture
+
+### Full System Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│               MARKETING SITE (src/)  — /signup                      │
+│                                                                      │
+│  src/components/Signup.jsx                                           │
+│        │                                                             │
+│        │  detect Wave 3 UTM? (utm_campaign=wave3_*)                 │
+│        │      YES                    NO                              │
+│        ▼                             ▼                               │
+│  FastTrack path               4-step form                            │
+│  (single email field)         Step 1: Account                        │
+│  POST /.netlify/functions/    Step 2: Organization                   │
+│        submit-lead (CRM)      Step 3: Compliance Tier                │
+│  POST /api/signup (Lambda)    Step 4: Verify email                   │
+│  → "Check your inbox"               │                                │
+│                                     │ POST /api/signup (Lambda)      │
+│                                     ▼                                │
+│                          /onboarding?jobId=…&email=…                 │
+│                          OnboardingProgress.jsx                      │
+│                          (live 7-step provisioning tracker)          │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│           CUSTOMER PORTAL (phase3a-portal/)  — /signup               │
+│                                                                      │
+│  phase3a-portal/src/components/SignupForm.jsx  (source of truth)     │
+│        │                                                             │
+│        │ POST /checkout                                              │
+│        ▼                                                             │
+│  create_checkout_session.py → Stripe Checkout (30-day trial)        │
+│        │                                                             │
+│        │ checkout.session.completed webhook                          │
+│        ▼                                                             │
+│  stripe_webhook.py → trigger_onboarding.py                          │
+│        │                                                             │
+│        │ 6. SNS → onboard-customer.sh                               │
+│        ▼                                                             │
+│  Infrastructure Provisioning                                         │
+│  (Terraform / AWS Organizations / IAM Identity Center)              │
+└──────────────────────────────────────────────────────────────────────┘
+
+                    Shared Lambda Backend
+            ┌──────────────────────────────────┐
+            │  POST /signup  (signup_handler)  │
+            │  POST /checkout (checkout sess.) │
+            │  Cognito + Aurora + SES          │
+            └──────────────────────────────────┘
+```
+
+### Portal Signup Detail (Phase 3a)
 
 ```
 ┌─────────────────┐
@@ -15,7 +71,7 @@ This document describes the end-to-end self-service customer signup workflow for
          │ 1. Submit Signup Form
          ▼
 ┌─────────────────────────┐
-│  Signup.jsx Component   │
+│  SignupForm.jsx          │
 │  (Phase 3a Portal)      │
 └────────┬────────────────┘
          │
@@ -68,7 +124,34 @@ This document describes the end-to-end self-service customer signup workflow for
 
 ### 1. Frontend (React)
 
-**File**: `phase3a-portal/src/components/Signup.jsx`
+#### Marketing Site Signup (`src/`)
+
+**File**: `src/components/Signup.jsx`
+
+This component was rewritten in PR #508 (`copilot/rewrite-marketing-signup-flow`) to replace the previous Supabase magic-link / LinkedIn OAuth flow with a path that mirrors the portal's proven `SignupForm` logic.
+
+> **Note**: `src/pages/AuthCallback.jsx` has been **removed** and the `/auth/callback` route no longer exists in `src/App.jsx`. Supabase magic-link and OAuth are no longer used in the marketing site signup flow.
+
+**Wave 3 FastTrack path** (triggered when `utm_campaign` starts with `wave3_`):
+1. Single email input field
+2. POST `/.netlify/functions/submit-lead` — CRM lead capture
+3. POST `/api/signup` (proxied to Lambda `POST /signup`) — provisions account, sends magic link
+4. UI transitions to "Check your inbox" confirmation state
+
+**Standard 4-step path**:
+1. **Step 1 — Account**: email + password
+2. **Step 2 — Organization**: company name + industry
+3. **Step 3 — Configuration**: compliance tier (Standard / Fintech / Healthcare / Government)
+4. **Step 4 — Verify**: email verification code
+5. POST `/api/signup` (Lambda) → returns `{ jobId }`
+6. Redirect to `/onboarding?jobId=…&email=…`
+
+**API Service**: `src/services/apiService.js` (Axios instance pointing at `VITE_API_BASE_URL`)
+- `signup(payload)` — POSTs to `/signup` Lambda endpoint
+
+#### Customer Portal Signup (`phase3a-portal/`)
+
+**File**: `phase3a-portal/src/components/SignupForm.jsx` *(source of truth — unchanged)*
 
 Features:
 - Tier selection (Standard, Fintech, Healthcare, Government)

@@ -49,14 +49,15 @@ npm install --legacy-peer-deps
 - **Charts:** `react-chartjs-2` + `chart.js`
 - **PDF Generation:** `jspdf` + `html2canvas`
 - **Analytics:** Google Analytics 4 (GA4) with privacy controls
-- **Backend/Auth:** Supabase (PostgreSQL + Auth)
+- **Backend/Auth:** Supabase (PostgreSQL + Auth) — **note: Supabase auth is no longer used in the marketing site (`src/`) signup flow** (see PR #508); the marketing site now calls the Lambda `/signup` backend directly via `VITE_API_BASE_URL`
 - **Runtime:** Node.js LTS (currently v20.x)
 
 ### Environment Variables
 Store in `.env.local` (never commit):
 ```env
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_URL=your-project-url     # No longer used by marketing site /signup (see PR #508)
+VITE_SUPABASE_ANON_KEY=your-anon-key  # No longer used by marketing site /signup (see PR #508)
+VITE_API_BASE_URL=https://api.securebase.tximhotep.com  # Used by marketing site /signup (Lambda backend)
 VITE_API_ENDPOINT=https://api.securebase.tximhotep.com
 VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_DEMO_MODE=false
