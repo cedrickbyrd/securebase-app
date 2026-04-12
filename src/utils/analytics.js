@@ -406,18 +406,67 @@ export function trackSignupStarted(method = 'email') {
 }
 
 /**
- * Track a pricing-page CTA click.
+ * Track when a user successfully completes signup (standard GA4 event).
  *
- * GA4 is intentionally NOT fired here — checkout intent is tracked by
- * trackCheckoutStarted() which fires immediately before POST /api/checkout,
- * ensuring the event corresponds to an actual checkout attempt rather than
- * a button click that may be abandoned.
+ * HIPAA note: only the compliance tier is sent — never email, name, or org data.
+ *
+ * @param {string} [tier='standard'] - Compliance tier selected (e.g. 'fintech', 'healthcare').
+ */
+export function trackSignupCompleted(tier = 'standard') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('sign_up', { method: 'email', tier });
+    devLog('Event tracked: sign_up', { tier });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: sign_up', error);
+  }
+}
+
+/**
+ * Track viewing of a promotional offer (standard GA4 e-commerce event).
+ *
+ * Fires when a promotional banner or offer becomes visible to the user.
+ * HIPAA note: only promotion metadata is sent — no user identifiers.
+ *
+ * @param {string} promotionId   - Promotion identifier (e.g. 'pilot_q2_2026').
+ * @param {string} promotionName - Human-readable name (e.g. 'Q2 2026 Pilot Program').
+ */
+export function trackViewPromotion(promotionId, promotionName) {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('view_promotion', {
+      promotion_id: promotionId,
+      promotion_name: promotionName,
+    });
+    devLog('Event tracked: view_promotion', { promotionId, promotionName });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: view_promotion', error);
+  }
+}
+
+/**
+ * Track a pricing-page CTA click (standard GA4 `select_item` event).
+ *
+ * Fires `select_item` when the user clicks a plan's CTA button, signalling
+ * intent to purchase. Checkout intent is further confirmed by
+ * trackCheckoutStarted() which fires immediately before POST /api/checkout.
  *
  * @param {string} plan           - Plan identifier (e.g. 'standard', 'fintech', 'enterprise').
- * @param {string} [location=''] - CTA location on the page (e.g. 'hero', 'comparison_table', 'footer').
+ * @param {string} [location=''] - CTA location on the page (e.g. 'hero', 'comparison_table').
  */
 export function trackPricingCTA(plan, location = '') {
   devLog('Pricing CTA clicked', { plan, location });
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('select_item', {
+      items: [{ item_id: plan, item_name: plan }],
+      item_list_name: 'Pricing Page',
+      ...(location ? { item_list_id: location } : {}),
+    });
+    devLog('Event tracked: select_item', { plan, location });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: select_item', error);
+  }
 }
 
 /**
@@ -443,26 +492,55 @@ export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'f
 }
 
 /**
+ * Track a completed purchase using the standard GA4 `purchase` event.
+ *
+ * GA4 requires `transaction_id`, `value`, `currency`, and a populated `items[]`
+ * array for Monetization reports to show non-zero revenue and product data.
+ *
+ * HIPAA note: only the Stripe session ID (non-PHI), plan name, and a numeric
+ * revenue value are sent — never payment card details, user PII, or org data.
+ *
+ * @param {string} transactionId - Unique transaction ID (e.g. Stripe checkout session ID).
+ *   Truncated to 64 characters to avoid oversized payloads.
+ * @param {string} plan          - Plan identifier (e.g. 'fintech', 'enterprise').
+ * @param {number} revenue       - Transaction value in USD (e.g. 1499).
+ */
+export function trackPurchase(transactionId, plan, revenue) {
+  if (!canTrack()) return;
+  try {
+    const safeTransactionId = typeof transactionId === 'string'
+      ? transactionId.substring(0, 64)
+      : 'unknown';
+    const safeRevenue = typeof revenue === 'number' ? revenue : 0;
+    ReactGA.event('purchase', {
+      transaction_id: safeTransactionId,
+      value: safeRevenue,
+      currency: 'USD',
+      items: [{
+        item_id: plan,
+        item_name: plan,
+        price: safeRevenue,
+        quantity: 1,
+      }],
+    });
+    devLog('Event tracked: purchase', { transactionId: safeTransactionId, plan, revenue: safeRevenue });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: purchase', error);
+  }
+}
+
+/**
  * Track a completed purchase / conversion.
  *
- * HIPAA note: only the plan name and a numeric revenue value are sent — no
- * payment card details, user PII, or order identifiers.
+ * @deprecated Prefer trackPurchase() which fires the standard GA4 `purchase`
+ * event with a populated items[] array and transaction_id, enabling full
+ * Monetization reporting. This function is retained for backward compatibility.
  *
  * @param {string} plan    - Plan identifier (e.g. 'enterprise').
  * @param {number} revenue - Transaction value in USD (e.g. 299.99).
  */
 export function trackCheckoutCompleted(plan, revenue) {
-  if (!canTrack()) return;
-  try {
-    ReactGA.event('checkout_completed', {
-      plan_type: plan,
-      value: typeof revenue === 'number' ? revenue : 0,
-      currency: 'USD',
-    });
-    devLog('Event tracked: checkout_completed', { plan, revenue });
-  } catch (error) {
-    console.error('[Analytics] Error tracking event: checkout_completed', error);
-  }
+  trackPurchase(`unknown-${Date.now()}`, plan, revenue);
 }
 
 // ---------------------------------------------------------------------------

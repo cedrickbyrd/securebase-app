@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
-import { trackPricingCTA } from '../utils/analytics';
+import { trackPricingCTA, trackViewPromotion } from '../utils/analytics';
 import { mockComplianceData } from '../mock-api';
 
 const SALES_EMAIL = 'sales@securebase.tximhotep.com';
@@ -156,6 +156,11 @@ export default function Pricing() {
       setComplianceData(mockComplianceData);
     }, 0);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Track when a user views the pilot promotion banner (GA4 view_promotion).
+    trackViewPromotion('pilot_q2_2026', 'Q2 2026 Pilot Program');
   }, []);
 
   useEffect(() => {
