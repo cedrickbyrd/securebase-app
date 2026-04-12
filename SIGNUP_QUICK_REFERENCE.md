@@ -45,12 +45,14 @@ curl -X POST https://api-dev.securebase.tximhotep.com/checkout \
 - [x] Audit logging
 
 ### Frontend
-- [x] `Signup.jsx` - Signup form
-- [x] `apiService.js` - API integration
+- [x] `phase3a-portal/src/components/SignupForm.jsx` — Portal 4-step form (source of truth, Stripe checkout flow, unchanged)
+- [x] `src/components/Signup.jsx` — Marketing site signup (rewritten: 4-step form + Wave 3 FastTrack, calls Lambda `/signup`)
+- [x] `apiService.js` — API integration (both apps)
 - [x] Tier selection
 - [x] Pilot discount toggle
 - [x] Error handling
 - [x] Loading states
+- [x] **Note**: `src/pages/AuthCallback.jsx` has been **removed**; the `/auth/callback` Supabase OAuth route no longer exists in the marketing site (`src/App.jsx`)
 
 ### Automation
 - [x] `onboard-customer.sh` - Infrastructure provisioning
@@ -241,7 +243,10 @@ aws lambda invoke \
 
 ### Disable signup
 ```javascript
-// In Signup.jsx
+// In phase3a-portal/src/components/SignupForm.jsx (portal)
+const SIGNUP_ENABLED = false;
+
+// In src/components/Signup.jsx (marketing site)
 const SIGNUP_ENABLED = false;
 ```
 
