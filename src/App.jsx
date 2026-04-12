@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import Signup from './components/Signup';
-import AuthCallback from './pages/AuthCallback';
 import SecureBaseLandingZone from './SecureBaseLandingZone';
 import TrustCenter from './components/TrustCenter';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
@@ -58,9 +57,6 @@ function App() {
 
           {/* Zero-friction signup — public, no auth required */}
           <Route path="/signup" element={<Signup />} />
-
-          {/* Supabase OAuth / magic-link callback handler */}
-          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route 
             path="/login" 
