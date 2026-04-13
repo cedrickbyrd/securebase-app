@@ -11,6 +11,19 @@ from datetime import datetime
 # Add phase2-backend functions to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'phase2-backend', 'functions'))
 
+# Add tests/ directory to path so that fixture modules under tests/fixtures/
+# are importable as  fixtures.<module>  when referenced by pytest_plugins.
+sys.path.insert(0, os.path.dirname(__file__))
+
+# Register all shared fixture modules.  Fixtures defined in these files are
+# automatically available to every test in the tests/ tree.
+pytest_plugins = [
+    "fixtures.analytics_fixtures",
+    "fixtures.notification_fixtures",
+    "fixtures.rbac_fixtures",
+    "fixtures.database_fixtures",
+]
+
 # Test environment configuration
 os.environ['ENVIRONMENT'] = 'test'
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
