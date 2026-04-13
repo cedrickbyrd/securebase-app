@@ -14,7 +14,7 @@ const PRICING_TIERS = {
     name: 'Standard',
     price: 2000,
     pilotPrice: 1000,
-    priceId: 'price_1Srgn65bg6XXXrmNXXXXXXXX',
+    priceId: 'price_1SrgoR5bg6XXXrmNXe0tTgki',
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
@@ -29,7 +29,7 @@ const PRICING_TIERS = {
     name: 'Fintech',
     price: 8000,
     pilotPrice: 4000,
-    priceId: 'price_1SrgoQ5bg6XXXrmNwsdnTwrW',
+    priceId: 'price_1SrgqV5bg6XXXrmNL6XoLcD',
     description: 'SOC2 Type II compliant infrastructure',
     features: [
       'SOC2 Type II controls',
@@ -44,7 +44,7 @@ const PRICING_TIERS = {
     name: 'Healthcare',
     price: 15000,
     pilotPrice: 7500,
-    priceId: 'price_1SrgoQ5bg6XXXrmNQvC2YnmT',
+    priceId: 'price_1SrgqU5bg6XXXrmNKA43A08i',
     description: 'HIPAA-compliant AWS Landing Zone',
     features: [
       'HIPAA compliance framework',
@@ -59,7 +59,7 @@ const PRICING_TIERS = {
     name: 'Government', 
     price: 25000,
     pilotPrice: 12500,
-    priceId: 'price_1SrgoR5bg6XXXrmNUUveBMDw',
+    priceId: 'price_1SrgqW5bg6XXXrmN4Tdhkqku',
     description: 'FedRAMP-aligned AWS Landing Zone',
     features: [
       'FedRAMP compliance framework',
