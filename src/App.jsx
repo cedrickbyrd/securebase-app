@@ -9,6 +9,7 @@ import SREDashboardWrapper from './components/SREDashboardWrapper';
 import Alerts from './components/Alerts';
 import Pricing from './components/Pricing';
 import Checkout from './components/Checkout';
+import ContactSales from './components/ContactSales';
 import { Loader } from 'lucide-react';
 import { initializeAnalytics, SessionTracking, trackPurchase } from './utils/analytics';
 
@@ -67,6 +68,7 @@ function App() {
           {/* Public Golden Sales Path — no auth required */}
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/contact-sales" element={<ContactSales />} />
 
           {/* Zero-friction signup — public, no auth required */}
           <Route path="/signup" element={<Signup />} />

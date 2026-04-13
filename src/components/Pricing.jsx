@@ -4,8 +4,6 @@ import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
 import { trackPricingCTA, trackViewPromotion } from '../utils/analytics';
 import { mockComplianceData } from '../mock-api';
 
-const SALES_EMAIL = 'sales@securebase.tximhotep.com';
-
 const PLANS = [
   {
     id: 'standard',
@@ -64,7 +62,7 @@ const PLANS = [
       'Multi-region deployment',
       'Dedicated SRE + phone support',
     ],
-    cta: 'Contact Sales',
+    cta: 'Contact Sales →',
     highlight: false,
   },
 ];
@@ -173,7 +171,7 @@ export default function Pricing() {
   const handleSelectPlan = (plan) => {
     trackPricingCTA(plan.id);
     if (plan.id === 'enterprise') {
-      window.location.href = `mailto:${SALES_EMAIL}?subject=Enterprise%20Inquiry`;
+      navigate('/contact-sales?tier=enterprise&source=pricing');
       return;
     }
     navigate(`/checkout?plan=${plan.id}&priceId=${plan.priceId}&planName=${encodeURIComponent(plan.name)}`);
