@@ -53,7 +53,29 @@ jobs:
         run: |
           pip install requests numpy statistics
 
+      - name: Check API endpoint reachability
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://api-dev.securebase.com' }}
+        run: |
+          API_HOST=$(echo "$API_BASE_URL" | sed 's|https\?://||' | cut -d'/' -f1)
+          echo "Checking DNS resolution for: $API_HOST"
+          if nslookup "$API_HOST" > /dev/null 2>&1; then
+            echo "DNS resolved successfully for $API_HOST"
+            echo "SKIP_API_LATENCY_TEST=false" >> "$GITHUB_ENV"
+          else
+            echo "::warning::DNS resolution failed for $API_HOST — API latency test will be skipped."
+            echo "::warning::If this is a private/VPC endpoint, use a self-hosted runner inside the VPC."
+            echo "SKIP_API_LATENCY_TEST=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Skip notice (endpoint unreachable)
+        if: env.SKIP_API_LATENCY_TEST == 'true'
+        run: |
+          echo "API latency test skipped — endpoint could not be resolved from the public runner."
+          printf '# API Latency Report\n\n**Status:** ⏭️ Skipped (DNS resolution failed for API endpoint)\n' > latency-report.md
+
       - name: Run API latency tests
+        if: env.SKIP_API_LATENCY_TEST != 'true'
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://api-dev.securebase.com' }}
         run: |
@@ -422,7 +444,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check CDN endpoint reachability
+        env:
+          CDN_URL: ${{ secrets.CDN_URL || 'https://cdn.securebase.com' }}
+        run: |
+          CDN_HOST=$(echo "$CDN_URL" | sed 's|https\?://||' | cut -d'/' -f1)
+          echo "Checking DNS resolution for: $CDN_HOST"
+          if nslookup "$CDN_HOST" > /dev/null 2>&1; then
+            echo "DNS resolved successfully for $CDN_HOST"
+            echo "SKIP_CDN_TEST=false" >> "$GITHUB_ENV"
+          else
+            echo "::warning::DNS resolution failed for $CDN_HOST — CDN performance test will be skipped."
+            echo "::warning::If this is a private/VPC endpoint, use a self-hosted runner inside the VPC."
+            echo "SKIP_CDN_TEST=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Skip notice (CDN unreachable)
+        if: env.SKIP_CDN_TEST == 'true'
+        run: |
+          echo "CDN performance test skipped — CDN endpoint could not be resolved from the public runner."
+          printf '# CDN Performance Report\n\n**Status:** ⏭️ Skipped (DNS resolution failed for CDN endpoint)\n' > cdn-performance-report.md
+
       - name: Test CloudFront cache hit rate
+        if: env.SKIP_CDN_TEST != 'true'
         env:
           CDN_URL: ${{ secrets.CDN_URL || 'https://cdn.securebase.com' }}
         run: |
@@ -494,6 +538,7 @@ jobs:
 
       - name: Upload CDN report
         uses: actions/upload-artifact@v4.4.3
+        if: always()
         with:
           name: cdn-performance-report
           path: cdn-performance-report.md
