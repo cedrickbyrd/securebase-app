@@ -14,7 +14,7 @@ Provides:
 
 import pytest
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +230,7 @@ def seed_test_data(setup_test_schema, db_connection):
             (
                 _TEST_INVOICE_ID,
                 _TEST_CUSTOMER_ID,
-                datetime.utcnow().strftime("%Y-%m"),
+                datetime.now(timezone.utc).strftime("%Y-%m"),
                 999.00,
             ),
         )
@@ -295,7 +295,7 @@ def test_invoice_row(seed_test_data):
     return {
         "id": _TEST_INVOICE_ID,
         "customer_id": _TEST_CUSTOMER_ID,
-        "month": datetime.utcnow().strftime("%Y-%m"),
+        "month": datetime.now(timezone.utc).strftime("%Y-%m"),
         "status": "draft",
         "amount_usd": 999.00,
     }
