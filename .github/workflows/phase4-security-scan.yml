@@ -156,8 +156,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt-dev libxmlsec1-dev pkg-config
 
       - name: Install SSO testing dependencies
+        continue-on-error: true
         run: |
-          pip install requests python-saml xmlsec pytest pytest-mock
+          pip install requests pysaml2 pytest pytest-mock
 
       - name: Test SAML response parsing
         run: |
