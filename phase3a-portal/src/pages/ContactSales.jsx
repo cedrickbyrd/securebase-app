@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, Loader, BarChart2 } from 'lucide-react';
 import { submitLead } from '../services/crmService';
+import { PRICING_TIERS } from '../config/live-config';
 
 const FRAMEWORK_OPTIONS = [
   { value: 'soc2', label: 'SOC 2 (Fintech / SaaS)' },
@@ -190,7 +191,7 @@ export default function ContactSales({ setAuth }) {
                     <p className="text-xs mt-0.5">The {tierParam === 'fintech' ? 'Fintech' : 'Standard'} plan is fully self-service — no sales call needed.</p>
                   </div>
                   <a
-                    href={`/checkout?plan=${tierParam}`}
+                    href={`/checkout?plan=${tierParam}&priceId=${PRICING_TIERS[tierParam]?.priceId || ''}`}
                     className="shrink-0 inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 text-white font-bold text-sm py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
                   >
                     Go to Checkout →
