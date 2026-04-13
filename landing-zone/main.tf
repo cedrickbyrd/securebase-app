@@ -161,7 +161,7 @@ resource "aws_organizations_organization" "this" {
 resource "aws_organizations_account" "clients" {
   for_each = var.clients
   name     = each.value.prefix
-  email    = coalesce(each.value.email, "${each.value.prefix}+${each.key}@securebase-demo.com")
+  email    = coalesce(each.value.email, "${lower(replace(each.value.prefix, " ", "-"))}+${lower(replace(each.key, "_", "-"))}@securebase-demo.com")
   parent_id = local.tier_to_ou_id[each.value.tier]
   lifecycle { prevent_destroy = true }
   tags = merge(var.tags, each.value.tags)

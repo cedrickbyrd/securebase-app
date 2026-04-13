@@ -6,10 +6,7 @@ Phase 4: Integration Testing Infrastructure
 import pytest
 import os
 import sys
-import psycopg2
 from datetime import datetime
-import boto3
-from moto import mock_dynamodb, mock_s3, mock_sns, mock_sqs, mock_ses
 
 # Add phase2-backend functions to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'phase2-backend', 'functions'))
@@ -20,6 +17,30 @@ os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 os.environ['AWS_ACCESS_KEY_ID'] = 'test'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'test'
 os.environ['LOCALSTACK_ENDPOINT'] = 'http://localhost:4566'
+
+# Optional heavy dependencies — guarded so tests that don't need them still
+# run in lightweight CI environments (e.g. E2E offline mock suite).
+try:
+    import psycopg2 as _psycopg2  # noqa: F401
+    HAS_PSYCOPG2 = True
+except ImportError:
+    HAS_PSYCOPG2 = False
+
+try:
+    import boto3 as _boto3  # noqa: F401
+    from moto import mock_dynamodb, mock_s3, mock_sns, mock_sqs, mock_ses
+    import boto3
+    HAS_BOTO3 = True
+except ImportError:
+    boto3 = None  # type: ignore[assignment]
+    HAS_BOTO3 = False
+    # Provide no-op stubs so fixtures that reference these names don't raise
+    # NameError at collection time even when moto is not installed.
+    def mock_dynamodb(f=None): return f or (lambda fn: fn)  # type: ignore
+    def mock_s3(f=None): return f or (lambda fn: fn)  # type: ignore
+    def mock_sns(f=None): return f or (lambda fn: fn)  # type: ignore
+    def mock_sqs(f=None): return f or (lambda fn: fn)  # type: ignore
+    def mock_ses(f=None): return f or (lambda fn: fn)  # type: ignore
 
 
 # ============================================================================
@@ -44,14 +65,27 @@ def test_config():
 
 @pytest.fixture(scope='session')
 def db_connection(test_config):
-    """Create database connection for session"""
-    conn = psycopg2.connect(
-        host=test_config['db_host'],
-        port=test_config['db_port'],
-        database=test_config['db_name'],
-        user=test_config['db_user'],
-        password=test_config['db_password']
-    )
+    """Create database connection for session.
+
+    Skips automatically when psycopg2 is not installed or no test database is
+    reachable — allowing the offline E2E / mock suites to collect and run
+    without error.
+    """
+    if not HAS_PSYCOPG2:
+        pytest.skip("psycopg2 not installed — skipping database-dependent tests")
+
+    import psycopg2  # noqa: PLC0415  (imported here to satisfy the guard above)
+    try:
+        conn = psycopg2.connect(
+            host=test_config['db_host'],
+            port=test_config['db_port'],
+            database=test_config['db_name'],
+            user=test_config['db_user'],
+            password=test_config['db_password'],
+            connect_timeout=5,
+        )
+    except psycopg2.OperationalError as exc:
+        pytest.skip(f"Test database not available ({exc}) — skipping database-dependent tests")
     yield conn
     conn.close()
 
@@ -170,6 +204,8 @@ def aws_credentials():
 @pytest.fixture
 def dynamodb_mock(aws_credentials):
     """Mock DynamoDB for testing"""
+    if not HAS_BOTO3:
+        pytest.skip("boto3/moto not installed — skipping AWS mock tests")
     with mock_dynamodb():
         yield boto3.client('dynamodb', region_name='us-east-1')
 
@@ -177,6 +213,8 @@ def dynamodb_mock(aws_credentials):
 @pytest.fixture
 def s3_mock(aws_credentials):
     """Mock S3 for testing"""
+    if not HAS_BOTO3:
+        pytest.skip("boto3/moto not installed — skipping AWS mock tests")
     with mock_s3():
         s3 = boto3.client('s3', region_name='us-east-1')
         # Create test buckets
@@ -188,6 +226,8 @@ def s3_mock(aws_credentials):
 @pytest.fixture
 def sns_mock(aws_credentials):
     """Mock SNS for testing"""
+    if not HAS_BOTO3:
+        pytest.skip("boto3/moto not installed — skipping AWS mock tests")
     with mock_sns():
         yield boto3.client('sns', region_name='us-east-1')
 
@@ -195,6 +235,8 @@ def sns_mock(aws_credentials):
 @pytest.fixture
 def sqs_mock(aws_credentials):
     """Mock SQS for testing"""
+    if not HAS_BOTO3:
+        pytest.skip("boto3/moto not installed — skipping AWS mock tests")
     with mock_sqs():
         yield boto3.client('sqs', region_name='us-east-1')
 
@@ -202,6 +244,8 @@ def sqs_mock(aws_credentials):
 @pytest.fixture
 def ses_mock(aws_credentials):
     """Mock SES for testing"""
+    if not HAS_BOTO3:
+        pytest.skip("boto3/moto not installed — skipping AWS mock tests")
     with mock_ses():
         yield boto3.client('ses', region_name='us-east-1')
 
