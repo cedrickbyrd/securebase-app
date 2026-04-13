@@ -10,7 +10,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "echo 'No unit tests configured for root marketing app' && exit 0",
+    "test:coverage": "echo 'No unit tests configured for root marketing app' && exit 0"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.992.0",
