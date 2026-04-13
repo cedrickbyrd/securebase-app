@@ -182,6 +182,21 @@ export default function ContactSales({ setAuth }) {
             </div>
           ) : (
             <>
+              {/* Escape-hatch for self-service tiers that land here via shared link */}
+              {(tierParam === 'standard' || tierParam === 'fintech') && (
+                <div className="mb-6 flex items-center justify-between gap-4 bg-blue-500/15 border border-blue-400/40 rounded-xl p-4">
+                  <div className="text-sm text-blue-200">
+                    <p className="font-semibold text-blue-100">Ready to get started right now?</p>
+                    <p className="text-xs mt-0.5">The {tierParam === 'fintech' ? 'Fintech' : 'Standard'} plan is fully self-service — no sales call needed.</p>
+                  </div>
+                  <a
+                    href={`/checkout?plan=${tierParam}`}
+                    className="shrink-0 inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 text-white font-bold text-sm py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    Go to Checkout →
+                  </a>
+                </div>
+              )}
               <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 p-8 mb-6">
                 <h1 className="text-3xl font-bold text-white mb-2">{messaging.heading}</h1>
                 <p className="text-blue-200 text-sm mb-4">{messaging.subheading}</p>

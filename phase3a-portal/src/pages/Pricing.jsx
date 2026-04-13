@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, CheckCircle } from 'lucide-react';
 import { PRICING_TIERS } from '../config/live-config';
-import { isDemoMode } from '../utils/demoData';
 import { trackContactSalesIntent, trackCheckoutStarted, trackCTAClick } from '../utils/analytics';
 
 const COMPARISON_ROWS = [
@@ -41,7 +40,6 @@ const FAQS = [
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const demoMode = isDemoMode();
   const [loadingTier, setLoadingTier] = useState(null);
   const [errorTier, setErrorTier] = useState(null);
 
@@ -54,7 +52,7 @@ const Pricing = () => {
 
   const handleGetStarted = async (plan) => {
     // Enterprise tiers → Contact Sales
-    if (plan.isEnterprise || demoMode) {
+    if (plan.isEnterprise) {
       trackCTAClick('pricing', plan.key);
       trackContactSalesIntent({ tier: plan.key, value: plan.pilotPrice || plan.price, source: 'pricing' });
       navigate(`/contact-sales?tier=${plan.key}&source=pricing`);
@@ -75,7 +73,7 @@ const Pricing = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           priceId: plan.priceId,
-          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
+          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
       });
@@ -103,7 +101,7 @@ const Pricing = () => {
 
   const getCtaLabel = (plan) => {
     if (loadingTier === plan.key) return null; // handled inline
-    if (plan.isEnterprise || demoMode) return 'Contact Sales →';
+    if (plan.isEnterprise) return 'Contact Sales →';
     if (plan.key === 'fintech') return 'Start Free Trial →';
     return 'Get Started →';
   };
