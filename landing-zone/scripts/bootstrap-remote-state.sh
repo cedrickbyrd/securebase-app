@@ -17,7 +17,6 @@ ENV=${1:-dev}
 REGION=${AWS_REGION:-us-east-1}
 BUCKET="securebase-terraform-state-${ENV}"
 TABLE="securebase-terraform-locks"
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "unknown")
 
 echo "==================================================="
 echo " SecureBase Terraform Remote State Bootstrap"
@@ -26,6 +25,16 @@ echo " Environment : ${ENV}"
 echo " Region      : ${REGION}"
 echo " S3 Bucket   : ${BUCKET}"
 echo " DynamoDB    : ${TABLE}"
+
+# Verify AWS credentials before doing anything
+if ! aws sts get-caller-identity --query Account --output text > /dev/null 2>&1; then
+  echo ""
+  echo "❌ ERROR: AWS credentials are not configured or are invalid."
+  echo "   Run 'aws configure' or set AWS_PROFILE / AWS_ROLE_ARN and try again."
+  exit 1
+fi
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo " Account     : ${ACCOUNT_ID}"
 echo "==================================================="
 echo ""
