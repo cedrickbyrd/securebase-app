@@ -27,12 +27,10 @@ except ImportError:
     HAS_PSYCOPG2 = False
 
 try:
-    import boto3 as _boto3  # noqa: F401
-    from moto import mock_dynamodb, mock_s3, mock_sns, mock_sqs, mock_ses
     import boto3
+    from moto import mock_dynamodb, mock_s3, mock_sns, mock_sqs, mock_ses
     HAS_BOTO3 = True
 except ImportError:
-    boto3 = None  # type: ignore[assignment]
     HAS_BOTO3 = False
     # Provide no-op stubs so fixtures that reference these names don't raise
     # NameError at collection time even when moto is not installed.
