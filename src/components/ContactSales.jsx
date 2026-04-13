@@ -71,7 +71,7 @@ export default function ContactSales() {
           name: formData.name,
           email: formData.email,
           company: formData.company,
-          role: formData.framework,
+          framework: formData.framework, // maps to 'role' field in backend schema
           trigger: 'contact_sales',
           tier: tierParam || 'enterprise',
           source: searchParams.get('source') || 'pricing',
