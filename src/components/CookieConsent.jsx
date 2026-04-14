@@ -13,21 +13,19 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { setConsent, getConsent, initializeAnalytics } from '../utils/analytics';
-import { SessionTracking } from '../utils/analytics';
+import { setConsent, initializeAnalytics, SessionTracking } from '../utils/analytics';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Only show the banner when the user hasn't already made a choice.
+    // getConsent() is the single source of truth for consent state.
+    // Show the banner only when the user hasn't made a choice yet.
     try {
-      const existing = localStorage.getItem('analytics_consent');
-      if (!existing) {
-        setVisible(true);
-      }
+      const hasChoice = localStorage.getItem('analytics_consent') !== null;
+      if (!hasChoice) setVisible(true);
     } catch {
-      // localStorage unavailable — skip banner.
+      // localStorage unavailable (private browsing with restrictions) — skip banner.
     }
   }, []);
 
@@ -35,7 +33,7 @@ export default function CookieConsent() {
 
   const handleAccept = () => {
     setConsent(true);
-    // Now that consent is granted, initialise analytics if the env is production.
+    // initializeAnalytics() is synchronous; logSessionStart() runs after setup completes.
     initializeAnalytics();
     SessionTracking.logSessionStart();
     setVisible(false);
