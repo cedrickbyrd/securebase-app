@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
-import { trackPricingCTA, trackViewPromotion } from '../utils/analytics';
+import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick } from '../utils/analytics';
 import { mockComplianceData } from '../mock-api';
 
 const PLANS = [
@@ -264,7 +264,10 @@ export default function Pricing() {
             </div>
           </div>
           <button
-            onClick={() => navigate('/checkout?plan=fintech&priceId=price_fintech_monthly&planName=Fintech%20%2F%20Healthcare')}
+            onClick={() => {
+              trackPilotCTAClick('urgency_banner');
+              navigate('/checkout?plan=fintech&priceId=price_fintech_monthly&planName=Fintech%20%2F%20Healthcare');
+            }}
             className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
           >
             Reserve Your Spot
