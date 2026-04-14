@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
 import { trackSignupStarted, trackSignupCompleted, trackTierSelected } from '../utils/analytics';
@@ -527,18 +527,19 @@ function StandardSignupForm({ navigate }) {
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // Guard against duplicate fires in React StrictMode (double-invocation in dev).
+  const signupStartedFired = useRef(false);
   useEffect(() => {
-    trackSignupStarted('email');
+    if (!signupStartedFired.current) {
+      signupStartedFired.current = true;
+      trackSignupStarted('email');
+    }
   }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
-    if (name === 'tier') {
-      const selectedTier = TIERS.find((t) => t.id === value);
-      trackTierSelected(value, selectedTier?.price ?? 0);
-    }
   };
 
   const handleNext = () => {
@@ -587,6 +588,9 @@ function StandardSignupForm({ navigate }) {
 
       const data = await res.json().catch(() => ({}));
 
+      // Track the user's final tier choice and signup completion.
+      const selectedTier = TIERS.find((t) => t.id === form.tier);
+      trackTierSelected(form.tier, selectedTier?.price ?? 0);
       trackSignupCompleted(form.tier);
 
       if (data.jobId) {
