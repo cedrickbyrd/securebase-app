@@ -51,7 +51,7 @@ export const mockComplianceData = {
       title: 'Update security group descriptions', 
       description: '8 security groups are missing descriptions',
       date: '2026-03-17',
-      status: 'open'
+      status: 'resolved'
     }
   ]
 };
