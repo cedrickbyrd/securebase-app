@@ -449,6 +449,7 @@ resource "aws_secretsmanager_secret_version" "rds_admin_password" {
 # RDS Aurora Security Group
 resource "aws_security_group" "rds" {
   name_prefix = "securebase-rds-"
+  description = "Security group for SecureBase RDS Aurora cluster"
   vpc_id      = var.vpc_id
   
   egress {
@@ -456,6 +457,7 @@ resource "aws_security_group" "rds" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
   }
   
   tags = merge(var.tags, {
@@ -487,6 +489,7 @@ resource "aws_security_group_rule" "rds_from_lambda" {
 # RDS Proxy Security Group
 resource "aws_security_group" "rds_proxy" {
   name_prefix = "securebase-rds-proxy-"
+  description = "Security group for SecureBase RDS Proxy"
   vpc_id      = var.vpc_id
   
   ingress {
@@ -516,6 +519,7 @@ resource "aws_security_group_rule" "proxy_to_rds" {
 # Lambda Execution Security Group
 resource "aws_security_group" "lambda" {
   name_prefix = "securebase-lambda-"
+  description = "Security group for SecureBase Lambda functions"
   vpc_id      = var.vpc_id
   
   egress {
