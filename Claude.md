@@ -42,6 +42,33 @@ npm install react-chartjs-2 chart.js --save --legacy-peer-deps
 npm install --legacy-peer-deps
 ```
 
+### Lock File Policy
+
+The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/CD failures** in this repo. All deploy workflows use `npm ci`, which requires the lock file to be in exact sync.
+
+**Rules:**
+- Always run `npm install` (not `npm ci`) locally when adding or updating packages
+- Always commit the updated `package-lock.json` after any `npm install`
+- Use `npm ci` in CI only — never locally for dependency changes
+- This repo has **two separate npm packages** — run `npm install` separately in each:
+  - Root `/` — marketing site (React 19, Vite 6)
+  - `phase3a-portal/` — customer portal (React 18, Vite 5)
+- `@supabase/supabase-js` is a dependency of the **root** package only — do NOT add it to `phase3a-portal/` (it was intentionally removed in PR #508)
+
+**When lock file is out of sync (CI fails with `npm error code EUSAGE`):**
+```bash
+# Root package
+npm install
+git add package-lock.json
+git commit -m "chore: sync package-lock.json with package.json"
+
+# Portal package
+cd phase3a-portal
+npm install
+git add package-lock.json
+git commit -m "chore: sync phase3a-portal/package-lock.json"
+```
+
 ### Technology Stack
 - **Frontend:** React 18+ with TypeScript
 - **Build Tool:** Vite (fast dev server, HMR)
@@ -507,8 +534,6 @@ VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX npm run dev
 - Alternative: Use privacy-first analytics like Plausible or Fathom
 - Or implement server-side tracking with your own analytics database
 
-```
-
 ---
 
 ## 🚀 Git Workflow
@@ -911,6 +936,6 @@ This keeps credentials secure and maintains SOC 2 compliance."
 
 ---
 
-**Last Updated:** 2026-04-10  
+**Last Updated:** 2026-04-14  
 **Maintained By:** Cedrick Byrd (cedrickbyrd)  
 **Questions?** Open an issue in the repository.
