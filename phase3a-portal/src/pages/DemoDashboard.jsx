@@ -6,6 +6,7 @@ export default function DemoDashboard() {
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
+    document.title = 'Demo-Dashboard';
     fetchData('/metrics').then(setMetrics);
   }, []);
 
@@ -63,7 +64,7 @@ export default function DemoDashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, Demo User</h1>
+        <h1 className="text-3xl font-bold mb-2">Demo-Dashboard</h1>
         <p className="text-gray-600 mb-8">Acme Corporation • FinTech Tier</p>
 
         {/* Stats */}
