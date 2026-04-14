@@ -12,6 +12,7 @@ import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
 import ExitIntentModal from './components/ExitIntentModal';
 import LandingPage from './pages/LandingPage';
+import DemoDashboard from './pages/DemoDashboard';
 import ThankYou from './pages/ThankYou';
 import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
@@ -56,7 +57,7 @@ function App() {
       {/* Exit-intent modal — rendered globally for all authenticated routes */}
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
-        <Route path="/login"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login setAuth={setIsAuthenticated} />} />
+        <Route path="/login"      element={isAuthenticated ? <Navigate to={isDemoMode() ? "/demo-dashboard" : "/dashboard"} replace /> : <Login setAuth={setIsAuthenticated} />} />
         <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) => {
           if (jobId) {
             window.location.href = `/onboarding?jobId=${jobId}&email=${encodeURIComponent(email)}`;
@@ -66,7 +67,8 @@ function App() {
         }} />} />
         <Route path="/register"   element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<OnboardingRoute />} />
-        <Route path="/dashboard"     element={isAuthenticated ? <Dashboard />       : <Navigate to="/login" />} />
+        <Route path="/dashboard"     element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard /> : <Navigate to="/login" />)} />
+        <Route path="/demo-dashboard" element={isAuthenticated ? <DemoDashboard /> : <Navigate to="/login" />} />
         <Route path="/compliance"    element={<Compliance isPublic={!isAuthenticated} />} />
         <Route path="/fintech-portal" element={isAuthenticated ? <TexasExaminerPortal /> : <Navigate to="/login" />} />
         <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
