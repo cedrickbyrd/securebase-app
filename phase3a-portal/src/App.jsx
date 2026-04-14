@@ -34,7 +34,11 @@ function ExternalSignupRedirect() {
   useEffect(() => {
     window.location.replace(MAIN_SITE_SIGNUP_URL);
   }, []);
-  return null;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <p>Redirecting to sign up&hellip;</p>
+    </div>
+  );
 }
 
 const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
