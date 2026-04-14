@@ -4,7 +4,6 @@ import { initializeSessionTracking } from './utils/analytics';
 import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
-import SignupForm from './components/SignupForm';
 import OnboardingProgress from './components/OnboardingProgress';
 import Compliance from './components/Compliance';
 import TexasExaminerPortal from './components/TexasExaminerPortal';
@@ -27,6 +26,15 @@ function OnboardingRoute() {
       email={params.get('email')}
     />
   );
+}
+
+const MAIN_SITE_SIGNUP_URL = 'https://securebase.tximhotep.com/signup';
+
+function ExternalSignupRedirect() {
+  useEffect(() => {
+    window.location.replace(MAIN_SITE_SIGNUP_URL);
+  }, []);
+  return null;
 }
 
 const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
@@ -58,14 +66,8 @@ function App() {
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         <Route path="/login"      element={isAuthenticated ? <Navigate to={isDemoMode() ? "/demo-dashboard" : "/dashboard"} replace /> : <Login setAuth={setIsAuthenticated} />} />
-        <Route path="/signup"     element={<SignupForm onSuccess={({ email, jobId }) => {
-          if (jobId) {
-            window.location.href = `/onboarding?jobId=${jobId}&email=${encodeURIComponent(email)}`;
-          } else {
-            window.location.href = '/compliance';
-          }
-        }} />} />
-        <Route path="/register"   element={<Navigate to="/signup" replace />} />
+        <Route path="/signup"     element={<ExternalSignupRedirect />} />
+        <Route path="/register"   element={<ExternalSignupRedirect />} />
         <Route path="/onboarding" element={<OnboardingRoute />} />
         <Route path="/dashboard"     element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard /> : <Navigate to="/login" />)} />
         <Route path="/demo-dashboard" element={isAuthenticated ? <DemoDashboard /> : <Navigate to="/login" />} />
