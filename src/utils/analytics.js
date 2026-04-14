@@ -729,3 +729,79 @@ export function trackDemoFindingsViewed(count) {
   trackEvent('Demo', 'FindingsViewed', `${count} issues`);
 }
 
+// ---------------------------------------------------------------------------
+// Marketing funnel events (securebase.tximhotep.com)
+// ---------------------------------------------------------------------------
+
+/**
+ * Track when a visitor selects a compliance tier in the signup flow.
+ *
+ * Fires the standard GA4 `select_content` event so tier selection shows up
+ * in the marketing funnel alongside Pricing CTA clicks.
+ *
+ * HIPAA note: only the tier identifier and its monthly price are sent.
+ * No user email, name, or org data are included.
+ *
+ * @param {string} tierId    - Tier identifier (e.g. 'standard', 'fintech', 'healthcare', 'government').
+ * @param {number} tierPrice - Monthly price in USD for the selected tier.
+ */
+export function trackTierSelected(tierId, tierPrice) {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('select_content', {
+      content_type: 'pricing_tier',
+      item_id: `tier_${tierId}`,
+      value: typeof tierPrice === 'number' ? tierPrice : 0,
+      currency: 'USD',
+    });
+    devLog('Event tracked: select_content (tier)', { tierId, tierPrice });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: select_content (tier)', error);
+  }
+}
+
+/**
+ * Track when a visitor submits the Contact Sales / demo request form.
+ *
+ * Fires the standard GA4 `generate_lead` event, signalling high purchase intent.
+ *
+ * HIPAA note: only the compliance framework / tier is sent — never the user's
+ * email, name, or company information.
+ *
+ * @param {string} [tier='enterprise'] - Compliance tier the lead is interested in
+ *   (e.g. 'healthcare', 'fintech', 'government', 'enterprise').
+ */
+export function trackDemoRequest(tier = 'enterprise') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('generate_lead', {
+      lead_type: 'demo_request',
+      tier,
+    });
+    devLog('Event tracked: generate_lead (demo_request)', { tier });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: generate_lead (demo_request)', error);
+  }
+}
+
+/**
+ * Track when a visitor clicks a Pilot Program CTA button.
+ *
+ * Fires a custom `pilot_cta_click` event so pilot-programme conversion can be
+ * attributed separately from standard plan CTAs in GA4 reports.
+ *
+ * HIPAA note: only the CTA location label is sent (e.g. 'urgency_banner').
+ *
+ * @param {string} [location='pricing_page'] - Where on the page the button appears
+ *   (e.g. 'urgency_banner', 'hero', 'plan_card').
+ */
+export function trackPilotCTAClick(location = 'pricing_page') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('pilot_cta_click', { cta_location: location });
+    devLog('Event tracked: pilot_cta_click', { location });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: pilot_cta_click', error);
+  }
+}
+
