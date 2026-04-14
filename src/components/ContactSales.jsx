@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, Loader } from 'lucide-react';
+import { trackDemoRequest } from '../utils/analytics';
 
 const SALES_EMAIL = 'sales@securebase.tximhotep.com';
 
@@ -92,6 +93,7 @@ export default function ContactSales() {
     }
 
     setStatus('success');
+    trackDemoRequest(tierParam || 'enterprise');
   }
 
   return (

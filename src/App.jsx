@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react'; // Added Suspense & lazy
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -10,8 +10,9 @@ import Alerts from './components/Alerts';
 import Pricing from './components/Pricing';
 import Checkout from './components/Checkout';
 import ContactSales from './components/ContactSales';
+import CookieConsent from './components/CookieConsent';
 import { Loader } from 'lucide-react';
-import { initializeAnalytics, SessionTracking, trackPurchase } from './utils/analytics';
+import { initializeAnalytics, SessionTracking, trackPurchase, trackPageView } from './utils/analytics';
 
 // 🚀 Phase 5 Optimization: Lazy load the Dashboard to protect Performance scores
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -21,6 +22,15 @@ const LoadingFallback = () => (
     <Loader className="animate-spin text-blue-600 w-8 h-8" />
   </div>
 );
+
+/** Fires a GA4 page view on every client-side route change. */
+function RouteTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location]);
+  return null;
+}
 
 function App() {
   const { aal, isLoading } = useMFAStatus();
@@ -60,6 +70,7 @@ function App() {
 
   return (
     <Router>
+      <RouteTracker />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public Sales View */}
@@ -105,6 +116,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
+      <CookieConsent />
     </Router>
   );
 }

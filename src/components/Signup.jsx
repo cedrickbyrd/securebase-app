@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
-import { trackSignupCompleted } from '../utils/analytics';
+import { trackSignupStarted, trackSignupCompleted, trackTierSelected } from '../utils/analytics';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -527,10 +527,18 @@ function StandardSignupForm({ navigate }) {
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    trackSignupStarted('email');
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+    if (name === 'tier') {
+      const selectedTier = TIERS.find((t) => t.id === value);
+      trackTierSelected(value, selectedTier?.price ?? 0);
+    }
   };
 
   const handleNext = () => {
