@@ -423,6 +423,36 @@ export function trackSignupCompleted(tier = 'standard') {
 }
 
 /**
+ * Track an interaction with a HIPAA-specific route.
+ *
+ * Healthcare interactions are the highest-value lead signal ($15,000/mo).
+ * Fires the custom `hipaa_interaction` event. This event should trigger an
+ * immediate alert to the sales team (see Analytics Baseline — HIPAA Route Tracking).
+ *
+ * HIPAA safeguard: `route` is sanitised to remove query parameters before
+ * dispatch, ensuring no customer identifiers are accidentally forwarded.
+ *
+ * @param {string} route  - Path of the HIPAA route, e.g. '/compliance/hipaa'
+ * @param {string} action - Interaction type: 'view'|'download'|'generate'|'sign'|'signup'
+ */
+export function trackHIPAARoute(route, action) {
+  if (!canTrack()) return;
+  try {
+    // Strip query params to prevent accidental PII leakage via URL parameters.
+    const safePath = sanitizePath(typeof route === 'string' ? route.split('?')[0] : 'unknown');
+    ReactGA.event('hipaa_interaction', {
+      route:      safePath,
+      action:     action ?? 'view',
+      tier:       'healthcare',
+      high_value: true,
+    });
+    devLog('Event tracked: hipaa_interaction', { route: safePath, action });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: hipaa_interaction', error);
+  }
+}
+
+/**
  * Track viewing of a promotional offer (standard GA4 e-commerce event).
  *
  * Fires when a promotional banner or offer becomes visible to the user.
