@@ -360,6 +360,30 @@ export function trackFeatureInteraction(featureName, action) {
   trackEvent('feature_interaction', { feature_name: featureName, action });
 }
 
+/**
+ * Track an interaction with a HIPAA-specific route.
+ *
+ * Healthcare interactions are the highest-value lead signal. Fires the custom
+ * `hipaa_interaction` event that should trigger an immediate alert to the
+ * sales team (see Analytics Baseline — HIPAA Route Tracking).
+ *
+ * HIPAA note: `route` must be a path only — never include customer identifiers
+ * or query parameters containing PII.
+ *
+ * @param {string} route  - Path of the HIPAA route, e.g. '/compliance/hipaa'
+ * @param {string} action - Interaction type: 'view'|'download'|'generate'|'sign'|'signup'
+ */
+export function trackHIPAARoute(route, action) {
+  // Strip query parameters to prevent accidental PII leakage.
+  const safePath = typeof route === 'string' ? route.split('?')[0] : 'unknown';
+  trackEvent('hipaa_interaction', {
+    route:      safePath,
+    action:     action ?? 'view',
+    tier:       'healthcare',
+    high_value: true,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Lead capture analytics
 // HIPAA NOTE: these events must NEVER include email, name, phone, or any PII.
