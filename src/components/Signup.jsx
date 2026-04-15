@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
-import { trackSignupStarted, trackSignupCompleted, trackTierSelected } from '../utils/analytics';
+import { trackSignupStarted, trackSignupCompleted, trackTierSelected, trackHIPAARoute } from '../utils/analytics';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -592,6 +592,10 @@ function StandardSignupForm({ navigate }) {
       const selectedTier = TIERS.find((t) => t.id === form.tier);
       trackTierSelected(form.tier, selectedTier?.price ?? 0);
       trackSignupCompleted(form.tier);
+      // Healthcare tier signup is a high-value HIPAA lead signal — alert the sales team.
+      if (form.tier === 'healthcare') {
+        trackHIPAARoute('/signup', 'signup');
+      }
 
       if (data.jobId) {
         navigate(`/onboarding?jobId=${data.jobId}&email=${encodeURIComponent(form.email)}`);
