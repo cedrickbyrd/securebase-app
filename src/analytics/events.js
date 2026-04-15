@@ -91,10 +91,12 @@ export function getPlanTier(plan) {
 export function trackSignup(tier, method) {
   if (typeof window.gtag !== 'function') return;
 
+  const effectiveTier = tier ?? 'standard';
+
   window.gtag('event', 'sign_up', {
     method:   method ?? 'email',
-    tier:     tier   ?? 'standard',
-    value:    getTierValue(tier),
+    tier:     effectiveTier,
+    value:    getTierValue(effectiveTier),
     currency: 'USD',
   });
 
