@@ -46,10 +46,14 @@ base = "phase3a-portal"
   status = 200
   force = true
 
-# DEMO AUTH - JWT cookie issuance via AWS Lambda (must be before SPA fallback)
+# DEMO AUTH - JWT issuance via Netlify function (must be before SPA fallback).
+# Routes to the inline demo-auth Netlify function which accepts the five
+# built-in demo accounts and returns { token, customer } in the response body.
+# When the AWS Lambda at https://api.securebase.tximhotep.com/demo-auth is
+# stable, this redirect can be switched back to that URL.
 [[redirects]]
   from = "/api/demo-auth"
-  to = "https://api.securebase.tximhotep.com/demo-auth"
+  to = "/.netlify/functions/demo-auth"
   status = 200
   force = true
 
