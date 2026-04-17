@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * validate-pricing.js — "Unit Test for Revenue"
+ * validate-pricing.cjs — "Unit Test for Revenue"
  *
  * Validates Stripe pricing configuration per market tier, scans for hardcoded
  * price IDs in source files, checks backend compliance metadata, and verifies
  * that no landing page auto-redirects to /pricing (route-guard integrity).
  *
+ * NOTE: This file uses the .cjs extension so Node.js treats it as CommonJS even
+ * when the root package.json specifies "type": "module".
+ *
  * Usage:
- *   node .github/scripts/validate-pricing.js <tier>
- *   node .github/scripts/validate-pricing.js all
+ *   node .github/scripts/validate-pricing.cjs <tier>
+ *   node .github/scripts/validate-pricing.cjs all
  *
  * Tiers: standard | fintech | healthcare | government | all
  *
@@ -103,7 +106,8 @@ function loadPricingTiers() {
     .replace(/^import\s+.*?;\s*$/gm, '')                      // remove import statements
     .replace(/import\.meta\.env\.[A-Z0-9_]+/g, '"__ENV__"')   // replace Vite env refs
     .replace(/loadStripe\s*\([^)]*\)/g, 'null')                // stub loadStripe
-    .replace(/^export\s*\{[\s\S]*?\};\s*$/m, '');              // remove export block
+    .replace(/^export\s*\{[\s\S]*?\};\s*$/m, '')              // remove export block
+    .replace(/\b(?:const|let)\s+PRICING_TIERS\b/, 'var PRICING_TIERS'); // Node 20 vm.runInContext only exposes var-declared globals on the sandbox
 
   const sandbox = { console };
   vm.createContext(sandbox);
