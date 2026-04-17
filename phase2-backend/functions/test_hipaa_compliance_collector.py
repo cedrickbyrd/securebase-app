@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 from hipaa_compliance_collector import (
     sha256_hex,
     kms_sign,
+    _validate_customer_id,
     _update_control_status,
     _get_healthcare_customers,
     collect_hipaa_as1,
@@ -122,6 +123,49 @@ class TestEvidenceUtils:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SECURITY VALIDATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestValidateCustomerId:
+    """Test UUID validation that prevents path traversal in S3 keys."""
+
+    def test_valid_uuid_accepted(self):
+        _validate_customer_id("550e8400-e29b-41d4-a716-446655440000")  # no exception
+
+    def test_invalid_uuid_raises(self):
+        with pytest.raises(ValueError):
+            _validate_customer_id("../../../etc/passwd")
+
+    def test_empty_string_raises(self):
+        with pytest.raises(ValueError):
+            _validate_customer_id("")
+
+    def test_uuid_without_dashes_raises(self):
+        with pytest.raises(ValueError):
+            _validate_customer_id("550e8400e29b41d4a716446655440000")
+
+
+class TestVaultToS3KmsEnforcement:
+    """Verify that vault_to_s3 enforces KMS key presence."""
+
+    @patch("hipaa_compliance_collector.KMS_KEY_ID", "")
+    def test_raises_when_kms_key_id_missing(self):
+        from hipaa_compliance_collector import vault_to_s3
+        with pytest.raises(ValueError, match="KMS_KEY_ID must be set"):
+            vault_to_s3(CUSTOMER_ID, "HIPAA-AS.1", str(uuid.uuid4()), {"test": True})
+
+    @patch("hipaa_compliance_collector._s3")
+    @patch("hipaa_compliance_collector.KMS_KEY_ID", "arn:aws:kms:us-east-1:123:key/abc")
+    def test_uses_kms_sse_when_key_set(self, mock_s3):
+        from hipaa_compliance_collector import vault_to_s3
+        mock_s3.put_object.return_value = {}
+        vault_to_s3(CUSTOMER_ID, "HIPAA-AS.1", str(uuid.uuid4()), {"test": True})
+        call_kwargs = mock_s3.put_object.call_args[1]
+        assert call_kwargs["ServerSideEncryption"] == "aws:kms"
+        assert call_kwargs["SSEKMSKeyId"] == "arn:aws:kms:us-east-1:123:key/abc"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # _get_healthcare_customers
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -145,8 +189,9 @@ class TestGetHealthcareCustomers:
         cursor.fetchall.return_value = []
         _get_healthcare_customers(conn)
         call_args = cursor.execute.call_args
-        sql = call_args[0][0]
-        assert "healthcare" in sql.lower() or "%s" in sql
+        # Confirm the parameter passed is the healthcare tier string
+        params = call_args[0][1]
+        assert params == ("healthcare",), f"Expected ('healthcare',) but got {params}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -458,6 +503,18 @@ class TestLambdaHandler:
         event = {"httpMethod": "DELETE", "path": "/hipaa/collect"}
         response = lambda_handler(event, MagicMock(aws_request_id=REQUEST_ID))
         assert response["statusCode"] == 405
+
+    @patch("hipaa_compliance_collector.get_db_connection")
+    def test_invalid_customer_id_uuid(self, mock_conn):
+        mock_conn.return_value = MagicMock()
+        event = {
+            "httpMethod": "POST",
+            "path": "/hipaa/collect",
+            "body": json.dumps({"customer_id": "../../../etc/passwd"}),
+        }
+        response = lambda_handler(event, MagicMock(aws_request_id=REQUEST_ID))
+        assert response["statusCode"] == 400
+        assert "UUID" in json.loads(response["body"])["error"]
 
     @patch("hipaa_compliance_collector.get_db_connection")
     def test_missing_customer_id(self, mock_conn):
