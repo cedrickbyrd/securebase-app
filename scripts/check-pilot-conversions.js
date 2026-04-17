@@ -21,7 +21,7 @@ const querystring = require('querystring');
 // Pricing tiers — kept in sync with phase3a-portal/src/config/live-config.js
 // ---------------------------------------------------------------------------
 const PRICING_TIERS = {
-  standard:   { name: 'Standard',    priceId: 'price_1Srgn65bg6XXXrmNXXXXXXXX', pilotPrice: 1000,  fullPrice: 2000  },
+  standard:   { name: 'Standard',    priceId: 'price_1SrgoR5bg6XXXrmNXe0tTgki', pilotPrice: 1000,  fullPrice: 2000  },
   fintech:    { name: 'Fintech',     priceId: 'price_1SrgoQ5bg6XXXrmNwsdnTwrW', pilotPrice: 4000,  fullPrice: 8000  },
   healthcare: { name: 'Healthcare',  priceId: 'price_1SrgoQ5bg6XXXrmNQvC2YnmT', pilotPrice: 7500,  fullPrice: 15000 },
   government: { name: 'Government',  priceId: 'price_1SrgoR5bg6XXXrmNUUveBMDw', pilotPrice: 12500, fullPrice: 25000 },
