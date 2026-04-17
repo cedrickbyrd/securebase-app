@@ -74,6 +74,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import uuid
 from base64 import b64encode
 from datetime import datetime, timezone
@@ -229,6 +230,18 @@ def kms_sign(content_hash: str) -> str:
     return b64encode(resp["Signature"]).decode()
 
 
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _validate_customer_id(customer_id: str) -> None:
+    """Raise ValueError if customer_id is not a valid UUID (prevents path traversal)."""
+    if not _UUID_RE.match(str(customer_id)):
+        raise ValueError(f"customer_id is not a valid UUID: {customer_id!r}")
+
+
 def vault_to_s3(
     customer_id: str, evidence_type: str, evidence_id: str, payload: Any
 ) -> str:
@@ -237,7 +250,20 @@ def vault_to_s3(
     NOTE: The S3 bucket must be configured with Object Lock in Compliance mode
     and a retention period of at least HIPAA_RETENTION_DAYS (2555 days / 7 years).
     This satisfies 45 CFR §164.312(b) audit log preservation requirements.
+    If Object Lock is not configured the upload will still succeed, but the
+    HIPAA retention guarantee will NOT be met — treat missing Object Lock as
+    a deployment misconfiguration that must be remediated.
+
+    KMS encryption is required for HIPAA compliance (45 CFR §164.312(a)(2)(iv)).
+    If KMS_KEY_ID is not set the function raises ValueError rather than silently
+    falling back to SSE-S3, which provides weaker protection.
     """
+    if not KMS_KEY_ID:
+        raise ValueError(
+            "KMS_KEY_ID must be set for HIPAA-compliant evidence storage. "
+            "S3 SSE-S3 fallback is not acceptable under 45 CFR §164.312(a)(2)(iv)."
+        )
+    _validate_customer_id(customer_id)
     date_prefix = datetime.now(timezone.utc).strftime("%Y/%m/%d")
     # Use 'hipaa' sub-prefix to distinguish from fintech evidence in the same bucket
     key = (
@@ -251,7 +277,7 @@ def vault_to_s3(
         Body=body,
         ContentType="application/json",
         ServerSideEncryption="aws:kms",
-        SSEKMSKeyId=KMS_KEY_ID or None,
+        SSEKMSKeyId=KMS_KEY_ID,
     )
     logger.debug("Vaulted HIPAA evidence: s3://%s/%s", S3_EVIDENCE_BUCKET, key)
     return key
@@ -1381,6 +1407,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         customer_id = body.get("customer_id")
         if not customer_id:
             return _http_response(400, {"error": "customer_id is required"})
+        try:
+            _validate_customer_id(customer_id)
+        except ValueError:
+            return _http_response(400, {"error": "customer_id must be a valid UUID"})
 
         set_rls_context(conn, customer_id)
 
@@ -1404,13 +1434,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # ── POST /hipaa/collect ────────────────────────────────────────────
         controls_requested = body.get("controls", ALL_CONTROLS)
-        # Deduplicate while preserving order
-        seen: set = set()
-        controls_to_run: List[str] = []
-        for c in controls_requested:
-            if c in CONTROL_COLLECTOR_MAP and c not in seen:
-                seen.add(c)
-                controls_to_run.append(c)
+        # Deduplicate while preserving order, keeping only known controls
+        controls_to_run = [
+            c for c in dict.fromkeys(controls_requested)
+            if c in CONTROL_COLLECTOR_MAP
+        ]
 
         if not controls_to_run:
             return _http_response(400, {"error": "No valid controls specified"})
