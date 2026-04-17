@@ -72,6 +72,7 @@ const Pricing = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tier: plan.key,
           priceId: plan.priceId,
           successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
           cancelUrl: `${origin}/pricing`,
