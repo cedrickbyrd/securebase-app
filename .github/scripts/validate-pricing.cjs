@@ -103,7 +103,8 @@ function loadPricingTiers() {
     .replace(/^import\s+.*?;\s*$/gm, '')                      // remove import statements
     .replace(/import\.meta\.env\.[A-Z0-9_]+/g, '"__ENV__"')   // replace Vite env refs
     .replace(/loadStripe\s*\([^)]*\)/g, 'null')                // stub loadStripe
-    .replace(/^export\s*\{[\s\S]*?\};\s*$/m, '');              // remove export block
+    .replace(/^export\s*\{[\s\S]*?\};\s*$/m, '')              // remove export block
+    .replace(/\b(?:const|let)\s+PRICING_TIERS\b/, 'var PRICING_TIERS'); // var so vm exposes it on sandbox
 
   const sandbox = { console };
   vm.createContext(sandbox);
