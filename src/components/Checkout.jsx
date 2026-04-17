@@ -143,7 +143,7 @@ export default function Checkout() {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-black">
-                  ${PLAN_PRICES[plan]?.toLocaleString() ?? '—'}
+                  ${(isPilot ? pilotPricing.monthlyPrice : PLAN_PRICES[plan])?.toLocaleString() ?? '—'}
                 </p>
                 {isPilot && (
                   <p className="text-purple-200 text-xs line-through">
