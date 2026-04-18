@@ -703,18 +703,18 @@ function Login({ setAuth }) {
             </form>
           )}
 
+          {step === 'credentials' && (
+            <div className="login-footer" style={{ marginBottom: '0.25rem' }}>
+              New customer?{' '}
+              <a href="/pricing" style={{ fontWeight: '700', color: '#667eea' }}>
+                View Pricing →
+              </a>
+            </div>
+          )}
           <div className="login-footer">
             © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. •{' '}
             <a href={BRANDING.privacyPolicyUrl}>Privacy</a> •{' '}
             <a href={BRANDING.termsOfServiceUrl}>Terms</a>
-            {isDemo && (
-              <>
-                {' '}•{' '}
-                <a href="https://securebase.tximhotep.com/signup" style={{ fontWeight: 'bold', color: '#2563EB' }}>
-                  Start Your Free Trial →
-                </a>
-              </>
-            )}
           </div>
         </div>
       </div>
