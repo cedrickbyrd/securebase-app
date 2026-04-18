@@ -74,7 +74,7 @@ export default function Checkout() {
           email,
           name,
           priceId,
-          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
+          successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
       });
