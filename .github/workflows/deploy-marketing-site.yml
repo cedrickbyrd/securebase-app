@@ -58,7 +58,7 @@ jobs:
 
       - name: Deploy to Netlify
         id: netlify-deploy
-        uses: nwtgck/actions-netlify@v3.0
+        uses: nwtgck/actions-netlify@4cbaf4c08f1a7bfa537d6113472ef4424e4eb654  # v3.0
         with:
           publish-dir: './dist'
           production-branch: main
@@ -69,7 +69,6 @@ jobs:
           enable-commit-comment: false
           overwrites-pull-request-comment: true
           alias: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || '' }}
-        run: npx netlify deploy --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MARKETING_SITE_ID }}
