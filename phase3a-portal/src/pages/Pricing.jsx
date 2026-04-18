@@ -74,7 +74,7 @@ const Pricing = () => {
         body: JSON.stringify({
           tier: plan.key,
           priceId: plan.priceId,
-          successUrl: `${origin}/?session_id={CHECKOUT_SESSION_ID}&tab=success&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
+          successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
       });

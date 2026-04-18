@@ -616,3 +616,25 @@ export const ComplianceEvents = {
     });
   },
 };
+
+/**
+ * Fire a GA4 `purchase` event once after a successful Stripe checkout.
+ * Called from ThankYou.jsx using the session_id from the success URL.
+ *
+ * HIPAA NOTE: Do NOT pass email or any PII here — session_id is an opaque
+ * Stripe identifier that is safe to include as a transaction reference.
+ *
+ * @param {string} sessionId  Stripe Checkout Session ID
+ * @param {string} plan       Plan key, e.g. 'standard', 'fintech'
+ * @param {number} value      Monthly value in USD
+ */
+export function trackPurchase(sessionId, plan, value) {
+  if (!sessionId || !plan) return;
+  const safeValue = typeof value === 'number' && value > 0 ? value : 0;
+  trackEvent('purchase', {
+    transaction_id: sessionId,
+    currency: 'USD',
+    value: safeValue,
+    items: [{ item_id: plan, item_name: `SecureBase ${plan}` }],
+  });
+}
