@@ -23,6 +23,22 @@ SecureBase is a security-first, multi-tenant AWS PaaS platform that has evolved 
 | Phase 5.3 | Multi-Region DR, Alerting & Cost Optimization | 🔨 In Progress |
 | Phase 6 | Compliance Automation & Operations Scale | 📅 Planned |
 
+### 🔨 Phase 5.3 Current Sprint
+
+> See [`PHASE5.3_SCOPE.md`](PHASE5.3_SCOPE.md) for the full scope definition.
+
+Active components being built in Phase 5.3:
+
+- **Component 4 — Logging & Distributed Tracing** (`landing-zone/modules/phase5-logging/`) — Centralized log aggregation, X-Ray tracing, structured JSON logging across all Lambdas
+- **Component 5 — Alerting & Incident Response** (`landing-zone/modules/phase5-alerting/`) — CloudWatch alarms, SNS topics, PagerDuty integration, runbook automation
+- **Component 6 — Multi-Region DR** (`landing-zone/modules/multi-region/`, `landing-zone/environments/prod-us-west-2/`) — Aurora Global Database, DynamoDB Global Tables, Route 53 failover; **RTO < 15 min, RPO < 1 min**
+- **Component 7 — Infrastructure Scaling & Cost Optimization** — Auto-scaling policies, Compute Savings Plans, Aurora capacity scheduler, cost anomaly detection
+
+**Pending Lambda functions** (not yet deployed):
+- `phase2-backend/functions/failover_orchestrator.py` — Automated us-east-1 → us-west-2 failover
+- `phase2-backend/functions/health_check_aggregator.py` — Custom Route 53 health checks
+- `phase2-backend/functions/failback_orchestrator.py` — Controlled failback after incident recovery
+
 **Core Principles:**
 - Security by default, not by addition
 - Least privilege access at every layer
@@ -70,7 +86,7 @@ git commit -m "chore: sync phase3a-portal/package-lock.json"
 ```
 
 ### Technology Stack
-- **Frontend:** React 18+ with TypeScript
+- **Frontend:** React 18+ with TypeScript. The portal (`phase3a-portal/`) currently uses `.jsx`. New components should use `.tsx` where possible. The marketing site (`src/`) uses `.tsx`.
 - **Build Tool:** Vite (fast dev server, HMR)
 - **Styling:** Tailwind CSS (utility-first)
 - **Charts:** `react-chartjs-2` + `chart.js`
@@ -78,6 +94,18 @@ git commit -m "chore: sync phase3a-portal/package-lock.json"
 - **Analytics:** Google Analytics 4 (GA4) with privacy controls
 - **Backend/Auth:** Supabase (PostgreSQL + Auth) — **note: Supabase auth is no longer used in the marketing site (`src/`) signup flow** (see PR #508); the marketing site now calls the Lambda `/signup` backend directly via `VITE_API_BASE_URL`
 - **Runtime:** Node.js LTS (currently v20.x)
+
+### Auth Architecture
+
+| Context | Auth Method | Notes |
+|---|---|---|
+| Marketing site `/signup` | AWS Lambda (`/api/signup`) | Supabase auth removed in PR #508 |
+| Marketing site (other) | None / JWT from Lambda | `VITE_API_BASE_URL` used |
+| Portal (`phase3a-portal`) | Supabase Auth | Still active |
+
+- Do **NOT** use `supabase.auth` in the marketing site (`src/`) signup flow
+- Do **NOT** add `@supabase/supabase-js` to `phase3a-portal/` — it was intentionally removed in PR #508
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are no longer used by the marketing site signup
 
 ### Environment Variables
 Store in `.env.local` (never commit):
@@ -307,7 +335,8 @@ export const trackEvent = (
   category: string,
   action: string,
   label?: string,
-  value?: number
+  value?: number,
+  dimensions?: Record<string, string>
 ) => {
   // NEVER pass PII/PHI in event parameters
   ReactGA.event({
@@ -315,6 +344,7 @@ export const trackEvent = (
     action,
     label,
     value,
+    ...dimensions,
   });
 };
 
@@ -537,6 +567,8 @@ VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX npm run dev
 ---
 
 ## 🚀 Git Workflow
+
+> **Documentation Policy:** New documentation files must go in the `docs/` directory. Do NOT create new `*.md` files in the repository root — the root already has 200+ markdown files and new ones will be ignored or cause confusion.
 
 ### Branch Naming Convention
 ```
@@ -778,6 +810,20 @@ Phase 5 adds enterprise-grade observability, dashboards, alerting, and multi-reg
 
 ## 🏗 Infrastructure as Code (Terraform)
 
+### ⚠️ Terraform Deployment Directory
+
+Running Terraform from the wrong directory is the most common and consequential mistake — always target a specific environment under `landing-zone/environments/`.
+
+```bash
+# ❌ WRONG — runs against root module, not an environment
+cd landing-zone && terraform apply
+
+# ✅ CORRECT — always target a specific environment directory
+cd landing-zone/environments/dev && terraform apply
+cd landing-zone/environments/prod && terraform apply
+cd landing-zone/environments/prod-us-west-2 && terraform apply  # Phase 5.3 secondary region
+```
+
 ### Required Variables for Compliance
 
 Every Terraform module must expose:
@@ -936,6 +982,6 @@ This keeps credentials secure and maintains SOC 2 compliance."
 
 ---
 
-**Last Updated:** 2026-04-14  
+**Last Updated:** 2026-04-18  
 **Maintained By:** Cedrick Byrd (cedrickbyrd)  
 **Questions?** Open an issue in the repository.
