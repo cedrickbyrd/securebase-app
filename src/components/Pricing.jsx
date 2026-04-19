@@ -266,11 +266,12 @@ export default function Pricing() {
           <button
             onClick={() => {
               trackPilotCTAClick('urgency_banner');
-              navigate('/checkout?plan=fintech&priceId=price_fintech_monthly&planName=Fintech%20%2F%20Healthcare');
+              const pilotPriceId = import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || '';
+              navigate(`/checkout?plan=pilot_compliance${pilotPriceId ? `&priceId=${pilotPriceId}` : ''}&planName=Compliance+Jumpstart`);
             }}
             className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
           >
-            Reserve Your Spot
+            Get the $495 Pilot →
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

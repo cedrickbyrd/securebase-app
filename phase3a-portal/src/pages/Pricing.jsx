@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, CheckCircle } from 'lucide-react';
-import { PRICING_TIERS } from '../config/live-config';
+import { PRICING_TIERS, PILOT_COMPLIANCE_ID } from '../config/live-config';
 import { trackContactSalesIntent, trackCheckoutStarted, trackCTAClick } from '../utils/analytics';
 
 const COMPARISON_ROWS = [
@@ -44,6 +44,7 @@ const Pricing = () => {
   const [errorTier, setErrorTier] = useState(null);
 
   const plans = [
+    { key: 'pilot_compliance', ...PRICING_TIERS.pilot_compliance, mostPopular: false, isEnterprise: false, isPilotOneTime: true },
     { key: 'standard',   ...PRICING_TIERS.standard,   mostPopular: false, isEnterprise: false },
     { key: 'fintech',    ...PRICING_TIERS.fintech,    mostPopular: true,  isEnterprise: false },
     { key: 'healthcare', ...PRICING_TIERS.healthcare, mostPopular: false, isEnterprise: true  },
@@ -51,6 +52,13 @@ const Pricing = () => {
   ];
 
   const handleGetStarted = async (plan) => {
+    // One-time pilot → navigate directly to checkout form (no coupon/subscription logic)
+    if (plan.isPilotOneTime) {
+      trackCTAClick('pricing', plan.key);
+      navigate('/checkout', { state: { tier: plan.key, priceId: PILOT_COMPLIANCE_ID } });
+      return;
+    }
+
     // Enterprise tiers → Contact Sales
     if (plan.isEnterprise) {
       trackCTAClick('pricing', plan.key);
@@ -105,6 +113,7 @@ const Pricing = () => {
   const getCtaLabel = (plan) => {
     if (loadingTier === plan.key) return null; // handled inline
     if (plan.isEnterprise) return 'Contact Sales →';
+    if (plan.isPilotOneTime) return 'Buy Now — $495 →';
     if (plan.key === 'fintech') return 'Start Free Trial →';
     return 'Get Started →';
   };
@@ -133,9 +142,58 @@ const Pricing = () => {
           </div>
         </div>
 
+        {/* Compliance Jumpstart Pilot Banner */}
+        {(() => {
+          const pilotPlan = plans.find((p) => p.isPilotOneTime);
+          if (!pilotPlan) return null;
+          return (
+            <div className="mb-8 bg-gradient-to-r from-emerald-900/60 to-teal-900/60 border border-emerald-400/40 rounded-2xl p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-emerald-400/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold px-3 py-0.5 rounded-full">
+                      🚀 Pilot — Limited Spots
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-1">{pilotPlan.name}</h3>
+                  <p className="text-gray-300 text-sm mb-3">{pilotPlan.description}</p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-sm">
+                    {pilotPlan.features.map((f, i) => (
+                      <li key={i} className="flex gap-2 text-gray-300">
+                        <span className="text-emerald-400 shrink-0">✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex flex-col items-center lg:items-end gap-3 shrink-0">
+                  <div className="text-center lg:text-right">
+                    <span className="text-5xl font-bold text-white">${pilotPlan.price.toLocaleString()}</span>
+                    <span className="text-emerald-300 text-sm ml-1">one-time</span>
+                  </div>
+                  {errorTier === pilotPlan.key && (
+                    <p className="text-red-400 text-xs text-center">Connection error — redirecting…</p>
+                  )}
+                  <button
+                    onClick={() => handleGetStarted(pilotPlan)}
+                    disabled={loadingTier === pilotPlan.key}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold py-3 px-8 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loadingTier === pilotPlan.key ? (
+                      <><Loader className="animate-spin w-4 h-4 inline mr-2" />Connecting…</>
+                    ) : (
+                      getCtaLabel(pilotPlan)
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-20">
-          {plans.map((plan) => (
+          {plans.filter((p) => !p.isPilotOneTime).map((plan) => (
             <div
               key={plan.key}
               className={`rounded-2xl p-8 flex flex-col bg-white/5 border ${
@@ -218,7 +276,7 @@ const Pricing = () => {
               <thead>
                 <tr className="bg-white/5">
                   <th className="text-left py-3 px-4 font-semibold text-gray-400 w-1/4" />
-                  {plans.map((plan) => (
+                  {plans.filter((p) => !p.isPilotOneTime).map((plan) => (
                     <th
                       key={plan.key}
                       className={`py-3 px-4 text-center font-bold ${
@@ -234,7 +292,7 @@ const Pricing = () => {
                 {COMPARISON_ROWS.map((row, idx) => (
                   <tr key={row.label} className={idx % 2 === 0 ? 'bg-white/5' : 'bg-white/[0.02]'}>
                     <td className="py-3 px-4 font-medium text-gray-300 border-t border-white/5">{row.label}</td>
-                    {plans.map((plan) => {
+                    {plans.filter((p) => !p.isPilotOneTime).map((plan) => {
                       const val = row[plan.key];
                       return (
                         <td key={plan.key} className="py-3 px-4 text-center border-t border-white/5">
