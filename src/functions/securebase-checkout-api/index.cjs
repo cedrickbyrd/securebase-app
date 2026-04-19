@@ -7,11 +7,26 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { customer_email, price_id, plan_name } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+
+    // Accept both camelCase (frontend) and snake_case (legacy) field names.
+    const customer_email = body.customer_email || body.email;
+    const price_id       = body.price_id       || body.priceId;
+    const plan_name      = body.plan_name      || body.name;
+    const success_url    = body.successUrl     || body.success_url || `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`;
+    const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
+
+    // Validate required field before calling Stripe to avoid a cryptic API error.
+    if (!price_id) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'priceId is required' }),
+      };
+    }
 
     // 2. Create Stripe Session
     const session = await stripe.checkout.sessions.create({
-      customer_email: customer_email,
+      customer_email: customer_email || undefined,
       payment_method_types: ['card'],
       line_items: [{
         price: price_id,
@@ -22,10 +37,10 @@ exports.handler = async (event) => {
       metadata: {
         plan: plan_name,
         company_email: customer_email,
-        provisioning_status: 'queued' 
+        provisioning_status: 'queued',
       },
-      success_url: `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`,
-      cancel_url: `${process.env.URL}/?tab=pricing`,
+      success_url,
+      cancel_url,
     });
 
     return {
