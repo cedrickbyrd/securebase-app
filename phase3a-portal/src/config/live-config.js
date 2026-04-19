@@ -74,10 +74,19 @@ const PRICING_TIERS = {
 
 const PILOT_COUPON_ID = import.meta.env.VITE_STRIPE_PILOT_COUPON || 'coupon_PILOT_LIVE_ID';
 
+// Compliance Jumpstart one-time pilot product ($495, SKU: pilot_compliance)
+// Set via VITE_STRIPE_PILOT_COMPLIANCE_ID in environment variables.
+const PILOT_COMPLIANCE_ID = import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || 'price_PILOT_COMPLIANCE_ID';
+
+if (PILOT_COMPLIANCE_ID === 'price_PILOT_COMPLIANCE_ID') {
+  console.warn('⚠️  VITE_STRIPE_PILOT_COMPLIANCE_ID not configured — pilot checkout will not work in production.');
+}
+
 export {
   stripePromise,
   API_BASE_URL,
   PRICING_TIERS,
   PILOT_COUPON_ID,
+  PILOT_COMPLIANCE_ID,
   LIVE_STRIPE_PUBLIC_KEY
 };
