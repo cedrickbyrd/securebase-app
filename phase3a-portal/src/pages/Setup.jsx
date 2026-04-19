@@ -67,8 +67,8 @@ export default function Setup() {
 
   // ── 2. Form validation helper ─────────────────────────────────────────────
   function validateForm() {
-    if (!orgName.trim() || orgName.trim().length < 2) return 'Organisation name must be at least 2 characters.';
-    if (orgName.trim().length > 100) return 'Organisation name must be under 100 characters.';
+    if (!orgName.trim() || orgName.trim().length < 2) return 'Organization name must be at least 2 characters.';
+    if (orgName.trim().length > 100) return 'Organization name must be under 100 characters.';
     if (password.length < 12) return 'Password must be at least 12 characters.';
     if (password !== passwordConfirm) return 'Passwords do not match.';
     return null;
@@ -206,13 +206,12 @@ export default function Setup() {
                     htmlFor="setup-org"
                     className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
                   >
-                    Organisation Name
+                    Organization Name
                   </label>
                   <input
                     id="setup-org"
                     type="text"
-                    placeholder="Acme Corp"
-                    value={orgName}
+                    placeholder="Acme Corp"                    value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
                     required
                     maxLength={100}

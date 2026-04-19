@@ -164,8 +164,14 @@ def lambda_handler(event, context):
             price_id = PRICE_IDS.get(tier)
         
         if not price_id:
-            print(f'ERROR: Price ID not configured for tier: {tier}')
-            print(f'Required environment variable: STRIPE_PRICE_{tier.upper()}')
+            env_var = f'STRIPE_PRICE_{tier.upper()}'
+            if is_one_time:
+                env_var = f'STRIPE_PRICE_{tier.upper()}'
+                print(f'ERROR: One-time price ID not configured for product: {tier}')
+                print(f'Required environment variable: {env_var}')
+            else:
+                print(f'ERROR: Price ID not configured for tier: {tier}')
+                print(f'Required environment variable: {env_var}')
             return {
                 'statusCode': 503,
                 'headers': {
@@ -173,7 +179,7 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Origin': '*',
                 },
                 'body': json.dumps({
-                    'error': f'The {tier} tier is temporarily unavailable. Please try another tier or contact support.',
+                    'error': f'The {tier} {"product" if is_one_time else "tier"} is temporarily unavailable. Please try another tier or contact support.',
                     'error_type': 'configuration'
                 })
             }
