@@ -1,9 +1,26 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// One-time payment tiers — these must use mode:'payment', not mode:'subscription'.
+const ONE_TIME_TIERS = new Set(['pilot_compliance']);
+
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': 'https://securebase.tximhotep.com',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 exports.handler = async (event) => {
+  console.log('handler_version=2026-04-19');
+
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: CORS_HEADERS, body: '' };
+  }
+
   // 1. Logic Guard
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   try {
@@ -13,27 +30,36 @@ exports.handler = async (event) => {
     const customer_email = body.customer_email || body.email;
     const price_id       = body.price_id       || body.priceId;
     const plan_name      = body.plan_name      || body.name;
+    const tier           = body.tier           || body.plan_tier || '';
     const billing_type   = body.billingType    || body.billing_type || 'payment';
     const success_url    = body.successUrl     || body.success_url || `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`;
     const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
+
+    // Warn if tier is missing — use billingType as the authoritative fallback signal.
+    if (!tier) {
+      console.warn('No tier provided in request; using billingType as authoritative signal:', billing_type);
+    }
 
     // Validate required field before calling Stripe to avoid a cryptic API error.
     if (!price_id) {
       return {
         statusCode: 400,
+        headers: CORS_HEADERS,
         body: JSON.stringify({ error: 'priceId is required' }),
       };
     }
 
-    // Use the billing tier from the request to select the correct Stripe mode.
-    // subscription tiers (fintech/healthcare/government) require mode:'subscription'
-    // with a recurring price; all other tiers use mode:'payment'.
+    // Determine Stripe checkout mode using both signals:
+    //   - tier in ONE_TIME_TIERS (e.g. pilot_compliance) → payment
+    //   - billingType === 'payment' → payment
+    //   - anything else (fintech/healthcare/government subscription tiers) → subscription
     const VALID_BILLING_TYPES = ['payment', 'subscription'];
-    if (!VALID_BILLING_TYPES.includes(billing_type)) {
+    if (billing_type && !VALID_BILLING_TYPES.includes(billing_type)) {
       console.warn(`Unexpected billing_type value: "${billing_type}". Defaulting to "payment".`);
     }
-    const mode = billing_type === 'subscription' ? 'subscription' : 'payment';
-    console.log('mode:', mode, '| billing_type received:', billing_type);
+    const is_one_time = ONE_TIME_TIERS.has(tier) || billing_type === 'payment';
+    const mode = is_one_time ? 'payment' : 'subscription';
+    console.log('mode:', mode, '| tier:', tier, '| billing_type:', billing_type);
 
     // 2. Create Stripe Session
     const sessionParams = {
@@ -44,9 +70,11 @@ exports.handler = async (event) => {
         quantity: 1,
       }],
       mode,
-      // Metadata is key for your "White-Glove" automation
+      // Metadata is key for "White-Glove" automation.
+      // company_email and plan are read by the stripe-webhook handler for onboarding emails.
       metadata: {
         plan: plan_name,
+        tier: tier,
         company_email: customer_email,
         provisioning_status: 'queued',
       },
@@ -63,12 +91,17 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ checkout_url: session.url }),
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ checkout_url: session.url, url: session.url, sessionId: session.id }),
     };
   } catch (error) {
     console.error('Stripe Session Error:', error);
+    // Use the Stripe error's own HTTP status code when available (e.g. 400 for invalid
+    // price IDs, 402 for card declines). Fall back to 500 for unknown/server-side errors.
+    const statusCode = error.statusCode || 500;
     return {
-      statusCode: 500,
+      statusCode,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: error.message }),
     };
   }
