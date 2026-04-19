@@ -50,6 +50,12 @@ const head = (msg) => console.log(`\n${C.bold}${C.blue}── ${msg} ──${C.r
 // Healthcare      | price_1SrgoQ5bg6XXXrmNQvC2YnmT  | $15,000| $7,500 | compliance_framework: HIPAA
 // Government      | price_1SrgoR5bg6XXXrmNUUveBMDw  | $25,000| $12,500| audit_signature: required
 //
+// One-time Pilot Products
+// ----------------+----------------------------------+--------+--------+------------------------------
+// Compliance Jumpstart | price_1TNzAi5bg6XXXrmN5GGfPrtq | $495 | —    | pilot_product: compliance_jumpstart
+//   Stripe product ID : prod_UMibaH3IqO1SJD
+//   Stripe nickname   : SecureBase_Price_pilot_compliance
+//
 const MANIFEST = {
   standard: {
     priceId:    'price_1TNygX5bg6XXXrmNBtIT7j1P',
@@ -81,6 +87,19 @@ const MANIFEST = {
   },
 };
 
+// ─── One-time pilot product manifest ─────────────────────────────────────────
+// These are validated separately from subscription PRICING_TIERS.
+const PILOT_PRODUCTS = {
+  pilot_compliance: {
+    exportName: 'PILOT_COMPLIANCE_ID',
+    priceId:    'price_1TNzAi5bg6XXXrmN5GGfPrtq',
+    productId:  'prod_UMibaH3IqO1SJD',
+    nickname:   'SecureBase_Price_pilot_compliance',
+    price:      495,
+    framework:  'SOC2',
+  },
+};
+
 // ─── Paths ────────────────────────────────────────────────────────────────────
 const REPO_ROOT     = path.resolve(__dirname, '../..');
 const CONFIG_PATH   = path.join(REPO_ROOT, 'phase3a-portal/src/config/live-config.js');
@@ -91,10 +110,13 @@ const BACKEND_FUNCS = path.join(REPO_ROOT, 'phase2-backend/functions');
 
 // ─── Config loader ────────────────────────────────────────────────────────────
 /**
- * Parse PRICING_TIERS out of live-config.js using a vm sandbox so we can
- * evaluate the ES-module file without a full bundler.
+ * Parse PRICING_TIERS and one-time pilot product IDs out of live-config.js
+ * using a vm sandbox so we can evaluate the ES-module file without a bundler.
+ *
+ * Returns { pricingTiers, pilotIds } where pilotIds is a map of
+ * exportName → resolved string value (e.g. { PILOT_COMPLIANCE_ID: 'price_...' }).
  */
-function loadPricingTiers() {
+function loadConfig() {
   if (!fs.existsSync(CONFIG_PATH)) {
     throw new Error(`Pricing config not found: ${CONFIG_PATH}`);
   }
@@ -107,7 +129,8 @@ function loadPricingTiers() {
     .replace(/import\.meta\.env\.[A-Z0-9_]+/g, '"__ENV__"')   // replace Vite env refs
     .replace(/loadStripe\s*\([^)]*\)/g, 'null')                // stub loadStripe
     .replace(/^export\s*\{[\s\S]*?\};\s*$/m, '')              // remove export block
-    .replace(/\b(?:const|let)\s+PRICING_TIERS\b/, 'var PRICING_TIERS'); // Node 20 vm.runInContext only exposes var-declared globals on the sandbox
+    .replace(/\b(?:const|let)\s+PRICING_TIERS\b/, 'var PRICING_TIERS')    // expose in sandbox
+    .replace(/\b(?:const|let)\s+PILOT_COMPLIANCE_ID\b/, 'var PILOT_COMPLIANCE_ID'); // expose in sandbox
 
   const sandbox = { console };
   vm.createContext(sandbox);
@@ -116,7 +139,22 @@ function loadPricingTiers() {
   if (!sandbox.PRICING_TIERS || typeof sandbox.PRICING_TIERS !== 'object') {
     throw new Error('PRICING_TIERS not found or is not an object in live-config.js');
   }
-  return sandbox.PRICING_TIERS;
+
+  // Collect all exported pilot product IDs declared in the file
+  const pilotIds = {};
+  for (const product of Object.values(PILOT_PRODUCTS)) {
+    const val = sandbox[product.exportName];
+    if (val !== undefined) {
+      pilotIds[product.exportName] = val;
+    }
+  }
+
+  return { pricingTiers: sandbox.PRICING_TIERS, pilotIds };
+}
+
+/** Backward-compat wrapper used by the per-tier validator. */
+function loadPricingTiers() {
+  return loadConfig().pricingTiers;
 }
 
 // ─── Per-tier validator ───────────────────────────────────────────────────────
@@ -144,6 +182,28 @@ function validateTier(tier, pricingTiers) {
     errors.push(
       `pilotPrice mismatch → expected $${expected.pilotPrice.toLocaleString()}, got $${(actual.pilotPrice || 0).toLocaleString()}`
     );
+  }
+  return errors;
+}
+
+// ─── Pilot product validator ──────────────────────────────────────────────────
+/**
+ * Verify that every PILOT_PRODUCTS entry matches the price ID declared in
+ * live-config.js.
+ */
+function validatePilotProducts(pilotIds) {
+  const errors = [];
+  for (const [sku, spec] of Object.entries(PILOT_PRODUCTS)) {
+    const actual = pilotIds[spec.exportName];
+    if (actual === undefined) {
+      errors.push(`[${sku}] ${spec.exportName} not found in live-config.js`);
+      continue;
+    }
+    if (actual !== spec.priceId) {
+      errors.push(
+        `[${sku}] priceId mismatch\n       expected  "${spec.priceId}"\n       received  "${actual}"`
+      );
+    }
   }
   return errors;
 }
@@ -267,10 +327,12 @@ function main() {
   // ── 1. Load config ──────────────────────────────────────────────────────────
   head('Loading pricing config');
   let pricingTiers;
+  let pilotIds;
   try {
-    pricingTiers = loadPricingTiers();
+    ({ pricingTiers, pilotIds } = loadConfig());
     ok(`Loaded PRICING_TIERS from phase3a-portal/src/config/live-config.js`);
     info(`Tiers present: ${Object.keys(pricingTiers).join(', ')}`);
+    info(`Pilot products: ${Object.keys(pilotIds).join(', ') || '(none)'}`);
   } catch (err) {
     fail(`Failed to load pricing config: ${err.message}`);
     process.exit(1);
@@ -305,6 +367,22 @@ function main() {
       exitCode = 1;
     } else {
       ok('All per-tier compliance metadata keys present in checkout session');
+    }
+  }
+
+  // ── 3b. Pilot product price ID validation (full run only) ──────────────────
+  if (tierArg === 'all') {
+    head('Pilot product price ID validation');
+    const pilotErrors = validatePilotProducts(pilotIds);
+    if (pilotErrors.length) {
+      fail(`Pilot product price ID mismatch(es):`);
+      pilotErrors.forEach((e) => console.error(`${C.red}       • ${e}${C.reset}`));
+      exitCode = 1;
+    } else {
+      for (const [sku, spec] of Object.entries(PILOT_PRODUCTS)) {
+        ok(`[${sku}] priceId matches manifest`);
+        info(`priceId: ${spec.priceId}  |  productId: ${spec.productId}  |  $${spec.price} one-time`);
+      }
     }
   }
 
