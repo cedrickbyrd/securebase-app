@@ -1,15 +1,16 @@
 /**
- * @deprecated Legacy fallback checkout form for the root app's /checkout route.
+ * Canonical checkout form — source of truth for all checkout traffic.
  *
- * This form is reached when traffic lands directly on the root marketing site
- * (e.g. via email links or UTM campaigns) rather than on the portal.
+ * This is the one true checkout at https://securebase.tximhotep.com/checkout.
+ * All checkout flows ultimately land here, including redirects from the customer
+ * portal (phase3a-portal/src/pages/Checkout.jsx), email/UTM campaign links, and
+ * direct navigation to the marketing site.
  *
- * Preferred path (portal): phase3a-portal/src/pages/Pricing.jsx handles one-click
- * checkout inline — POST /api/checkout → Stripe redirect, no intermediate form.
- * If the one-click call fails, it falls back to phase3a-portal/src/pages/Checkout.jsx.
+ * The portal's Checkout.jsx is now a redirect shim that forwards users here with
+ * plan/priceId/planName query params so context is preserved.
  *
- * Both this component and the portal checkout now POST to the same AWS API Gateway
- * endpoint via the /api/checkout Netlify redirect (netlify.toml:18-22).
+ * POSTs to /api/checkout → AWS API Gateway (netlify.toml:18-22) →
+ * phase2-backend/functions/create_checkout_session.py → Stripe.
  * The archived Netlify function (archived/netlify-functions/securebase-checkout-api.js)
  * is no longer used.
  */
