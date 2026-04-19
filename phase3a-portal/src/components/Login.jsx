@@ -40,7 +40,7 @@ function Login({ setAuth }) {
       // Pure network/fetch failures (e.g. local dev without Netlify functions)
       // have a different error shape; those are non-blocking so dev iteration
       // still works without a running function server.
-      const isServerError = err?.message?.startsWith('Demo login failed (HTTP');
+      const isServerError = err?.isServerError === true;
       if (isServerError) {
         setError(
           'Demo access unavailable. Try our live environment or contact sales@securebase.tximhotep.com',
