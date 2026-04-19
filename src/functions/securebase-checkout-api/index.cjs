@@ -25,12 +25,18 @@ exports.handler = async (event) => {
       };
     }
 
-    // All prices are one-time payments; use mode: 'payment' unconditionally.
-    const mode = 'payment';
+    // Use the billing tier from the request to select the correct Stripe mode.
+    // subscription tiers (fintech/healthcare/government) require mode:'subscription'
+    // with a recurring price; all other tiers use mode:'payment'.
+    const VALID_BILLING_TYPES = ['payment', 'subscription'];
+    if (!VALID_BILLING_TYPES.includes(billing_type)) {
+      console.warn(`Unexpected billing_type value: "${billing_type}". Defaulting to "payment".`);
+    }
+    const mode = billing_type === 'subscription' ? 'subscription' : 'payment';
     console.log('mode:', mode, '| billing_type received:', billing_type);
 
     // 2. Create Stripe Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams = {
       customer_email: customer_email || undefined,
       payment_method_types: ['card'],
       line_items: [{
@@ -46,7 +52,14 @@ exports.handler = async (event) => {
       },
       success_url,
       cancel_url,
-    });
+    };
+
+    // Subscription sessions get a 14-day free trial
+    if (mode === 'subscription') {
+      sessionParams.subscription_data = { trial_period_days: 14 };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return {
       statusCode: 200,
