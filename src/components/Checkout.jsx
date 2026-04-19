@@ -1,13 +1,10 @@
 /**
- * Canonical checkout form — source of truth for all checkout traffic.
+ * Checkout form for the marketing/root site.
  *
- * This is the one true checkout at https://securebase.tximhotep.com/checkout.
- * All checkout flows ultimately land here, including redirects from the customer
- * portal (phase3a-portal/src/pages/Checkout.jsx), email/UTM campaign links, and
- * direct navigation to the marketing site.
- *
- * The portal's Checkout.jsx is now a redirect shim that forwards users here with
- * plan/priceId/planName query params so context is preserved.
+ * Both the marketing site and the customer portal (phase3a-portal) serve this
+ * same checkout flow.  The portal's Checkout.jsx (phase3a-portal/src/pages/Checkout.jsx)
+ * is an identical inline form — NOT a redirect shim — to prevent the infinite
+ * redirect loop that previously occurred when the shim pointed back at this domain.
  *
  * POSTs to /api/checkout → AWS API Gateway (netlify.toml:18-22) →
  * phase2-backend/functions/create_checkout_session.py → Stripe.
