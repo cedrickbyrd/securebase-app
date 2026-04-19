@@ -19,13 +19,21 @@ if not stripe.api_key:
     print('CRITICAL: STRIPE_SECRET_KEY environment variable not set!')
     print('Signup functionality will be disabled until this is configured.')
 
-# Pricing tier mapping
+# Pricing tier mapping (subscription tiers)
 PRICE_IDS = {
     'healthcare': os.environ.get('STRIPE_PRICE_HEALTHCARE'),
     'fintech': os.environ.get('STRIPE_PRICE_FINTECH'),
     'government': os.environ.get('STRIPE_PRICE_GOVERNMENT'),
     'standard': os.environ.get('STRIPE_PRICE_STANDARD'),
 }
+
+# One-time payment products (not subscription tiers)
+ONE_TIME_PRICE_IDS = {
+    'pilot_compliance': os.environ.get('STRIPE_PRICE_PILOT_COMPLIANCE'),
+}
+
+# Modes by product type
+ONE_TIME_TIERS = set(ONE_TIME_PRICE_IDS.keys())
 
 # Per-tier compliance metadata added to Stripe checkout session.
 # These fields are validated by .github/scripts/validate-pricing.js in CI.
@@ -35,6 +43,7 @@ TIER_COMPLIANCE_METADATA = {
     'fintech':    {'compliance_framework': 'SOC2'},
     'healthcare': {'compliance_framework': 'HIPAA'},
     'government': {'audit_signature': 'required'},
+    'pilot_compliance': {'compliance_framework': 'SOC2', 'pilot_product': 'compliance_jumpstart'},
 }
 
 # Full (non-discounted) monthly prices per tier, in USD.
@@ -44,12 +53,17 @@ FULL_PRICES = {
     'fintech':    8000,
     'healthcare': 15000,
     'government': 25000,
+    'pilot_compliance': 495,
 }
 
 # Validate price IDs are configured
 missing_prices = [tier for tier, price_id in PRICE_IDS.items() if not price_id]
 if missing_prices:
     print(f'WARNING: Missing Stripe price IDs for tiers: {", ".join(missing_prices)}')
+
+missing_one_time = [sku for sku, price_id in ONE_TIME_PRICE_IDS.items() if not price_id]
+if missing_one_time:
+    print(f'WARNING: Missing Stripe price IDs for one-time products: {", ".join(missing_one_time)}')
 
 # Rate limiting configuration
 RATE_LIMIT_WINDOW = 3600  # 1 hour in seconds
@@ -141,7 +155,13 @@ def lambda_handler(event, context):
                 })
             }
         
-        price_id = PRICE_IDS[tier]
+        # Determine if this is a one-time payment or subscription tier
+        is_one_time = tier in ONE_TIME_TIERS
+
+        if is_one_time:
+            price_id = ONE_TIME_PRICE_IDS.get(tier)
+        else:
+            price_id = PRICE_IDS.get(tier)
         
         if not price_id:
             print(f'ERROR: Price ID not configured for tier: {tier}')
@@ -187,41 +207,66 @@ def lambda_handler(event, context):
         tier_compliance = TIER_COMPLIANCE_METADATA.get(tier, {})
         original_price = FULL_PRICES.get(tier, 0)
 
-        session_params = {
-            'payment_method_types': ['card'],
-            'line_items': [{
-                'price': price_id,
-                'quantity': 1,
-            }],
-            'mode': 'subscription',
-            'success_url': success_url,
-            'cancel_url': cancel_url,
-            'customer_email': customer_email,
-            'client_reference_id': customer_email,  # For idempotency
-            'metadata': {
-                'tier': tier,
-                'customer_name': customer_name,
-                'signup_timestamp': datetime.utcnow().isoformat(),
-                'original_price': str(original_price),
-                'discount_applied': '50%' if (use_pilot and pilot_coupon) else 'none',
-                'pilot_tier': tier,
-                **tier_compliance,
-            },
-            'subscription_data': {
+        if is_one_time:
+            # One-time payment (e.g. Compliance Jumpstart pilot at $495)
+            session_params = {
+                'payment_method_types': ['card'],
+                'line_items': [{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                'mode': 'payment',
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'customer_email': customer_email,
+                'client_reference_id': customer_email,
                 'metadata': {
                     'tier': tier,
                     'customer_name': customer_name,
+                    'signup_timestamp': datetime.utcnow().isoformat(),
+                    'original_price': str(original_price),
+                    'discount_applied': 'none',
+                    **tier_compliance,
                 },
-                'trial_period_days': 14,  # 14-day free trial
-            },
-        }
-        
-        # Apply the pilot coupon.  Stripe does not allow combining `discounts`
-        # with `allow_promotion_codes`, so we only set one of the two.
-        if use_pilot and pilot_coupon:
-            session_params['discounts'] = [{'coupon': pilot_coupon}]
+            }
         else:
-            session_params['allow_promotion_codes'] = True
+            session_params = {
+                'payment_method_types': ['card'],
+                'line_items': [{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                'mode': 'subscription',
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'customer_email': customer_email,
+                'client_reference_id': customer_email,  # For idempotency
+                'metadata': {
+                    'tier': tier,
+                    'customer_name': customer_name,
+                    'signup_timestamp': datetime.utcnow().isoformat(),
+                    'original_price': str(original_price),
+                    'discount_applied': '50%' if (use_pilot and pilot_coupon) else 'none',
+                    'pilot_tier': tier,
+                    **tier_compliance,
+                },
+                'subscription_data': {
+                    'metadata': {
+                        'tier': tier,
+                        'customer_name': customer_name,
+                    },
+                    'trial_period_days': 14,  # 14-day free trial
+                },
+            }
+        
+        # Apply the pilot coupon for subscription tiers only.  Stripe does not
+        # allow combining `discounts` with `allow_promotion_codes`, so we only
+        # set one of the two.
+        if not is_one_time:
+            if use_pilot and pilot_coupon:
+                session_params['discounts'] = [{'coupon': pilot_coupon}]
+            else:
+                session_params['allow_promotion_codes'] = True
         
         # Create Stripe checkout session
         session = stripe.checkout.Session.create(**session_params)
@@ -358,8 +403,9 @@ def validate_inputs(tier, email, name):
         return 'Company name is too long (maximum 100 characters)'
     
     # Validate tier
-    if tier not in PRICE_IDS:
-        return f'Invalid tier: {tier}. Must be one of: {", ".join(PRICE_IDS.keys())}'
+    all_tiers = set(PRICE_IDS.keys()) | set(ONE_TIME_PRICE_IDS.keys())
+    if tier not in all_tiers:
+        return f'Invalid tier: {tier}. Must be one of: {", ".join(sorted(all_tiers))}'
     
     return None
 
