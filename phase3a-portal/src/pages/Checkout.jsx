@@ -19,6 +19,8 @@ export default function Checkout() {
   const tierConfig = PRICING_TIERS[plan] || {};
   const planName = tierConfig.name || plan;
   const displayPrice = tierConfig.pilotPrice ?? tierConfig.price ?? null;
+  const billingType = tierConfig.billingType || 'payment';
+  const isSubscription = billingType === 'subscription';
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -60,6 +62,7 @@ export default function Checkout() {
           email,
           name,
           priceId,
+          billingType,
           use_pilot_coupon: true,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${displayPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
@@ -136,7 +139,9 @@ export default function Checkout() {
 
           {/* Checkout form */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {isSubscription ? 'Start your subscription' : 'Complete your purchase'}
+            </h1>
             <p className="text-slate-500 text-sm mb-6">
               Enter your details. You will be redirected to Stripe to complete payment securely.
             </p>
@@ -210,7 +215,7 @@ export default function Checkout() {
               <div className="flex flex-col gap-2">
                 {[
                   'Secured by Stripe — PCI DSS Level 1',
-                  '14-day free trial, cancel anytime',
+                  isSubscription ? '14-day free trial, cancel anytime' : 'One-time payment — no recurring charges',
                   'SOC 2 Type II certified infrastructure',
                 ].map((line) => (
                   <div key={line} className="flex items-center gap-2">
