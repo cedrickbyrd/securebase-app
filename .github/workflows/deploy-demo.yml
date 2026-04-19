@@ -119,6 +119,8 @@ jobs:
           DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
           echo "🔐 Smoke-testing POST ${DEPLOY_URL}/api/demo-auth ..."
 
+          # These credentials are the public demo credentials shown on the login page
+          # (Login.jsx DEMO_EMAIL / DEMO_PASSWORD).  They are intentionally not secret.
           response=$(curl -si --max-time 15 \
             -X POST "${DEPLOY_URL}/api/demo-auth" \
             -H "Content-Type: application/json" \

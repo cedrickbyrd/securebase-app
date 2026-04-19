@@ -62,11 +62,15 @@ export async function loginDemo(email, password) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(
-      data.error
-        ? `Demo login failed (HTTP ${response.status}): ${data.error}`
-        : `Demo login failed with status ${response.status}. Please verify credentials or contact support.`
-    );
+    const message = data.error
+      ? `Demo login failed (HTTP ${response.status}): ${data.error}`
+      : `Demo login failed with status ${response.status}. Please verify credentials or contact support.`;
+    const err = new Error(message);
+    // Structured flag lets callers distinguish HTTP-level server errors from
+    // lower-level network/fetch failures without relying on message parsing.
+    err.isServerError = true;
+    err.statusCode = response.status;
+    throw err;
   }
 
   // Store only non-secret session metadata (role, access level)
