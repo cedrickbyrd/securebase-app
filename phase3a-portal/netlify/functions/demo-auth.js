@@ -48,11 +48,37 @@ const CORS_HEADERS = {
 };
 
 // ---------------------------------------------------------------------------
+// Startup check — log a clear warning when signing key is absent so that
+// Netlify function logs surface the root cause before the first 500 occurs.
+// ---------------------------------------------------------------------------
+
+if (!process.env.RSA_PRIVATE_KEY && !process.env.JWT_SECRET) {
+  // eslint-disable-next-line no-console
+  console.error(
+    '[demo-auth] STARTUP WARNING: Neither RSA_PRIVATE_KEY nor JWT_SECRET is configured. ' +
+    'All login attempts will fail with HTTP 500 until this is resolved. ' +
+    'Set JWT_SECRET in Netlify → Site configuration → Environment variables.',
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Demo credentials — safe for demo environment
 // Mirrors landing-zone/modules/demo-backend/lambda/auth.py DEMO_CREDENTIALS
+//
+// IMPORTANT: demo@securebase.tximhotep.com / SecureBaseDemo2026! must remain
+// in sync with the DEMO_EMAIL / DEMO_PASSWORD constants in Login.jsx so that
+// the one-click "Enter Demo" flow sends credentials the server accepts.
 // ---------------------------------------------------------------------------
 
 const DEMO_CREDENTIALS = {
+  // General demo account — matches the credentials shown on the login page
+  'demo@securebase.tximhotep.com': {
+    password:     'SecureBaseDemo2026!',
+    customerId:   'demo-customer-000',
+    name:         'Acme Corporation',
+    tier:         'standard',
+    isEnterprise: false,
+  },
   'admin@healthcorp.example.com': {
     password:     'demo-healthcare-2026',
     customerId:   'demo-customer-001',
