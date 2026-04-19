@@ -176,23 +176,17 @@
 
         async function selectTier(tier, amount) {
             try {
-                // Create checkout session
-                const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+                // Create checkout session via backend API (secret key is kept server-side)
+                const response = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer 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',
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                        'Content-Type': 'application/json'
                     },
-                    body: new URLSearchParams({
-                        'success_url': window.location.origin + '/success',
-                        'cancel_url': window.location.origin,
-                        'payment_method_types[]': 'card',
-                        'mode': 'subscription',
-                        'line_items[0][price]': priceIds[tier],
-                        'line_items[0][quantity]': '1',
-                        'subscription_data[trial_period_days]': '30',
-                        'metadata[tier]': tier,
-                        'metadata[pilot_program]': 'true'
+                    body: JSON.stringify({
+                        success_url: window.location.origin + '/success',
+                        cancel_url: window.location.origin,
+                        tier: tier,
+                        price_id: priceIds[tier]
                     })
                 });
 
