@@ -60,6 +60,7 @@ export default function Checkout() {
           email,
           name,
           priceId,
+          use_pilot_coupon: true,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${displayPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),

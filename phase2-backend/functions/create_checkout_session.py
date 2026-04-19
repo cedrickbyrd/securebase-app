@@ -37,6 +37,15 @@ TIER_COMPLIANCE_METADATA = {
     'government': {'audit_signature': 'required'},
 }
 
+# Full (non-discounted) monthly prices per tier, in USD.
+# Used to populate Stripe session metadata for downstream reconciliation.
+FULL_PRICES = {
+    'standard':   2000,
+    'fintech':    8000,
+    'healthcare': 15000,
+    'government': 25000,
+}
+
 # Validate price IDs are configured
 missing_prices = [tier for tier, price_id in PRICE_IDS.items() if not price_id]
 if missing_prices:
@@ -83,7 +92,9 @@ def lambda_handler(event, context):
         tier = body.get('tier', 'standard').lower()
         customer_email = body.get('email')
         customer_name = body.get('name')
-        use_pilot = body.get('use_pilot_coupon', False)
+        # Default to True during the pilot period so every checkout session
+        # automatically receives the 50% coupon unless explicitly disabled.
+        use_pilot = body.get('use_pilot_coupon', True)
         success_url = body.get('successUrl') if body.get('successUrl') is not None else f"{os.environ.get('PORTAL_URL', '')}/thank-you?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = body.get('cancelUrl') if body.get('cancelUrl') is not None else f"{os.environ.get('PORTAL_URL', '')}/signup?cancelled=true"
         
@@ -170,6 +181,12 @@ def lambda_handler(event, context):
             }
         
         # Build checkout session parameters
+        pilot_coupon = os.environ.get('STRIPE_PILOT_COUPON')
+
+        # Compliance and pilot-discount metadata for this tier
+        tier_compliance = TIER_COMPLIANCE_METADATA.get(tier, {})
+        original_price = FULL_PRICES.get(tier, 0)
+
         session_params = {
             'payment_method_types': ['card'],
             'line_items': [{
@@ -185,6 +202,10 @@ def lambda_handler(event, context):
                 'tier': tier,
                 'customer_name': customer_name,
                 'signup_timestamp': datetime.utcnow().isoformat(),
+                'original_price': str(original_price),
+                'discount_applied': '50%' if (use_pilot and pilot_coupon) else 'none',
+                'pilot_tier': tier,
+                **tier_compliance,
             },
             'subscription_data': {
                 'metadata': {
@@ -195,13 +216,12 @@ def lambda_handler(event, context):
             },
         }
         
-        # Add pilot coupon if requested
-        if use_pilot:
-            pilot_coupon = os.environ.get('STRIPE_PILOT_COUPON')
-            if pilot_coupon:
-                session_params['discounts'] = [{
-                    'coupon': pilot_coupon,
-                }]
+        # Apply the pilot coupon.  Stripe does not allow combining `discounts`
+        # with `allow_promotion_codes`, so we only set one of the two.
+        if use_pilot and pilot_coupon:
+            session_params['discounts'] = [{'coupon': pilot_coupon}]
+        else:
+            session_params['allow_promotion_codes'] = True
         
         # Create Stripe checkout session
         session = stripe.checkout.Session.create(**session_params)
