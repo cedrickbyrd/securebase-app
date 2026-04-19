@@ -108,6 +108,10 @@ export default function ComplianceJumpstart() {
           priceId: PILOT_COMPLIANCE_ID,
           successUrl: `${origin}/setup?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${origin}/pilots/compliance-jumpstart`,
+          metadata: {
+            pilot_sku: 'pilot_compliance',
+            provision_type: 'landing_zone_soc2',
+          },
         }),
       });
 
