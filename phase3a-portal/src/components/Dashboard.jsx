@@ -38,7 +38,9 @@ function Dashboard() {
   // Determine if current customer has Texas fintech compliance
   const effectiveTier = customer?.tier || getCustomerTier();
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
-  const hasHIPAACompliance = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
+  // showsHIPAADashboard: true when the customer tier requires the HIPAA compliance dashboard
+  // (does NOT imply the customer is currently HIPAA-compliant — see /hipaa-dashboard for scores)
+  const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -325,7 +327,7 @@ function Dashboard() {
             </div>
           )}
 
-          {hasHIPAACompliance && (
+          {showsHIPAADashboard && (
             <div
               className="metric-card clickable"
               onClick={() => navigate('/hipaa-dashboard')}
@@ -524,7 +526,7 @@ function Dashboard() {
             )}
 
             {/* HIPAA Compliance (healthcare / government) */}
-            {hasHIPAACompliance && (
+            {showsHIPAADashboard && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
                 <div className="card-header">
                   <h2>🏥 HIPAA Compliance</h2>
@@ -537,6 +539,8 @@ function Dashboard() {
                 </div>
                 <div className="card-content">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* TODO: replace these summary values with sreService.getHIPAACompliance() once
+                        a hipaaCompliance state variable is added to Dashboard — see HIPAADashboard.jsx */}
                     {[
                       { label: 'Administrative Safeguards', pct: 90, passed: 18, total: 20 },
                       { label: 'Physical Safeguards', pct: 92.9, passed: 13, total: 14 },

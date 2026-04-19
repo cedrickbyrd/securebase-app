@@ -700,7 +700,20 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/\//g, '&#x2F;');
+}
+
+/** Map a known control status to a safe CSS color (whitelist approach) */
+function statusColor(status) {
+  return status === 'passing' ? '#065f46' : '#92400e';
+}
+
+/** Map a known finding severity to a safe CSS color (whitelist approach) */
+function severityColor(severity) {
+  if (severity === 'high') return '#dc2626';
+  if (severity === 'medium') return '#92400e';
+  return '#1d4ed8';
 }
 
 function generateAuditorReport(data) {
@@ -708,13 +721,13 @@ function generateAuditorReport(data) {
   const { safeguards, baaCompliance, training, riskAssessment, findings, phiLocations } = data;
 
   const controlRows = (controls) => (controls || []).map(c =>
-    `<tr><td style="font-family:monospace;color:#555">${escHtml(c.id)}</td><td>${escHtml(c.name)}</td><td><span style="color:${c.status === 'passing' ? '#065f46' : '#92400e'}">${escHtml(c.status)}</span></td></tr>`
+    `<tr><td style="font-family:monospace;color:#555">${escHtml(c.id)}</td><td>${escHtml(c.name)}</td><td><span style="color:${statusColor(c.status)}">${escHtml(c.status)}</span></td></tr>`
   ).join('');
 
   const findingRows = findings.map(f =>
     `<tr>
       <td>${escHtml(f.id)}</td>
-      <td style="color:${f.severity === 'high' ? '#dc2626' : f.severity === 'medium' ? '#92400e' : '#1d4ed8'}">${escHtml(f.severity)}</td>
+      <td style="color:${severityColor(f.severity)}">${escHtml(f.severity)}</td>
       <td>${escHtml(f.title)}</td>
       <td style="font-family:monospace;font-size:0.8em">${escHtml(f.control)}</td>
       <td>${escHtml(f.status)}</td>
