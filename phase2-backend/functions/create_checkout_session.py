@@ -212,7 +212,7 @@ def lambda_handler(event, context):
                     'tier': tier,
                     'customer_name': customer_name,
                 },
-                'trial_period_days': 30,  # 30-day free trial
+                'trial_period_days': 14,  # 14-day free trial
             },
         }
         
