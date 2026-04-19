@@ -70,6 +70,7 @@ export default function Checkout() {
         body: JSON.stringify({
           email,
           name,
+          tier: plan,
           priceId,
           billingType,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
