@@ -238,8 +238,9 @@ function getMockSOC2Compliance() {
 
 function getMockHIPAACompliance() {
   const now = new Date();
-  const daysAgo = (d) => new Date(now - d * 86400000).toISOString();
-  const daysFromNow = (d) => new Date(+now + d * 86400000).toISOString();
+  const MS_PER_DAY = 86400000;
+  const daysAgo = (d) => new Date(now - d * MS_PER_DAY).toISOString();
+  const daysFromNow = (d) => new Date(+now + d * MS_PER_DAY).toISOString();
 
   return {
     overallScore: 87,

@@ -160,11 +160,11 @@ describe('HIPAADashboard Component', () => {
   it('should render all tabs', async () => {
     render(<HIPAADashboard />);
     await waitFor(() => {
-      expect(screen.getByText(/Overview/i)).toBeInTheDocument();
-      expect(screen.getByText(/Safeguards/i)).toBeInTheDocument();
-      expect(screen.getByText(/PHI Controls/i)).toBeInTheDocument();
-      expect(screen.getByText(/Findings/i)).toBeInTheDocument();
-      expect(screen.getByText(/Evidence Export/i)).toBeInTheDocument();
+      expect(screen.getByText(/📋 Overview/i)).toBeInTheDocument();
+      expect(screen.getByText(/🛡️ Safeguards/i)).toBeInTheDocument();
+      expect(screen.getByText(/🔒 PHI Controls/i)).toBeInTheDocument();
+      expect(screen.getByText(/⚠️ Findings/i)).toBeInTheDocument();
+      expect(screen.getByText(/📄 Evidence Export/i)).toBeInTheDocument();
     });
   });
 
@@ -196,9 +196,9 @@ describe('HIPAADashboard Component', () => {
 
   it('should switch to Safeguards tab on click', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/Safeguards/i));
+    await waitFor(() => screen.getByText(/🛡️ Safeguards/i));
 
-    fireEvent.click(screen.getAllByText(/Safeguards/i)[0]);
+    fireEvent.click(screen.getByText(/🛡️ Safeguards/i));
 
     await waitFor(() => {
       expect(screen.getByText(/Administrative.*164\.308/i)).toBeInTheDocument();
@@ -207,9 +207,9 @@ describe('HIPAADashboard Component', () => {
 
   it('should switch to PHI Controls tab on click', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/PHI Controls/i));
+    await waitFor(() => screen.getByText(/🔒 PHI Controls/i));
 
-    fireEvent.click(screen.getByText(/PHI Controls/i));
+    fireEvent.click(screen.getByText(/🔒 PHI Controls/i));
 
     await waitFor(() => {
       expect(screen.getByText(/Encryption at Rest/i)).toBeInTheDocument();
@@ -219,9 +219,9 @@ describe('HIPAADashboard Component', () => {
 
   it('should switch to Findings tab and display findings', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/Findings/i));
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
 
-    fireEvent.click(screen.getByText(/Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
 
     await waitFor(() => {
       expect(screen.getByText(/PHI access review cadence/i)).toBeInTheDocument();
@@ -231,8 +231,8 @@ describe('HIPAADashboard Component', () => {
 
   it('should display finding severity and control reference in Findings tab', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/Findings/i));
-    fireEvent.click(screen.getByText(/Findings/i));
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
 
     await waitFor(() => {
       expect(screen.getByText(/164\.308\(b\)\(1\)/i)).toBeInTheDocument();
@@ -242,9 +242,9 @@ describe('HIPAADashboard Component', () => {
 
   it('should switch to Evidence Export tab', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/Evidence Export/i));
+    await waitFor(() => screen.getByText(/📄 Evidence Export/i));
 
-    fireEvent.click(screen.getByText(/Evidence Export/i));
+    fireEvent.click(screen.getByText(/📄 Evidence Export/i));
 
     await waitFor(() => {
       expect(screen.getByText(/Auditor Evidence Package/i)).toBeInTheDocument();
@@ -254,8 +254,8 @@ describe('HIPAADashboard Component', () => {
 
   it('should show PHI access log entries in PHI Controls tab', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/PHI Controls/i));
-    fireEvent.click(screen.getByText(/PHI Controls/i));
+    await waitFor(() => screen.getByText(/🔒 PHI Controls/i));
+    fireEvent.click(screen.getByText(/🔒 PHI Controls/i));
 
     await waitFor(() => {
       expect(screen.getByText('dr.chen@healthcorp')).toBeInTheDocument();
@@ -265,8 +265,8 @@ describe('HIPAADashboard Component', () => {
 
   it('should show denied access entry with denied status in PHI access log', async () => {
     render(<HIPAADashboard />);
-    await waitFor(() => screen.getByText(/PHI Controls/i));
-    fireEvent.click(screen.getByText(/PHI Controls/i));
+    await waitFor(() => screen.getByText(/🔒 PHI Controls/i));
+    fireEvent.click(screen.getByText(/🔒 PHI Controls/i));
 
     await waitFor(() => {
       // denied pill appears at least once

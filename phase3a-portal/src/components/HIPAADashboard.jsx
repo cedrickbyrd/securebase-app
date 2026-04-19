@@ -4,6 +4,13 @@ import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Delay (ms) before the export download triggers — gives the UX spinner time to render */
+const EXPORT_GENERATION_DELAY_MS = 1200;
+
+// ---------------------------------------------------------------------------
 // Helper components
 // ---------------------------------------------------------------------------
 
@@ -142,7 +149,7 @@ export default function HIPAADashboard() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setExporting(false);
-    }, 1200);
+    }, EXPORT_GENERATION_DELAY_MS);
   };
 
   if (loading) {
@@ -573,12 +580,16 @@ function FindingsTab({ data }) {
 // ---------------------------------------------------------------------------
 
 function EvidenceTab({ data, onExport, exporting }) {
+  const { safeguards, baaCompliance, training, riskAssessment, phiLocations } = data;
+  const totalPassingControls =
+    safeguards.administrative.passed + safeguards.physical.passed + safeguards.technical.passed;
+
   const sections = [
-    { icon: '📋', title: 'Safeguard Controls', desc: `${data.safeguards.administrative.passed + data.safeguards.physical.passed + data.safeguards.technical.passed} passing controls across Administrative, Physical, and Technical categories` },
-    { icon: '📝', title: 'BAA Agreements', desc: `${data.baaCompliance.vendors.length} executed BAAs on file (AWS, Datadog, PagerDuty)` },
-    { icon: '🎓', title: 'Training Records', desc: `${data.training.completionRate}% completion rate — ${data.training.completedStaff}/${data.training.totalStaff} staff trained` },
-    { icon: '🔍', title: 'Risk Assessment', desc: `Completed ${formatDate(data.riskAssessment.completedDate)} — ${data.riskAssessment.mitigatedRisks} risks mitigated` },
-    { icon: '🔒', title: 'PHI Encryption Evidence', desc: `AES-256 at rest, TLS 1.3 in transit — all ${data.phiLocations.length} PHI stores verified` },
+    { icon: '📋', title: 'Safeguard Controls', desc: `${totalPassingControls} passing controls across Administrative, Physical, and Technical categories` },
+    { icon: '📝', title: 'BAA Agreements', desc: `${baaCompliance.vendors.length} executed BAAs on file (AWS, Datadog, PagerDuty)` },
+    { icon: '🎓', title: 'Training Records', desc: `${training.completionRate}% completion rate — ${training.completedStaff}/${training.totalStaff} staff trained` },
+    { icon: '🔍', title: 'Risk Assessment', desc: `Completed ${formatDate(riskAssessment.completedDate)} — ${riskAssessment.mitigatedRisks} risks mitigated` },
+    { icon: '🔒', title: 'PHI Encryption Evidence', desc: `AES-256 at rest, TLS 1.3 in transit — all ${phiLocations.length} PHI stores verified` },
     { icon: '📄', title: 'PHI Access Audit Log', desc: 'Last 7-day access log with user, action, resource, and authorization status' }
   ];
 
@@ -682,21 +693,31 @@ const btnSecondary = {
 // Auditor report generator
 // ---------------------------------------------------------------------------
 
+/** Escape HTML entities to prevent XSS when inserting data into the report */
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function generateAuditorReport(data) {
   const now = new Date().toLocaleString();
   const { safeguards, baaCompliance, training, riskAssessment, findings, phiLocations } = data;
 
   const controlRows = (controls) => (controls || []).map(c =>
-    `<tr><td style="font-family:monospace;color:#555">${c.id}</td><td>${c.name}</td><td><span style="color:${c.status === 'passing' ? '#065f46' : '#92400e'}">${c.status}</span></td></tr>`
+    `<tr><td style="font-family:monospace;color:#555">${escHtml(c.id)}</td><td>${escHtml(c.name)}</td><td><span style="color:${c.status === 'passing' ? '#065f46' : '#92400e'}">${escHtml(c.status)}</span></td></tr>`
   ).join('');
 
   const findingRows = findings.map(f =>
     `<tr>
-      <td>${f.id}</td>
-      <td style="color:${f.severity === 'high' ? '#dc2626' : f.severity === 'medium' ? '#92400e' : '#1d4ed8'}">${f.severity}</td>
-      <td>${f.title}</td>
-      <td style="font-family:monospace;font-size:0.8em">${f.control}</td>
-      <td>${f.status}</td>
+      <td>${escHtml(f.id)}</td>
+      <td style="color:${f.severity === 'high' ? '#dc2626' : f.severity === 'medium' ? '#92400e' : '#1d4ed8'}">${escHtml(f.severity)}</td>
+      <td>${escHtml(f.title)}</td>
+      <td style="font-family:monospace;font-size:0.8em">${escHtml(f.control)}</td>
+      <td>${escHtml(f.status)}</td>
     </tr>`
   ).join('');
 
@@ -720,8 +741,8 @@ function generateAuditorReport(data) {
 </head>
 <body>
   <h1>🏥 HIPAA Compliance Evidence Report</h1>
-  <p class="meta">Generated: ${now} · HealthCorp Medical Systems · SecureBase Platform</p>
-  <p class="meta">Overall Score: <span class="score">${data.overallScore}%</span> · Risk Level: <strong style="text-transform:capitalize">${data.riskLevel}</strong></p>
+  <p class="meta">Generated: ${escHtml(now)} · HealthCorp Medical Systems · SecureBase Platform</p>
+  <p class="meta">Overall Score: <span class="score">${escHtml(String(data.overallScore))}%</span> · Risk Level: <strong style="text-transform:capitalize">${escHtml(data.riskLevel)}</strong></p>
 
   <h2>Administrative Safeguards (§164.308)</h2>
   <p>${safeguards.administrative.passed}/${safeguards.administrative.total} controls passing (${Math.round(safeguards.administrative.percentage)}%)</p>
@@ -739,7 +760,7 @@ function generateAuditorReport(data) {
   <table>
     <thead><tr><th>Vendor</th><th>Status</th><th>Signed</th><th>Expires</th><th>Covered Services</th></tr></thead>
     <tbody>
-      ${baaCompliance.vendors.map(v => `<tr><td>${v.name}</td><td>${v.status}</td><td>${new Date(v.signedDate).toLocaleDateString()}</td><td>${new Date(v.expiresDate).toLocaleDateString()}</td><td>${v.coveredServices.join(', ')}</td></tr>`).join('')}
+      ${baaCompliance.vendors.map(v => `<tr><td>${escHtml(v.name)}</td><td>${escHtml(v.status)}</td><td>${new Date(v.signedDate).toLocaleDateString()}</td><td>${new Date(v.expiresDate).toLocaleDateString()}</td><td>${escHtml(v.coveredServices.join(', '))}</td></tr>`).join('')}
     </tbody>
   </table>
 
@@ -747,7 +768,7 @@ function generateAuditorReport(data) {
   <p>Overall completion: <strong>${training.completionRate}%</strong> (${training.completedStaff}/${training.totalStaff} staff)</p>
   <table>
     <thead><tr><th>Module</th><th>Completion</th></tr></thead>
-    <tbody>${training.modules.map(m => `<tr><td>${m.name}</td><td>${m.completion}%</td></tr>`).join('')}</tbody>
+    <tbody>${training.modules.map(m => `<tr><td>${escHtml(m.name)}</td><td>${escHtml(m.completion)}%</td></tr>`).join('')}</tbody>
   </table>
 
   <h2>Risk Assessment</h2>
@@ -756,7 +777,7 @@ function generateAuditorReport(data) {
   <h2>PHI Data Stores</h2>
   <table>
     <thead><tr><th>Service</th><th>Region</th><th>KMS Key</th><th>Encrypted</th></tr></thead>
-    <tbody>${phiLocations.map(l => `<tr><td>${l.service}</td><td>${l.region}</td><td style="font-family:monospace;font-size:0.8em">${l.kmsKeyId}</td><td>${l.encrypted ? '✓' : '✗'}</td></tr>`).join('')}</tbody>
+    <tbody>${phiLocations.map(l => `<tr><td>${escHtml(l.service)}</td><td>${escHtml(l.region)}</td><td style="font-family:monospace;font-size:0.8em">${escHtml(l.kmsKeyId)}</td><td>${l.encrypted ? '✓' : '✗'}</td></tr>`).join('')}</tbody>
   </table>
 
   <h2>Open Findings</h2>
