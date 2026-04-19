@@ -32,8 +32,23 @@ function Login({ setAuth }) {
       // exposed to JavaScript — the browser stores it automatically.
       await loginDemo(DEMO_EMAIL, DEMO_PASSWORD);
     } catch (err) {
-      // Non-blocking: demo UX continues even if the cookie endpoint is
-      // temporarily unavailable (e.g. local dev without Netlify functions).
+      // loginDemo throws "Demo login failed (HTTP N): ..." for HTTP-level errors
+      // (4xx/5xx from the server).  These require operator action and must be
+      // surfaced to the visitor — silently bypassing them leaves the user on a
+      // broken dashboard with no JWT cookie.
+      //
+      // Pure network/fetch failures (e.g. local dev without Netlify functions)
+      // have a different error shape; those are non-blocking so dev iteration
+      // still works without a running function server.
+      const isServerError = err?.message?.startsWith('Demo login failed (HTTP');
+      if (isServerError) {
+        setError(
+          'Demo access unavailable. Try our live environment or contact sales@securebase.tximhotep.com',
+        );
+        setShowDemoLanding(false); // switch to form view so the error message is visible
+        return;
+      }
+      // Network error — soft fail, keep local-dev experience working
       console.warn('[Login] Demo JWT cookie request failed (non-blocking):', err?.message);
     }
     setAuth(true);
