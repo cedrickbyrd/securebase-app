@@ -5,9 +5,14 @@ node_modules/
 dist/
 build/
 
-# Environment files (keep .example files)
+# Environment files (keep .example files; never commit files with real keys)
 .env
 .env.local
+.env.production
+.env.staging
+.env.demo
+.env.demo.backend
+.env.*.local
 
 # IDE
 .vscode/
