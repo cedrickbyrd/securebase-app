@@ -41,6 +41,12 @@ const PLAN_BILLING_TYPE = {
   pilot_compliance: 'payment',
 };
 
+// Env-var fallback for plan price IDs (avoids hardcoding real Stripe IDs in source).
+// Set VITE_STRIPE_PILOT_COMPLIANCE_ID in .env to the Stripe price ID for pilot_compliance.
+const PLAN_PRICE_IDS = {
+  pilot_compliance: import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || '',
+};
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -51,11 +57,14 @@ export default function Checkout() {
   const plan = rawPlan;
   const priceId =
     searchParams.get('priceId') ||
+    PLAN_PRICE_IDS[plan] ||
     (pilotPricing ? pilotPricing.priceId : '');
   const planName =
     searchParams.get('planName') || PLAN_LABELS[plan] || plan;
 
-  // Only activate pilot discount if plan is explicitly 'pilot' (subscription discount), not 'pilot_compliance'
+  // isPilot: only activate the LinkedIn/attribution discount banner for the 'pilot'
+  // subscription plan. 'pilot_compliance' is a separate one-time payment product
+  // and must not trigger the pilot discount logic.
   const isPilot = plan === 'pilot' && !!pilotPricing;
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
