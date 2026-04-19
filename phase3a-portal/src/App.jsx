@@ -9,6 +9,7 @@ import Compliance from './components/Compliance';
 import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
+import HIPAADashboard from './components/HIPAADashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
@@ -77,6 +78,7 @@ function App() {
         <Route path="/demo-dashboard" element={isAuthenticated ? <DemoDashboard /> : <Navigate to="/login" />} />
         <Route path="/compliance"    element={<Compliance isPublic={!isAuthenticated} />} />
         <Route path="/fintech-portal" element={isAuthenticated ? <TexasExaminerPortal /> : <Navigate to="/login" />} />
+        <Route path="/hipaa-dashboard" element={isAuthenticated ? <HIPAADashboard /> : <Navigate to="/login" />} />
         <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
         <Route path="/pricing" element={<Pricing />} />
