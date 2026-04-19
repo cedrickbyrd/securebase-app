@@ -9,7 +9,27 @@ if (LIVE_STRIPE_PUBLIC_KEY === 'pk_live_YOUR_KEY_HERE') {
 const stripePromise = loadStripe(LIVE_STRIPE_PUBLIC_KEY);
 const API_BASE_URL = 'https://api.securebase.tximhotep.com';
 
+// Compliance Jumpstart one-time pilot product ($495, SKU: pilot_compliance)
+// Stripe product : prod_UMibaH3IqO1SJD  (nickname: SecureBase_Price_pilot_compliance)
+// Stripe price   : price_1TNzAi5bg6XXXrmN5GGfPrtq
+const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
+
 const PRICING_TIERS = {
+  pilot_compliance: {
+    name: 'Compliance Jumpstart',
+    price: 495,
+    priceId: PILOT_COMPLIANCE_ID,
+    billingType: 'payment',
+    description: 'One-time compliance audit — AWS Landing Zone pilot at $495',
+    features: [
+      'CIS AWS Foundations compliance scan',
+      'AWS Landing Zone audit report',
+      'Security Hub baseline assessment',
+      'CloudTrail configuration review',
+      '30-day email support',
+      '$495 credited toward any subscription upgrade',
+    ],
+  },
   standard: {
     name: 'Standard',
     price: 2000,
@@ -77,11 +97,6 @@ const PRICING_TIERS = {
 };
 
 const PILOT_COUPON_ID = import.meta.env.VITE_STRIPE_PILOT_COUPON || 'coupon_PILOT_LIVE_ID';
-
-// Compliance Jumpstart one-time pilot product ($495, SKU: pilot_compliance)
-// Stripe product : prod_UMibaH3IqO1SJD  (nickname: SecureBase_Price_pilot_compliance)
-// Stripe price   : price_1TNzAi5bg6XXXrmN5GGfPrtq
-const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
 
 export {
   stripePromise,

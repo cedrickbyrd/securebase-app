@@ -36,6 +36,7 @@ export default function Checkout() {
   const tierConfig = PRICING_TIERS[plan] || {};
   const planName = searchParams.get('planName') || tierConfig.name || plan;
   const planPrice = tierConfig.price ?? null;
+  const billingType = tierConfig.billingType || 'payment';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -70,6 +71,7 @@ export default function Checkout() {
           email,
           name,
           priceId,
+          billingType,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
@@ -133,7 +135,7 @@ export default function Checkout() {
               {planPrice !== null && (
                 <div className="text-right">
                   <p className="text-3xl font-black">${planPrice.toLocaleString()}</p>
-                  <p className="text-purple-200 text-xs">/month</p>
+                  <p className="text-purple-200 text-xs">{billingType === 'payment' ? 'one-time' : '/month'}</p>
                 </div>
               )}
             </div>
@@ -141,7 +143,9 @@ export default function Checkout() {
 
           {/* Checkout form */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {billingType === 'payment' ? 'Complete your purchase' : 'Start your subscription'}
+            </h1>
             <p className="text-slate-500 text-sm mb-6">
               Enter your details. You will be redirected to Stripe to complete payment securely.
             </p>
@@ -211,11 +215,18 @@ export default function Checkout() {
             {/* Trust signals */}
             <div className="mt-6 pt-5 border-t border-slate-100">
               <div className="flex flex-col gap-2">
-                {[
-                  'Secured by Stripe — PCI DSS Level 1',
-                  '14-day free trial, cancel anytime',
-                  'SOC 2 Type II certified infrastructure',
-                ].map((line) => (
+                {(billingType === 'payment'
+                  ? [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      'One-time payment — no recurring charges',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                  : [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      '14-day free trial, cancel anytime',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                ).map((line) => (
                   <div key={line} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                     <span className="text-xs text-slate-500">{line}</span>
