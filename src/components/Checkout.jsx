@@ -22,6 +22,7 @@ const PLAN_LABELS = {
   fintech: 'Fintech / Healthcare',
   enterprise: 'Enterprise / FedRAMP',
   pilot: 'Pilot Program',
+  pilot_compliance: 'Compliance Jumpstart',
 };
 
 const PLAN_PRICES = {
@@ -29,6 +30,21 @@ const PLAN_PRICES = {
   fintech: 1499,
   enterprise: 3999,
   pilot: 2000,
+  pilot_compliance: 495,
+};
+
+const PLAN_BILLING_TYPE = {
+  standard: 'subscription',
+  fintech: 'subscription',
+  enterprise: 'subscription',
+  pilot: 'subscription',
+  pilot_compliance: 'payment',
+};
+
+// Env-var fallback for plan price IDs (avoids hardcoding real Stripe IDs in source).
+// Set VITE_STRIPE_PILOT_COMPLIANCE_ID in .env to the Stripe price ID for pilot_compliance.
+const PLAN_PRICE_IDS = {
+  pilot_compliance: import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || '',
 };
 
 export default function Checkout() {
@@ -41,11 +57,17 @@ export default function Checkout() {
   const plan = rawPlan;
   const priceId =
     searchParams.get('priceId') ||
+    PLAN_PRICE_IDS[plan] ||
     (pilotPricing ? pilotPricing.priceId : '');
   const planName =
     searchParams.get('planName') || PLAN_LABELS[plan] || plan;
 
+  // isPilot: only activate the LinkedIn/attribution discount banner for the 'pilot'
+  // subscription plan. 'pilot_compliance' is a separate one-time payment product
+  // and must not trigger the pilot discount logic.
   const isPilot = plan === 'pilot' && !!pilotPricing;
+
+  const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -72,6 +94,7 @@ export default function Checkout() {
           email,
           name,
           priceId,
+          billingType,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
@@ -148,14 +171,16 @@ export default function Checkout() {
                     ${pilotPricing.fullPrice.toLocaleString()}
                   </p>
                 )}
-                <p className="text-purple-200 text-xs">/month</p>
+                <p className="text-purple-200 text-xs">{billingType === 'payment' ? 'one-time' : '/month'}</p>
               </div>
             </div>
           </div>
 
           {/* Checkout form */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Start your subscription</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {billingType === 'payment' ? 'Complete your purchase' : 'Start your subscription'}
+            </h1>
             <p className="text-slate-500 text-sm mb-6">
               Enter your details. You will be redirected to Stripe to complete payment securely.
             </p>
@@ -225,11 +250,18 @@ export default function Checkout() {
             {/* Trust signals */}
             <div className="mt-6 pt-5 border-t border-slate-100">
               <div className="flex flex-col gap-2">
-                {[
-                  'Secured by Stripe — PCI DSS Level 1',
-                  '14-day free trial, cancel anytime',
-                  'SOC 2 Type II certified infrastructure',
-                ].map((line) => (
+                {(billingType === 'payment'
+                  ? [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      'One-time payment — no recurring charges',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                  : [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      '14-day free trial, cancel anytime',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                ).map((line) => (
                   <div key={line} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                     <span className="text-xs text-slate-500">{line}</span>
