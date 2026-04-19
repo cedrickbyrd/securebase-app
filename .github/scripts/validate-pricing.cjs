@@ -45,14 +45,14 @@ const head = (msg) => console.log(`\n${C.bold}${C.blue}── ${msg} ──${C.r
 //
 // Market Tier     | Price ID                         | Price  | Pilot  | Required Metadata
 // ----------------+----------------------------------+--------+--------+------------------------------
-// Standard/Pilot  | price_1SrgoR5bg6XXXrmNXe0tTgki  | $2,000 | $1,000 | internal_audit_enabled: true
+// Standard/Pilot  | price_1TNygX5bg6XXXrmNBtIT7j1P  | $2,000 | $1,000 | internal_audit_enabled: true
 // Fintech         | price_1SrgoQ5bg6XXXrmNwsdnTwrW  | $8,000 | $4,000 | compliance_framework: SOC2
 // Healthcare      | price_1SrgoQ5bg6XXXrmNQvC2YnmT  | $15,000| $7,500 | compliance_framework: HIPAA
 // Government      | price_1SrgoR5bg6XXXrmNUUveBMDw  | $25,000| $12,500| audit_signature: required
 //
 const MANIFEST = {
   standard: {
-    priceId:    'price_1SrgoR5bg6XXXrmNXe0tTgki',
+    priceId:    'price_1TNygX5bg6XXXrmNBtIT7j1P',
     price:      2000,
     pilotPrice: 1000,
     framework:  'CIS',

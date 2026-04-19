@@ -14,7 +14,7 @@ const PRICING_TIERS = {
     name: 'Standard',
     price: 2000,
     pilotPrice: 1000,
-    priceId: 'price_1SrgoR5bg6XXXrmNXe0tTgki',
+    priceId: 'price_1TNygX5bg6XXXrmNBtIT7j1P',
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
