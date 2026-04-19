@@ -158,6 +158,17 @@ def lambda_handler(event, context):
         # Determine if this is a one-time payment or subscription tier
         is_one_time = tier in ONE_TIME_TIERS
 
+        # Allow the client to explicitly specify the billing type.  This is the
+        # authoritative signal when tier-based lookup is ambiguous (e.g. when a
+        # new one-time product is added before ONE_TIME_TIERS is updated, or when
+        # the client sends priceId directly without a recognised tier value).
+        billing_type = body.get('billingType') or body.get('billing_type')
+        if billing_type == 'payment':
+            is_one_time = True
+        elif billing_type == 'subscription':
+            is_one_time = False
+        # If billing_type is absent or unrecognised, the tier-based value above stands.
+
         if is_one_time:
             price_id = ONE_TIME_PRICE_IDS.get(tier)
         else:
