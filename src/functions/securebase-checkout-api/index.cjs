@@ -25,9 +25,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Determine checkout mode: subscriptions require recurring Stripe prices;
-    // one-time pilot/guest purchases use mode: 'payment'.
-    const mode = billing_type === 'subscription' ? 'subscription' : 'payment';
+    // All prices are one-time payments; use mode: 'payment' unconditionally.
+    const mode = 'payment';
     console.log('mode:', mode, '| billing_type received:', billing_type);
 
     // 2. Create Stripe Session
