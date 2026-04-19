@@ -75,12 +75,9 @@ const PRICING_TIERS = {
 const PILOT_COUPON_ID = import.meta.env.VITE_STRIPE_PILOT_COUPON || 'coupon_PILOT_LIVE_ID';
 
 // Compliance Jumpstart one-time pilot product ($495, SKU: pilot_compliance)
-// Set via VITE_STRIPE_PILOT_COMPLIANCE_ID in environment variables.
-const PILOT_COMPLIANCE_ID = import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || 'price_PILOT_COMPLIANCE_ID';
-
-if (PILOT_COMPLIANCE_ID === 'price_PILOT_COMPLIANCE_ID') {
-  console.warn('⚠️  VITE_STRIPE_PILOT_COMPLIANCE_ID not configured — pilot checkout will not work in production.');
-}
+// Stripe product : prod_UMibaH3IqO1SJD  (nickname: SecureBase_Price_pilot_compliance)
+// Stripe price   : price_1TNzAi5bg6XXXrmN5GGfPrtq
+const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
 
 export {
   stripePromise,
