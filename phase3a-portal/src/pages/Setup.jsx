@@ -194,6 +194,24 @@ export default function Setup() {
                 </p>
               </div>
 
+              <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-5">
+                <p className="text-slate-700 font-semibold text-sm mb-3">Your SOC 2 environment will include:</p>
+                <ul className="space-y-2">
+                  {[
+                    'CloudTrail multi-region audit logging',
+                    'AWS Config continuous compliance monitoring',
+                    'Security Hub with CIS AWS Foundations Benchmark',
+                    'GuardDuty threat detection — enabled by default',
+                    'S3 Object Lock for tamper-proof audit logs',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-slate-700">
+                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <h1 className="text-2xl font-bold text-slate-900 mb-1">Set up your account</h1>
               <p className="text-slate-500 text-sm mb-6">
                 Choose an organisation name and password to complete your Compliance Jumpstart setup.
