@@ -15,6 +15,7 @@ const PRICING_TIERS = {
     price: 2000,
     pilotPrice: 1000,
     priceId: 'price_1TNygX5bg6XXXrmNBtIT7j1P',
+    billingType: 'payment',
     description: 'CIS Foundations compliant AWS Landing Zone',
     features: [
       'CIS AWS Foundations Benchmark',
@@ -30,6 +31,7 @@ const PRICING_TIERS = {
     price: 8000,
     pilotPrice: 4000,
     priceId: 'price_1SrgoQ5bg6XXXrmNwsdnTwrW',
+    billingType: 'subscription',
     description: 'SOC2 Type II compliant infrastructure',
     features: [
       'SOC2 Type II controls',
@@ -45,6 +47,7 @@ const PRICING_TIERS = {
     price: 15000,
     pilotPrice: 7500,
     priceId: 'price_1SrgoQ5bg6XXXrmNQvC2YnmT',
+    billingType: 'subscription',
     description: 'HIPAA-compliant AWS Landing Zone',
     features: [
       'HIPAA compliance framework',
@@ -60,6 +63,7 @@ const PRICING_TIERS = {
     price: 25000,
     pilotPrice: 12500,
     priceId: 'price_1SrgoR5bg6XXXrmNUUveBMDw',
+    billingType: 'subscription',
     description: 'FedRAMP-aligned AWS Landing Zone',
     features: [
       'FedRAMP compliance framework',
