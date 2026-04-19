@@ -55,6 +55,15 @@ exports.handler = async (event) => {
       };
     }
 
+    const VALID_TIERS = new Set(['standard', 'fintech', 'healthcare', 'government']);
+    if (tier && !VALID_TIERS.has(tier)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: `Invalid tier: ${tier}` }),
+      };
+    }
+
     const pilotCoupon = process.env.STRIPE_PILOT_COUPON;
     const originalPrice = FULL_PRICES[tier] || 0;
     const tierCompliance = TIER_COMPLIANCE_METADATA[tier] || {};
