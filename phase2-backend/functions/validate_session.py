@@ -17,7 +17,9 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 CORS_ORIGIN = os.environ.get('CORS_ORIGIN', '*')
 
-# Only sessions for these payment intents / modes are considered valid
+# Only sessions for these payment intents / modes are considered valid.
+# `no_payment_required` occurs when the full amount is covered by a coupon
+# (100% discount) or when the line item has a $0 price.
 _VALID_PAYMENT_STATUSES = {'paid', 'no_payment_required'}
 _VALID_MODES = {'payment', 'subscription'}
 
