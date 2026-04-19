@@ -10,12 +10,12 @@
  * live Stripe checkout.  Demo mode is enabled by VITE_DEMO_MODE=true (set in
  * the demo build via deploy-demo.yml) or by ?demo=true in the URL.
  *
- * POSTs to /api/checkout → AWS API Gateway (netlify.toml) →
- * phase2-backend/functions/create_checkout_session.py → Stripe.
+ * POSTs to /api/checkout → AWS API Gateway 4f0i48ueak (securebase-checkout-api, prod stage) →
+ * src/functions/securebase-checkout-api/index.cjs (consolidated checkout Lambda from PR #1) → Stripe.
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Shield, Loader, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Shield, Loader, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { trackCheckoutStarted } from '../utils/analytics';
@@ -23,25 +23,18 @@ import { trackCheckoutStarted } from '../utils/analytics';
 const KNOWN_PLANS = Object.keys(PRICING_TIERS);
 
 export default function Checkout() {
+  // All hooks must be declared unconditionally before any early returns.
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-
-  // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
-  const locationState = location.state || {};
-  const rawPlan = locationState.tier || searchParams.get('plan') || 'standard';
-  // Validate plan against known tiers to prevent arbitrary values reaching analytics/URLs
-  const plan = KNOWN_PLANS.includes(rawPlan) ? rawPlan : 'standard';
-  const priceId = locationState.priceId || searchParams.get('priceId') || '';
-  const tierConfig = PRICING_TIERS[plan] || {};
-  const planName = searchParams.get('planName') || tierConfig.name || plan;
-  const planPrice = tierConfig.price ?? null;
-  const billingType = tierConfig.billingType || 'payment';
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
+  const locationState = location.state || {};
+  const rawPlan = locationState.tier || searchParams.get('plan') || 'standard';
 
   // Compute once at render time; isDemoMode reads env/localStorage/URL which are
   // stable for the lifetime of the page, so this value won't change after mount.
@@ -53,6 +46,37 @@ export default function Checkout() {
       navigate('/contact-sales', { replace: true });
     }
   }, [isDemo, navigate]);
+
+  // Fail-loud: unknown plan must surface as a visible error instead of silently
+  // falling back to 'standard'.  This prevents "wrong plan billed" bugs.
+  if (!KNOWN_PLANS.includes(rawPlan)) {
+    console.error(`Unknown plan: "${rawPlan}". Known plans: ${KNOWN_PLANS.join(', ')}`);
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-red-200 p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Plan not found</h1>
+          <p className="text-slate-500 text-sm mb-6">
+            The plan <strong>{rawPlan}</strong> does not exist. Please return to the pricing page and choose a valid plan.
+          </p>
+          <button
+            onClick={() => navigate('/pricing')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold hover:shadow-lg transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Pricing
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const plan = rawPlan;
+  const priceId = locationState.priceId || searchParams.get('priceId') || '';
+  const tierConfig = PRICING_TIERS[plan] || {};
+  const planName = searchParams.get('planName') || tierConfig.name || plan;
+  const planPrice = tierConfig.price ?? null;
+  const billingType = tierConfig.billingType || 'payment';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
