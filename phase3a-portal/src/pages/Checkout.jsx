@@ -20,6 +20,8 @@ import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { trackCheckoutStarted } from '../utils/analytics';
 
+const KNOWN_PLANS = Object.keys(PRICING_TIERS);
+
 export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +29,9 @@ export default function Checkout() {
 
   // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
   const locationState = location.state || {};
-  const plan = locationState.tier || searchParams.get('plan') || 'standard';
+  const rawPlan = locationState.tier || searchParams.get('plan') || 'standard';
+  // Validate plan against known tiers to prevent arbitrary values reaching analytics/URLs
+  const plan = KNOWN_PLANS.includes(rawPlan) ? rawPlan : 'standard';
   const priceId = locationState.priceId || searchParams.get('priceId') || '';
   const tierConfig = PRICING_TIERS[plan] || {};
   const planName = searchParams.get('planName') || tierConfig.name || plan;
@@ -38,19 +42,23 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Compute once at render time; isDemoMode reads env/localStorage/URL which are
+  // stable for the lifetime of the page, so this value won't change after mount.
+  const isDemo = isDemoMode();
+
   useEffect(() => {
-    if (isDemoMode()) {
+    if (isDemo) {
       // Demo environment — stay within the portal and avoid live Stripe
       navigate('/contact-sales', { replace: true });
     }
-  }, [navigate]);
+  }, [isDemo, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    trackCheckoutStarted({ tier: plan, value: planPrice, method: 'form' });
+    trackCheckoutStarted({ tier: plan, ...(planPrice !== null && { value: planPrice }), method: 'form' });
 
     try {
       const origin = window.location.origin;
