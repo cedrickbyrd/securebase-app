@@ -165,7 +165,14 @@
 
     <script>
         // Stripe configuration
-        const stripe = Stripe('pk_live_51SrfvJ5bg6XXXrmNrXuAY0aNgBMe20PDcXVpv86x4ZBUL5ysRA1oNAN2THoxymRls1veb0WJF0yVqgd2aGAaF04900QhrVHUH8');
+        // IMPORTANT: Set window.__STRIPE_PK__ at runtime via your server-rendered template or
+        // Netlify environment variables. Never hardcode live keys in source files.
+        const _stripePk = window.__STRIPE_PK__;
+        if (!_stripePk || _stripePk.includes('YOUR_')) {
+            console.error('Stripe publishable key is not configured. Set window.__STRIPE_PK__ before this script.');
+            throw new Error('Stripe publishable key not configured.');
+        }
+        const stripe = Stripe(_stripePk);
         
         const priceIds = {
             standard: 'price_1SrgoR5bg6XXXrmNXe0tTgki',
