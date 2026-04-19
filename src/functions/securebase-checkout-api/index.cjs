@@ -32,7 +32,7 @@ exports.handler = async (event) => {
         price: price_id,
         quantity: 1,
       }],
-      mode: 'subscription',
+      mode: 'payment',
       // Metadata is key for your "White-Glove" automation
       metadata: {
         plan: plan_name,
