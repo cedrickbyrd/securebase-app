@@ -48,6 +48,7 @@ jobs:
       - name: Build demo portal
         run: npm run build
         env:
+          VITE_DEMO_MODE: 'true'
           VITE_USE_MOCK_API: false
           VITE_ENV: production
           VITE_ANALYTICS_ENABLED: true
