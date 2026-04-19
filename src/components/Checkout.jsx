@@ -6,14 +6,14 @@
  * is an identical inline form — NOT a redirect shim — to prevent the infinite
  * redirect loop that previously occurred when the shim pointed back at this domain.
  *
- * POSTs to /api/checkout → AWS API Gateway (netlify.toml:18-22) →
- * phase2-backend/functions/create_checkout_session.py → Stripe.
+ * POSTs to /api/checkout → AWS API Gateway 4f0i48ueak (securebase-checkout-api, prod stage) →
+ * src/functions/securebase-checkout-api/index.cjs (consolidated checkout Lambda from PR #1) → Stripe.
  * The archived Netlify function (archived/netlify-functions/securebase-checkout-api.js)
  * is no longer used.
  */
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Shield, Loader, CheckCircle, ArrowLeft, Zap } from 'lucide-react';
+import { Shield, Loader, CheckCircle, ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
 import { trackCheckoutStarted } from '../utils/analytics';
 import { getPilotPricing } from '../utils/trackingUtils';
 
@@ -24,6 +24,8 @@ const PLAN_LABELS = {
   pilot: 'Pilot Program',
   pilot_compliance: 'Compliance Jumpstart',
 };
+
+const KNOWN_PLANS = Object.keys(PLAN_LABELS);
 
 const PLAN_PRICES = {
   standard: 499,
@@ -48,12 +50,42 @@ const PLAN_PRICE_IDS = {
 };
 
 export default function Checkout() {
+  // All hooks must be declared unconditionally before any early returns.
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Resolve plan — prefer URL params, fall back to attribution-based pilot pricing.
   const pilotPricing = getPilotPricing();
   const rawPlan = searchParams.get('plan') || (pilotPricing ? 'pilot' : 'standard');
+
+  // Fail-loud: unknown plan must surface as a visible error instead of silently
+  // rendering with undefined price/label data.
+  if (!KNOWN_PLANS.includes(rawPlan)) {
+    console.error(`Unknown plan: "${rawPlan}". Known plans: ${KNOWN_PLANS.join(', ')}`);
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-red-200 p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Plan not found</h1>
+          <p className="text-slate-500 text-sm mb-6">
+            The plan <strong>{rawPlan}</strong> does not exist. Please return to the pricing page and choose a valid plan.
+          </p>
+          <button
+            onClick={() => navigate('/pricing')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold hover:shadow-lg transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Pricing
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const plan = rawPlan;
   const priceId =
     searchParams.get('priceId') ||
@@ -68,11 +100,6 @@ export default function Checkout() {
   const isPilot = plan === 'pilot' && !!pilotPricing;
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -61,6 +61,31 @@ exports.handler = async (event) => {
     const mode = is_one_time ? 'payment' : 'subscription';
     console.log('mode:', mode, '| tier:', tier, '| billing_type:', billing_type);
 
+    // Validate that the Stripe Price's recurrence matches the intended mode.
+    // This catches "recurring price sent as one-time payment" mismatches before
+    // they reach Stripe and return a confusing error.
+    const price = await stripe.prices.retrieve(price_id);
+    if (price.recurring && mode === 'payment') {
+      console.error(`Price/mode mismatch: price ${price_id} is recurring but mode is payment. tier=${tier} billing_type=${billing_type}`);
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({
+          error: `Price ${price_id} is configured for recurring billing in Stripe, but tier "${tier}" is configured as one-time payment. Verify PLAN_BILLING_TYPE configuration.`,
+        }),
+      };
+    }
+    if (!price.recurring && mode === 'subscription') {
+      console.error(`Price/mode mismatch: price ${price_id} is one-time but mode is subscription. tier=${tier} billing_type=${billing_type}`);
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({
+          error: `Price ${price_id} is configured for one-time payment in Stripe, but tier "${tier}" is configured for subscription billing. Verify PLAN_BILLING_TYPE configuration.`,
+        }),
+      };
+    }
+
     // 2. Create Stripe Session
     const sessionParams = {
       customer_email: customer_email || undefined,

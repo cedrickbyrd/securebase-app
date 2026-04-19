@@ -17,7 +17,7 @@
 
 [[redirects]]
   from = "/api/checkout"
-  to = "https://api.securebase.tximhotep.com/checkout"
+  to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
   status = 200
   force = true
 
