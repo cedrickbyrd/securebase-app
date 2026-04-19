@@ -17,7 +17,7 @@ base = "phase3a-portal"
 
 [[redirects]]
   from = "/api/checkout"
-  to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+  to = "https://api.securebase.tximhotep.com/checkout"
   status = 200
   force = true
 
