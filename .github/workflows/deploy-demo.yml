@@ -114,6 +114,40 @@ jobs:
             exit 1
           fi
 
+      - name: Smoke test demo-auth endpoint
+        run: |
+          DEPLOY_URL="${{ needs.deploy-demo-portal.outputs.deployment-url }}"
+          echo "🔐 Smoke-testing POST ${DEPLOY_URL}/api/demo-auth ..."
+
+          # These credentials are the public demo credentials shown on the login page
+          # (Login.jsx DEMO_EMAIL / DEMO_PASSWORD).  They are intentionally not secret.
+          response=$(curl -si --max-time 15 \
+            -X POST "${DEPLOY_URL}/api/demo-auth" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"login","email":"demo@securebase.tximhotep.com","password":"SecureBaseDemo2026!"}')
+
+          http_code=$(echo "$response" | grep -i "^HTTP" | tail -1 | awk '{print $2}')
+          body=$(echo "$response" | tail -1)
+
+          if [ "$http_code" != "200" ]; then
+            echo "❌ demo-auth returned HTTP $http_code (expected 200)"
+            echo "Body: $body"
+            exit 1
+          fi
+          echo "✅ demo-auth returned HTTP 200"
+
+          if ! echo "$body" | grep -q '"token"'; then
+            echo "❌ JWT token missing from response body"
+            exit 1
+          fi
+          echo "✅ JWT token present in response"
+
+          if ! echo "$body" | grep -q '"customer"'; then
+            echo "❌ Customer object missing from response body"
+            exit 1
+          fi
+          echo "✅ Customer object present in response"
+
       - name: Generate deployment report
         if: always()
         run: |
