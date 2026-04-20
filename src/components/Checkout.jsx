@@ -43,12 +43,6 @@ const PLAN_BILLING_TYPE = {
   pilot_compliance: 'payment',
 };
 
-// Env-var fallback for plan price IDs (avoids hardcoding real Stripe IDs in source).
-// Set VITE_STRIPE_PILOT_COMPLIANCE_ID in .env to the Stripe price ID for pilot_compliance.
-const PLAN_PRICE_IDS = {
-  pilot_compliance: import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || '',
-};
-
 export default function Checkout() {
   // All hooks must be declared unconditionally before any early returns.
   const navigate = useNavigate();
@@ -87,10 +81,6 @@ export default function Checkout() {
   }
 
   const plan = rawPlan;
-  const priceId =
-    searchParams.get('priceId') ||
-    PLAN_PRICE_IDS[plan] ||
-    (pilotPricing ? pilotPricing.priceId : '');
   const planName =
     searchParams.get('planName') || PLAN_LABELS[plan] || plan;
 
@@ -120,8 +110,7 @@ export default function Checkout() {
         body: JSON.stringify({
           email,
           name,
-          priceId,
-          billingType,
+          tier: plan,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
