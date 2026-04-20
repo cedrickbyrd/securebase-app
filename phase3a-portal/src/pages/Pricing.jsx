@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, CheckCircle } from 'lucide-react';
-import { PRICING_TIERS, PILOT_COMPLIANCE_ID } from '../config/live-config';
+import { PRICING_TIERS } from '../config/live-config';
 import { trackContactSalesIntent, trackCheckoutStarted, trackCTAClick } from '../utils/analytics';
 
 const COMPARISON_ROWS = [
@@ -55,7 +55,7 @@ const Pricing = () => {
     // One-time pilot → navigate directly to checkout form (no coupon/subscription logic)
     if (plan.isPilotOneTime) {
       trackCTAClick('pricing', plan.key);
-      navigate('/checkout', { state: { tier: plan.key, priceId: PILOT_COMPLIANCE_ID } });
+      navigate('/checkout', { state: { tier: plan.key } });
       return;
     }
 
@@ -81,8 +81,6 @@ const Pricing = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tier: plan.key,
-          priceId: plan.priceId,
-          billingType: plan.billingType || 'payment',
           use_pilot_coupon: true,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
           cancelUrl: `${origin}/pricing`,
@@ -106,7 +104,7 @@ const Pricing = () => {
       setErrorTier(plan.key);
       setLoadingTier(null);
       // Graceful fallback to the full checkout form
-      navigate('/checkout', { state: { tier: plan.key, priceId: plan.priceId } });
+      navigate('/checkout', { state: { tier: plan.key } });
     }
   };
 
