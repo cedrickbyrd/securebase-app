@@ -81,7 +81,6 @@ const Pricing = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tier: plan.key,
-          billingType: plan.billingType || 'payment',
           use_pilot_coupon: true,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.key)}&value=${plan.pilotPrice || plan.price || 0}`,
           cancelUrl: `${origin}/pricing`,
