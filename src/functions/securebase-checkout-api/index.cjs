@@ -3,6 +3,18 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // One-time payment tiers — these must use mode:'payment', not mode:'subscription'.
 const ONE_TIME_TIERS = new Set(['pilot_compliance']);
 
+// Server-side tier → Stripe Price ID env var mapping.
+// Price IDs are resolved exclusively from environment variables; any client-supplied
+// priceId is IGNORED for these tiers. This prevents an attacker (or stale frontend
+// code) from substituting an arbitrary Stripe price (e.g. a $0 "guest" price).
+const TIER_PRICE_ENV = {
+  standard:         'STRIPE_PRICE_STANDARD',
+  fintech:          'STRIPE_PRICE_FINTECH',
+  healthcare:       'STRIPE_PRICE_HEALTHCARE',
+  government:       'STRIPE_PRICE_GOVERNMENT',
+  pilot_compliance: 'STRIPE_PRICE_PILOT_COMPLIANCE',
+};
+
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': 'https://securebase.tximhotep.com',
@@ -11,7 +23,7 @@ const CORS_HEADERS = {
 };
 
 exports.handler = async (event) => {
-  console.log('handler_version=2026-04-19');
+  console.log('handler_version=2026-04-20');
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -28,63 +40,44 @@ exports.handler = async (event) => {
 
     // Accept both camelCase (frontend) and snake_case (legacy) field names.
     const customer_email = body.customer_email || body.email;
-    const price_id       = body.price_id       || body.priceId;
     const plan_name      = body.plan_name      || body.name;
     const tier           = body.tier           || body.plan_tier || '';
-    const billing_type   = body.billingType    || body.billing_type || 'payment';
     const success_url    = body.successUrl     || body.success_url || `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`;
     const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
 
-    // Warn if tier is missing — use billingType as the authoritative fallback signal.
-    if (!tier) {
-      console.warn('No tier provided in request; using billingType as authoritative signal:', billing_type);
+    // Require a known tier — the price ID is always resolved server-side from env vars.
+    if (!tier || !TIER_PRICE_ENV[tier]) {
+      const valid = Object.keys(TIER_PRICE_ENV).join(', ');
+      console.error(`Unknown or missing tier "${tier}". Valid tiers: ${valid}`);
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: `tier is required. Valid tiers: ${valid}` }),
+      };
     }
 
-    // Validate required field before calling Stripe to avoid a cryptic API error.
+    // Resolve Stripe Price ID exclusively from server env vars.
+    // Ignore any client-supplied priceId to prevent price-substitution attacks.
+    const envVarName = TIER_PRICE_ENV[tier];
+    const price_id   = process.env[envVarName];
+    if (body.priceId || body.price_id) {
+      console.warn(`Client-supplied priceId ignored for tier "${tier}"; using server env var ${envVarName}.`);
+    }
     if (!price_id) {
+      console.error(`Missing env var ${envVarName} for tier "${tier}"`);
       return {
-        statusCode: 400,
+        statusCode: 500,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: 'priceId is required' }),
+        body: JSON.stringify({ error: `Pricing not configured for tier "${tier}". Contact support.` }),
       };
     }
 
-    // Determine Stripe checkout mode using both signals:
-    //   - tier in ONE_TIME_TIERS (e.g. pilot_compliance) → payment
-    //   - billingType === 'payment' → payment
-    //   - anything else (fintech/healthcare/government subscription tiers) → subscription
-    const VALID_BILLING_TYPES = ['payment', 'subscription'];
-    if (billing_type && !VALID_BILLING_TYPES.includes(billing_type)) {
-      console.warn(`Unexpected billing_type value: "${billing_type}". Defaulting to "payment".`);
-    }
-    const is_one_time = ONE_TIME_TIERS.has(tier) || billing_type === 'payment';
+    // Determine Stripe checkout mode from tier alone — never trust client-supplied
+    // billingType for this, as that would allow subscription tiers to be downgraded
+    // to one-time payments by a malicious or misconfigured caller.
+    const is_one_time = ONE_TIME_TIERS.has(tier);
     const mode = is_one_time ? 'payment' : 'subscription';
-    console.log('mode:', mode, '| tier:', tier, '| billing_type:', billing_type);
-
-    // Validate that the Stripe Price's recurrence matches the intended mode.
-    // This catches "recurring price sent as one-time payment" mismatches before
-    // they reach Stripe and return a confusing error.
-    const price = await stripe.prices.retrieve(price_id);
-    if (price.recurring && mode === 'payment') {
-      console.error(`Price/mode mismatch: price ${price_id} is recurring but mode is payment. tier=${tier} billing_type=${billing_type}`);
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: `Price ${price_id} is configured for recurring billing in Stripe, but tier "${tier}" is configured as one-time payment. Verify PLAN_BILLING_TYPE configuration.`,
-        }),
-      };
-    }
-    if (!price.recurring && mode === 'subscription') {
-      console.error(`Price/mode mismatch: price ${price_id} is one-time but mode is subscription. tier=${tier} billing_type=${billing_type}`);
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: `Price ${price_id} is configured for one-time payment in Stripe, but tier "${tier}" is configured for subscription billing. Verify PLAN_BILLING_TYPE configuration.`,
-        }),
-      };
-    }
+    console.log('mode:', mode, '| tier:', tier, '| envVar:', envVarName);
 
     // 2. Create Stripe Session
     const sessionParams = {
