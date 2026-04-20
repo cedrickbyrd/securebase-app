@@ -72,7 +72,6 @@ export default function Checkout() {
   }
 
   const plan = rawPlan;
-  const priceId = locationState.priceId || searchParams.get('priceId') || '';
   const tierConfig = PRICING_TIERS[plan] || {};
   const planName = searchParams.get('planName') || tierConfig.name || plan;
   const planPrice = tierConfig.price ?? null;
@@ -95,8 +94,6 @@ export default function Checkout() {
           email,
           name,
           tier: plan,
-          priceId,
-          billingType,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),

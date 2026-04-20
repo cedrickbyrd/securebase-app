@@ -10,7 +10,6 @@ const PLANS = [
     name: 'Standard',
     tagline: 'CIS-hardened AWS Landing Zone',
     price: 499,
-    priceId: 'price_standard_monthly',
     badge: null,
     features: [
       'CIS Benchmark Level 1 & 2',
@@ -30,7 +29,6 @@ const PLANS = [
     name: 'Fintech / Healthcare',
     tagline: 'SOC 2 Type II + HIPAA-ready',
     price: 1499,
-    priceId: 'price_fintech_monthly',
     badge: 'Most Popular',
     features: [
       'Everything in Standard',
@@ -50,7 +48,6 @@ const PLANS = [
     name: 'Enterprise / FedRAMP',
     tagline: 'FedRAMP Moderate + NIST RMF',
     price: 3999,
-    priceId: 'price_enterprise_monthly',
     badge: null,
     features: [
       'Everything in Fintech',
@@ -174,7 +171,7 @@ export default function Pricing() {
       navigate('/contact-sales?tier=enterprise&source=pricing');
       return;
     }
-    navigate(`/checkout?plan=${plan.id}&priceId=${plan.priceId}&planName=${encodeURIComponent(plan.name)}`);
+    navigate(`/checkout?plan=${plan.id}&planName=${encodeURIComponent(plan.name)}`);
   };
 
   return (
@@ -266,8 +263,7 @@ export default function Pricing() {
           <button
             onClick={() => {
               trackPilotCTAClick('urgency_banner');
-              const pilotPriceId = import.meta.env.VITE_STRIPE_PILOT_COMPLIANCE_ID || '';
-              navigate(`/checkout?plan=pilot_compliance${pilotPriceId ? `&priceId=${pilotPriceId}` : ''}&planName=Compliance+Jumpstart`);
+              navigate(`/checkout?plan=pilot_compliance&planName=Compliance+Jumpstart`);
             }}
             className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
           >
