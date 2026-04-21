@@ -46,14 +46,16 @@
   status = 200
   force = true
 
-# DEMO AUTH - JWT issuance via Netlify function (must be before SPA fallback).
-# Routes to the inline demo-auth Netlify function which accepts the five
-# built-in demo accounts and returns { token, customer } in the response body.
-# When the AWS Lambda at https://api.securebase.tximhotep.com/demo-auth is
-# stable, this redirect can be switched back to that URL.
+# DEMO AUTH - Routes to AWS Lambda via API Gateway.
+# Per CLAUDE.md / .github/copilot-instructions.md Cost Optimization policy,
+# this endpoint MUST NOT use a Netlify function.  The canonical Lambda lives at
+# landing-zone/modules/demo-backend/lambda/auth.py and exposes the five
+# tiered demo accounts used by validate-demo.yml.
+# See archived/netlify-functions/MIGRATION_NOTES.md for the April 2026
+# migration history.
 [[redirects]]
   from = "/api/demo-auth"
-  to = "/.netlify/functions/demo-auth"
+  to = "https://api.securebase.tximhotep.com/demo-auth"
   status = 200
   force = true
 
