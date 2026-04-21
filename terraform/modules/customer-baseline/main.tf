@@ -105,6 +105,11 @@ variable "key_admin_role_arn" {
   default     = ""   # empty = derived from management_account_id
 }
 
+variable "lambda_execution_role_arn" {
+  description = "IAM role ARN of the SecureBase Lambda execution role in the management account. Granted sts:AssumeRole on the SecureBaseAccess cross-account role."
+  type        = string
+}
+
 # ── Locals ─────────────────────────────────────────────────
 
 locals {
@@ -610,22 +615,15 @@ data "aws_iam_policy_document" "securebase_assume" {
     }
   }
 
-  # Allow SecureBase Lambda functions (running in the management account) to
-  # assume this role in the customer account.  The aws:SourceAccount condition
-  # restricts the service principal to invocations originating from the
-  # SecureBase management account, enforcing least-privilege cross-account access.
+  # Allow the SecureBase Lambda execution role (in the management account) to
+  # assume this role in the customer account for automated cross-account operations.
   statement {
     effect = "Allow"
     principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
+      type        = "AWS"
+      identifiers = [var.lambda_execution_role_arn]
     }
     actions = ["sts:AssumeRole"]
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceAccount"
-      values   = [var.management_account_id]
-    }
   }
 }
 
