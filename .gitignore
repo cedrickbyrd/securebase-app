@@ -73,3 +73,67 @@ exports/
 .netlify
 infrastructure/email/*.zip
 .env
+
+# Secrets and env
+.env
+.env.*
+!.env.example
+
+# Stripe ID dotfiles
+.enterprise-*-price-id
+.professional-*-price-id
+.starter-*-price-id
+.securebase-*-id
+
+# AI tool caches
+.adal/
+.agents/
+.augment/
+.bob/
+.claude/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+
+# Python packages should never live at repo root
+/certifi/
+/charset_normalizer/
+/idna/
+/requests/
+/urllib3/
+/stripe/
+/bin/
+/typing_extensions.py
+/*.dist-info/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build artifacts and backups
+*.zip
+*.bak
+*.backup
+*.so
