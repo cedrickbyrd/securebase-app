@@ -609,6 +609,24 @@ data "aws_iam_policy_document" "securebase_assume" {
       }
     }
   }
+
+  # Allow SecureBase Lambda functions (running in the management account) to
+  # assume this role in the customer account.  The aws:SourceAccount condition
+  # restricts the service principal to invocations originating from the
+  # SecureBase management account, enforcing least-privilege cross-account access.
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [var.management_account_id]
+    }
+  }
 }
 
 resource "aws_iam_role" "securebase_access" {
