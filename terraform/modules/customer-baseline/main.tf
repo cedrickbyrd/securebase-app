@@ -105,6 +105,11 @@ variable "key_admin_role_arn" {
   default     = ""   # empty = derived from management_account_id
 }
 
+variable "lambda_execution_role_arn" {
+  description = "IAM role ARN of the SecureBase Lambda execution role in the management account. Granted sts:AssumeRole on the SecureBaseAccess cross-account role."
+  type        = string
+}
+
 # ── Locals ─────────────────────────────────────────────────
 
 locals {
@@ -608,6 +613,17 @@ data "aws_iam_policy_document" "securebase_assume" {
         values   = ["true"]
       }
     }
+  }
+
+  # Allow the SecureBase Lambda execution role (in the management account) to
+  # assume this role in the customer account for automated cross-account operations.
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [var.lambda_execution_role_arn]
+    }
+    actions = ["sts:AssumeRole"]
   }
 }
 
