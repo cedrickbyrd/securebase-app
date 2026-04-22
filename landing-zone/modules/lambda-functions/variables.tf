@@ -71,3 +71,9 @@ variable "lead_notification_webhook_url" {
   sensitive   = true
   default     = ""
 }
+
+variable "ses_identity_arn" {
+  description = "ARN of the SES verified identity (domain or email) Lambdas are permitted to send from. Defaults to unrestricted if empty."
+  type        = string
+  default     = ""
+}
