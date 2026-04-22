@@ -1,0 +1,2 @@
+supabase==2.3.4
+postgrest-py==0.13.2
