@@ -1,0 +1,627 @@
+name: Validate Checkout Path
+
+# Per-hop validation of the /api/checkout revenue path.
+#
+# Catches deployment regressions at each discrete hop:
+#   Browser → Netlify /api/checkout redirect
+#           → API Gateway 4f0i48ueak/prod/checkout
+#           → Lambda index.cjs
+#           → Stripe
+#
+# Jobs run in dependency order so the first failing hop surfaces immediately.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/functions/securebase-checkout-api/**'
+      - 'src/components/Checkout.jsx'
+      - 'phase3a-portal/src/pages/Checkout.jsx'
+      - 'netlify.toml'
+      - 'phase3a-portal/netlify.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/functions/securebase-checkout-api/**'
+      - 'src/components/Checkout.jsx'
+      - 'phase3a-portal/src/pages/Checkout.jsx'
+      - 'netlify.toml'
+      - 'phase3a-portal/netlify.toml'
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 1 · Frontend Payload
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  validate-frontend-payload:
+    name: 'Hop 1 · Frontend Payload'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Assert marketing-site Checkout.jsx sends tier, not priceId
+        run: |
+          FILE="src/components/Checkout.jsx"
+          echo "── Checking ${FILE} ──"
+
+          # Must POST to /api/checkout
+          if ! grep -qF "'/api/checkout'" "${FILE}" && ! grep -qF '"/api/checkout"' "${FILE}"; then
+            echo "❌ ${FILE} does not POST to /api/checkout"
+            exit 1
+          fi
+          echo "✅ Posts to /api/checkout"
+
+          # Must include tier: in the POST body
+          if ! grep -qE 'tier\s*:\s*(plan|tier)' "${FILE}"; then
+            echo "❌ ${FILE} does not include 'tier:' in POST body"
+            grep -n "tier" "${FILE}" || true
+            exit 1
+          fi
+          echo "✅ Sends tier in POST body"
+
+          # Must NOT include priceId in the JSON payload construction
+          # (It's OK if priceId appears in comments or variable names, but not
+          # as a JSON key being sent to /api/checkout.)
+          PRICEID_IN_BODY=$(node -e "
+            const fs = require('fs');
+            const src = fs.readFileSync('${FILE}', 'utf8');
+            // Find the JSON.stringify(...) block(s) near /api/checkout fetch calls
+            const fetchBlocks = src.match(/fetch\s*\(\s*['\"]\/api\/checkout['\"][\s\S]*?JSON\.stringify\s*\(\s*\{[\s\S]*?\}\s*\)/g) || [];
+            const hasPriceId = fetchBlocks.some(block => /priceId\s*:/.test(block));
+            process.exit(hasPriceId ? 1 : 0);
+          " 2>&1 || echo "FOUND")
+          if [ "${PRICEID_IN_BODY}" = "FOUND" ]; then
+            echo "❌ ${FILE} includes priceId in the /api/checkout POST body — old pattern detected"
+            grep -n "priceId" "${FILE}" || true
+            exit 1
+          fi
+          echo "✅ priceId NOT present in /api/checkout POST body"
+
+      - name: Assert portal Checkout.jsx sends tier, not priceId
+        run: |
+          FILE="phase3a-portal/src/pages/Checkout.jsx"
+          echo "── Checking ${FILE} ──"
+
+          # Must POST to /api/checkout
+          if ! grep -qF "'/api/checkout'" "${FILE}" && ! grep -qF '"/api/checkout"' "${FILE}"; then
+            echo "❌ ${FILE} does not POST to /api/checkout"
+            exit 1
+          fi
+          echo "✅ Posts to /api/checkout"
+
+          # Must include tier: in the POST body
+          if ! grep -qE 'tier\s*:\s*(plan|tier)' "${FILE}"; then
+            echo "❌ ${FILE} does not include 'tier:' in POST body"
+            grep -n "tier" "${FILE}" || true
+            exit 1
+          fi
+          echo "✅ Sends tier in POST body"
+
+          # Must NOT include priceId in the JSON payload construction
+          PRICEID_IN_BODY=$(node -e "
+            const fs = require('fs');
+            const src = fs.readFileSync('${FILE}', 'utf8');
+            const fetchBlocks = src.match(/fetch\s*\(\s*['\"]\/api\/checkout['\"][\s\S]*?JSON\.stringify\s*\(\s*\{[\s\S]*?\}\s*\)/g) || [];
+            const hasPriceId = fetchBlocks.some(block => /priceId\s*:/.test(block));
+            process.exit(hasPriceId ? 1 : 0);
+          " 2>&1 || echo "FOUND")
+          if [ "${PRICEID_IN_BODY}" = "FOUND" ]; then
+            echo "❌ ${FILE} includes priceId in the /api/checkout POST body — old pattern detected"
+            grep -n "priceId" "${FILE}" || true
+            exit 1
+          fi
+          echo "✅ priceId NOT present in /api/checkout POST body"
+
+      - name: Write step summary
+        run: |
+          echo "## ✅ Hop 1 · Frontend Payload" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Both Checkout.jsx files send \`tier\` (not \`priceId\`) in the POST body and target \`/api/checkout\`." >> "${GITHUB_STEP_SUMMARY}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 2 · Lambda Source
+# ─────────────────────────────────────────────────────────────────────────────
+  validate-lambda-source:
+    name: 'Hop 2 · Lambda Source'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: validate-frontend-payload
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Lambda dependencies
+        working-directory: src/functions/securebase-checkout-api
+        run: npm install --omit=dev
+
+      - name: Assert handler_version marker
+        run: |
+          FILE="src/functions/securebase-checkout-api/index.cjs"
+          EXPECTED_VERSION="handler_version=2026-04-20"
+          if ! grep -qF "${EXPECTED_VERSION}" "${FILE}"; then
+            echo "❌ handler_version marker '${EXPECTED_VERSION}' not found in ${FILE}"
+            echo "   Found version lines:"
+            grep "handler_version" "${FILE}" || echo "   (none)"
+            exit 1
+          fi
+          echo "✅ handler_version=2026-04-20 present"
+
+      - name: Assert all 5 tiers in TIER_PRICE_ENV
+        run: |
+          FILE="src/functions/securebase-checkout-api/index.cjs"
+          TIERS=(standard fintech healthcare government pilot_compliance)
+          FAILED=0
+          for tier in "${TIERS[@]}"; do
+            if ! grep -qF "${tier}" "${FILE}"; then
+              echo "❌ Tier '${tier}' not found in TIER_PRICE_ENV in ${FILE}"
+              FAILED=1
+            else
+              echo "✅ Tier '${tier}' present"
+            fi
+          done
+          [ "${FAILED}" -eq 0 ] || exit 1
+          echo ""
+          echo "── Tier map coverage: ${#TIERS[@]}/5 tiers ──"
+
+      - name: Assert Missing priceId canary string absent
+        run: |
+          FILE="src/functions/securebase-checkout-api/index.cjs"
+          if grep -qF "Missing priceId" "${FILE}"; then
+            LINE=$(grep -n "Missing priceId" "${FILE}" | head -1)
+            echo "❌ CANARY TRIGGERED: 'Missing priceId' found in ${FILE} at line ${LINE}"
+            echo "   This string belongs to the OLD Netlify function (archived/netlify-functions/)."
+            echo "   Old code has been re-introduced into index.cjs — revert immediately."
+            exit 1
+          fi
+          echo "✅ 'Missing priceId' canary string absent — new code confirmed"
+
+      - name: Run Lambda unit tests
+        run: node --test src/functions/securebase-checkout-api/checkout.test.cjs
+
+      - name: Write step summary
+        run: |
+          echo "## ✅ Hop 2 · Lambda Source" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| \`handler_version=2026-04-20\` | ✅ present |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| TIER_PRICE_ENV (5 tiers) | ✅ standard, fintech, healthcare, government, pilot_compliance |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| \`Missing priceId\` canary | ✅ absent |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Unit tests | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 3 · Netlify Redirect
+# ─────────────────────────────────────────────────────────────────────────────
+  validate-netlify-redirect:
+    name: 'Hop 3 · Netlify Redirect'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: validate-lambda-source
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Assert /api/checkout redirect in root netlify.toml
+        run: |
+          TOML="netlify.toml"
+          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+
+          echo "── Checking ${TOML} ──"
+
+          # Extract the redirect block for /api/checkout
+          REDIRECT_BLOCK=$(awk '/from = "\/api\/checkout"/,/^$/' "${TOML}")
+
+          if [ -z "${REDIRECT_BLOCK}" ]; then
+            echo "❌ No redirect block found for '/api/checkout' in ${TOML}"
+            exit 1
+          fi
+
+          if ! echo "${REDIRECT_BLOCK}" | grep -qF "${EXPECTED_TARGET}"; then
+            echo "❌ /api/checkout redirect does not point to expected target:"
+            echo "   Expected: ${EXPECTED_TARGET}"
+            echo "   Found block:"
+            echo "${REDIRECT_BLOCK}"
+            exit 1
+          fi
+          echo "✅ Redirect target correct: ${EXPECTED_TARGET}"
+
+          if ! echo "${REDIRECT_BLOCK}" | grep -qE 'status\s*=\s*200'; then
+            echo "❌ /api/checkout redirect does not have status = 200"
+            echo "${REDIRECT_BLOCK}"
+            exit 1
+          fi
+          echo "✅ status = 200"
+
+          if ! echo "${REDIRECT_BLOCK}" | grep -qE 'force\s*=\s*true'; then
+            echo "❌ /api/checkout redirect does not have force = true"
+            echo "${REDIRECT_BLOCK}"
+            exit 1
+          fi
+          echo "✅ force = true"
+
+      - name: Assert /api/checkout redirect in phase3a-portal netlify.toml
+        run: |
+          TOML="phase3a-portal/netlify.toml"
+          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+
+          if [ ! -f "${TOML}" ]; then
+            echo "⚠️  ${TOML} not found — skipping portal redirect check"
+            exit 0
+          fi
+
+          echo "── Checking ${TOML} ──"
+
+          REDIRECT_BLOCK=$(awk '/from = "\/api\/checkout"/,/^$/' "${TOML}")
+
+          if [ -z "${REDIRECT_BLOCK}" ]; then
+            echo "❌ No redirect block found for '/api/checkout' in ${TOML}"
+            exit 1
+          fi
+
+          if ! echo "${REDIRECT_BLOCK}" | grep -qF "${EXPECTED_TARGET}"; then
+            echo "❌ /api/checkout redirect does not point to expected target in ${TOML}"
+            echo "   Expected: ${EXPECTED_TARGET}"
+            echo "   Found:"
+            echo "${REDIRECT_BLOCK}"
+            exit 1
+          fi
+          echo "✅ Portal redirect target correct"
+
+          if ! echo "${REDIRECT_BLOCK}" | grep -qE 'force\s*=\s*true'; then
+            echo "❌ Portal /api/checkout redirect does not have force = true"
+            exit 1
+          fi
+          echo "✅ Portal force = true"
+
+      - name: Scan for interceptor checkout functions
+        run: |
+          FAILED=0
+
+          # Directories to scan for checkout interceptors
+          SCAN_DIRS=(
+            "netlify/functions"
+            "phase3a-portal/netlify/functions"
+          )
+
+          for dir in "${SCAN_DIRS[@]}"; do
+            if [ ! -d "${dir}" ]; then
+              echo "ℹ️  ${dir} does not exist — skipping"
+              continue
+            fi
+
+            echo "── Scanning ${dir} ──"
+
+            # Fail if any file named checkout.js or checkout.ts exists
+            for ext in js ts; do
+              if [ -f "${dir}/checkout.${ext}" ]; then
+                echo "❌ Interceptor found: ${dir}/checkout.${ext}"
+                echo "   This file would intercept /api/checkout before it reaches the Lambda."
+                echo "   Move it to archived/ or delete it."
+                FAILED=1
+              fi
+            done
+
+            # Fail if any .js file outside archived/ contains "Missing priceId"
+            while IFS= read -r -d '' f; do
+              # Skip archived/ subdirectory
+              if echo "${f}" | grep -q "/archived/"; then
+                continue
+              fi
+              if grep -lF "Missing priceId" "${f}" 2>/dev/null; then
+                echo "❌ 'Missing priceId' found in ${f} (outside archived/)"
+                echo "   This is the old Netlify function error string and should not be deployed."
+                FAILED=1
+              fi
+            done < <(find "${dir}" -name "*.js" -print0 2>/dev/null)
+          done
+
+          [ "${FAILED}" -eq 0 ] || exit 1
+          echo "✅ No checkout interceptor functions found"
+          echo "✅ 'Missing priceId' absent from all active Netlify functions"
+
+      - name: Write step summary
+        run: |
+          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+          echo "## ✅ Hop 3 · Netlify Redirect" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Redirect target | ✅ \`${EXPECTED_TARGET}\` |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| status = 200 | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| force = true | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| No checkout interceptor | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 4 · Lambda Env Vars
+# ─────────────────────────────────────────────────────────────────────────────
+  validate-lambda-env-vars:
+    name: 'Hop 4 · Lambda Env Vars'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: validate-netlify-redirect
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Assert TIER_PRICE_ENV maps to STRIPE_PRICE_* env var names
+        run: |
+          FILE="src/functions/securebase-checkout-api/index.cjs"
+
+          echo "── Checking TIER_PRICE_ENV env var names ──"
+          EXPECTED_VARS=(
+            STRIPE_PRICE_STANDARD
+            STRIPE_PRICE_FINTECH
+            STRIPE_PRICE_HEALTHCARE
+            STRIPE_PRICE_GOVERNMENT
+            STRIPE_PRICE_PILOT_COMPLIANCE
+          )
+
+          FAILED=0
+          for var in "${EXPECTED_VARS[@]}"; do
+            if ! grep -qF "${var}" "${FILE}"; then
+              echo "❌ Expected env var '${var}' not found in TIER_PRICE_ENV in ${FILE}"
+              FAILED=1
+            else
+              echo "✅ ${var}"
+            fi
+          done
+          [ "${FAILED}" -eq 0 ] || exit 1
+
+          echo ""
+          echo "Required Lambda env vars:"
+          for var in "${EXPECTED_VARS[@]}"; do
+            echo "  • ${var}"
+          done
+
+      - name: Assert no hardcoded price_ strings in Lambda
+        run: |
+          FILE="src/functions/securebase-checkout-api/index.cjs"
+
+          # price_ strings must only come from env vars, never hardcoded
+          # (e.g., price_1ABC... patterns are forbidden)
+          HARDCODED=$(grep -nE "['\"](price_[0-9A-Za-z]{14,})['\"]" "${FILE}" || true)
+          if [ -n "${HARDCODED}" ]; then
+            echo "❌ Hardcoded Stripe price ID found in ${FILE}:"
+            echo "${HARDCODED}"
+            echo "   Price IDs must come exclusively from environment variables."
+            exit 1
+          fi
+          echo "✅ No hardcoded price_ strings in Lambda source"
+
+      - name: Run validate-pricing.cjs for all 4 subscription tiers
+        run: |
+          echo "── Running validate-pricing.cjs for each subscription tier ──"
+          for tier in standard fintech healthcare government; do
+            echo ""
+            echo "── Tier: ${tier} ──"
+            node .github/scripts/validate-pricing.cjs "${tier}"
+          done
+
+      - name: Write step summary
+        run: |
+          echo "## ✅ Hop 4 · Lambda Env Vars" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Required Lambda Env Var | Status |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_STANDARD | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_FINTECH | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_HEALTHCARE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_GOVERNMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_PILOT_COMPLIANCE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| No hardcoded price_ IDs | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| validate-pricing.cjs (4 tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 5 · Live Lambda Probe
+# ─────────────────────────────────────────────────────────────────────────────
+  validate-lambda-live:
+    name: 'Hop 5 · Live Lambda Probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: validate-lambda-env-vars
+    continue-on-error: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Probe live Lambda via Netlify redirect (unknown tier → expect 400)
+        id: probe
+        run: |
+          set -e
+          ENDPOINT="https://securebase.tximhotep.com/api/checkout"
+
+          echo "── POST ${ENDPOINT} with intentionally unknown tier ──"
+          HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
+            -X POST "${ENDPOINT}" \
+            -H "Content-Type: application/json" \
+            -d '{"tier":"PING_VERSION_CHECK"}')
+
+          HTTP_BODY=$(echo "${HTTP_RESPONSE}" | head -n -1)
+          HTTP_CODE=$(echo "${HTTP_RESPONSE}" | tail -n 1)
+
+          echo "HTTP status: ${HTTP_CODE}"
+          echo "Response body: ${HTTP_BODY}"
+
+          # Export for downstream steps
+          echo "http_code=${HTTP_CODE}" >> "${GITHUB_OUTPUT}"
+          echo "http_body=${HTTP_BODY}" >> "${GITHUB_OUTPUT}"
+
+          # Hard fail: old code returns "Missing priceId" — surface this prominently
+          if echo "${HTTP_BODY}" | grep -qF "Missing priceId"; then
+            echo ""
+            echo "❌ DEPLOYED LAMBDA IS RUNNING OLD CODE — response contains \"Missing priceId\"."
+            echo "   Redeploy index.cjs to AWS Lambda."
+            echo "   See remediation steps in the job summary."
+            echo "old_code_detected=true" >> "${GITHUB_OUTPUT}"
+            exit 1
+          fi
+
+          # Assert 400 (not 200, not 500)
+          if [ "${HTTP_CODE}" != "400" ]; then
+            echo "❌ Expected HTTP 400 for unknown tier, got ${HTTP_CODE}"
+            echo "   This may indicate the request is not reaching the Lambda (e.g. Netlify interceptor)."
+            exit 1
+          fi
+          echo "✅ HTTP 400 received as expected"
+
+          # Assert the response body contains the expected error shape from index.cjs
+          if ! echo "${HTTP_BODY}" | grep -qF "tier is required" && \
+             ! echo "${HTTP_BODY}" | grep -qF "Valid tiers:"; then
+            echo "❌ Response body does not match expected error shape from index.cjs"
+            echo "   Expected 'tier is required' or 'Valid tiers:' in response"
+            echo "   Got: ${HTTP_BODY}"
+            exit 1
+          fi
+          echo "✅ Response body matches expected error shape"
+
+          echo "old_code_detected=false" >> "${GITHUB_OUTPUT}"
+
+      - name: Probe API Gateway CORS preflight directly
+        run: |
+          APIGW="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+
+          echo "── OPTIONS preflight: ${APIGW} ──"
+          CORS_HEADERS=$(curl --silent --max-time 15 --head \
+            -X OPTIONS "${APIGW}" \
+            -H "Origin: https://securebase.tximhotep.com" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: Content-Type" \
+            -D - -o /dev/null 2>&1 || true)
+
+          echo "${CORS_HEADERS}"
+
+          if echo "${CORS_HEADERS}" | grep -qi "Access-Control-Allow"; then
+            echo "✅ CORS headers present on OPTIONS preflight"
+          else
+            echo "⚠️  CORS headers not detected on direct API Gateway preflight"
+            echo "   (This may be expected if API Gateway does not expose preflight without a valid origin)"
+          fi
+
+      - name: Write step summary
+        if: always()
+        run: |
+          HTTP_CODE="${{ steps.probe.outputs.http_code }}"
+          HTTP_BODY="${{ steps.probe.outputs.http_body }}"
+          OLD_CODE="${{ steps.probe.outputs.old_code_detected }}"
+
+          if [ "${OLD_CODE}" = "true" ]; then
+            echo "## ❌ Hop 5 · Live Lambda Probe — OLD CODE DETECTED" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "> **The Lambda at \`4f0i48ueak\` is returning \`Missing priceId\` — the old Netlify function error string.**" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## ⚠️ Remediation Required" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "The Lambda at 4f0i48ueak is running old code." >> "${GITHUB_STEP_SUMMARY}"
+            echo "1. Check API Gateway → prod stage → /checkout → Integration → Lambda version" >> "${GITHUB_STEP_SUMMARY}"
+            echo "2. If pinned to a version number (e.g. :1, :2), update to \$LATEST" >> "${GITHUB_STEP_SUMMARY}"
+            echo '3. Or redeploy: `cd src/functions/securebase-checkout-api && zip -r function.zip index.cjs node_modules/ && aws lambda update-function-code ...`' >> "${GITHUB_STEP_SUMMARY}"
+          elif [ "${HTTP_CODE}" = "400" ]; then
+            echo "## ✅ Hop 5 · Live Lambda Probe" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
+            echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
+            echo "| HTTP status for unknown tier | ✅ 400 |" >> "${GITHUB_STEP_SUMMARY}"
+            echo "| Response shape | ✅ matches index.cjs error format |" >> "${GITHUB_STEP_SUMMARY}"
+            echo "| 'Missing priceId' absent | ✅ new code confirmed |" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "## ❌ Hop 5 · Live Lambda Probe — FAILED" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "HTTP ${HTTP_CODE} — expected 400." >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Response: \`${HTTP_BODY}\`" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hop 6 · Checkout Path Gate (summary)
+# ─────────────────────────────────────────────────────────────────────────────
+  checkout-path-gate:
+    name: 'Hop 6 · Checkout Path Gate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs:
+      - validate-frontend-payload
+      - validate-lambda-source
+      - validate-netlify-redirect
+      - validate-lambda-env-vars
+      - validate-lambda-live
+
+    steps:
+      - name: Evaluate hop results and write summary table
+        env:
+          HOP1: ${{ needs.validate-frontend-payload.result }}
+          HOP2: ${{ needs.validate-lambda-source.result }}
+          HOP3: ${{ needs.validate-netlify-redirect.result }}
+          HOP4: ${{ needs.validate-lambda-env-vars.result }}
+          HOP5: ${{ needs.validate-lambda-live.result }}
+        run: |
+          status_icon() {
+            case "$1" in
+              success)  echo "✅" ;;
+              failure)  echo "❌" ;;
+              skipped)  echo "⏭️" ;;
+              cancelled) echo "🚫" ;;
+              *)        echo "❓" ;;
+            esac
+          }
+
+          echo "## Checkout Path Validation — Hop Summary" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Hop | Description | Status |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|---|---|---|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 1 | Frontend Payload (Checkout.jsx sends \`tier\`) | $(status_icon "${HOP1}") ${HOP1} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 2 | Lambda Source (\`handler_version\`, tier map, unit tests) | $(status_icon "${HOP2}") ${HOP2} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 3 | Netlify Redirect (\`/api/checkout\` → API Gateway, no interceptor) | $(status_icon "${HOP3}") ${HOP3} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 4 | Lambda Env Vars (\`STRIPE_PRICE_*\` mapping, no hardcoded IDs) | $(status_icon "${HOP4}") ${HOP4} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 5 | Live Lambda Probe (400 for unknown tier, no old-code string) | $(status_icon "${HOP5}") ${HOP5} |" >> "${GITHUB_STEP_SUMMARY}"
+
+          # Fail the gate if any upstream job failed
+          FAILED=0
+          for result in "${HOP1}" "${HOP2}" "${HOP3}" "${HOP4}" "${HOP5}"; do
+            if [ "${result}" = "failure" ] || [ "${result}" = "cancelled" ]; then
+              FAILED=1
+            fi
+          done
+
+          if [ "${FAILED}" -eq 1 ]; then
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "---" >> "${GITHUB_STEP_SUMMARY}"
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            if [ "${HOP5}" = "failure" ]; then
+              echo "## ⚠️ Remediation Required" >> "${GITHUB_STEP_SUMMARY}"
+              echo "" >> "${GITHUB_STEP_SUMMARY}"
+              echo "The Lambda at 4f0i48ueak is running old code." >> "${GITHUB_STEP_SUMMARY}"
+              echo "1. Check API Gateway → prod stage → /checkout → Integration → Lambda version" >> "${GITHUB_STEP_SUMMARY}"
+              echo "2. If pinned to a version number (e.g. :1, :2), update to \$LATEST" >> "${GITHUB_STEP_SUMMARY}"
+              echo '3. Or redeploy: `cd src/functions/securebase-checkout-api && zip -r function.zip index.cjs node_modules/ && aws lambda update-function-code ...`' >> "${GITHUB_STEP_SUMMARY}"
+            fi
+            echo "❌ Checkout path validation FAILED — one or more hops did not pass."
+            exit 1
+          fi
+
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "**✅ All checkout path hops passed.**" >> "${GITHUB_STEP_SUMMARY}"
+          echo "✅ All checkout path hops passed."
