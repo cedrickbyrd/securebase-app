@@ -1,27 +1,113 @@
-# This file configures the deployment to AWS Lambda
-
-name: Deploy Workflow
+name: Deploy Checkout Lambda
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - 'src/functions/securebase-checkout-api/**'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deploy even if no code changes (type FORCE)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: write
 
 jobs:
-  deploy:
+  deploy-lambda:
+    name: 'Deploy · Checkout Lambda'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install production dependencies
+        run: |
+          npm install --prefix src/functions/securebase-checkout-api stripe --omit=dev --no-save
+          echo "stripe installed"
+
+      - name: Verify handler version tag present
+        run: |
+          if ! grep -q "handler_version=" src/functions/securebase-checkout-api/index.cjs; then
+            echo "::error::handler_version tag missing from index.cjs — refusing to deploy unversioned code"
+            exit 1
+          fi
+          VERSION=$(grep -o 'handler_version=[^[:space:]]*' src/functions/securebase-checkout-api/index.cjs | head -1)
+          echo "Deploying ${VERSION}"
+          echo "handler_version=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Package Lambda zip
+        run: |
+          cd src/functions/securebase-checkout-api
+          zip -r ../../../lambda-checkout.zip index.cjs node_modules/
+          echo "Package size: $(du -sh ../../../lambda-checkout.zip | cut -f1)"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
       - name: Deploy to Lambda
         run: |
-          aws lambda update-function-code --function-name securebase-checkout-api --zip-file fileb://function.zip
+          aws lambda update-function-code \
+            --function-name securebase-checkout-api \
+            --zip-file fileb://lambda-checkout.zip
+          echo "Lambda code updated"
+          aws lambda wait function-updated \
+            --function-name securebase-checkout-api
+          echo "Lambda update complete"
 
       - name: Verify deployed version
         run: |
-          aws lambda get-function --function-name securebase-checkout-api
+          DEPLOYED=$(aws lambda get-function-configuration \
+            --function-name securebase-checkout-api \
+            --query 'LastModified' \
+            --output text)
+          echo "Lambda last modified: ${DEPLOYED}"
+
+          QUALIFIER=$(aws lambda get-function-configuration \
+            --function-name securebase-checkout-api \
+            --query 'FunctionArn' \
+            --output text | grep -oP ':\d+$' || echo "none")
+          if [ "$QUALIFIER" != "none" ] && [ -n "$QUALIFIER" ]; then
+            echo "::warning::Lambda ARN has version qualifier ${QUALIFIER} — API Gateway may be pinned to an old version"
+          else
+            echo "Lambda is not pinned to a specific version"
+          fi
+
+      - name: Trigger validate-checkout-path workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run validate-checkout-path.yml --ref main
+          echo "Triggered validate-checkout-path workflow"
+
+      - name: Upload Lambda zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-checkout-${{ env.handler_version }}
+          path: lambda-checkout.zip
+          retention-days: 7
 
       - name: Write job summary
         run: |
-          echo "Deployed securebase-checkout-api successfully!"
+          echo "# Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Handler version: ${{ env.handler_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Function: securebase-checkout-api" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered by: ${{ github.event_name }} on ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "validate-checkout-path triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
