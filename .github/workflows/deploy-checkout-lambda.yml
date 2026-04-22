@@ -34,7 +34,7 @@ jobs:
       - name: Install production dependencies
         run: |
           npm install --prefix src/functions/securebase-checkout-api stripe --omit=dev --no-save
-          echo "✅ stripe installed ($(ls src/functions/securebase-checkout-api/node_modules/stripe/package.json | xargs node -e 'const p=require(process.argv[1]);console.log(p.version)' 2>/dev/null || echo 'version unknown'))"
+          echo "✅ stripe installed"
 
       - name: Verify handler version tag present
         run: |
@@ -62,26 +62,26 @@ jobs:
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-code \
-            --function-name securebase-create-checkout-session \
+            --function-name create-checkout-session \
             --zip-file fileb://lambda-checkout.zip
 
           echo "✅ Lambda code updated"
 
           aws lambda wait function-updated \
-            --function-name securebase-create-checkout-session
+            --function-name create-checkout-session
 
           echo "✅ Lambda update complete"
 
       - name: Verify deployed version
         run: |
           DEPLOYED=$(aws lambda get-function-configuration \
-            --function-name securebase-create-checkout-session \
+            --function-name create-checkout-session \
             --query 'LastModified' \
             --output text)
           echo "✅ Lambda last modified: ${DEPLOYED}"
 
           QUALIFIER=$(aws lambda get-function-configuration \
-            --function-name securebase-create-checkout-session \
+            --function-name create-checkout-session \
             --query 'FunctionArn' \
             --output text | grep -oP ':\d+$' || echo "none")
           if [ "$QUALIFIER" != "none" ] && [ -n "$QUALIFIER" ]; then
@@ -109,11 +109,17 @@ jobs:
           {
             echo "# 🚀 Checkout Lambda Deploy"
             echo ""
-            echo "**Handler version:** \`${{ env.handler_version }}\``
-            echo "**Function:** \`securebase-create-checkout-session\``
-            echo "**Region:** \`${{ secrets.AWS_REGION || 'us-east-1' }}\``
-            echo "**Triggered by:** \`${{ github.event_name }}\` on \`${{ github.ref_name }}\``
-            echo "**Commit:** \`${{ github.sha }}\``
+            echo "**Handler version:** \
+            `${{ env.handler_version }}`"
+            echo "**Function:** \
+            `create-checkout-session`"
+            echo "**Region:** \
+            `${{ secrets.AWS_REGION || 'us-east-1' }}`"
+            echo "**Triggered by:** \
+            `${{ github.event_name }}` on \
+            `${{ github.ref_name }}`"
+            echo "**Commit:** \
+            `${{ github.sha }}`"
             echo ""
             echo "validate-checkout-path workflow triggered — check Actions tab for Hop 5 result."
           } >> "$GITHUB_STEP_SUMMARY"
