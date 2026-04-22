@@ -38,6 +38,9 @@ function Dashboard() {
   // Determine if current customer has Texas fintech compliance
   const effectiveTier = customer?.tier || getCustomerTier();
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
+  // showsHIPAADashboard: true when the customer tier requires the HIPAA compliance dashboard
+  // (does NOT imply the customer is currently HIPAA-compliant — see /hipaa-dashboard for scores)
+  const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -323,6 +326,27 @@ function Dashboard() {
               </div>
             </div>
           )}
+
+          {showsHIPAADashboard && (
+            <div
+              className="metric-card clickable"
+              onClick={() => navigate('/hipaa-dashboard')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/hipaa-dashboard')}
+              aria-label="Navigate to HIPAA Compliance Dashboard"
+            >
+              <div className="metric-icon" style={{ background: '#ecfdf5' }}>
+                🏥
+              </div>
+              <div className="metric-content">
+                <h3>HIPAA Compliance</h3>
+                <p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>
+                  View Dashboard →
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Two Column Layout */}
@@ -497,6 +521,47 @@ function Dashboard() {
                   ) : (
                     <p className="empty-state">Loading Texas compliance data…</p>
                   )}
+                </div>
+              </section>
+            )}
+
+            {/* HIPAA Compliance (healthcare / government) */}
+            {showsHIPAADashboard && (
+              <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
+                <div className="card-header">
+                  <h2>🏥 HIPAA Compliance</h2>
+                  <button
+                    className="view-all-btn"
+                    onClick={() => navigate('/hipaa-dashboard')}
+                  >
+                    Open HIPAA Dashboard →
+                  </button>
+                </div>
+                <div className="card-content">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* TODO: replace these summary values with sreService.getHIPAACompliance() once
+                        a hipaaCompliance state variable is added to Dashboard — see HIPAADashboard.jsx */}
+                    {[
+                      { label: 'Administrative Safeguards', pct: 90, passed: 18, total: 20 },
+                      { label: 'Physical Safeguards', pct: 92.9, passed: 13, total: 14 },
+                      { label: 'Technical Safeguards', pct: 83.3, passed: 20, total: 24 }
+                    ].map(sg => (
+                      <div key={sg.label} style={{ padding: '0.6rem', background: '#f8fafc', borderRadius: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>{sg.label}</span>
+                          <span style={{ fontSize: '0.82rem', color: sg.pct >= 90 ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+                            {sg.passed}/{sg.total}
+                          </span>
+                        </div>
+                        <div style={{ height: 6, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${sg.pct}%`, background: sg.pct >= 90 ? '#10b981' : '#f59e0b', borderRadius: 999 }} />
+                        </div>
+                      </div>
+                    ))}
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
+                      BAA on file · PHI encrypted at rest &amp; in transit
+                    </p>
+                  </div>
                 </div>
               </section>
             )}

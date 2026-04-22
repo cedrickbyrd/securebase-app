@@ -237,13 +237,107 @@ function getMockSOC2Compliance() {
 }
 
 function getMockHIPAACompliance() {
+  const now = new Date();
+  const MS_PER_DAY = 24 * 60 * 60 * 1000; // milliseconds in one day
+  const daysAgo = (d) => new Date(now - d * MS_PER_DAY).toISOString();
+  const daysFromNow = (d) => new Date(now.getTime() + d * MS_PER_DAY).toISOString();
+
   return {
     overallScore: 87,
-    safeguards: {
-      administrative: { passed: 18, total: 20, percentage: 90 },
-      physical: { passed: 13, total: 14, percentage: 92.9 },
-      technical: { passed: 20, total: 24, percentage: 83.3 }
+    lastAssessmentDate: daysAgo(28),
+    nextAssessmentDue: daysFromNow(62),
+    riskLevel: 'low',
+
+    // BAA compliance
+    baaCompliance: {
+      signed: true,
+      vendors: [
+        { name: 'AWS', status: 'active', signedDate: daysAgo(365), expiresDate: daysFromNow(365), coveredServices: ['S3', 'RDS', 'CloudTrail', 'KMS'] },
+        { name: 'Datadog', status: 'active', signedDate: daysAgo(180), expiresDate: daysFromNow(185), coveredServices: ['Log Management', 'APM'] },
+        { name: 'PagerDuty', status: 'pending_renewal', signedDate: daysAgo(360), expiresDate: daysFromNow(5), coveredServices: ['Incident Alerting'] }
+      ]
     },
+
+    // Training
+    training: {
+      completionRate: 84,
+      totalStaff: 38,
+      completedStaff: 32,
+      overdueStaff: 6,
+      nextDeadline: daysFromNow(14),
+      lastCampaignDate: daysAgo(45),
+      modules: [
+        { name: 'HIPAA Privacy Rule Fundamentals', completion: 97 },
+        { name: 'PHI Handling & Access Controls', completion: 89 },
+        { name: 'Breach Notification Procedures', completion: 84 },
+        { name: 'Security Incident Response', completion: 76 }
+      ]
+    },
+
+    // Risk assessment
+    riskAssessment: {
+      status: 'completed',
+      completedDate: daysAgo(28),
+      nextScheduled: daysFromNow(62),
+      openRisks: 3,
+      mitigatedRisks: 14,
+      riskScore: 'low',
+      items: [
+        { id: 'risk-001', description: 'PHI access review cadence', likelihood: 'medium', impact: 'medium', status: 'open', mitigationDue: daysFromNow(30) },
+        { id: 'risk-002', description: 'Mobile device management gaps', likelihood: 'low', impact: 'high', status: 'open', mitigationDue: daysFromNow(45) },
+        { id: 'risk-003', description: 'Third-party vendor access review overdue', likelihood: 'low', impact: 'medium', status: 'open', mitigationDue: daysFromNow(21) }
+      ]
+    },
+
+    // Safeguards breakdown
+    safeguards: {
+      administrative: {
+        passed: 18, total: 20, percentage: 90,
+        controls: [
+          { id: '164.308(a)(1)', name: 'Security Management Process', status: 'passing' },
+          { id: '164.308(a)(2)', name: 'Assigned Security Responsibility', status: 'passing' },
+          { id: '164.308(a)(3)', name: 'Workforce Security', status: 'passing' },
+          { id: '164.308(a)(4)', name: 'Information Access Management', status: 'passing' },
+          { id: '164.308(a)(5)', name: 'Security Awareness and Training', status: 'warning' },
+          { id: '164.308(a)(6)', name: 'Security Incident Procedures', status: 'passing' },
+          { id: '164.308(a)(7)', name: 'Contingency Plan', status: 'passing' },
+          { id: '164.308(a)(8)', name: 'Evaluation', status: 'passing' },
+          { id: '164.308(b)(1)', name: 'Business Associate Contracts', status: 'warning' }
+        ]
+      },
+      physical: {
+        passed: 13, total: 14, percentage: 92.9,
+        controls: [
+          { id: '164.310(a)(1)', name: 'Facility Access Controls', status: 'passing' },
+          { id: '164.310(a)(2)(i)', name: 'Contingency Operations', status: 'passing' },
+          { id: '164.310(a)(2)(ii)', name: 'Facility Security Plan', status: 'passing' },
+          { id: '164.310(a)(2)(iii)', name: 'Access Control & Validation', status: 'passing' },
+          { id: '164.310(a)(2)(iv)', name: 'Maintenance Records', status: 'warning' },
+          { id: '164.310(b)', name: 'Workstation Use', status: 'passing' },
+          { id: '164.310(c)', name: 'Workstation Security', status: 'passing' },
+          { id: '164.310(d)(1)', name: 'Device & Media Controls', status: 'passing' }
+        ]
+      },
+      technical: {
+        passed: 20, total: 24, percentage: 83.3,
+        controls: [
+          { id: '164.312(a)(1)', name: 'Access Control', status: 'passing' },
+          { id: '164.312(a)(2)(i)', name: 'Unique User Identification', status: 'passing' },
+          { id: '164.312(a)(2)(ii)', name: 'Emergency Access Procedure', status: 'passing' },
+          { id: '164.312(a)(2)(iii)', name: 'Automatic Logoff', status: 'passing' },
+          { id: '164.312(a)(2)(iv)', name: 'Encryption & Decryption', status: 'warning' },
+          { id: '164.312(b)', name: 'Audit Controls', status: 'passing' },
+          { id: '164.312(c)(1)', name: 'Integrity', status: 'passing' },
+          { id: '164.312(c)(2)', name: 'Mechanism to Authenticate ePHI', status: 'passing' },
+          { id: '164.312(d)', name: 'Person Authentication', status: 'passing' },
+          { id: '164.312(e)(1)', name: 'Transmission Security', status: 'passing' },
+          { id: '164.312(e)(2)(i)', name: 'Integrity Controls', status: 'warning' },
+          { id: '164.312(e)(2)(ii)', name: 'Encryption in Transit', status: 'warning' }
+        ]
+      }
+    },
+
+    // PHI protection
     phi: {
       encryptionAtRest: true,
       encryptionInTransit: true,
@@ -251,15 +345,65 @@ function getMockHIPAACompliance() {
       auditTrail: true
     },
     phiEncryption: { atRest: true, inTransit: true, verified: true },
-    baaCompliance: {
-      signed: true,
-      vendors: ['AWS', 'Supabase', 'Datadog']
-    },
-    findings: [
-      { id: 'hipaa-f001', title: 'PHI access review cadence below 90-day requirement', severity: 'medium' },
-      { id: 'hipaa-f002', title: 'Training completion rate 84% — target 100%', severity: 'low' }
+    phiLocations: [
+      { service: 'Aurora PostgreSQL', encrypted: true, region: 'us-east-1', kmsKeyId: 'alias/securebase-phi' },
+      { service: 'S3 Evidence Vault', encrypted: true, region: 'us-east-1', kmsKeyId: 'alias/securebase-phi' },
+      { service: 'CloudWatch Logs', encrypted: true, region: 'us-east-1', kmsKeyId: 'alias/securebase-logs' },
+      { service: 'Backup S3 (CRR)', encrypted: true, region: 'us-west-2', kmsKeyId: 'alias/securebase-phi-dr' }
     ],
-    riskLevel: 'low'
+
+    // Findings
+    findings: [
+      {
+        id: 'hipaa-f001',
+        title: 'PHI access review cadence below 90-day requirement',
+        severity: 'medium',
+        control: '164.308(a)(3)',
+        status: 'open',
+        daysOpen: 12,
+        owner: 'security@healthcorp.example.com',
+        remediation: 'Schedule quarterly PHI access reviews; assign Security Officer as owner'
+      },
+      {
+        id: 'hipaa-f002',
+        title: 'Security awareness training completion at 84% — target 100%',
+        severity: 'low',
+        control: '164.308(a)(5)',
+        status: 'in_progress',
+        daysOpen: 45,
+        owner: 'hr@healthcorp.example.com',
+        remediation: 'Send reminder to 6 overdue staff; deadline is in 14 days'
+      },
+      {
+        id: 'hipaa-f003',
+        title: 'PagerDuty BAA expiring in 5 days',
+        severity: 'high',
+        control: '164.308(b)(1)',
+        status: 'open',
+        daysOpen: 3,
+        owner: 'compliance@healthcorp.example.com',
+        remediation: 'Renew PagerDuty BAA immediately via vendor portal'
+      },
+      {
+        id: 'hipaa-f004',
+        title: 'Facility maintenance records not fully documented',
+        severity: 'low',
+        control: '164.310(a)(2)(iv)',
+        status: 'open',
+        daysOpen: 20,
+        owner: 'facilities@healthcorp.example.com',
+        remediation: 'Update CMMS with Q1 maintenance logs; verify completion'
+      }
+    ],
+
+    // Recent PHI access audit events (last 7 days)
+    phiAccessLog: [
+      { timestamp: daysAgo(0.1), user: 'dr.chen@healthcorp', action: 'read', resource: 'patient_records', status: 'authorized' },
+      { timestamp: daysAgo(0.5), user: 'nurse.smith@healthcorp', action: 'read', resource: 'lab_results', status: 'authorized' },
+      { timestamp: daysAgo(1), user: 'admin_svc@healthcorp', action: 'read', resource: 'billing_records', status: 'authorized' },
+      { timestamp: daysAgo(2), user: 'dr.patel@healthcorp', action: 'write', resource: 'patient_notes', status: 'authorized' },
+      { timestamp: daysAgo(3.5), user: 'unknown_ip_scan', action: 'read', resource: 'patient_records', status: 'denied' }
+    ]
   };
 }
 
