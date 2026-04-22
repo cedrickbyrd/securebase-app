@@ -42,7 +42,7 @@ jobs:
             echo "::error::handler_version tag missing from index.cjs — refusing to deploy unversioned code"
             exit 1
           fi
-          VERSION=$(grep -o "handler_version=[^ '\""]*" src/functions/securebase-checkout-api/index.cjs | head -1)
+          VERSION=$(grep -o "handler_version=[^ '\'\"]*" src/functions/securebase-checkout-api/index.cjs | head -1)
           echo "✅ Deploying ${VERSION}"
           echo "handler_version=${VERSION}" >> "$GITHUB_ENV"
 
@@ -106,20 +106,18 @@ jobs:
 
       - name: Write job summary
         run: |
-          {
-            echo "# 🚀 Checkout Lambda Deploy"
-            echo ""
-            echo "**Handler version:** \
-            `${{ env.handler_version }}`"
-            echo "**Function:** \
-            `create-checkout-session`"
-            echo "**Region:** \
-            `${{ secrets.AWS_REGION || 'us-east-1' }}`"
-            echo "**Triggered by:** \
-            `${{ github.event_name }}` on \
-            `${{ github.ref_name }}`"
-            echo "**Commit:** \
-            `${{ github.sha }}`"
-            echo ""
-            echo "validate-checkout-path workflow triggered — check Actions tab for Hop 5 result."
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "# 🚀 Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Handler version:** \
+          \
+          
+          ${VERSION}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Function:** \`create-checkout-session\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Region:** \
+          \
+          
+          ${secrets.AWS_REGION || 'us-east-1'}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Triggered by:** \`${{ github.event_name }}\` on \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "validate-checkout-path workflow triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
