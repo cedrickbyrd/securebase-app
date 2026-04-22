@@ -191,7 +191,7 @@ resource "aws_iam_role_policy" "analytics_query_permissions" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-query:*"
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-query:*"
       }
     ]
   })
@@ -293,17 +293,22 @@ resource "aws_iam_role_policy" "analytics_write_permissions" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-*:*"
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-*:*"
       }
     ]
   })
 }
 
 # ── Kept for Terraform state continuity — DO NOT remove until state mv is done ──
-# The old shared role is retained here so existing state references resolve cleanly.
-# It is superseded by analytics_write_role (which imports the same live AWS resource)
-# and analytics_read_role (new). Remove this block only after confirming both new
-# roles are present in live state and all Lambda role_arn references are updated.
+# This resource is superseded by analytics_write_role (which imports the same live
+# AWS resource) and analytics_read_role (new). No policies are attached to this
+# resource; all permissions now flow through the new split roles.
+#
+# REMOVAL GATE (complete all before deleting this block):
+#   1. Both analytics_read_role and analytics_write_role confirmed in live state.
+#   2. All four Lambda functions confirm correct role ARNs via `aws lambda get-function-configuration`.
+#   3. `terraform state rm module.analytics.aws_iam_role.analytics_functions` run.
+#   4. State drift document archived (docs/archive/STATE_DRIFT_2026-04-22-RESOLVED.md).
 resource "aws_iam_role" "analytics_functions" {
   name = "securebase-${var.environment}-analytics-functions-role"
 
@@ -324,8 +329,13 @@ resource "aws_iam_role" "analytics_functions" {
     Name      = "securebase-${var.environment}-analytics-functions-role"
     Component = "Analytics"
   })
-}
 
+  lifecycle {
+    # Prevent accidental destroy of the live role while state migration is in progress.
+    # Remove this once the REMOVAL GATE above is satisfied.
+    prevent_destroy = true
+  }
+}
 
 # CloudWatch Log Groups for all Analytics Lambdas
 resource "aws_cloudwatch_log_group" "analytics_aggregator" {
