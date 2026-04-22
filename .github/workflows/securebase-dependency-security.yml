@@ -33,7 +33,6 @@ jobs:
           comment-summary-in-pr: true
       
       - name: Setup Node.js
-        if: github.event_name == 'schedule'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -46,7 +45,7 @@ jobs:
           high_vulns=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
           critical_vulns=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
           
-          echo "Root — Critical: $critical_vulns, High: $high_vulns"
+          echo "Root - Critical: $critical_vulns, High: $high_vulns"
           echo "ROOT_HIGH=$high_vulns" >> $GITHUB_ENV
           echo "ROOT_CRITICAL=$critical_vulns" >> $GITHUB_ENV
 
@@ -59,7 +58,7 @@ jobs:
           high_vulns=$(cat ../audit-results-portal.json | jq '.metadata.vulnerabilities.high // 0')
           critical_vulns=$(cat ../audit-results-portal.json | jq '.metadata.vulnerabilities.critical // 0')
           
-          echo "Portal — Critical: $critical_vulns, High: $high_vulns"
+          echo "Portal - Critical: $critical_vulns, High: $high_vulns"
           echo "PORTAL_HIGH=$high_vulns" >> $GITHUB_ENV
           echo "PORTAL_CRITICAL=$critical_vulns" >> $GITHUB_ENV
 
@@ -69,7 +68,7 @@ jobs:
           total_high=$(( ${ROOT_HIGH:-0} + ${PORTAL_HIGH:-0} ))
           total_critical=$(( ${ROOT_CRITICAL:-0} + ${PORTAL_CRITICAL:-0} ))
           
-          echo "Combined — Critical: $total_critical, High: $total_high"
+          echo "Combined - Critical: $total_critical, High: $total_high"
           
           if [ $total_critical -gt 0 ] || [ $total_high -gt 0 ]; then
             echo "SECURITY_ALERT=true" >> $GITHUB_ENV
@@ -94,7 +93,7 @@ jobs:
             const existing = openIssues.find(i => i.title === ALERT_TITLE);
 
             if (existing) {
-              console.log(`Open security issue #${existing.number} already exists — skipping duplicate creation.`);
+              console.log(`Open security issue #${existing.number} already exists - skipping duplicate creation.`);
               return;
             }
 
