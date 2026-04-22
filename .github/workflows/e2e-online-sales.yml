@@ -576,7 +576,7 @@ jobs:
       # STRIPE_PRICE_STD   – real price ID in sandbox mode, placeholder otherwise
       - name: Resolve Stripe credentials
         env:
-          _SK: ${{ secrets.STRIPE_SECRET_KEY }}
+          _SK: ${{ secrets.STRIPE_TEST_KEY }}
           _PRICE_STD: ${{ secrets.STRIPE_PRICE_STANDARD }}
         run: |
           if [ "$STRIPE_MODE" = "sandbox" ]; then
@@ -586,6 +586,15 @@ jobs:
             echo "RESOLVED_STRIPE_SECRET_KEY=sk_test_mock" >> "$GITHUB_ENV"
             echo "RESOLVED_STRIPE_PRICE_STANDARD=price_mock_standard" >> "$GITHUB_ENV"
           fi
+
+      - name: Validate Stripe test key format
+        if: env.STRIPE_MODE == 'sandbox'
+        run: |
+          if [[ "$RESOLVED_STRIPE_SECRET_KEY" != sk_test_* ]]; then
+            echo "::error::STRIPE_TEST_KEY must be a Stripe test key (sk_test_…). Got unexpected prefix. Sandbox mode requires a test key."
+            exit 1
+          fi
+          echo "✅ STRIPE_TEST_KEY format valid (sk_test_…)"
 
       # ── Stripe CLI (used only in sandbox mode for webhook forwarding) ────
       - name: Install Stripe CLI
