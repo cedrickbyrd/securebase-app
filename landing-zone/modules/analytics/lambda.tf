@@ -5,7 +5,7 @@
 resource "aws_lambda_function" "analytics_aggregator" {
   filename      = "${path.root}/../phase2-backend/deploy/analytics_aggregator.zip"
   function_name = "securebase-${var.environment}-analytics-aggregator"
-  role          = aws_iam_role.analytics_functions.arn
+  role          = aws_iam_role.analytics_write_role.arn
   handler       = "analytics_aggregator.lambda_handler"
   runtime       = "python3.11"
   timeout       = 60
@@ -33,7 +33,7 @@ resource "aws_lambda_function" "analytics_aggregator" {
 resource "aws_lambda_function" "analytics_reporter" {
   filename      = "${path.root}/../phase2-backend/deploy/analytics_reporter.zip"
   function_name = "securebase-${var.environment}-analytics-reporter"
-  role          = aws_iam_role.analytics_functions.arn
+  role          = aws_iam_role.analytics_write_role.arn
   handler       = "analytics_reporter.lambda_handler"
   runtime       = "python3.11"
   timeout       = 30
@@ -66,7 +66,7 @@ resource "aws_lambda_function" "analytics_reporter" {
 resource "aws_lambda_function" "analytics_query" {
   filename      = "${path.root}/../phase2-backend/deploy/analytics_query.zip"
   function_name = "securebase-${var.environment}-analytics-query"
-  role          = aws_iam_role.analytics_functions.arn
+  role          = aws_iam_role.analytics_read_role.arn
   handler       = "analytics_query.lambda_handler"
   runtime       = "python3.11"
   timeout       = 10
@@ -95,7 +95,7 @@ resource "aws_lambda_function" "analytics_query" {
 resource "aws_lambda_function" "report_engine" {
   filename      = "${path.root}/../phase2-backend/deploy/report_engine.zip"
   function_name = "securebase-${var.environment}-report-engine"
-  role          = aws_iam_role.analytics_functions.arn
+  role          = aws_iam_role.analytics_write_role.arn
   handler       = "report_engine.lambda_handler"
   runtime       = "python3.11"
   timeout       = 30
@@ -125,9 +125,10 @@ resource "aws_lambda_function" "report_engine" {
   })
 }
 
-# IAM Role for Analytics Lambda Functions (shared by all)
-resource "aws_iam_role" "analytics_functions" {
-  name = "securebase-${var.environment}-analytics-functions-role"
+# ── Analytics IAM Role — Read (analytics_query only) ──────────────────────
+# Verified not live as of 2026-04-22 — will be created on next apply
+resource "aws_iam_role" "analytics_read_role" {
+  name = "securebase-${var.environment}-analytics-read-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -143,21 +144,94 @@ resource "aws_iam_role" "analytics_functions" {
   })
 
   tags = merge(var.tags, {
-    Name      = "securebase-${var.environment}-analytics-functions-role"
+    Name      = "securebase-${var.environment}-analytics-read-role"
     Component = "Analytics"
   })
 }
 
-# Attach basic Lambda execution policy
-resource "aws_iam_role_policy_attachment" "analytics_functions_basic" {
-  role       = aws_iam_role.analytics_functions.name
+resource "aws_iam_role_policy_attachment" "analytics_read_role_basic" {
+  role       = aws_iam_role.analytics_read_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Custom policy for DynamoDB and S3 access
-resource "aws_iam_role_policy" "analytics_functions_permissions" {
-  name = "analytics-functions-permissions"
-  role = aws_iam_role.analytics_functions.id
+# Verified not live as of 2026-04-22 — will be created on next apply
+resource "aws_iam_role_policy" "analytics_query_permissions" {
+  name = "analytics-query-permissions"
+  role = aws_iam_role.analytics_read_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          aws_dynamodb_table.report_cache.arn,
+          aws_dynamodb_table.metrics.arn,
+          "${aws_dynamodb_table.report_cache.arn}/index/*",
+          "${aws_dynamodb_table.metrics.arn}/index/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        # CloudWatch does not support resource-level restrictions for PutMetricData
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-query:*"
+      }
+    ]
+  })
+}
+
+# ── Analytics IAM Role — Write (aggregator, reporter, report_engine) ──────
+# Imports the pre-existing role securebase-dev-analytics-functions-role.
+# See landing-zone/environments/dev/imports.tf for the import block.
+# Verified not live (inline policy) as of 2026-04-22 — will be applied on next apply
+resource "aws_iam_role" "analytics_write_role" {
+  name = "securebase-${var.environment}-analytics-write-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name      = "securebase-${var.environment}-analytics-write-role"
+    Component = "Analytics"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "analytics_write_role_basic" {
+  role       = aws_iam_role.analytics_write_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# Verified not live as of 2026-04-22 — will be created on next apply
+resource "aws_iam_role_policy" "analytics_write_permissions" {
+  name = "analytics-write-permissions"
+  role = aws_iam_role.analytics_write_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -199,9 +273,10 @@ resource "aws_iam_role_policy" "analytics_functions_permissions" {
       {
         Effect = "Allow"
         Action = [
-          "cloudwatch:PutMetricData",
-          "cloudwatch:GetMetricData"
+          "cloudwatch:PutMetricData"
         ]
+        # CloudWatch does not support resource-level restrictions for PutMetricData.
+        # cloudwatch:GetMetricData removed — not required for write-path Lambdas.
         Resource = "*"
       },
       {
@@ -218,11 +293,39 @@ resource "aws_iam_role_policy" "analytics_functions_permissions" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/securebase-${var.environment}-analytics-*:*"
       }
     ]
   })
 }
+
+# ── Kept for Terraform state continuity — DO NOT remove until state mv is done ──
+# The old shared role is retained here so existing state references resolve cleanly.
+# It is superseded by analytics_write_role (which imports the same live AWS resource)
+# and analytics_read_role (new). Remove this block only after confirming both new
+# roles are present in live state and all Lambda role_arn references are updated.
+resource "aws_iam_role" "analytics_functions" {
+  name = "securebase-${var.environment}-analytics-functions-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name      = "securebase-${var.environment}-analytics-functions-role"
+    Component = "Analytics"
+  })
+}
+
 
 # CloudWatch Log Groups for all Analytics Lambdas
 resource "aws_cloudwatch_log_group" "analytics_aggregator" {

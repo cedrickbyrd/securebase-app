@@ -21,7 +21,10 @@ data "aws_caller_identity" "current" {}
 # ============================================================================
 
 resource "aws_iam_role" "lambda_execution" {
-  name = "securebase-${var.environment}-lambda-execution"
+  # Role name uses underscores (not hyphens) — matches pre-existing live role
+  # imported via landing-zone/environments/dev/imports.tf.
+  # DO NOT change to hyphens without a live rename + state mv operation.
+  name = "securebase_lambda_exec_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -103,7 +106,9 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "ses:SendEmail",
           "ses:SendRawEmail"
         ]
-        Resource = "*"
+        # Scoped to the verified SES identity when ses_identity_arn is provided.
+        # Defaults to unrestricted only when the variable is left empty.
+        Resource = var.ses_identity_arn != "" ? [var.ses_identity_arn] : ["*"]
       },
       {
         Effect = "Allow"

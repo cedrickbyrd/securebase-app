@@ -3,6 +3,12 @@ variable "environment" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region for deployment (used for log group ARN scoping)"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "target_region" {
   description = "AWS region for deployment"
   type        = string
