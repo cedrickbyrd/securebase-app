@@ -34,7 +34,7 @@ jobs:
       - name: Install production dependencies
         run: |
           npm install --prefix src/functions/securebase-checkout-api stripe --omit=dev --no-save
-          echo "✅ stripe installed"
+          echo "stripe installed"
 
       - name: Verify handler version tag present
         run: |
@@ -42,8 +42,8 @@ jobs:
             echo "::error::handler_version tag missing from index.cjs — refusing to deploy unversioned code"
             exit 1
           fi
-          VERSION=$(grep -o "handler_version=[^ '\'\"]*" src/functions/securebase-checkout-api/index.cjs | head -1)
-          echo "✅ Deploying ${VERSION}"
+          VERSION=$(grep -o 'handler_version=[^[:space:]]*' src/functions/securebase-checkout-api/index.cjs | head -1)
+          echo "Deploying ${VERSION}"
           echo "handler_version=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Package Lambda zip
@@ -64,13 +64,10 @@ jobs:
           aws lambda update-function-code \
             --function-name create-checkout-session \
             --zip-file fileb://lambda-checkout.zip
-
-          echo "✅ Lambda code updated"
-
+          echo "Lambda code updated"
           aws lambda wait function-updated \
             --function-name create-checkout-session
-
-          echo "✅ Lambda update complete"
+          echo "Lambda update complete"
 
       - name: Verify deployed version
         run: |
@@ -78,7 +75,7 @@ jobs:
             --function-name create-checkout-session \
             --query 'LastModified' \
             --output text)
-          echo "✅ Lambda last modified: ${DEPLOYED}"
+          echo "Lambda last modified: ${DEPLOYED}"
 
           QUALIFIER=$(aws lambda get-function-configuration \
             --function-name create-checkout-session \
@@ -87,7 +84,7 @@ jobs:
           if [ "$QUALIFIER" != "none" ] && [ -n "$QUALIFIER" ]; then
             echo "::warning::Lambda ARN has version qualifier ${QUALIFIER} — API Gateway may be pinned to an old version"
           else
-            echo "✅ Lambda is not pinned to a specific version"
+            echo "Lambda is not pinned to a specific version"
           fi
 
       - name: Trigger validate-checkout-path workflow
@@ -95,7 +92,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run validate-checkout-path.yml --ref main
-          echo "✅ Triggered validate-checkout-path workflow to confirm live deployment"
+          echo "Triggered validate-checkout-path workflow"
 
       - name: Upload Lambda zip as artifact
         uses: actions/upload-artifact@v4
@@ -106,18 +103,11 @@ jobs:
 
       - name: Write job summary
         run: |
-          echo "# 🚀 Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Handler version:** \
-          \
-          
-          ${VERSION}**" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Function:** \`create-checkout-session\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Region:** \
-          \
-          
-          ${secrets.AWS_REGION || 'us-east-1'}**" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Triggered by:** \`${{ github.event_name }}\` on \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Handler version: ${{ env.handler_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Function: create-checkout-session" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered by: ${{ github.event_name }} on ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "validate-checkout-path workflow triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
+          echo "validate-checkout-path triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
