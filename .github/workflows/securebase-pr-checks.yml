@@ -5,35 +5,39 @@ on:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pr-validation:
     name: Validate Pull Request
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Setup Node environment
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install project dependencies
         run: npm ci --prefer-offline
-      
+
       - name: Run code linter
         run: npm run lint
         continue-on-error: false
-      
+
       - name: Build marketing site
         run: npm run build
         env:
           VITE_SECUREBASE_MODE: staging
-      
+
       - name: Publish validation results
         uses: actions/github-script@v7
         if: success()
@@ -45,14 +49,14 @@ jobs:
               `- Build compilation: **Passed**\n` +
               `- Asset generation: **Passed**\n\n` +
               `This pull request is ready for code review.`;
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: validationMessage
             });
-      
+
       - name: Report validation failure
         uses: actions/github-script@v7
         if: failure()
@@ -61,10 +65,36 @@ jobs:
             const failureMessage = `### ✗ SecureBase PR Validation Failed\n\n` +
               `One or more quality checks did not pass. ` +
               `Please review the workflow logs and fix the issues before merging.`;
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: failureMessage
             });
+
+  infrastructure_audit:
+    name: Infrastructure & Asset Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Netlify Proxy Configuration
+        run: |
+          if ! grep -q "from = \"/storage/\*\"" netlify.toml; then
+            echo "❌ ERROR: S3 Proxy Shield missing from netlify.toml"
+            exit 1
+          fi
+          echo "✅ Netlify S3 proxy shield present."
+
+      - name: Check for Expensive Large Maps
+        run: |
+          # Fails if any .map file over 500kb is found (prevents AWS PUT request bloat)
+          if find dist -name "*.map" -size +500k 2>/dev/null | grep -q .; then
+            echo "❌ Oversized source map(s) detected:"
+            find dist -name "*.map" -size +500k
+            exit 1
+          fi
+          echo "✅ No oversized maps found."

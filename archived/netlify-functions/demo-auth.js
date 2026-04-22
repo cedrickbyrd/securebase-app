@@ -1,21 +1,32 @@
 /**
  * demo-auth — Netlify serverless function
  *
- * Issues a short-lived, HttpOnly JWT cookie for demo-environment visitors.
- * The token identifies the session as a "prospect" with "demo" access so the
- * SRE Dashboard shows mock data rather than live production metrics.
+ * Validates demo credentials and returns a short-lived JWT together with a
+ * customer object in the JSON response body.  This allows the validate-demo
+ * workflow and portal clients to consume the token directly without parsing
+ * a Set-Cookie header.
  *
- * POST /api/demo-auth  → validate demo credentials, set HttpOnly cookie
- * POST /api/demo-auth?action=logout  → clear the cookie
+ * Five built-in demo accounts are supported — they mirror the credentials
+ * defined in landing-zone/modules/demo-backend/lambda/auth.py so that both
+ * the Netlify function and the AWS Lambda behave consistently.
  *
- * JWT payload:
- *   { user_id, role: "prospect", access: "demo", tenant_id }
+ * POST /api/demo-auth
+ *   Body: { action: "login", email, password }
+ *   Returns: { token, customer: { id, name, email, tier, isEnterprise }, expires_in }
  *
- * Security notes:
- *   - Token is stored only in an HttpOnly, Secure, SameSite=Lax cookie.
- *   - The token value is NEVER returned in the response body.
- *   - JWT_SECRET must be set as a Netlify environment variable in production.
- *   - No PII is logged — only role, access level, and timestamp.
+ * POST /api/demo-auth?action=logout
+ *   Returns: { success: true }
+ *
+ * OPTIONS /api/demo-auth → CORS preflight
+ *
+ * JWT signing:
+ *   RS256 — when RSA_PRIVATE_KEY env var holds a PEM-encoded RSA private key
+ *   HS256 — fallback when only JWT_SECRET is available (acceptable for demo)
+ *
+ * Environment variables:
+ *   JWT_SECRET      — HMAC signing secret; required when RSA_PRIVATE_KEY is absent
+ *   RSA_PRIVATE_KEY — PEM-encoded RSA private key for RS256 signing (optional)
+ *   ALLOWED_ORIGIN  — CORS allowed origin (default: https://demo.securebase.tximhotep.com)
  */
 
 'use strict';
@@ -26,34 +37,113 @@ const jwt = require('jsonwebtoken');
 // Config
 // ---------------------------------------------------------------------------
 
-const ALLOWED_ORIGIN  = process.env.ALLOWED_ORIGIN  || 'https://demo.securebase.tximhotep.com';
-const TOKEN_TTL_SECS  = 60 * 60; // 1 hour
-
-// Fail fast if the JWT signing secret is missing rather than fall back to a
-// known weak default.  Set JWT_SECRET as a Netlify environment variable.
-// A development fallback is accepted only when NODE_ENV is explicitly "development".
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('[demo-auth] WARNING: JWT_SECRET not set — using insecure development default. Do NOT use in production.');
-  } else {
-    throw new Error('JWT_SECRET environment variable is required. Set it in Netlify environment variables.');
-  }
-}
-const SIGNING_SECRET = JWT_SECRET || 'demo-dev-secret-REPLACE-IN-PRODUCTION';
-
-// Demo credentials are loaded from environment variables so they can be
-// rotated without a code change.  The defaults below match the values
-// shown in Login.jsx for local development convenience only.
-const DEMO_EMAIL    = process.env.DEMO_EMAIL    || 'demo@securebase.tximhotep.com';
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'SecureBaseDemo2026!';
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://demo.securebase.tximhotep.com';
+const TOKEN_TTL_SECS = 24 * 60 * 60; // 24 hours
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':      ALLOWED_ORIGIN,
-  'Access-Control-Allow-Headers':     'Content-Type',
+  'Access-Control-Allow-Headers':     'Content-Type,Authorization',
   'Access-Control-Allow-Methods':     'POST, OPTIONS',
   'Access-Control-Allow-Credentials': 'true',
 };
+
+// ---------------------------------------------------------------------------
+// Startup check — log a clear warning when signing key is absent so that
+// Netlify function logs surface the root cause before the first 500 occurs.
+// ---------------------------------------------------------------------------
+
+if (!process.env.RSA_PRIVATE_KEY && !process.env.JWT_SECRET) {
+  // eslint-disable-next-line no-console
+  console.error(
+    '[demo-auth] STARTUP WARNING: Neither RSA_PRIVATE_KEY nor JWT_SECRET is configured. ' +
+    'All login attempts will fail with HTTP 500 until this is resolved. ' +
+    'Set JWT_SECRET in Netlify → Site configuration → Environment variables.',
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo credentials — safe for demo environment
+// Mirrors landing-zone/modules/demo-backend/lambda/auth.py DEMO_CREDENTIALS
+//
+// IMPORTANT: demo@securebase.tximhotep.com / SecureBaseDemo2026! must remain
+// in sync with the DEMO_EMAIL / DEMO_PASSWORD constants in Login.jsx so that
+// the one-click "Enter Demo" flow sends credentials the server accepts.
+// ---------------------------------------------------------------------------
+
+const DEMO_CREDENTIALS = {
+  // General demo account — matches the credentials shown on the login page
+  'demo@securebase.tximhotep.com': {
+    password:     'SecureBaseDemo2026!',
+    customerId:   'demo-customer-000',
+    name:         'Acme Corporation',
+    tier:         'standard',
+    isEnterprise: false,
+  },
+  'admin@healthcorp.example.com': {
+    password:     'demo-healthcare-2026',
+    customerId:   'demo-customer-001',
+    name:         'HealthCorp Medical Systems',
+    tier:         'healthcare',
+    isEnterprise: true,
+  },
+  'admin@fintechai.example.com': {
+    password:     'demo-fintech-2026',
+    customerId:   'demo-customer-002',
+    name:         'FinTechAI Analytics',
+    tier:         'fintech',
+    isEnterprise: true,
+  },
+  'admin@startupmvp.example.com': {
+    password:     'demo-standard-2026',
+    customerId:   'demo-customer-003',
+    name:         'StartupMVP Inc',
+    tier:         'standard',
+    isEnterprise: false,
+  },
+  'admin@govcontractor.example.com': {
+    password:     'demo-government-2026',
+    customerId:   'demo-customer-004',
+    name:         'GovContractor Defense Solutions',
+    tier:         'government',
+    isEnterprise: true,
+  },
+  'admin@saasplatform.example.com': {
+    password:     'demo-fintech2-2026',
+    customerId:   'demo-customer-005',
+    name:         'SaaSPlatform Cloud Services',
+    tier:         'fintech',
+    isEnterprise: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// JWT signing helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve signing key and algorithm.
+ * Prefers RS256 with RSA_PRIVATE_KEY; falls back to HS256 with JWT_SECRET.
+ * Throws if neither is configured (outside development mode).
+ */
+function getSigningConfig() {
+  const rsaKey = process.env.RSA_PRIVATE_KEY;
+  if (rsaKey) {
+    return { key: rsaKey, algorithm: 'RS256' };
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        '[demo-auth] WARNING: JWT_SECRET not set — using insecure development default. Do NOT use in production.',
+      );
+      return { key: 'demo-dev-secret-REPLACE-IN-PRODUCTION', algorithm: 'HS256' };
+    }
+    throw new Error('JWT_SECRET environment variable is required.');
+  }
+
+  return { key: secret, algorithm: 'HS256' };
+}
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -73,15 +163,10 @@ exports.handler = async (event) => {
     };
   }
 
-  // ------------------------------------------------------------------
-  // Logout: clear the cookie
-  // ------------------------------------------------------------------
-  const action = (event.queryStringParameters || {}).action;
-  if (action === 'logout') {
-    console.log(JSON.stringify({
-      event: 'jwt_logout',
-      timestamp: new Date().toISOString(),
-    }));
+  // Logout — stateless; clear cookie as a courtesy
+  const queryAction = (event.queryStringParameters || {}).action;
+  if (queryAction === 'logout') {
+    console.log(JSON.stringify({ event: 'jwt_logout', timestamp: new Date().toISOString() }));
     return {
       statusCode: 200,
       headers: {
@@ -93,9 +178,7 @@ exports.handler = async (event) => {
     };
   }
 
-  // ------------------------------------------------------------------
-  // Login: validate credentials and issue JWT cookie
-  // ------------------------------------------------------------------
+  // Parse request body
   let body;
   try {
     body = JSON.parse(event.body || '{}');
@@ -107,14 +190,23 @@ exports.handler = async (event) => {
     };
   }
 
-  const { email, password } = body;
+  // Accept action in body (validate-demo.yml sends {action:"login",...})
+  const bodyAction = body.action || 'login';
+  if (bodyAction !== 'login') {
+    return {
+      statusCode: 400,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Unsupported action' }),
+    };
+  }
 
-  if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-    // Audit log — no PII, no credentials
-    console.log(JSON.stringify({
-      event: 'jwt_auth_failed',
-      timestamp: new Date().toISOString(),
-    }));
+  const email    = (body.email    || '').trim().toLowerCase();
+  const password =  body.password || '';
+
+  // Validate credentials — no PII in logs
+  const creds = DEMO_CREDENTIALS[email];
+  if (!creds || creds.password !== password) {
+    console.log(JSON.stringify({ event: 'jwt_auth_failed', timestamp: new Date().toISOString() }));
     return {
       statusCode: 401,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
@@ -122,28 +214,54 @@ exports.handler = async (event) => {
     };
   }
 
-  // Build minimal payload — no PII
-  const payload = {
-    user_id:   'demo-prospect',
-    role:      'prospect',
-    access:    'demo',
-    tenant_id: 'demo-tenant',
+  // Resolve signing key (RS256 preferred, HS256 fallback)
+  let signingConfig;
+  try {
+    signingConfig = getSigningConfig();
+  } catch (err) {
+    console.error('[demo-auth] Signing configuration error:', err.message);
+    return {
+      statusCode: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Internal server error' }),
+    };
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const jwtPayload = {
+    sub:           email,
+    customer_id:   creds.customerId,
+    customer_name: creds.name,
+    tier:          creds.tier,
+    isEnterprise:  creds.isEnterprise,
+    iat:           now,
+    exp:           now + TOKEN_TTL_SECS,
   };
 
-  const token = jwt.sign(payload, SIGNING_SECRET, {
-    expiresIn: TOKEN_TTL_SECS,
-    issuer:    'securebase-demo',
-    audience:  'securebase-portal',
-  });
+  let token;
+  try {
+    token = jwt.sign(jwtPayload, signingConfig.key, {
+      algorithm: signingConfig.algorithm,
+      issuer:    'securebase-demo',
+      audience:  'securebase-portal',
+    });
+  } catch (err) {
+    console.error('[demo-auth] Token signing failed:', err.message);
+    return {
+      statusCode: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Internal server error' }),
+    };
+  }
 
-  // Audit log — token value is intentionally omitted
+  // Audit log — token value intentionally omitted
   console.log(JSON.stringify({
-    event:     'jwt_issued',
-    role:      payload.role,
-    access:    payload.access,
-    tenant_id: payload.tenant_id,
-    ttl_secs:  TOKEN_TTL_SECS,
-    timestamp: new Date().toISOString(),
+    event:        'jwt_issued',
+    algorithm:    signingConfig.algorithm,
+    tier:         creds.tier,
+    isEnterprise: creds.isEnterprise,
+    ttl_secs:     TOKEN_TTL_SECS,
+    timestamp:    new Date().toISOString(),
   }));
 
   return {
@@ -151,16 +269,17 @@ exports.handler = async (event) => {
     headers: {
       ...CORS_HEADERS,
       'Content-Type': 'application/json',
-      // HttpOnly prevents JavaScript from reading the cookie (XSS protection).
-      // Secure ensures it is only sent over HTTPS.
-      // SameSite=Lax allows first-party navigations from external links.
-      'Set-Cookie': `demo_jwt=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${TOKEN_TTL_SECS}`,
     },
-    // Never return the token in the body — only role metadata
     body: JSON.stringify({
-      success: true,
-      role:    payload.role,
-      access:  payload.access,
+      token,
+      customer: {
+        id:           creds.customerId,
+        name:         creds.name,
+        email,
+        tier:         creds.tier,
+        isEnterprise: creds.isEnterprise,
+      },
+      expires_in: TOKEN_TTL_SECS,
     }),
   };
 };
