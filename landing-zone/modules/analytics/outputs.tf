@@ -95,10 +95,23 @@ output "report_engine_invoke_arn" {
   value       = aws_lambda_function.report_engine.invoke_arn
 }
 
-# IAM Role
+# IAM Roles
+output "analytics_read_role_arn" {
+  description = "IAM role ARN for analytics read-only functions (analytics_query)"
+  value       = aws_iam_role.analytics_read_role.arn
+}
+
+output "analytics_write_role_arn" {
+  description = "IAM role ARN for analytics write functions (aggregator, reporter, report_engine)"
+  value       = aws_iam_role.analytics_write_role.arn
+}
+
+# Deprecated: retained for any callers that reference analytics_functions_role_arn.
+# Points to the write role (the successor of the original shared role).
+# Remove after all callers have been updated to use analytics_write_role_arn.
 output "analytics_functions_role_arn" {
-  description = "IAM role ARN for analytics functions"
-  value       = aws_iam_role.analytics_functions.arn
+  description = "DEPRECATED — use analytics_write_role_arn instead"
+  value       = aws_iam_role.analytics_write_role.arn
 }
 
 # Monitoring
