@@ -228,6 +228,52 @@ VITE_DEMO_USER_EMAIL=demo@securebase.tximhotep.com
 
 ---
 
+## 💳 Stripe Checkout — Price ID Architecture
+
+> **⚠️ CRITICAL — Read before touching `live-config.js`, `Checkout.jsx`, or any pricing code.**
+
+### The frontend sends `tier`, NOT `priceId`
+
+```javascript
+// phase3a-portal/src/pages/Checkout.jsx
+fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({
+    tier: plan,   // ← "standard", "fintech", "healthcare", "government", "pilot_compliance"
+    email,
+    name,
+    successUrl,
+    cancelUrl,
+    // priceId is NEVER sent
+  }),
+});
+```
+
+### Price IDs are resolved in the Lambda — not the frontend
+
+`/api/checkout` → AWS Lambda (`src/functions/securebase-checkout-api/index.cjs`) → resolves Price ID from `process.env['STRIPE_PRICE_STANDARD']` etc.
+
+**The Lambda explicitly ignores any client-supplied `priceId`.** This is a security control.
+
+### `priceId` fields in `live-config.js` are reference metadata only
+
+The `PRICING_TIERS` object in `src/config/live-config.js` has `priceId` fields. They are:
+- ✅ Human-readable documentation of which Stripe price maps to which tier
+- ❌ Not sent to the checkout API
+- ❌ Not used to determine billing amounts
+
+**Do NOT propose wiring `live-config.js` priceIds to `VITE_*_PRICE_ID` env vars** — it would have no effect on checkout and adds unnecessary complexity.
+
+### To change what Stripe charges
+
+Update the env var on the **AWS Lambda** directly:
+- AWS Console → Lambda → `securebase-checkout-api` → Configuration → Environment Variables
+- Or via Terraform in `landing-zone/modules/api-gateway/`
+
+See root `/Claude.md` `## 💳 Stripe Checkout Architecture` for the full picture.
+
+---
+
 ## Build Scripts
 
 ```bash

@@ -1,3 +1,31 @@
+/**
+ * live-config.js — SecureBase portal runtime configuration
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * ⚠️  STRIPE PRICE ID ARCHITECTURE — READ BEFORE EDITING
+ * ──────────────────────────────────────────────────────────────────────────
+ *
+ * The `priceId` fields in PRICING_TIERS are REFERENCE METADATA ONLY.
+ * They are NOT sent to the checkout API and do NOT determine what Stripe charges.
+ *
+ * Checkout flow:
+ *   Checkout.jsx  →  POST /api/checkout { tier: "standard", email, ... }
+ *                                         ↑ NO priceId in payload
+ *   → AWS Lambda (securebase-checkout-api)
+ *   → resolves Price ID from Lambda env var: process.env.STRIPE_PRICE_STANDARD
+ *   → stripe.checkout.sessions.create(...)
+ *
+ * To change what Stripe charges for a tier:
+ *   Update the Lambda env var in AWS (STRIPE_PRICE_STANDARD, STRIPE_PRICE_FINTECH, etc.)
+ *   NOT this file.
+ *
+ * The priceId values here serve as a human-readable cross-reference between
+ * tiers and Stripe price objects. Keep them in sync with Lambda env vars as
+ * a matter of documentation hygiene, but know they have no runtime effect on billing.
+ *
+ * See: /Claude.md § "💳 Stripe Checkout Architecture"
+ * ──────────────────────────────────────────────────────────────────────────
+ */
 import { loadStripe } from '@stripe/stripe-js';
 
 const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_YOUR_KEY_HERE';

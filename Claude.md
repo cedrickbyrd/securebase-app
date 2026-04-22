@@ -777,6 +777,93 @@ const { data, error } = await supabase.from('table').insert(payload);
 
 ---
 
+## 💳 Stripe Checkout Architecture
+
+> **⚠️ CRITICAL — Read before touching any checkout, pricing, or Stripe-related code.**
+
+### How checkout works (end-to-end)
+
+```
+Browser (Checkout.jsx)
+  │  POST /api/checkout  { tier: "standard", email, name, successUrl, cancelUrl }
+  │  ← NO priceId is sent →
+  ▼
+netlify.toml redirect → AWS API Gateway (4f0i48ueak/prod/checkout)
+  ▼
+Lambda: src/functions/securebase-checkout-api/index.cjs
+  │  Resolves Price ID from Lambda env var: process.env['STRIPE_PRICE_STANDARD']
+  │  Client-supplied priceId is IGNORED (logged as warning — attack prevention)
+  ▼
+stripe.checkout.sessions.create({ price: price_id, mode: 'subscription' })
+  ▼
+Stripe-hosted checkout page → success_url → /thank-you
+```
+
+### What controls actual billing
+
+The **only** values that determine what Stripe charges are the env vars set directly on the Lambda in AWS:
+
+| Lambda Env Var | Tier |
+|---|---|
+| `STRIPE_PRICE_STANDARD` | standard |
+| `STRIPE_PRICE_FINTECH` | fintech |
+| `STRIPE_PRICE_HEALTHCARE` | healthcare |
+| `STRIPE_PRICE_GOVERNMENT` | government |
+| `STRIPE_PRICE_PILOT_COMPLIANCE` | pilot_compliance |
+| `STRIPE_PRICE_ENTERPRISE` | enterprise |
+| `STRIPE_PRICE_PILOT` | pilot |
+
+To change what is charged: update the Lambda env var in AWS Console or via Terraform — **not** any frontend file.
+
+### What `priceId` in `live-config.js` is NOT
+
+`phase3a-portal/src/config/live-config.js` contains `priceId` fields in `PRICING_TIERS`. These are:
+- ✅ Reference/documentation metadata (human-readable record of which Stripe price maps to which tier)
+- ✅ Available for future use (e.g. Stripe.js Elements client-side rendering, if ever adopted)
+- ❌ NOT sent to the checkout API
+- ❌ NOT used to determine what Stripe charges
+- ❌ NOT a bug if they differ from Lambda env vars (though keeping them in sync is good practice)
+
+Similarly, the `VITE_STANDARD_PRICE_ID`, `VITE_FINTECH_PRICE_ID` etc. env vars documented in `phase3a-portal/Claude.md` are **not consumed by any current code path** — they are placeholders for future use.
+
+### What the frontend DOES send
+
+```javascript
+// src/components/Checkout.jsx and phase3a-portal/src/pages/Checkout.jsx
+fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({
+    tier: plan,          // ← This is ALL the Lambda needs to resolve the price
+    email,
+    name,
+    successUrl,
+    cancelUrl,
+  }),
+});
+// priceId is NEVER included in this payload
+```
+
+### Security note
+
+The Lambda explicitly ignores any client-supplied `priceId`:
+```javascript
+// src/functions/securebase-checkout-api/index.cjs
+if (body.priceId || body.price_id) {
+  console.warn(`Client-supplied priceId ignored for tier "${tier}"; using server env var ${envVarName}.`);
+}
+```
+This is intentional — it prevents a malicious or misconfigured caller from substituting a $0 or discounted Stripe price.
+
+### Common misdiagnosis to avoid
+
+| ❌ Wrong conclusion | ✅ Correct understanding |
+|---|---|
+| "`priceId` in `live-config.js` is not wired to env vars — bug!" | `priceId` in `live-config.js` is not used for checkout. Lambda env vars are the source of truth. |
+| "`VITE_STANDARD_PRICE_ID` is unused — bug!" | Correct, it is currently unused. It's a placeholder, not a bug. |
+| "Changing `live-config.js` priceId values will affect what Stripe charges" | False. Only Lambda env vars affect billing. |
+
+---
+
 ## 🔭 Phase 5 Observability Architecture
 
 Phase 5 adds enterprise-grade observability, dashboards, alerting, and multi-region DR to the platform. Key new modules and components introduced:
