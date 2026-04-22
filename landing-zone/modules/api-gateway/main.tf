@@ -818,9 +818,9 @@ resource "aws_api_gateway_deployment" "main" {
     redeployment = sha1(jsonencode([
       aws_api_gateway_method.auth_post.id,
       aws_api_gateway_integration.auth_lambda.id,
-      aws_api_gateway_method.auth_login_post[0].id,
-      aws_api_gateway_integration.auth_login_post[0].id,
-      aws_lambda_permission.session_management_api_gateway[0].id,
+      try(aws_api_gateway_method.auth_login_post[0].id, null),
+      try(aws_api_gateway_integration.auth_login_post[0].id, null),
+      try(aws_lambda_permission.session_management_api_gateway[0].id, null),
       # Add any other methods/integrations here to trigger a fresh deploy on change
     ]))
   }
