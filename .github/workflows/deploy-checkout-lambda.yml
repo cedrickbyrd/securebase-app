@@ -1,109 +1,113 @@
 name: Deploy Checkout Lambda
 
-# Packages and deploys the create-checkout-session Lambda (securebase-checkout-api)
-# to AWS whenever the function source changes on main, or on manual trigger.
-#
-# The Lambda source lives at:
-#   src/functions/securebase-checkout-api/index.cjs
-#
-# The deployed function name is: create-checkout-session
-# API Gateway: 4f0i48ueak (us-east-1) — POST /checkout
-
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'src/functions/securebase-checkout-api/**'
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - production
-        default: production
+      force_deploy:
+        description: 'Force deploy even if no code changes (type FORCE)'
+        required: false
+        type: string
 
 permissions:
   contents: read
-  id-token: write   # Required for AWS OIDC auth
-
-env:
-  AWS_REGION: us-east-1
-  LAMBDA_FUNCTION_NAME: create-checkout-session
-  LAMBDA_SOURCE_DIR: src/functions/securebase-checkout-api
-  ZIP_PATH: /tmp/checkout.zip
+  actions: write
 
 jobs:
-  package_and_deploy:
-    name: Package and Deploy
+  deploy-lambda:
+    name: 'Deploy · Checkout Lambda'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          node-version: '20'
 
-      - name: Package Lambda
+      - name: Install production dependencies
         run: |
-          echo "Packaging Lambda from $LAMBDA_SOURCE_DIR ..."
-          cd "$LAMBDA_SOURCE_DIR"
-          zip -r "$ZIP_PATH" .
-          echo "Package SHA256: $(sha256sum "$ZIP_PATH" | awk '{print $1}')"
+          npm install --prefix src/functions/securebase-checkout-api stripe --omit=dev --no-save
+          echo "stripe installed"
 
-      - name: Deploy Lambda code
+      - name: Verify handler version tag present
         run: |
-          echo "Deploying to $LAMBDA_FUNCTION_NAME ..."
-          aws lambda update-function-code \
-            --function-name "$LAMBDA_FUNCTION_NAME" \
-            --zip-file "fileb://$ZIP_PATH" \
-            --region "$AWS_REGION" \
-            --query 'FunctionArn' \
-            --output text
-
-          echo "Waiting for Lambda update to complete..."
-          aws lambda wait function-updated \
-            --function-name "$LAMBDA_FUNCTION_NAME" \
-            --region "$AWS_REGION"
-          echo "✅ Lambda deployed"
-
-      - name: Verify deployment
-        run: |
-          echo "Lambda configuration after deploy:"
-          aws lambda get-function-configuration \
-            --function-name "$LAMBDA_FUNCTION_NAME" \
-            --region "$AWS_REGION" \
-            --query '{Runtime: Runtime, Handler: Handler, LastModified: LastModified}' \
-            --output table
-
-      - name: Smoke test — verify handler_version log
-        run: |
-          echo "Invoking Lambda with minimal test payload..."
-          aws lambda invoke \
-            --function-name "$LAMBDA_FUNCTION_NAME" \
-            --region "$AWS_REGION" \
-            --payload '{"httpMethod":"POST","body":"{\"priceId\":\"price_test\",\"tier\":\"pilot_compliance\",\"billingType\":\"payment\"}"}' \
-            --log-type Tail \
-            --query 'LogResult' \
-            --output text \
-            /tmp/lambda-response.json | base64 --decode > /tmp/lambda-logs.txt
-
-          echo "=== CloudWatch log tail ==="
-          cat /tmp/lambda-logs.txt
-
-          echo "=== Response body ==="
-          cat /tmp/lambda-response.json | python3 -m json.tool 2>/dev/null || cat /tmp/lambda-response.json
-
-          # Verify the new handler version is running
-          if grep -q "handler_version=2026-04-19" /tmp/lambda-logs.txt; then
-            echo "✅ handler_version=2026-04-19 confirmed in logs"
-          else
-            echo "❌ handler_version not found — check CloudWatch logs for /aws/lambda/$LAMBDA_FUNCTION_NAME"
+          if ! grep -q "handler_version=" src/functions/securebase-checkout-api/index.cjs; then
+            echo "::error::handler_version tag missing from index.cjs — refusing to deploy unversioned code"
             exit 1
           fi
+          VERSION=$(grep -o 'handler_version=[^[:space:]]*' src/functions/securebase-checkout-api/index.cjs | head -1)
+          echo "Deploying ${VERSION}"
+          echo "handler_version=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Package Lambda zip
+        run: |
+          cd src/functions/securebase-checkout-api
+          zip -r ../../../lambda-checkout.zip index.cjs node_modules/
+          echo "Package size: $(du -sh ../../../lambda-checkout.zip | cut -f1)"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name securebase-checkout-api \
+            --zip-file fileb://lambda-checkout.zip
+          echo "Lambda code updated"
+          aws lambda wait function-updated \
+            --function-name securebase-checkout-api
+          echo "Lambda update complete"
+
+      - name: Verify deployed version
+        run: |
+          DEPLOYED=$(aws lambda get-function-configuration \
+            --function-name securebase-checkout-api \
+            --query 'LastModified' \
+            --output text)
+          echo "Lambda last modified: ${DEPLOYED}"
+
+          QUALIFIER=$(aws lambda get-function-configuration \
+            --function-name securebase-checkout-api \
+            --query 'FunctionArn' \
+            --output text | grep -oP ':\d+$' || echo "none")
+          if [ "$QUALIFIER" != "none" ] && [ -n "$QUALIFIER" ]; then
+            echo "::warning::Lambda ARN has version qualifier ${QUALIFIER} — API Gateway may be pinned to an old version"
+          else
+            echo "Lambda is not pinned to a specific version"
+          fi
+
+      - name: Trigger validate-checkout-path workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run validate-checkout-path.yml --ref main
+          echo "Triggered validate-checkout-path workflow"
+
+      - name: Upload Lambda zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-checkout-${{ env.handler_version }}
+          path: lambda-checkout.zip
+          retention-days: 7
+
+      - name: Write job summary
+        run: |
+          echo "# Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Handler version: ${{ env.handler_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Function: securebase-checkout-api" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered by: ${{ github.event_name }} on ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "validate-checkout-path triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
