@@ -2,7 +2,6 @@
   base = "phase3a-portal"
   command = "npm ci --legacy-peer-deps && npm run build"
   publish = "dist"
-  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -39,12 +38,6 @@
   status = 200
   force = true
 
-# ADMIN REDIRECTS
-[[redirects]]
-  from = "/admin/*"
-  to = "/.netlify/functions/get-admin-metrics"
-  status = 200
-  force = true
 
 # DEMO AUTH - Routes to AWS Lambda via API Gateway.
 # Per CLAUDE.md / .github/copilot-instructions.md Cost Optimization policy,
@@ -59,19 +52,6 @@
   status = 200
   force = true
 
-# LEAD PREVIEW AUTH - issues a limited-time JWT after Contact Sales form submission
-[[redirects]]
-  from = "/api/lead-preview-auth"
-  to = "/.netlify/functions/lead-preview-auth"
-  status = 200
-  force = true
-
-# S3 PROXY SHIELD - prevents direct S3 URL exposure (security guardrail)
-[[redirects]]
-  from = "/storage/*"
-  to = "/.netlify/functions/s3-proxy/:splat"
-  status = 200
-  force = true
 
 # SPA FALLBACK (LAST)
 [[redirects]]
