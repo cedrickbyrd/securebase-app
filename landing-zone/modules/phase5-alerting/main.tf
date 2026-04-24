@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =============================================================================
 # Phase 5.3 – Component 5: Alerting & Incident Response
 # =============================================================================
@@ -943,4 +944,94 @@ resource "aws_cloudwatch_dashboard" "alerting_overview" {
       }
     ]
   })
+=======
+locals {
+  common_tags = merge(var.tags, {
+    Phase              = "5.3"
+    Component          = "alerting"
+    ComplianceFramework = "SOC2,FedRAMP,HIPAA"
+    ManagedBy          = "terraform"
+  })
+}
+
+data "aws_caller_identity" "current" {}
+
+# ── SNS alert topic ───────────────────────────────────────────────────────────
+resource "aws_sns_topic" "alerts" {
+  name              = "securebase-${var.environment}-alerts"
+  kms_master_key_id = var.sns_kms_key_arn != "" ? var.sns_kms_key_arn : "alias/aws/sns"
+  tags              = local.common_tags
+}
+
+resource "aws_sns_topic_policy" "alerts" {
+  arn = aws_sns_topic.alerts.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudWatchPublish"
+        Effect = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action   = "SNS:Publish"
+        Resource = aws_sns_topic.alerts.arn
+        Condition = {
+          ArnLike = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_sns_topic_subscription" "email" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+resource "aws_sns_topic_subscription" "webhook_lambda" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.alert_router.arn
+}
+
+# ── Alert router Lambda ───────────────────────────────────────────────────────
+data "aws_iam_role" "lambda_exec" {
+  name = "securebase_lambda_exec_role"
+}
+
+data "archive_file" "alert_router" {
+  type        = "zip"
+  source_file = "${path.module}/../../../../phase2-backend/functions/alert_router.py"
+  output_path = "${path.module}/alert_router.zip"
+}
+
+resource "aws_lambda_function" "alert_router" {
+  function_name    = "securebase-${var.environment}-alert-router"
+  role             = data.aws_iam_role.lambda_exec.arn
+  handler          = "alert_router.handler"
+  runtime          = "python3.12"
+  filename         = data.archive_file.alert_router.output_path
+  source_code_hash = data.archive_file.alert_router.output_base64sha256
+  timeout          = 10
+  memory_size      = 128
+
+  environment {
+    variables = {
+      WEBHOOK_SSM_PARAM = var.alert_webhook_ssm_param
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_lambda_permission" "sns_invoke_alert_router" {
+  statement_id  = "AllowSNSInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alert_router.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.alerts.arn
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }

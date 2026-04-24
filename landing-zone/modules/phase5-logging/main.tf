@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =============================================================================
 # Phase 5.3 – Component 4: Logging & Distributed Tracing
 # =============================================================================
@@ -128,10 +129,116 @@ resource "aws_xray_sampling_rule" "critical_path" {
   priority       = 500
   reservoir_size = 20
   fixed_rate     = 0.05  # 5% for critical services
+=======
+locals {
+  log_retention_days = var.environment == "prod" ? 365 : 7
+  common_tags = merge(var.tags, {
+    Phase              = "5.3"
+    Component          = "logging"
+    ComplianceFramework = "SOC2,FedRAMP,HIPAA"
+    DataClassification = "sensitive"
+    ManagedBy          = "terraform"
+  })
+}
+
+# ── KMS key for log encryption (HIPAA/FedRAMP requirement) ───────────────────
+resource "aws_kms_key" "logs" {
+  description             = "SecureBase ${var.environment} — CloudWatch Logs encryption"
+  deletion_window_in_days = var.kms_key_deletion_days
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EnableRootAccess"
+        Effect = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogs"
+        Effect = "Allow"
+        Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
+        Action   = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_kms_alias" "logs" {
+  name          = "alias/securebase-${var.environment}-logs"
+  target_key_id = aws_kms_key.logs.key_id
+}
+
+data "aws_caller_identity" "current" {}
+
+# ── Lambda log groups ─────────────────────────────────────────────────────────
+resource "aws_cloudwatch_log_group" "lambda" {
+  for_each = toset(var.lambda_function_names)
+
+  name              = "/aws/lambda/${each.value}"
+  retention_in_days = local.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = merge(local.common_tags, { Function = each.value })
+}
+
+# ── API Gateway access logs ───────────────────────────────────────────────────
+resource "aws_cloudwatch_log_group" "api_gateway" {
+  count = var.api_gateway_id != "" ? 1 : 0
+
+  name              = "/aws/apigateway/securebase-${var.environment}"
+  retention_in_days = local.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = merge(local.common_tags, { Service = "api-gateway" })
+}
+
+# ── Application log group (structured JSON logs) ──────────────────────────────
+resource "aws_cloudwatch_log_group" "application" {
+  name              = "/securebase/${var.environment}/application"
+  retention_in_days = local.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = merge(local.common_tags, { Service = "application" })
+}
+
+# ── Audit log group (HIPAA — immutable trail) ─────────────────────────────────
+resource "aws_cloudwatch_log_group" "audit" {
+  name              = "/securebase/${var.environment}/audit"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = merge(local.common_tags, {
+    Service            = "audit"
+    DataClassification = "restricted"
+    Immutable          = "true"
+  })
+}
+
+# ── X-Ray sampling rule ───────────────────────────────────────────────────────
+resource "aws_xray_sampling_rule" "securebase" {
+  rule_name      = "securebase-${var.environment}"
+  priority       = 100
+  version        = 1
+  reservoir_size = 5
+  fixed_rate     = var.xray_sampling_rate
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
   url_path       = "*"
   host           = "*"
   http_method    = "*"
   service_type   = "*"
+<<<<<<< HEAD
   service_name   = "securebase-${var.environment}-auth*"
   resource_arn   = "*"
   version        = 1
@@ -200,12 +307,25 @@ resource "aws_xray_group" "database" {
 resource "aws_xray_group" "errors" {
   group_name        = "securebase-${var.environment}-errors"
   filter_expression = "fault = true OR error = true"
+=======
+  service_name   = "securebase-*"
+  resource_arn   = "*"
+
+  tags = local.common_tags
+}
+
+# ── X-Ray group for service map filtering ────────────────────────────────────
+resource "aws_xray_group" "securebase" {
+  group_name        = "securebase-${var.environment}"
+  filter_expression = "annotation.environment = \"${var.environment}\""
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 
   insights_configuration {
     insights_enabled      = true
     notifications_enabled = true
   }
 
+<<<<<<< HEAD
   tags = merge(var.tags, {
     Name        = "securebase-${var.environment}-xray-errors"
     Environment = var.environment
@@ -511,4 +631,7 @@ resource "aws_cloudwatch_query_definition" "p99_by_service" {
     | stats pct(@duration, 99) as p99_ms, count() as invocations by @logStream
     | sort p99_ms desc
   EOQ
+=======
+  tags = local.common_tags
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }
