@@ -150,6 +150,7 @@ variable "stripe_secret_key" {
   sensitive = true
 }
 
+<<<<<<< HEAD
 # Phase 5.3 – Alerting variables
 variable "pagerduty_routing_key" {
   description = "PagerDuty Events API v2 integration routing key"
@@ -160,10 +161,22 @@ variable "pagerduty_routing_key" {
 
 variable "oncall_email" {
   description = "On-call engineer email address for SNS subscriptions"
+=======
+# ── Phase 5.3 Variables ───────────────────────────────────────────────────────
+variable "aurora_cluster_id" {
+  description = "Existing Aurora cluster ID for Phase 5.3 alerting and DR"
+  type        = string
+  default     = "securebase-dev-cluster"
+}
+
+variable "alert_email" {
+  description = "Email address for SNS alert fallback subscription"
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
   type        = string
   default     = ""
 }
 
+<<<<<<< HEAD
 variable "lambda_concurrency_threshold" {
   description = "Lambda concurrent execution alarm threshold"
   type        = number
@@ -205,4 +218,28 @@ variable "demo_auth_password" {
   description = "Demo login password"
   type        = string
   sensitive   = true
+=======
+variable "route53_hosted_zone_id" {
+  description = "Route 53 hosted zone ID for api.securebase.tximhotep.com failover records"
+  type        = string
+  default     = ""
+}
+
+variable "primary_api_endpoint" {
+  description = "Primary (us-east-1) API Gateway FQDN (no protocol)"
+  type        = string
+  default     = "9xyetu7zq3.execute-api.us-east-1.amazonaws.com"
+}
+
+variable "secondary_api_endpoint" {
+  description = "Secondary (us-west-2) API Gateway FQDN — set after DR environment is deployed"
+  type        = string
+  default     = ""
+}
+
+variable "s3_cost_tiering_buckets" {
+  description = "S3 bucket names to enable Intelligent-Tiering on"
+  type        = set(string)
+  default     = []
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }

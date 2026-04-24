@@ -6,10 +6,38 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  alias  = "secondary"
+  region = "us-west-2"
+
+  default_tags {
+    tags = var.tags
+  }
+}
+
 # Netlify provider for managing Netlify deployments
 provider "netlify" {
   token = var.netlify_token
 }
+
+locals {
+  phase5_lambda_names = [
+    "securebase-${var.environment}-auth-v2",
+    "securebase-${var.environment}-webhook-manager",
+    "securebase-${var.environment}-billing-worker",
+    "securebase-${var.environment}-support-tickets",
+    "securebase-${var.environment}-cost-forecasting",
+    "securebase-${var.environment}-health-check",
+    "securebase-${var.environment}-submit-lead",
+    "securebase-${var.environment}-metrics-aggregation",
+    "securebase-${var.environment}-tenant-metrics",
+    "securebase-${var.environment}-alert-router",
+    "securebase-${var.environment}-health-check-aggregator",
+    "securebase-${var.environment}-failover-orchestrator",
+    "securebase-${var.environment}-failback-orchestrator",
+  ]
+}
+
 data "aws_ssoadmin_instances" "this" {}
 
 
@@ -60,11 +88,16 @@ module "netlify_sites" {
   tags               = var.tags
 }
 
+<<<<<<< HEAD
 # Phase 5.3 – Component 4: Logging & Distributed Tracing
+=======
+# ── Phase 5.3: Logging & Distributed Tracing ─────────────────────────────────
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 module "phase5_logging" {
   source = "../../modules/phase5-logging"
 
   environment = var.environment
+<<<<<<< HEAD
   tags        = var.tags
 }
 
@@ -91,6 +124,64 @@ module "phase5_cost_optimization" {
   aurora_off_peak_min_acu    = var.aurora_off_peak_min_acu
   high_alert_sns_topic_arn   = module.phase5_alerting.high_topic_arn
   cost_anomaly_threshold_usd = var.cost_anomaly_threshold_usd
+=======
+  aws_region  = var.target_region
+
+  lambda_function_names = local.phase5_lambda_names
+
+  api_gateway_id = "9xyetu7zq3"
+  tags           = var.tags
+}
+
+# ── Phase 5.3: Alerting & Incident Response ───────────────────────────────────
+module "phase5_alerting" {
+  source = "../../modules/phase5-alerting"
+
+  environment    = var.environment
+  aws_region     = var.target_region
+  sns_kms_key_arn = module.phase5_logging.kms_key_arn
+
+  lambda_function_names = local.phase5_lambda_names
+
+  api_gateway_id    = "9xyetu7zq3"
+  aurora_cluster_id = var.aurora_cluster_id
+
+  alert_email = var.alert_email
+  tags        = var.tags
+}
+
+# ── Phase 5.3: Multi-Region DR ────────────────────────────────────────────────
+module "multi_region" {
+  source = "../../modules/multi-region"
+
+  providers = {
+    aws           = aws
+    aws.secondary = aws.secondary
+  }
+
+  environment       = var.environment
+  aurora_cluster_id = var.aurora_cluster_id
+  alert_sns_arn     = module.phase5_alerting.sns_topic_arn
+
+  route53_hosted_zone_id = var.route53_hosted_zone_id
+  primary_api_endpoint   = var.primary_api_endpoint
+  secondary_api_endpoint = var.secondary_api_endpoint
+
+  tags = var.tags
+}
+
+# ── Phase 5.3: Cost Optimization ──────────────────────────────────────────────
+module "phase5_cost" {
+  source = "../../modules/phase5-cost"
+
+  environment               = var.environment
+  alert_sns_arn             = module.phase5_alerting.alert_sns_arn
+  anomaly_threshold_percent = 20
+
+  s3_bucket_names = var.s3_cost_tiering_buckets
+
+  tags = var.tags
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }
 
 terraform {

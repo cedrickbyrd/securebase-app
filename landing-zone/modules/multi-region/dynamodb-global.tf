@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =============================================================================
 # Phase 5.3 – Component 6: Multi-Region DR
 # DynamoDB Global Tables
@@ -172,4 +173,35 @@ resource "aws_dynamodb_table" "audit_trail_global" {
     Phase       = "5.3"
     Type        = "global-table"
   })
+=======
+# ── DynamoDB Global Tables (us-west-2 replicas) ───────────────────────────────
+# Prerequisite: PITR must be enabled on all source tables (done via CLI fix).
+# APPLY ORDER: After aurora-global.tf succeeds.
+
+resource "aws_dynamodb_table" "global_replica" {
+  for_each = toset(var.dynamodb_table_names)
+
+  # We only add the replica block — the table itself already exists.
+  # Using a data source to reference existing tables and add replicas.
+  name = each.value
+
+  # These must match the existing table exactly — Terraform manages the replica only
+  billing_mode = "PAY_PER_REQUEST"
+
+  replica {
+    region_name = var.secondary_region
+  }
+
+  lifecycle {
+    # Prevent Terraform from destroying/recreating the table if other attributes drift
+    ignore_changes = [
+      hash_key, range_key, attribute, local_secondary_index,
+      global_secondary_index, stream_enabled, stream_view_type,
+      read_capacity, write_capacity, ttl, billing_mode,
+    ]
+    prevent_destroy = true
+  }
+
+  tags = local.dr_tags
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }

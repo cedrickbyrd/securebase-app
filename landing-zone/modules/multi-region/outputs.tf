@@ -1,4 +1,5 @@
 output "global_cluster_id" {
+<<<<<<< HEAD
   description = "ID of the Aurora Global Database cluster"
   value       = aws_rds_global_cluster.securebase.id
 }
@@ -65,4 +66,27 @@ output "dynamodb_global_table_names" {
     compliance_violations = aws_dynamodb_table.compliance_violations_global.name
     audit_trail           = aws_dynamodb_table.audit_trail_global.name
   }
+=======
+  value = aws_rds_global_cluster.securebase.id
+}
+
+output "secondary_aurora_endpoint" {
+  value = aws_rds_cluster.secondary.endpoint
+}
+
+output "secondary_aurora_reader_endpoint" {
+  value = aws_rds_cluster.secondary.reader_endpoint
+}
+
+output "health_check_aggregator_arn" {
+  value = aws_lambda_function.health_check_aggregator.arn
+}
+
+output "failover_orchestrator_arn" {
+  value = aws_lambda_function.failover_orchestrator.arn
+}
+
+output "failback_orchestrator_arn" {
+  value = aws_lambda_function.failback_orchestrator.arn
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }

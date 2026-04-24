@@ -1,4 +1,5 @@
 variable "environment" {
+<<<<<<< HEAD
   description = "Environment name (dev, staging, prod)"
   type        = string
 }
@@ -93,4 +94,74 @@ variable "acm_certificate_arn" {
   description = "ACM certificate ARN for CloudFront (must be in us-east-1)"
   type        = string
   default     = ""
+=======
+  type = string
+}
+
+variable "primary_region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "secondary_region" {
+  type    = string
+  default = "us-west-2"
+}
+
+variable "aurora_cluster_id" {
+  description = "Existing Aurora cluster ID to add to global cluster"
+  type        = string
+}
+
+variable "aurora_engine_version" {
+  type    = string
+  default = "8.0.mysql_aurora.3.04.0"
+}
+
+variable "dynamodb_table_names" {
+  description = "Tables to add us-west-2 replicas to"
+  type        = list(string)
+  default = [
+    "securebase-users",
+    "securebase-cache-dev",
+    "securebase-dev-notifications",
+    "securebase-dev-support-tickets",
+    "securebase-dev-reports",
+    "securebase-dev-metrics",
+  ]
+}
+
+variable "s3_replication_buckets" {
+  description = "Map of source bucket → replica bucket name"
+  type        = map(string)
+  default     = {}
+}
+
+variable "route53_hosted_zone_id" {
+  type    = string
+  default = ""
+}
+
+variable "primary_api_endpoint" {
+  description = "Primary region API Gateway endpoint"
+  type        = string
+  default     = ""
+}
+
+variable "secondary_api_endpoint" {
+  description = "Secondary region API Gateway endpoint (created after DR apply)"
+  type        = string
+  default     = ""
+}
+
+variable "alert_sns_arn" {
+  description = "SNS topic ARN for DR alerts (from phase5-alerting output)"
+  type        = string
+  default     = ""
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 output "sns_topic_arns" {
   description = "ARNs of all alerting SNS topics by severity"
   value = {
@@ -44,4 +45,19 @@ output "alarm_count" {
 output "alerting_dashboard_name" {
   description = "Name of the alerting overview CloudWatch dashboard"
   value       = aws_cloudwatch_dashboard.alerting_overview.dashboard_name
+=======
+output "sns_topic_arn" {
+  description = "ARN of the alerts SNS topic"
+  value       = aws_sns_topic.alerts.arn
+}
+
+output "alert_sns_arn" {
+  description = "Alias for sns_topic_arn — for use by multi-region and cost modules"
+  value       = aws_sns_topic.alerts.arn
+}
+
+output "alert_router_lambda_arn" {
+  description = "ARN of the alert router Lambda"
+  value       = aws_lambda_function.alert_router.arn
+>>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }
