@@ -70,7 +70,9 @@ class ApiService {
   getUserProfile      = async () => this.get('/user/profile');
   getInvoices         = async () => this.get('/billing/invoices');
   getApiKeys          = async () => this.get('/api-keys');
-  getComplianceStatus = async () => this.get('/compliance/status');
+  getComplianceStatus  = async () => this.get('/compliance/status');
+  getComplianceScore   = async () => this.get('/compliance/score');
+  getComplianceFindings = async () => this.get('/compliance/findings');
   getTickets          = async (params) => this.get('/tickets', { params });
   createTicket        = async (ticketData) => this.post('/tickets', ticketData);
 
