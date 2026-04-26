@@ -28,8 +28,8 @@ variable "project_name" {
   default     = "securebase"
 }
 
-variable "lambda_execution_role_arn" {
-  description = "IAM role ARN for Lambda execution"
+variable "management_account_id" {
+  description = "AWS account ID of the management (root) account"
   type        = string
 }
 
@@ -84,6 +84,10 @@ variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+locals {
+  lambda_execution_role_arn = "arn:aws:iam::${var.management_account_id}:role/securebase-${var.environment}-lambda-execution"
 }
 
 # ============================================
@@ -190,7 +194,7 @@ resource "aws_security_group" "phase4_lambda" {
 resource "aws_lambda_function" "sso_handler" {
   function_name = "${var.project_name}-${var.environment}-sso-handler"
   description   = "SSO authentication handler (OIDC, SAML 2.0)"
-  role          = var.lambda_execution_role_arn
+  role          = local.lambda_execution_role_arn
   
   # Deployment package (created by package-lambda.sh)
   filename         = "${path.module}/../../../phase2-backend/deploy/sso_handler.zip"
@@ -246,7 +250,7 @@ resource "aws_cloudwatch_log_group" "sso_handler" {
 resource "aws_lambda_function" "security_middleware" {
   function_name = "${var.project_name}-${var.environment}-security-middleware"
   description   = "Security validation (IP whitelist, device fingerprinting, alerts)"
-  role          = var.lambda_execution_role_arn
+  role          = local.lambda_execution_role_arn
   
   filename         = "${path.module}/../../../phase2-backend/deploy/security_middleware.zip"
   source_code_hash = fileexists("${path.module}/../../../phase2-backend/deploy/security_middleware.zip") ? filebase64sha256("${path.module}/../../../phase2-backend/deploy/security_middleware.zip") : null
@@ -306,7 +310,7 @@ resource "aws_lambda_permission" "security_middleware_sns" {
 resource "aws_lambda_function" "api_key_rotation" {
   function_name = "${var.project_name}-${var.environment}-api-key-rotation"
   description   = "Automated API key rotation based on policies"
-  role          = var.lambda_execution_role_arn
+  role          = local.lambda_execution_role_arn
   
   filename         = "${path.module}/../../../phase2-backend/deploy/api_key_rotation.zip"
   source_code_hash = fileexists("${path.module}/../../../phase2-backend/deploy/api_key_rotation.zip") ? filebase64sha256("${path.module}/../../../phase2-backend/deploy/api_key_rotation.zip") : null
@@ -464,7 +468,7 @@ resource "aws_cloudwatch_metric_alarm" "slow_sso_logins" {
 resource "aws_kms_grant" "lambda_sso_secrets" {
   name              = "${var.project_name}-${var.environment}-lambda-sso-secrets-grant"
   key_id            = aws_kms_key.sso_secrets.key_id
-  grantee_principal = var.lambda_execution_role_arn
+  grantee_principal = local.lambda_execution_role_arn
 
   operations = [
     "Encrypt",
