@@ -129,7 +129,7 @@ export default function SecureBaseLandingZone() {
   const fetchLatestAudit = async (token) => {
     setLoading(true);
     try {
-      const response = await fetch('/.netlify/functions/get-audit-report', {
+      const response = await fetch('/api/audit-report', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

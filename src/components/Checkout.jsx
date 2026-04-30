@@ -92,12 +92,13 @@ export default function Checkout() {
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
 
   // Fire GA4 view_item once when the checkout page loads for a specific plan.
+  // Intentionally fires only on mount: the plan is resolved from URL params at
+  // render time and never changes mid-session on this page.
   // This powers Step 2 ("View product") of the GA4 Purchase Journey funnel.
   useEffect(() => {
     const displayPrice = isPilot ? pilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
     trackViewItem(plan, PLAN_LABELS[plan] || planName, displayPrice);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();

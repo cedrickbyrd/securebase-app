@@ -125,7 +125,7 @@ export const mockEnvironmentData = [
 ];
 
 /**
- * Mock SOC 2 audit report in the shape returned by /.netlify/functions/get-audit-report.
+ * Mock SOC 2 audit report in the shape returned by /api/audit-report.
  * Used by SecureBaseLandingZone when isDemoMode() is true so the ComplianceScreen
  * renders fully (including any export / PDF buttons) without a real Supabase session.
  */
