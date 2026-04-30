@@ -227,21 +227,17 @@ export default function FastTrackSignup({ wave3Target = null, onSuccess }) {
     setSubmitError('');
 
     try {
-      // 1. Submit lead to Netlify function for CRM tracking
-      await fetch('/.netlify/functions/submit-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmed,
-          company: company.name || '',
-          trigger: 'fast_track_signup',
-          campaign: wave3Target ? `wave3_${wave3Target}` : '',
-          score: 85,
-          grade: 'HOT',
-        }),
+      // 1. Submit lead via CRM service (posts to API Gateway /leads via VITE_LEAD_CAPTURE_URL)
+      await submitLead({
+        email: trimmed,
+        company: company.name || '',
+        trigger: 'fast_track_signup',
+        campaign: wave3Target ? `wave3_${wave3Target}` : '',
+        score: 85,
+        grade: 'HOT',
       });
 
-      // 2. Request magic link via backend API
+      // 2. Request magic link via backend API (best-effort)
       try {
         await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/signup`, {
           method: 'POST',

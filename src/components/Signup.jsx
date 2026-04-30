@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
 import { trackSignupStarted, trackSignupCompleted, trackTierSelected, trackHIPAARoute } from '../utils/analytics';
+import { supabase } from '../lib/supabase';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -375,19 +376,16 @@ function FastTrackForm({ wave3Target }) {
     setSubmitError('');
 
     try {
-      // 1. Submit lead for CRM tracking
-      await fetch('/.netlify/functions/submit-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmed,
-          company: company.name || '',
-          trigger: 'fast_track_signup',
-          campaign: wave3Target ? `wave3_${wave3Target}` : '',
-          score: 85,
-          grade: 'HOT',
-        }),
-      });
+      // 1. Submit lead to Supabase leads table for CRM tracking (best-effort, non-blocking)
+      supabase
+        .from('leads')
+        .upsert(
+          { email: trimmed, company: company.name || '', trigger: 'fast_track_signup', campaign: wave3Target ? `wave3_${wave3Target}` : '', score: 85, grade: 'HOT' },
+          { onConflict: 'email' },
+        )
+        .then(({ error: upsertErr }) => {
+          if (upsertErr) console.warn('[Signup] Lead upsert failed (non-fatal):', upsertErr.message);
+        });
 
       // 2. Request magic link via backend API (best-effort)
       try {

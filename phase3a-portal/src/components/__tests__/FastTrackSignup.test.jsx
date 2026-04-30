@@ -122,7 +122,9 @@ describe('FastTrackSignup – Wave 3 personalisation', () => {
 // ---------------------------------------------------------------------------
 
 describe('FastTrackSignup – successful submission', () => {
-  it('calls the Netlify lead endpoint and the signup API on submit', async () => {
+  it('calls the CRM lead service and the signup API on submit', async () => {
+    const { submitLead } = await import('../../services/crmService');
+
     renderWithRouter(<FastTrackSignup wave3Target="column" />);
 
     fireEvent.change(screen.getByLabelText(/work email/i), {
@@ -131,15 +133,14 @@ describe('FastTrackSignup – successful submission', () => {
     fireEvent.click(screen.getByRole('button', { name: /get instant access/i }));
 
     await waitFor(() => {
-      // Netlify function call
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/.netlify/functions/submit-lead',
-        expect.objectContaining({ method: 'POST' })
+      // CRM service called with lead data
+      expect(submitLead).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'user@column.com', trigger: 'fast_track_signup' })
       );
     });
 
     await waitFor(() => {
-      // Magic link API call
+      // Magic link API call goes to the AWS Gateway endpoint (not a Netlify function)
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/signup'),
         expect.objectContaining({ method: 'POST' })
@@ -218,8 +219,9 @@ describe('FastTrackSignup – successful submission', () => {
 // ---------------------------------------------------------------------------
 
 describe('FastTrackSignup – error handling', () => {
-  it('shows an error message when the Netlify function call fails', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network failure'));
+  it('shows an error message when the CRM service call fails', async () => {
+    const { submitLead } = await import('../../services/crmService');
+    submitLead.mockRejectedValueOnce(new Error('Network failure'));
 
     renderWithRouter(<FastTrackSignup />);
 
@@ -234,10 +236,8 @@ describe('FastTrackSignup – error handling', () => {
   });
 
   it('still shows success when only the magic-link API call fails', async () => {
-    // First fetch (Netlify) succeeds; second (magic link) fails
-    mockFetch
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) })
-      .mockRejectedValueOnce(new Error('API unavailable'));
+    // CRM service resolves (default mock); magic link fetch rejects
+    mockFetch.mockRejectedValueOnce(new Error('API unavailable'));
 
     renderWithRouter(<FastTrackSignup />);
 
