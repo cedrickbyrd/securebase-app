@@ -522,11 +522,11 @@ jobs:
 
       - name: Write step summary
         if: always()
+        env:
+          HTTP_CODE: ${{ steps.probe.outputs.http_code }}
+          HTTP_BODY: ${{ steps.probe.outputs.http_body }}
+          OLD_CODE: ${{ steps.probe.outputs.old_code_detected }}
         run: |
-          HTTP_CODE="${{ steps.probe.outputs.http_code }}"
-          HTTP_BODY="${{ steps.probe.outputs.http_body }}"
-          OLD_CODE="${{ steps.probe.outputs.old_code_detected }}"
-
           if [ "${OLD_CODE}" = "true" ]; then
             echo "## ❌ Hop 5 · Live Lambda Probe — OLD CODE DETECTED" >> "${GITHUB_STEP_SUMMARY}"
             echo "" >> "${GITHUB_STEP_SUMMARY}"
