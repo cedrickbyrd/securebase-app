@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
-import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick } from '../utils/analytics';
+import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick, trackAddToCart } from '../utils/analytics';
 import { mockComplianceData } from '../mock-api';
 
 const PLANS = [
@@ -171,6 +171,9 @@ export default function Pricing() {
       navigate('/contact-sales?tier=enterprise&source=pricing');
       return;
     }
+    // Fire add_to_cart for non-enterprise plans: signals purchase intent and
+    // powers Step 3 ("Add to cart") of the GA4 Purchase Journey funnel.
+    trackAddToCart(plan.id, plan.name, plan.price);
     navigate(`/checkout?plan=${plan.id}&planName=${encodeURIComponent(plan.name)}`);
   };
 
@@ -263,6 +266,7 @@ export default function Pricing() {
           <button
             onClick={() => {
               trackPilotCTAClick('urgency_banner');
+              trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
               navigate(`/checkout?plan=pilot_compliance&planName=Compliance+Jumpstart`);
             }}
             className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
