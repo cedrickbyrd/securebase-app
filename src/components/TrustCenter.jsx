@@ -21,7 +21,7 @@ const chartOptions = {
     const fetchMetrics = async () => {
         try {
             // Updated to your Netlify function endpoint for Phase 5
-            const response = await fetch('/.netlify/functions/get-trust-metrics'); 
+            const response = await fetch('/api/trust-metrics'); 
             const data = await response.json();
             setMetrics(data);
         } catch (error) {

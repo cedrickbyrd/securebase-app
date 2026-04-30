@@ -512,7 +512,7 @@ export function trackPricingCTA(plan, location = '') {
  * @param {string} planName  - Human-readable plan name (e.g. 'Fintech / Healthcare').
  * @param {number} [price=0] - Monthly or one-time price in USD.
  */
-export function trackViewItem(plan, planName, price = 0) {
+export function trackViewItem(plan, planName = '', price = 0) {
   if (!canTrack()) return;
   try {
     const safePrice = typeof price === 'number' && price >= 0 ? price : 0;
@@ -546,7 +546,7 @@ export function trackViewItem(plan, planName, price = 0) {
  * @param {string} planName  - Human-readable plan name (e.g. 'Compliance Jumpstart').
  * @param {number} [price=0] - Monthly or one-time price in USD.
  */
-export function trackAddToCart(plan, planName, price = 0) {
+export function trackAddToCart(plan, planName = '', price = 0) {
   if (!canTrack()) return;
   try {
     const safePrice = typeof price === 'number' && price >= 0 ? price : 0;

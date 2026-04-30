@@ -52,6 +52,33 @@
   status = 200
   force = true
 
+# ADMIN METRICS / ALERTS - Served by the Phase 5 /admin/* API Gateway routes.
+[[redirects]]
+  from = "/api/admin/metrics"
+  to = "https://api.securebase.tximhotep.com/admin/metrics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/security-alert"
+  to = "https://api.securebase.tximhotep.com/admin/security-alert"
+  status = 200
+  force = true
+
+# TRUST CENTER METRICS - Served by the Phase 5 API Gateway.
+[[redirects]]
+  from = "/api/trust-metrics"
+  to = "https://api.securebase.tximhotep.com/trust-metrics"
+  status = 200
+  force = true
+
+# AUDIT REPORT - Served by the Phase 5 API Gateway.
+[[redirects]]
+  from = "/api/audit-report"
+  to = "https://api.securebase.tximhotep.com/audit-report"
+  status = 200
+  force = true
+
 
 # SPA FALLBACK (LAST)
 [[redirects]]

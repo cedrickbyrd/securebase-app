@@ -13,8 +13,8 @@ export default function EarlyAccessForm() {
     setStatus('sending');
 
     try {
-      // Call the Netlify function
-      const response = await fetch('/.netlify/functions/submit-lead', {
+      // POST lead data to the API Gateway signup endpoint (proxied via Netlify redirect)
+      const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
