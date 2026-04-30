@@ -11,10 +11,10 @@
  * The archived Netlify function (archived/netlify-functions/securebase-checkout-api.js)
  * is no longer used.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
-import { trackCheckoutStarted } from '../utils/analytics';
+import { trackCheckoutStarted, trackViewItem } from '../utils/analytics';
 import { getPilotPricing } from '../utils/trackingUtils';
 
 const PLAN_LABELS = {
@@ -91,13 +91,22 @@ export default function Checkout() {
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
 
+  // Fire GA4 view_item once when the checkout page loads for a specific plan.
+  // This powers Step 2 ("View product") of the GA4 Purchase Journey funnel.
+  useEffect(() => {
+    const displayPrice = isPilot ? pilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
+    trackViewItem(plan, PLAN_LABELS[plan] || planName, displayPrice);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     // Fire GA4 begin_checkout right before the POST — not on page load.
-    trackCheckoutStarted(plan, 'monthly', 'form');
+    const displayPrice = isPilot ? pilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
+    trackCheckoutStarted(plan, 'monthly', 'form', displayPrice);
 
     try {
       // Use window.location.origin so the redirect URLs work correctly
