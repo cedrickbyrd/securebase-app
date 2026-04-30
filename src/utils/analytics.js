@@ -500,22 +500,107 @@ export function trackPricingCTA(plan, location = '') {
 }
 
 /**
+ * Track when a user views a specific plan's checkout/detail page.
+ *
+ * Fires the standard GA4 e-commerce event `view_item`, which powers Step 2
+ * ("View product") of the GA4 Purchase Journey funnel report.
+ *
+ * HIPAA note: only the plan identifier, display name, and price are sent —
+ * never user PII or org data.
+ *
+ * @param {string} plan      - Plan identifier (e.g. 'standard', 'fintech', 'pilot_compliance').
+ * @param {string} planName  - Human-readable plan name (e.g. 'Fintech / Healthcare').
+ * @param {number} [price=0] - Monthly or one-time price in USD.
+ */
+export function trackViewItem(plan, planName = '', price = 0) {
+  if (!canTrack()) return;
+  try {
+    const safePrice = typeof price === 'number' && price >= 0 ? price : 0;
+    ReactGA.event('view_item', {
+      currency: 'USD',
+      value: safePrice,
+      items: [{
+        item_id:       plan,
+        item_name:     planName || plan,
+        price:         safePrice,
+        quantity:      1,
+        item_category: 'compliance_plan',
+      }],
+    });
+    devLog('Event tracked: view_item', { plan, planName, price: safePrice });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: view_item', error);
+  }
+}
+
+/**
+ * Track when a user selects a plan on the Pricing page (intent to purchase).
+ *
+ * Fires the standard GA4 e-commerce event `add_to_cart`, which powers Step 3
+ * ("Add to cart") of the GA4 Purchase Journey funnel report.
+ *
+ * HIPAA note: only the plan identifier, display name, and price are sent —
+ * never user PII or org data.
+ *
+ * @param {string} plan      - Plan identifier (e.g. 'standard', 'fintech', 'pilot_compliance').
+ * @param {string} planName  - Human-readable plan name (e.g. 'Compliance Jumpstart').
+ * @param {number} [price=0] - Monthly or one-time price in USD.
+ */
+export function trackAddToCart(plan, planName = '', price = 0) {
+  if (!canTrack()) return;
+  try {
+    const safePrice = typeof price === 'number' && price >= 0 ? price : 0;
+    ReactGA.event('add_to_cart', {
+      currency: 'USD',
+      value: safePrice,
+      items: [{
+        item_id:       plan,
+        item_name:     planName || plan,
+        price:         safePrice,
+        quantity:      1,
+        item_category: 'compliance_plan',
+      }],
+    });
+    devLog('Event tracked: add_to_cart', { plan, planName, price: safePrice });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: add_to_cart', error);
+  }
+}
+
+/**
  * Track checkout initiation.
  *
  * Fires the standard GA4 e-commerce event `begin_checkout` immediately before
  * POST /api/checkout so the event corresponds to an actual checkout attempt.
+ * Includes an `items[]` array so GA4's Purchase Journey funnel can match
+ * Step 4 ("Begin checkout") correctly.
  *
  * @param {string} plan                                 - Plan identifier.
  * @param {'annual'|'monthly'} [billingCycle='monthly'] - Billing cadence.
  * @param {'form'|'one_click'} [method='form']          - Checkout path taken.
  *   'form'      = /checkout route form submit → POST /api/checkout
  *   'one_click' = portal Pricing inline POST /api/checkout
+ * @param {number} [price=0] - Plan price in USD; used to populate items[].
  */
-export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'form') {
+export function trackCheckoutStarted(plan, billingCycle = 'monthly', method = 'form', price = 0) {
   if (!canTrack()) return;
   try {
-    ReactGA.event('begin_checkout', { plan_type: plan, billing_cycle: billingCycle, checkout_method: method });
-    devLog('Event tracked: begin_checkout', { plan, billingCycle, method });
+    const safePrice = typeof price === 'number' && price >= 0 ? price : 0;
+    ReactGA.event('begin_checkout', {
+      plan_type:       plan,
+      billing_cycle:   billingCycle,
+      checkout_method: method,
+      currency:        'USD',
+      value:           safePrice,
+      items: [{
+        item_id:       plan,
+        item_name:     plan,
+        price:         safePrice,
+        quantity:      1,
+        item_category: 'compliance_plan',
+      }],
+    });
+    devLog('Event tracked: begin_checkout', { plan, billingCycle, method, price: safePrice });
   } catch (error) {
     console.error('[Analytics] Error tracking event: begin_checkout', error);
   }

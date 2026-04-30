@@ -42,7 +42,7 @@ const AdminDashboard = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("No active session found.");
 
-        const response = await fetch('/.netlify/functions/get-admin-metrics', {
+        const response = await fetch('/api/admin/metrics', {
           headers: { 
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
@@ -71,7 +71,7 @@ const AdminDashboard = () => {
     setSendingAlert(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/.netlify/functions/post-security-alert', {
+      const response = await fetch('/api/admin/security-alert', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${session.access_token}`,
