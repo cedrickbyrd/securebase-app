@@ -12,6 +12,7 @@ const TIER_PRICE_ENV = {
   fintech:          'STRIPE_PRICE_FINTECH',
   healthcare:       'STRIPE_PRICE_HEALTHCARE',
   government:       'STRIPE_PRICE_GOVERNMENT',
+  pilot:            'STRIPE_PRICE_PILOT',            // standalone pilot plan (backwards compat)
   pilot_compliance: 'STRIPE_PRICE_PILOT_COMPLIANCE',
 };
 
@@ -44,6 +45,8 @@ exports.handler = async (event) => {
     const tier           = body.tier           || body.plan_tier || '';
     const success_url    = body.successUrl     || body.success_url || `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`;
     const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
+    const use_pilot_coupon = !!body.use_pilot_coupon;
+    const pilotCouponId    = process.env.STRIPE_PILOT_COUPON_ID || 'pilot_50_off';
 
     // Require a known tier — the price ID is always resolved server-side from env vars.
     if (!tier || !TIER_PRICE_ENV[tier]) {
@@ -100,9 +103,15 @@ exports.handler = async (event) => {
       cancel_url,
     };
 
-    // Subscription sessions get a 14-day free trial
+    // Subscription sessions either get a 14-day free trial OR a pilot coupon.
+    // Stripe does not allow `discounts` and `subscription_data.trial_period_days`
+    // on the same Checkout Session, so we skip the trial when a coupon is active.
     if (mode === 'subscription') {
-      sessionParams.subscription_data = { trial_period_days: 14 };
+      if (use_pilot_coupon) {
+        sessionParams.discounts = [{ coupon: pilotCouponId }];
+      } else {
+        sessionParams.subscription_data = { trial_period_days: 14 };
+      }
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
