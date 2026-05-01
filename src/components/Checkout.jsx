@@ -29,6 +29,8 @@ const PLAN_LABELS = {
 
 const KNOWN_PLANS = Object.keys(PLAN_LABELS);
 
+// List prices (before any pilot discount) used when isPilot is false.
+// healthcare and government are enterprise tiers sold via portal/sales.
 const PLAN_PRICES = {
   standard: 499,
   fintech: 1499,
@@ -100,6 +102,9 @@ export default function Checkout() {
 
   // Resolve pricing: use attribution-based pricing when available (LinkedIn UTM present);
   // fall back to the static PILOT_PRICING table for direct-link visitors.
+  // resolvedPilotPricing is always non-null when isPilot is true: PILOT_PRICING has
+  // an entry for every tier in PILOT_DISCOUNT_TIERS, so PILOT_PRICING[plan] is
+  // guaranteed to be defined whenever isPilot is true.
   const resolvedPilotPricing = pilotPricing ?? (isPilot ? PILOT_PRICING[plan] : null);
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';

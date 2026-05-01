@@ -127,8 +127,8 @@ export const PILOT_PRICING = {
 export function getPilotPricing(tier = null) {
   if (!isLinkedInTraffic()) return null;
   if (tier && PILOT_PRICING[tier]) return PILOT_PRICING[tier];
-  // Legacy fallback for callers that don't pass a tier
-  return { monthlyPrice: 1000, fullPrice: 2000, discountPercent: 50, label: 'Pilot Program' };
+  // Legacy fallback for callers that don't pass a tier — uses standard-tier values.
+  return { ...PILOT_PRICING.standard, label: 'Pilot Program' };
 }
 
 /**
