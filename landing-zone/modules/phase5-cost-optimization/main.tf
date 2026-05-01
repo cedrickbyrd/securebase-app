@@ -295,7 +295,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "audit_logs" {
     }
 
     # Objects expire after 7 years (2,555 days) — HIPAA requires minimum 6-year retention
-    # for medical records (45 CFR §164.530(j)); FedRAMP recommends 7 years for audit logs.
+    # for audit controls (45 CFR §164.312(b)); FedRAMP recommends 7 years for audit logs.
     expiration {
       days = 2555
     }
