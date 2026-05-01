@@ -104,3 +104,35 @@ output "netlify_deployment_summary" {
   description = "Summary of Netlify deployments"
   value       = try(module.netlify_sites.deployment_summary, null)
 }
+
+# Phase 5.3 Outputs
+
+output "phase5_logging_log_group_names" {
+  description = "Phase 5.3 CloudWatch log group names by service"
+  value       = try(module.phase5_logging.log_group_names, null)
+}
+
+output "phase5_logging_xray_sampling_rule" {
+  description = "Phase 5.3 X-Ray sampling rule name"
+  value       = try(module.phase5_logging.xray_sampling_rule_name, null)
+}
+
+output "phase5_alerting_sns_topics" {
+  description = "Phase 5.3 alerting SNS topic ARNs by severity"
+  value       = try(module.phase5_alerting.sns_topic_arns, null)
+}
+
+output "phase5_alerting_dashboard" {
+  description = "Phase 5.3 alerting CloudWatch dashboard name"
+  value       = try(module.phase5_alerting.alerting_dashboard_name, null)
+}
+
+output "phase5_cost_anomaly_monitor_arn" {
+  description = "Phase 5.3 AWS Cost Anomaly Detection monitor ARN"
+  value       = try(module.phase5_cost_optimization.cost_anomaly_monitor_arn, null)
+}
+
+output "phase5_cost_dashboard" {
+  description = "Phase 5.3 cost optimization CloudWatch dashboard name"
+  value       = try(module.phase5_cost_optimization.cost_dashboard_name, null)
+}
