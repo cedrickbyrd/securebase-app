@@ -175,7 +175,10 @@ export default function Pricing() {
       return;
     }
     // Fire add_to_cart — use pilot price when eligible, otherwise full price.
-    trackAddToCart(plan.id, plan.name, isPilotEligible && PILOT_PRICING[plan.id] ? PILOT_PRICING[plan.id].monthlyPrice : plan.price);
+    const cartPrice = isPilotEligible && PILOT_PRICING[plan.id]
+      ? PILOT_PRICING[plan.id].monthlyPrice
+      : plan.price;
+    trackAddToCart(plan.id, plan.name, cartPrice);
     navigate(`/checkout?plan=${plan.id}&planName=${encodeURIComponent(plan.name)}`);
   };
 
