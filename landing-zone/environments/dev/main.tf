@@ -60,6 +60,39 @@ module "netlify_sites" {
   tags               = var.tags
 }
 
+# Phase 5.3 – Component 4: Logging & Distributed Tracing
+module "phase5_logging" {
+  source = "../../modules/phase5-logging"
+
+  environment = var.environment
+  tags        = var.tags
+}
+
+# Phase 5.3 – Component 5: Alerting & Incident Response
+module "phase5_alerting" {
+  source = "../../modules/phase5-alerting"
+
+  environment                  = var.environment
+  tags                         = var.tags
+  pagerduty_routing_key        = var.pagerduty_routing_key
+  oncall_email                 = var.oncall_email
+  lambda_concurrency_threshold = var.lambda_concurrency_threshold
+  api_usage_spike_threshold    = var.api_usage_spike_threshold
+}
+
+# Phase 5.3 – Component 7: Infrastructure Scaling & Cost Optimization
+module "phase5_cost_optimization" {
+  source = "../../modules/phase5-cost-optimization"
+
+  environment                = var.environment
+  tags                       = var.tags
+  aurora_min_acu             = var.min_aurora_capacity
+  aurora_max_acu             = var.max_aurora_capacity
+  aurora_off_peak_min_acu    = var.aurora_off_peak_min_acu
+  high_alert_sns_topic_arn   = module.phase5_alerting.high_topic_arn
+  cost_anomaly_threshold_usd = var.cost_anomaly_threshold_usd
+}
+
 terraform {
   required_version = ">= 1.5.0"
 
