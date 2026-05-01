@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
 import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick, trackAddToCart } from '../utils/analytics';
+import { isLinkedInTraffic, PILOT_PRICING } from '../utils/trackingUtils';
 import { mockComplianceData } from '../mock-api';
 
 const PLANS = [
@@ -145,6 +146,8 @@ export default function Pricing() {
   const [daysRemaining, setDaysRemaining] = useState(getDaysUntil(PILOT_DEADLINE));
   const [tooltipVisible, setTooltipVisible] = useState(false);
 
+  const isPilotEligible = isLinkedInTraffic();
+
   useEffect(() => {
     // Simulate async fetch from mock API
     const timer = setTimeout(() => {
@@ -171,9 +174,8 @@ export default function Pricing() {
       navigate('/contact-sales?tier=enterprise&source=pricing');
       return;
     }
-    // Fire add_to_cart for non-enterprise plans: signals purchase intent and
-    // powers Step 3 ("Add to cart") of the GA4 Purchase Journey funnel.
-    trackAddToCart(plan.id, plan.name, plan.price);
+    // Fire add_to_cart — use pilot price when eligible, otherwise full price.
+    trackAddToCart(plan.id, plan.name, isPilotEligible && PILOT_PRICING[plan.id] ? PILOT_PRICING[plan.id].monthlyPrice : plan.price);
     navigate(`/checkout?plan=${plan.id}&planName=${encodeURIComponent(plan.name)}`);
   };
 
@@ -306,12 +308,31 @@ export default function Pricing() {
               </div>
 
               <div className="mb-8">
-                <span className={`text-5xl font-black ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
-                  ${plan.price.toLocaleString()}
-                </span>
-                <span className={`text-sm ml-1 ${plan.highlight ? 'text-purple-200' : 'text-slate-500'}`}>
-                  /month
-                </span>
+                {isPilotEligible && PILOT_PRICING[plan.id] ? (
+                  <>
+                    <p className={`text-sm line-through ${plan.highlight ? 'text-purple-200' : 'text-slate-400'}`}>
+                      ${plan.price.toLocaleString()}/mo
+                    </p>
+                    <span className={`text-5xl font-black ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+                      ${PILOT_PRICING[plan.id].monthlyPrice.toLocaleString()}
+                    </span>
+                    <span className={`text-sm ml-1 ${plan.highlight ? 'text-purple-200' : 'text-slate-500'}`}>
+                      /month
+                    </span>
+                    <span className="ml-2 inline-flex items-center bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                      50% off pilot
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-5xl font-black ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+                      ${plan.price.toLocaleString()}
+                    </span>
+                    <span className={`text-sm ml-1 ${plan.highlight ? 'text-purple-200' : 'text-slate-500'}`}>
+                      /month
+                    </span>
+                  </>
+                )}
               </div>
 
               <ul className="space-y-3 mb-8 flex-1">

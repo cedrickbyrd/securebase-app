@@ -103,23 +103,32 @@ export function isLinkedInTraffic() {
 }
 
 /**
+ * Per-tier pilot pricing (50% discount) for the Q2 2026 pilot programme.
+ * Source of truth: scripts/check-pilot-conversions.js PRICING_TIERS.
+ *
+ * monthlyPrice — what the customer pays with the pilot discount applied.
+ * fullPrice    — the undiscounted/list price for this tier.
+ */
+export const PILOT_PRICING = {
+  standard:   { monthlyPrice: 1000,  fullPrice: 2000,  discountPercent: 50 },
+  fintech:    { monthlyPrice: 4000,  fullPrice: 8000,  discountPercent: 50 },
+  healthcare: { monthlyPrice: 7500,  fullPrice: 15000, discountPercent: 50 },
+  government: { monthlyPrice: 12500, fullPrice: 25000, discountPercent: 50 },
+};
+
+/**
  * Return the pilot pricing config when the visitor is eligible (LinkedIn source).
  * Returns null if the visitor is not eligible for the pilot discount.
  *
- * Pilot pricing: $2,000/month (50% off the $4,000 full price).
- *
- * @returns {{ priceId: string, monthlyPrice: number, fullPrice: number, label: string }|null}
+ * @param {string|null} [tier] - Optional tier key. When provided, returns tier-specific
+ *   pilot pricing. When omitted, returns the legacy standard-tier pricing object.
+ * @returns {{ monthlyPrice: number, fullPrice: number, discountPercent: number, label?: string }|null}
  */
-export function getPilotPricing() {
+export function getPilotPricing(tier = null) {
   if (!isLinkedInTraffic()) return null;
-
-  return {
-    priceId: import.meta.env.VITE_STRIPE_PILOT_PRICE_ID || 'price_pilot_monthly_2000',
-    monthlyPrice: 2000,
-    fullPrice: 4000,
-    label: 'Pilot Program',
-    discountPercent: 50,
-  };
+  if (tier && PILOT_PRICING[tier]) return PILOT_PRICING[tier];
+  // Legacy fallback for callers that don't pass a tier
+  return { monthlyPrice: 1000, fullPrice: 2000, discountPercent: 50, label: 'Pilot Program' };
 }
 
 /**
