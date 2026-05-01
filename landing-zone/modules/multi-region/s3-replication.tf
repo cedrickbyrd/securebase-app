@@ -66,7 +66,7 @@ resource "aws_iam_role_policy" "s3_replication" {
         Action = [
           "kms:Decrypt",
         ]
-        Resource = var.primary_kms_key_arn != "" ? [var.primary_kms_key_arn] : ["*"]
+        Resource = var.primary_kms_key_arn != "" ? [var.primary_kms_key_arn] : []
         Condition = {
           StringLike = {
             "kms:ViaService" = "s3.${var.primary_region}.amazonaws.com"

@@ -147,14 +147,16 @@ data "archive_file" "health_check_secondary" {
     content  = <<-PYTHON
 import json
 from datetime import datetime, timezone
+import os
 
 def lambda_handler(event, context):
+    region = os.environ.get('AWS_REGION', 'us-west-2')
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'},
         'body': json.dumps({
             'status': 'healthy',
-            'region': 'us-west-2',
+            'region': region,
             'role': 'secondary',
             'timestamp': datetime.now(timezone.utc).isoformat(),
         }),

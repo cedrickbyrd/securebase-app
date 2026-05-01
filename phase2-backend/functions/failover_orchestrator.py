@@ -40,7 +40,7 @@ ALERT_SNS_TOPIC_ARN  = os.environ.get("ALERT_SNS_TOPIC_ARN", "")
 DR_STATE_TABLE       = os.environ.get("DR_STATE_TABLE", f"securebase-{ENVIRONMENT}-dr-state")
 
 # Maximum seconds to wait for Aurora detach/promote to complete
-AURORA_PROMOTE_TIMEOUT_SECONDS = 600
+AURORA_OPERATION_TIMEOUT_SECONDS = 600
 AURORA_POLL_INTERVAL_SECONDS   = 20
 
 rds  = boto3.client("rds")
@@ -164,7 +164,7 @@ def _resolve_action(event: dict) -> str:
 
 
 def _wait_for_cluster_available(cluster_arn: str) -> None:
-    deadline = time.time() + AURORA_PROMOTE_TIMEOUT_SECONDS
+    deadline = time.time() + AURORA_OPERATION_TIMEOUT_SECONDS
     while time.time() < deadline:
         resp = rds.describe_db_clusters(DBClusterIdentifier=cluster_arn)
         status = resp["DBClusters"][0].get("Status", "")
@@ -173,7 +173,7 @@ def _wait_for_cluster_available(cluster_arn: str) -> None:
             return
         time.sleep(AURORA_POLL_INTERVAL_SECONDS)
     raise TimeoutError(
-        f"Cluster {cluster_arn} did not become available within {AURORA_PROMOTE_TIMEOUT_SECONDS}s"
+        f"Cluster {cluster_arn} did not become available within {AURORA_OPERATION_TIMEOUT_SECONDS}s"
     )
 
 

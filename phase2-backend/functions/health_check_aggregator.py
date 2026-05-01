@@ -42,7 +42,7 @@ ALERT_SNS_TOPIC_ARN = os.environ.get("ALERT_SNS_TOPIC_ARN", "")
 CW_NAMESPACE      = os.environ.get("CLOUDWATCH_NAMESPACE", f"SecureBase/{ENVIRONMENT}/DR")
 
 # Consecutive failures required before triggering a critical alert
-ALERT_THRESHOLD = int(os.environ.get("ALERT_THRESHOLD", "3"))
+HEALTH_CHECK_FAILURE_THRESHOLD = int(os.environ.get("HEALTH_CHECK_FAILURE_THRESHOLD", "3"))
 
 cloudwatch = boto3.client("cloudwatch", region_name=PRIMARY_REGION)
 dynamodb   = boto3.resource("dynamodb")
@@ -193,7 +193,7 @@ def _record_health_snapshot(results: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def _maybe_alert(results: dict) -> None:
-    """Alert only if primary has been unhealthy for ALERT_THRESHOLD consecutive checks."""
+    """Alert only if primary has been unhealthy for HEALTH_CHECK_FAILURE_THRESHOLD consecutive checks."""
     try:
         table       = dynamodb.Table(DR_STATE_TABLE)
         response    = table.query(
@@ -203,7 +203,7 @@ def _maybe_alert(results: dict) -> None:
                 ":prefix": "SNAPSHOT#",
             },
             ScanIndexForward=False,
-            Limit=ALERT_THRESHOLD,
+            Limit=HEALTH_CHECK_FAILURE_THRESHOLD,
         )
         items = response.get("Items", [])
         consecutive_failures = sum(
@@ -213,7 +213,7 @@ def _maybe_alert(results: dict) -> None:
     except Exception:
         consecutive_failures = 1  # Fail open: alert if we can't read state
 
-    if consecutive_failures >= ALERT_THRESHOLD:
+    if consecutive_failures >= HEALTH_CHECK_FAILURE_THRESHOLD:
         _send_alert(results)
 
 
