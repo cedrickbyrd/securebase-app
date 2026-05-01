@@ -149,3 +149,42 @@ variable "stripe_secret_key" {
   type      = string
   sensitive = true
 }
+
+# Phase 5.3 – Alerting variables
+variable "pagerduty_routing_key" {
+  description = "PagerDuty Events API v2 integration routing key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "oncall_email" {
+  description = "On-call engineer email address for SNS subscriptions"
+  type        = string
+  default     = ""
+}
+
+variable "lambda_concurrency_threshold" {
+  description = "Lambda concurrent execution alarm threshold"
+  type        = number
+  default     = 800
+}
+
+variable "api_usage_spike_threshold" {
+  description = "Daily API request count for usage-spike alarm"
+  type        = number
+  default     = 100000
+}
+
+# Phase 5.3 – Cost Optimization variables
+variable "aurora_off_peak_min_acu" {
+  description = "Minimum Aurora Serverless v2 ACU during off-peak hours (nights/weekends)"
+  type        = number
+  default     = 0
+}
+
+variable "cost_anomaly_threshold_usd" {
+  description = "Dollar amount above which a Cost Anomaly Detection alert fires"
+  type        = number
+  default     = 50
+}
