@@ -167,6 +167,8 @@ def lambda_handler(event, context):
     env = os.environ.get('ENVIRONMENT', 'dev')
     pagerduty_url = _get_webhook_url(f'/securebase/{env}/alerting/pagerduty_webhook_url')
     opsgenie_url  = _get_webhook_url(f'/securebase/{env}/alerting/opsgenie_webhook_url')
+    # PagerDuty routing key is also retrieved from SSM, not env vars
+    pagerduty_routing_key = _get_webhook_url(f'/securebase/{env}/alerting/pagerduty_routing_key')
 
     for record in event.get('Records', []):
         sns_msg = record.get('Sns', {})
@@ -185,7 +187,7 @@ def lambda_handler(event, context):
         # PagerDuty Events API v2
         if pagerduty_url:
             pd_payload = {
-                'routing_key': os.environ.get('PAGERDUTY_ROUTING_KEY', ''),
+                'routing_key': pagerduty_routing_key,
                 'event_action': 'trigger' if state == 'ALARM' else 'resolve',
                 'dedup_key': alarm_name,
                 'payload': {
@@ -246,9 +248,8 @@ resource "aws_lambda_function" "alert_dispatcher" {
 
   environment {
     variables = {
-      ENVIRONMENT           = var.environment
-      LOG_LEVEL             = "INFO"
-      PAGERDUTY_ROUTING_KEY = var.pagerduty_routing_key
+      ENVIRONMENT = var.environment
+      LOG_LEVEL   = "INFO"
     }
   }
 
@@ -450,14 +451,14 @@ resource "aws_cloudwatch_metric_alarm" "aurora_query_latency" {
 
 resource "aws_cloudwatch_metric_alarm" "lambda_cold_starts_high" {
   alarm_name          = "securebase-${var.environment}-lambda-cold-starts-high"
-  alarm_description   = "Lambda cold-start ratio exceeded 20% of invocations"
+  alarm_description   = "Lambda cold-start count exceeded 100 per 5 minutes — consider provisioned concurrency"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 3
   metric_name         = "InitDuration"
   namespace           = "AWS/Lambda"
   period              = 300
   statistic           = "SampleCount"
-  threshold           = 0.2  # Evaluated relative to total invocations via math expression
+  threshold           = 100
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.high.arn]
 

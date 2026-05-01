@@ -163,7 +163,79 @@ resource "aws_scheduler_schedule" "aurora_scale_up" {
   })
 }
 
-resource "aws_iam_role" "scheduler" {
+resource "aws_scheduler_schedule" "aurora_scale_down_weekend" {
+  name       = "securebase-${var.environment}-aurora-scale-down-weekend"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  # Friday at 22:00 UTC — begins weekend off-peak period
+  schedule_expression          = "cron(0 22 ? * FRI *)"
+  schedule_expression_timezone = "UTC"
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:rds:modifyDBCluster"
+    role_arn = aws_iam_role.scheduler.arn
+
+    input = jsonencode({
+      DbClusterIdentifier = "securebase-${var.environment}"
+      ServerlessV2ScalingConfiguration = {
+        MinCapacity = var.aurora_off_peak_min_acu
+        MaxCapacity = var.aurora_max_acu
+      }
+    })
+
+    retry_policy {
+      maximum_retry_attempts = 3
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name        = "securebase-${var.environment}-aurora-scale-down-weekend"
+    Environment = var.environment
+    Phase       = "5.3"
+  })
+}
+
+resource "aws_scheduler_schedule" "aurora_scale_up_monday" {
+  name       = "securebase-${var.environment}-aurora-scale-up-monday"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  # Monday at 06:00 UTC — resumes business hours capacity
+  schedule_expression          = "cron(0 6 ? * MON *)"
+  schedule_expression_timezone = "UTC"
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:rds:modifyDBCluster"
+    role_arn = aws_iam_role.scheduler.arn
+
+    input = jsonencode({
+      DbClusterIdentifier = "securebase-${var.environment}"
+      ServerlessV2ScalingConfiguration = {
+        MinCapacity = var.aurora_min_acu
+        MaxCapacity = var.aurora_max_acu
+      }
+    })
+
+    retry_policy {
+      maximum_retry_attempts = 3
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name        = "securebase-${var.environment}-aurora-scale-up-monday"
+    Environment = var.environment
+    Phase       = "5.3"
+  })
+}
+
+
   name = "securebase-${var.environment}-scheduler"
 
   assume_role_policy = jsonencode({
@@ -222,7 +294,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "audit_logs" {
       storage_class = "DEEP_ARCHIVE"
     }
 
-    # Objects expire after 7 years (HIPAA retention maximum)
+    # Objects expire after 7 years (2,555 days) — HIPAA requires minimum 6-year retention
+    # for medical records (45 CFR §164.530(j)); FedRAMP recommends 7 years for audit logs.
     expiration {
       days = 2555
     }
