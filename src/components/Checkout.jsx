@@ -15,11 +15,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
 import { trackCheckoutStarted, trackViewItem } from '../utils/analytics';
-import { getPilotPricing } from '../utils/trackingUtils';
+import { getPilotPricing, PILOT_PRICING } from '../utils/trackingUtils';
 
 const PLAN_LABELS = {
   standard: 'Standard',
-  fintech: 'Fintech / Healthcare',
+  fintech: 'Fintech',
+  healthcare: 'Healthcare',
+  government: 'Government',
   enterprise: 'Enterprise / FedRAMP',
   pilot: 'Pilot Program',
   pilot_compliance: 'Compliance Jumpstart',
@@ -27,9 +29,13 @@ const PLAN_LABELS = {
 
 const KNOWN_PLANS = Object.keys(PLAN_LABELS);
 
+// List prices (before any pilot discount) used when isPilot is false.
+// healthcare and government are enterprise tiers sold via portal/sales.
 const PLAN_PRICES = {
   standard: 499,
   fintech: 1499,
+  healthcare: 15000,
+  government: 25000,
   enterprise: 3999,
   pilot: 2000,
   pilot_compliance: 495,
@@ -38,10 +44,16 @@ const PLAN_PRICES = {
 const PLAN_BILLING_TYPE = {
   standard: 'subscription',
   fintech: 'subscription',
+  healthcare: 'subscription',
+  government: 'subscription',
   enterprise: 'subscription',
   pilot: 'subscription',
   pilot_compliance: 'payment',
 };
+
+// The pilot 50% discount applies to any of these plans.
+// Attribution (LinkedIn UTM) gates *discovery* on the pricing page — not checkout display.
+const PILOT_DISCOUNT_TIERS = new Set(['standard', 'fintech', 'healthcare', 'government']);
 
 export default function Checkout() {
   // All hooks must be declared unconditionally before any early returns.
@@ -84,10 +96,16 @@ export default function Checkout() {
   const planName =
     searchParams.get('planName') || PLAN_LABELS[plan] || plan;
 
-  // isPilot: only activate the LinkedIn/attribution discount banner for the 'pilot'
-  // subscription plan. 'pilot_compliance' is a separate one-time payment product
-  // and must not trigger the pilot discount logic.
-  const isPilot = plan === 'pilot' && !!pilotPricing;
+  // isPilot: true for any plan that has a pilot price defined.
+  // Attribution (LinkedIn UTM) gates *discovery* on the pricing page — not the checkout display.
+  const isPilot = PILOT_DISCOUNT_TIERS.has(plan);
+
+  // Resolve pricing: use attribution-based pricing when available (LinkedIn UTM present);
+  // fall back to the static PILOT_PRICING table for direct-link visitors.
+  // resolvedPilotPricing is always non-null when isPilot is true: PILOT_PRICING has
+  // an entry for every tier in PILOT_DISCOUNT_TIERS, so PILOT_PRICING[plan] is
+  // guaranteed to be defined whenever isPilot is true.
+  const resolvedPilotPricing = pilotPricing ?? (isPilot ? PILOT_PRICING[plan] : null);
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
 
@@ -96,7 +114,7 @@ export default function Checkout() {
   // render time and never changes mid-session on this page.
   // This powers Step 2 ("View product") of the GA4 Purchase Journey funnel.
   useEffect(() => {
-    const displayPrice = isPilot ? pilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
+    const displayPrice = isPilot ? resolvedPilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
     trackViewItem(plan, PLAN_LABELS[plan] || planName, displayPrice);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -106,7 +124,7 @@ export default function Checkout() {
     setError(null);
 
     // Fire GA4 begin_checkout right before the POST — not on page load.
-    const displayPrice = isPilot ? pilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
+    const displayPrice = isPilot ? resolvedPilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
     trackCheckoutStarted(plan, 'monthly', 'form', displayPrice);
 
     try {
@@ -121,6 +139,7 @@ export default function Checkout() {
           email,
           name,
           tier: plan,
+          use_pilot_coupon: isPilot,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
@@ -180,7 +199,7 @@ export default function Checkout() {
             {isPilot && (
               <div className="flex items-center gap-2 mb-3 bg-white/20 rounded-lg px-3 py-2">
                 <Zap className="w-4 h-4 text-yellow-300 shrink-0" />
-                <span className="text-sm font-bold">LinkedIn Discount Applied! — 50% savings</span>
+                <span className="text-sm font-bold">Pilot Discount Applied! — 50% savings</span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -190,11 +209,11 @@ export default function Checkout() {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-black">
-                  ${(isPilot ? pilotPricing.monthlyPrice : PLAN_PRICES[plan])?.toLocaleString() ?? '—'}
+                  ${(isPilot ? resolvedPilotPricing.monthlyPrice : PLAN_PRICES[plan])?.toLocaleString() ?? '—'}
                 </p>
                 {isPilot && (
                   <p className="text-purple-200 text-xs line-through">
-                    ${pilotPricing.fullPrice.toLocaleString()}
+                    ${resolvedPilotPricing.fullPrice.toLocaleString()}
                   </p>
                 )}
                 <p className="text-purple-200 text-xs">{billingType === 'payment' ? 'one-time' : '/month'}</p>
