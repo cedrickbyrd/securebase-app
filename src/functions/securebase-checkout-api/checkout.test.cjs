@@ -65,7 +65,9 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     process.env.STRIPE_PRICE_FINTECH          = 'price_test_fintech';
     process.env.STRIPE_PRICE_HEALTHCARE       = 'price_test_healthcare';
     process.env.STRIPE_PRICE_GOVERNMENT       = 'price_test_government';
+    process.env.STRIPE_PRICE_PILOT            = 'price_test_pilot';
     process.env.STRIPE_PRICE_PILOT_COMPLIANCE = 'price_test_pilot_compliance';
+    process.env.STRIPE_PILOT_COUPON_ID        = 'pilot_50_off';
     process.env.STRIPE_SECRET_KEY             = 'sk_test_dummy';
   });
 
@@ -74,7 +76,9 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     delete process.env.STRIPE_PRICE_FINTECH;
     delete process.env.STRIPE_PRICE_HEALTHCARE;
     delete process.env.STRIPE_PRICE_GOVERNMENT;
+    delete process.env.STRIPE_PRICE_PILOT;
     delete process.env.STRIPE_PRICE_PILOT_COMPLIANCE;
+    delete process.env.STRIPE_PILOT_COUPON_ID;
     delete process.env.STRIPE_SECRET_KEY;
   });
 
@@ -189,5 +193,102 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
   test('GET returns 405', async () => {
     const response = await handler({ httpMethod: 'GET', body: '', headers: {} });
     assert.equal(response.statusCode, 405);
+  });
+
+  test('healthcare tier uses STRIPE_PRICE_HEALTHCARE env var', async () => {
+    const response = await handler(makeEvent({
+      tier: 'healthcare',
+      email: 'test@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_healthcare');
+    assert.equal(capturedSessionParams.mode, 'subscription');
+  });
+
+  test('government tier uses STRIPE_PRICE_GOVERNMENT env var', async () => {
+    const response = await handler(makeEvent({
+      tier: 'government',
+      email: 'test@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_government');
+    assert.equal(capturedSessionParams.mode, 'subscription');
+  });
+
+  test('use_pilot_coupon:true adds discounts and does NOT set trial_period_days', async () => {
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'test@example.com',
+      use_pilot_coupon: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(
+      capturedSessionParams.discounts,
+      [{ coupon: 'pilot_50_off' }],
+      'use_pilot_coupon:true should add pilot_50_off coupon',
+    );
+    assert.equal(
+      capturedSessionParams.subscription_data,
+      undefined,
+      'use_pilot_coupon:true must not set trial_period_days (Stripe restriction)',
+    );
+  });
+
+  test('use_pilot_coupon:false does NOT add discounts and DOES set trial_period_days', async () => {
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'test@example.com',
+      use_pilot_coupon: false,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.discounts, undefined, 'No coupon when use_pilot_coupon is false');
+    assert.equal(
+      capturedSessionParams.subscription_data?.trial_period_days,
+      14,
+      'use_pilot_coupon:false should set 14-day trial',
+    );
+  });
+
+  test('absent use_pilot_coupon defaults to no coupon and 14-day trial', async () => {
+    const response = await handler(makeEvent({
+      tier: 'fintech',
+      email: 'test@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.discounts, undefined, 'No coupon by default');
+    assert.equal(capturedSessionParams.subscription_data?.trial_period_days, 14);
+  });
+
+  test('use_pilot_coupon:true on pilot_compliance (payment mode) does NOT apply coupon', async () => {
+    const response = await handler(makeEvent({
+      tier: 'pilot_compliance',
+      email: 'test@example.com',
+      use_pilot_coupon: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.mode, 'payment');
+    assert.equal(
+      capturedSessionParams.discounts,
+      undefined,
+      'Coupon must not be applied in payment mode (pilot_compliance)',
+    );
   });
 });
