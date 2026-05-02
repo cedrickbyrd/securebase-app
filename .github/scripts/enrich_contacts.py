@@ -34,6 +34,7 @@ SENDER = os.environ.get(
 )
 
 RATE_LIMIT_SLEEP = 0.5  # seconds between API calls
+PDL_MIN_LIKELIHOOD = 6  # minimum PDL match confidence (0–10); filters weak/ambiguous records
 
 # ── LinkedIn DM Templates ──────────────────────────────────────────────────────
 
@@ -174,7 +175,7 @@ def pdl_person_enrich(first: str, last: str, company: str, contact: dict | None 
     Extra params sent when available via the contact dict:
       location      — city/region (e.g. "Dallas, TX") to improve match rate
       title         — contact's job title (contact_title field) to narrow the match
-      min_likelihood=6 — only accept results with a PDL likelihood score >= 6
+      min_likelihood=PDL_MIN_LIKELIHOOD — only accept results with a PDL likelihood score >= PDL_MIN_LIKELIHOOD
     """
     if not PDL_API_KEY:
         print("  ⚠️  PDL_API_KEY not set — skipping PDL enrichment")
@@ -189,7 +190,7 @@ def pdl_person_enrich(first: str, last: str, company: str, contact: dict | None 
                 "company": company,
                 "location": contact.get("location", ""),
                 "title": contact.get("contact_title", ""),
-                "min_likelihood": 6,
+                "min_likelihood": PDL_MIN_LIKELIHOOD,
                 "pretty": True,
             },
             headers={"X-Api-Key": PDL_API_KEY},
