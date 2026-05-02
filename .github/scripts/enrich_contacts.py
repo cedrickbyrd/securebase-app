@@ -34,6 +34,7 @@ SENDER = os.environ.get(
 )
 
 RATE_LIMIT_SLEEP = 0.5  # seconds between API calls
+PDL_MIN_LIKELIHOOD = 6  # minimum PDL match confidence (0–10); filters weak/ambiguous records
 
 # ── LinkedIn DM Templates ──────────────────────────────────────────────────────
 
@@ -94,14 +95,26 @@ DEFAULT_TEMPLATE = lambda contact: (
 # ── API Helpers ────────────────────────────────────────────────────────────────
 
 def hunter_domain_search(domain: str) -> dict:
-    """Call Hunter.io /v2/domain-search. Returns email pattern and known emails."""
+    """Call Hunter.io /v2/domain-search. Returns email pattern and known emails.
+
+    Extra params sent:
+      type='personal'   — exclude generic/service addresses (e.g. info@, support@)
+      department='it'   — scope results to IT / security staff
+      seniority='senior' — return senior-level contacts only
+    """
     if not HUNTER_API_KEY:
         print("  ⚠️  HUNTER_API_KEY not set — skipping domain search")
         return {}
     try:
         resp = requests.get(
             "https://api.hunter.io/v2/domain-search",
-            params={"domain": domain, "api_key": HUNTER_API_KEY},
+            params={
+                "domain": domain,
+                "api_key": HUNTER_API_KEY,
+                "type": "personal",
+                "department": "it",
+                "seniority": "senior",
+            },
             timeout=15,
         )
         time.sleep(RATE_LIMIT_SLEEP)
@@ -121,8 +134,12 @@ def hunter_domain_search(domain: str) -> dict:
     return {}
 
 
-def hunter_email_finder(first: str, last: str, domain: str) -> dict:
-    """Call Hunter.io /v2/email-finder. Returns verified email and confidence."""
+def hunter_email_finder(first: str, last: str, domain: str, company: str = "") -> dict:
+    """Call Hunter.io /v2/email-finder. Returns verified email and confidence.
+
+    Extra param sent:
+      company — improves name-match accuracy when the contact has a common name.
+    """
     if not HUNTER_API_KEY:
         print("  ⚠️  HUNTER_API_KEY not set — skipping email finder")
         return {}
@@ -133,6 +150,7 @@ def hunter_email_finder(first: str, last: str, domain: str) -> dict:
                 "first_name": first,
                 "last_name": last,
                 "domain": domain,
+                "company": company,
                 "api_key": HUNTER_API_KEY,
             },
             timeout=15,
@@ -151,11 +169,18 @@ def hunter_email_finder(first: str, last: str, domain: str) -> dict:
     return {}
 
 
-def pdl_person_enrich(first: str, last: str, company: str) -> dict:
-    """Call PDL /v5/person/enrich. Returns LinkedIn URL, title, seniority."""
+def pdl_person_enrich(first: str, last: str, company: str, contact: dict | None = None) -> dict:
+    """Call PDL /v5/person/enrich. Returns LinkedIn URL, title, seniority.
+
+    Extra params sent when available via the contact dict:
+      location      — city/region (e.g. "Dallas, TX") to improve match rate
+      title         — contact's job title (contact_title field) to narrow the match
+      min_likelihood=PDL_MIN_LIKELIHOOD — only accept results with a PDL likelihood score >= PDL_MIN_LIKELIHOOD
+    """
     if not PDL_API_KEY:
         print("  ⚠️  PDL_API_KEY not set — skipping PDL enrichment")
         return {}
+    contact = contact or {}
     try:
         resp = requests.get(
             "https://api.peopledatalabs.com/v5/person/enrich",
@@ -163,6 +188,9 @@ def pdl_person_enrich(first: str, last: str, company: str) -> dict:
                 "first_name": first,
                 "last_name": last,
                 "company": company,
+                "location": contact.get("location", ""),
+                "title": contact.get("contact_title", ""),
+                "min_likelihood": PDL_MIN_LIKELIHOOD,
                 "pretty": True,
             },
             headers={"X-Api-Key": PDL_API_KEY},
@@ -265,7 +293,7 @@ def enrich_contacts():
         # 2. Hunter email finder (only if we have a real name)
         if has_name and domain:
             print(f"  → Hunter email finder: {first} {last} @ {domain}")
-            email_data = hunter_email_finder(first, last, domain)
+            email_data = hunter_email_finder(first, last, domain, company_name)
             result["hunter_email"] = email_data
         else:
             result["hunter_email"] = {}
@@ -275,7 +303,7 @@ def enrich_contacts():
         # 3. PDL person enrichment (only if we have a real name)
         if has_name:
             print(f"  → PDL enrichment: {first} {last} at {company_name}")
-            pdl_data = pdl_person_enrich(first, last, company_name)
+            pdl_data = pdl_person_enrich(first, last, company_name, contact)
             result["pdl_enrichment"] = pdl_data
         else:
             result["pdl_enrichment"] = {}
