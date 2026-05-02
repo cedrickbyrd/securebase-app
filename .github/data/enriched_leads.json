@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-02T03:33:35.800546+00:00",
+  "generated": "2026-05-02T04:24:08.452775+00:00",
   "summary": {
     "total": 16,
     "enriched": 6,
@@ -15,9 +15,27 @@
       "contact_first": "Kajeevan",
       "contact_last": "Rajanayagam",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
-      "pdl_enrichment": {},
+      "hunter_domain": {
+        "email_pattern": "{first}{last}",
+        "organization": "University Health System",
+        "emails_found": [
+          {
+            "value": "georgehernandez@universityhealthsystem.com",
+            "confidence": 91
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "kajeevanrajanayagam@universityhealthsystem.com",
+        "score": 74,
+        "verification_status": "accept_all"
+      },
+      "pdl_enrichment": {
+        "linkedin_url": "",
+        "job_title": "",
+        "job_title_role": "",
+        "job_title_levels": []
+      },
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=University_Health_Network",
       "linkedin_dm": "Hi Kajeevan,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like University Health Network, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
@@ -30,8 +48,29 @@
       "contact_first": "Robert",
       "contact_last": "Ludecke",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Veritex Community Bank",
+        "emails_found": [
+          {
+            "value": "mescalante-diaz@veritexbank.com",
+            "confidence": 99
+          },
+          {
+            "value": "mcarp@veritexbank.com",
+            "confidence": 99
+          },
+          {
+            "value": "kluquette@veritexbank.com",
+            "confidence": 99
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "bludecke@veritexbank.com",
+        "score": 97,
+        "verification_status": "valid"
+      },
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Veritex_Community_Bank",
       "linkedin_dm": "Hi Robert,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Veritex Community Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -45,9 +84,35 @@
       "contact_first": "Martin",
       "contact_last": "Littmann",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
-      "pdl_enrichment": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Kelsey-Seybold Clinic",
+        "emails_found": [
+          {
+            "value": "shane.magee@kelsey-seybold.com",
+            "confidence": 94
+          },
+          {
+            "value": "aaron.carlson@kelsey-seybold.com",
+            "confidence": 94
+          },
+          {
+            "value": "matthew.fillipps@kelsey-seybold.com",
+            "confidence": 94
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": null,
+        "score": null,
+        "verification_status": null
+      },
+      "pdl_enrichment": {
+        "linkedin_url": "",
+        "job_title": "",
+        "job_title_role": "",
+        "job_title_levels": []
+      },
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Kelsey-Seybold_Clinic",
       "linkedin_dm": "Hi Martin,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Kelsey-Seybold Clinic, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
@@ -60,8 +125,29 @@
       "contact_first": "Aaron",
       "contact_last": "Wishon",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Cook Children's",
+        "emails_found": [
+          {
+            "value": "nancy.hall@cookchildrens.org",
+            "confidence": 94
+          },
+          {
+            "value": "greg.jimerson@cookchildrens.org",
+            "confidence": 94
+          },
+          {
+            "value": "nick.markham@cookchildrens.org",
+            "confidence": 94
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "aaron.wishon@cookchildrens.org",
+        "score": 99,
+        "verification_status": "accept_all"
+      },
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
       "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -75,9 +161,35 @@
       "contact_first": "Cynthia",
       "contact_last": "Suarez",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
-      "pdl_enrichment": {},
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "First Financial Bank",
+        "emails_found": [
+          {
+            "value": "mhickox@ffin.com",
+            "confidence": 99
+          },
+          {
+            "value": "ccregger@ffin.com",
+            "confidence": 99
+          },
+          {
+            "value": "reverett@ffin.com",
+            "confidence": 98
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "csuarez@ffin.com",
+        "score": 97,
+        "verification_status": "valid"
+      },
+      "pdl_enrichment": {
+        "linkedin_url": "",
+        "job_title": "",
+        "job_title_role": "",
+        "job_title_levels": []
+      },
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=First_Financial_Bank_Texas",
       "linkedin_dm": "Hi Cynthia,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor First Financial Bank Texas, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
@@ -90,9 +202,35 @@
       "contact_first": "Carlos",
       "contact_last": "Renteria",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
-      "pdl_enrichment": {},
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Southsidebank",
+        "emails_found": [
+          {
+            "value": "service@southsidebank.com",
+            "confidence": 75
+          },
+          {
+            "value": "survey@southsidebank.com",
+            "confidence": 75
+          },
+          {
+            "value": "mwjoseph@southsidebank.com",
+            "confidence": 74
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": null,
+        "score": null,
+        "verification_status": null
+      },
+      "pdl_enrichment": {
+        "linkedin_url": "",
+        "job_title": "",
+        "job_title_role": "",
+        "job_title_levels": []
+      },
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Southside_Bank",
       "linkedin_dm": "Hi Carlos,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Southside Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
@@ -105,7 +243,11 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Trellis",
@@ -120,7 +262,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Strados Labs",
+        "emails_found": [
+          {
+            "value": "tom@stradoslabs.com",
+            "confidence": 99
+          },
+          {
+            "value": "shane@stradoslabs.com",
+            "confidence": 98
+          },
+          {
+            "value": "nick@stradoslabs.com",
+            "confidence": 98
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Strados_Labs",
@@ -135,7 +294,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Plano, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Procare Solutions",
+        "emails_found": [
+          {
+            "value": "chasity@procaresolutions.com",
+            "confidence": 94
+          },
+          {
+            "value": "jason@procaresolutions.com",
+            "confidence": 94
+          },
+          {
+            "value": "jeff@procaresolutions.com",
+            "confidence": 94
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Procare_Solutions",
@@ -150,7 +326,11 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=MedStats",
@@ -165,7 +345,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "ParkHub",
+        "emails_found": [
+          {
+            "value": "john.haase@parkhub.com",
+            "confidence": 93
+          },
+          {
+            "value": "angelique.temple@parkhub.com",
+            "confidence": 92
+          },
+          {
+            "value": "eric.warman@parkhub.com",
+            "confidence": 92
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=ParkHub",
@@ -180,7 +377,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Hypergiant",
+        "emails_found": [
+          {
+            "value": "jordan.fletcher@hypergiant.com",
+            "confidence": 99
+          },
+          {
+            "value": "gino.morrow@hypergiant.com",
+            "confidence": 99
+          },
+          {
+            "value": "patrick.mead@hypergiant.com",
+            "confidence": 98
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=ai_ml&framework=fedramp&company=Hypergiant",
@@ -195,7 +409,11 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Phunware",
@@ -210,7 +428,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Crossover Health",
+        "emails_found": [
+          {
+            "value": "kevonna.fowler@crossoverhealth.com",
+            "confidence": 99
+          },
+          {
+            "value": "elizabeth.chavez@crossoverhealth.com",
+            "confidence": 99
+          },
+          {
+            "value": "melanie.johnson@crossoverhealth.com",
+            "confidence": 99
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Crossover_Health",
@@ -225,7 +460,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Vyopta",
+        "emails_found": [
+          {
+            "value": "jonathan.sass@vyopta.com",
+            "confidence": 94
+          },
+          {
+            "value": "richard.mitchell@vyopta.com",
+            "confidence": 93
+          },
+          {
+            "value": "albert.burns@vyopta.com",
+            "confidence": 92
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Vyopta",
@@ -240,7 +492,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Amino",
+        "emails_found": [
+          {
+            "value": "mhawkins@amino.com",
+            "confidence": 94
+          },
+          {
+            "value": "lsteinbock@amino.com",
+            "confidence": 93
+          },
+          {
+            "value": "kirk@amino.com",
+            "confidence": 89
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Amino",
