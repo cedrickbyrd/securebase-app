@@ -1,15 +1,6 @@
 [
   {
-    "company": "University Health Network",
-    "domain": "universityhealthsystem.com",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "Director of Cyber Security",
-    "contact_first": "Kajeevan",
-    "contact_last": "Rajanayagam",
-    "location": "Dallas, TX"
-  },
-  {
+    "batch": 1,
     "company": "Veritex Community Bank",
     "domain": "veritexbank.com",
     "industry": "banking",
@@ -20,28 +11,7 @@
     "location": "Dallas, TX"
   },
   {
-    "company": "Kelsey-Seybold Clinic",
-    "domain": "kelsey-seybold.com",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "Chief Technology & Information Security Officer",
-    "contact_first": "Martin",
-    "contact_last": "Littmann",
-    "location": "Dallas, TX",
-    "outreach_status": "following_linkedin",
-    "outreach_date": "2026-05-02"
-  },
-  {
-    "company": "Cook Children's Health",
-    "domain": "cookchildrens.org",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "Vice President and Chief Information Security Officer",
-    "contact_first": "Aaron",
-    "contact_last": "Wishon",
-    "location": "Dallas, TX"
-  },
-  {
+    "batch": 1,
     "company": "First Financial Bank Texas",
     "domain": "ffin.com",
     "industry": "banking",
@@ -52,6 +22,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "Southside Bank",
     "domain": "southsidebank.com",
     "industry": "banking",
@@ -64,6 +35,7 @@
     "outreach_date": "2026-05-02"
   },
   {
+    "batch": 1,
     "company": "Dallas Capital Bank",
     "domain": "dallascapitalbank.com",
     "industry": "banking",
@@ -75,6 +47,7 @@
     "outreach_note": "Newsweek 2026 Best Regional Banks — use recognition wedge in opener"
   },
   {
+    "batch": 1,
     "company": "Texas Capital Bank",
     "domain": "texascapitalbank.com",
     "industry": "banking",
@@ -85,6 +58,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "First United Bank",
     "domain": "firstunitedbank.com",
     "industry": "banking",
@@ -95,6 +69,7 @@
     "location": "McKinney, TX"
   },
   {
+    "batch": 1,
     "company": "Comerica Bank",
     "domain": "comerica.com",
     "industry": "banking",
@@ -105,6 +80,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "PlainsCapital Bank",
     "domain": "plainscapital.com",
     "industry": "banking",
@@ -115,6 +91,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "Prosperity Bank",
     "domain": "prosperitybank.com",
     "industry": "banking",
@@ -125,6 +102,7 @@
     "location": "El Campo, TX"
   },
   {
+    "batch": 1,
     "company": "Hilltop Holdings",
     "domain": "hilltop-holdings.com",
     "industry": "banking",
@@ -135,6 +113,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "Independent Bank Group",
     "domain": "ibtx.com",
     "industry": "banking",
@@ -145,6 +124,7 @@
     "location": "McKinney, TX"
   },
   {
+    "batch": 1,
     "company": "Texas Bank and Trust",
     "domain": "texasbankandtrust.com",
     "industry": "banking",
@@ -155,6 +135,7 @@
     "location": "Longview, TX"
   },
   {
+    "batch": 1,
     "company": "Guaranty Bancshares",
     "domain": "gnty.com",
     "industry": "banking",
@@ -165,6 +146,7 @@
     "location": "Mount Pleasant, TX"
   },
   {
+    "batch": 1,
     "company": "WestStar Bank",
     "domain": "weststarbank.com",
     "industry": "banking",
@@ -175,6 +157,7 @@
     "location": "El Paso, TX"
   },
   {
+    "batch": 1,
     "company": "Moody National Bank",
     "domain": "moodybank.com",
     "industry": "banking",
@@ -185,6 +168,7 @@
     "location": "Galveston, TX"
   },
   {
+    "batch": 1,
     "company": "Extraco Banks",
     "domain": "extracobanks.com",
     "industry": "banking",
@@ -195,6 +179,7 @@
     "location": "Waco, TX"
   },
   {
+    "batch": 1,
     "company": "Alliance Bank",
     "domain": "alliancebank.com",
     "industry": "banking",
@@ -205,6 +190,7 @@
     "location": "Sulphur Springs, TX"
   },
   {
+    "batch": 1,
     "company": "National Western Financial",
     "domain": "nwf.com",
     "industry": "banking",
@@ -215,117 +201,42 @@
     "location": "Dallas, TX"
   },
   {
-    "company": "Trellis",
-    "domain": "trellis.health",
+    "batch": 1,
+    "company": "University Health Network",
+    "domain": "universityhealthsystem.com",
     "industry": "healthcare",
     "framework": "HIPAA",
-    "contact_title": "CTO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
+    "contact_title": "Director of Cyber Security",
+    "contact_first": "Kajeevan",
+    "contact_last": "Rajanayagam",
     "location": "Dallas, TX"
   },
   {
-    "company": "Strados Labs",
-    "domain": "stradoslabs.com",
+    "batch": 1,
+    "company": "Kelsey-Seybold Clinic",
+    "domain": "kelsey-seybold.com",
     "industry": "healthcare",
     "framework": "HIPAA",
-    "contact_title": "VP Engineering",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
+    "contact_title": "Chief Technology & Information Security Officer",
+    "contact_first": "Martin",
+    "contact_last": "Littmann",
+    "location": "Dallas, TX",
+    "outreach_status": "following_linkedin",
+    "outreach_date": "2026-05-02"
+  },
+  {
+    "batch": 1,
+    "company": "Cook Children's Health",
+    "domain": "cookchildrens.org",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Vice President and Chief Information Security Officer",
+    "contact_first": "Aaron",
+    "contact_last": "Wishon",
     "location": "Dallas, TX"
   },
   {
-    "company": "Procare Solutions",
-    "domain": "procaresolutions.com",
-    "industry": "saas",
-    "framework": "SOC2",
-    "contact_title": "Head of Infrastructure",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Plano, TX"
-  },
-  {
-    "company": "MedStats",
-    "domain": "medstats.io",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "CTO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Dallas, TX"
-  },
-  {
-    "company": "ParkHub",
-    "domain": "parkhub.com",
-    "industry": "saas",
-    "framework": "SOC2",
-    "contact_title": "VP Engineering",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Dallas, TX"
-  },
-  {
-    "company": "Hypergiant",
-    "domain": "hypergiant.com",
-    "industry": "ai_ml",
-    "framework": "FedRAMP",
-    "contact_title": "Head of Infrastructure",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Austin, TX"
-  },
-  {
-    "company": "Phunware",
-    "domain": "phunware.com",
-    "industry": "saas",
-    "framework": "SOC2",
-    "contact_title": "VP Engineering",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Austin, TX"
-  },
-  {
-    "company": "Crossover Health",
-    "domain": "crossoverhealth.com",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "Head of Cloud",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Austin, TX"
-  },
-  {
-    "company": "Vyopta",
-    "domain": "vyopta.com",
-    "industry": "saas",
-    "framework": "SOC2",
-    "contact_title": "CTO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Austin, TX"
-  },
-  {
-    "company": "Amino",
-    "domain": "amino.com",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "VP Infrastructure",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Austin, TX"
-  },
-  {
-    "company": "Medical City Alliance",
-    "domain": "medicalcityalliance.com",
-    "industry": "healthcare",
-    "framework": "HIPAA",
-    "contact_title": "CIO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Fort Worth, TX",
-    "outreach_note": "Newsweek 2026 Top 100 Hospital — only North Texas hospital to earn this designation"
-  },
-  {
+    "batch": 1,
     "company": "AccentCare",
     "domain": "accentcare.com",
     "industry": "healthcare",
@@ -337,6 +248,19 @@
     "outreach_note": "Smart Healthcare Facilities Convention May 2026 — mention event when reaching out"
   },
   {
+    "batch": 1,
+    "company": "Medical City Alliance",
+    "domain": "medicalcityalliance.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CIO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Fort Worth, TX",
+    "outreach_note": "Newsweek 2026 Top 100 Hospital — only North Texas hospital to earn this designation"
+  },
+  {
+    "batch": 1,
     "company": "Children's Health",
     "domain": "childrens.com",
     "industry": "healthcare",
@@ -347,6 +271,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 1,
     "company": "Parkland Health",
     "domain": "parklandhealth.org",
     "industry": "healthcare",
@@ -357,6 +282,7 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 2,
     "company": "Baylor Scott & White Health",
     "domain": "bswhealth.com",
     "industry": "healthcare",
@@ -367,6 +293,117 @@
     "location": "Dallas, TX"
   },
   {
+    "batch": 2,
+    "company": "Trellis",
+    "domain": "trellis.health",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Strados Labs",
+    "domain": "stradoslabs.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "VP Engineering",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Procare Solutions",
+    "domain": "procaresolutions.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "Head of Infrastructure",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Plano, TX"
+  },
+  {
+    "batch": 2,
+    "company": "MedStats",
+    "domain": "medstats.io",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 2,
+    "company": "ParkHub",
+    "domain": "parkhub.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "VP Engineering",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Hypergiant",
+    "domain": "hypergiant.com",
+    "industry": "ai_ml",
+    "framework": "FedRAMP",
+    "contact_title": "Head of Infrastructure",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Austin, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Phunware",
+    "domain": "phunware.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "VP Engineering",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Austin, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Crossover Health",
+    "domain": "crossoverhealth.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Head of Cloud",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Austin, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Vyopta",
+    "domain": "vyopta.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Austin, TX"
+  },
+  {
+    "batch": 2,
+    "company": "Amino",
+    "domain": "amino.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "VP Infrastructure",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Austin, TX"
+  },
+  {
+    "batch": 2,
     "company": "Western Alliance Bank",
     "domain": "westernalliancebank.com",
     "industry": "banking",
@@ -377,6 +414,7 @@
     "location": "Phoenix, AZ"
   },
   {
+    "batch": 2,
     "company": "Glacier Bancorp",
     "domain": "glacierbancorp.com",
     "industry": "banking",
@@ -387,6 +425,7 @@
     "location": "Kalispell, MT"
   },
   {
+    "batch": 2,
     "company": "Heartland Financial",
     "domain": "htlf.com",
     "industry": "banking",
@@ -397,6 +436,7 @@
     "location": "Dubuque, IA"
   },
   {
+    "batch": 2,
     "company": "Banner Bank",
     "domain": "bannerbank.com",
     "industry": "banking",
@@ -407,6 +447,7 @@
     "location": "Walla Walla, WA"
   },
   {
+    "batch": 2,
     "company": "South State Bank",
     "domain": "southstatebank.com",
     "industry": "banking",
@@ -417,6 +458,7 @@
     "location": "Winter Haven, FL"
   },
   {
+    "batch": 2,
     "company": "Renasant Bank",
     "domain": "renasant.com",
     "industry": "banking",
@@ -427,6 +469,7 @@
     "location": "Tupelo, MS"
   },
   {
+    "batch": 2,
     "company": "Byline Bank",
     "domain": "bylinebank.com",
     "industry": "banking",
@@ -437,6 +480,7 @@
     "location": "Chicago, IL"
   },
   {
+    "batch": 2,
     "company": "Atlantic Union Bank",
     "domain": "atlanticunionbank.com",
     "industry": "banking",
@@ -447,6 +491,7 @@
     "location": "Richmond, VA"
   },
   {
+    "batch": 2,
     "company": "QCR Holdings",
     "domain": "qcrh.com",
     "industry": "banking",
@@ -457,6 +502,7 @@
     "location": "Moline, IL"
   },
   {
+    "batch": 2,
     "company": "Heartland BancCorp",
     "domain": "heartlandbancorp.com",
     "industry": "banking",
