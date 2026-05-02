@@ -64,6 +64,157 @@
     "outreach_date": "2026-05-02"
   },
   {
+    "company": "Dallas Capital Bank",
+    "domain": "dallascapitalbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX",
+    "outreach_note": "Newsweek 2026 Best Regional Banks — use recognition wedge in opener"
+  },
+  {
+    "company": "Texas Capital Bank",
+    "domain": "texascapitalbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "Russ",
+    "contact_last": "Murrell",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "First United Bank",
+    "domain": "firstunitedbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "McKinney, TX"
+  },
+  {
+    "company": "Comerica Bank",
+    "domain": "comerica.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "PlainsCapital Bank",
+    "domain": "plainscapital.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP Infrastructure",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Prosperity Bank",
+    "domain": "prosperitybank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "El Campo, TX"
+  },
+  {
+    "company": "Hilltop Holdings",
+    "domain": "hilltop-holdings.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Independent Bank Group",
+    "domain": "ibtx.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "McKinney, TX"
+  },
+  {
+    "company": "Texas Bank and Trust",
+    "domain": "texasbankandtrust.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP IT Security",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Longview, TX"
+  },
+  {
+    "company": "Guaranty Bancshares",
+    "domain": "gnty.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Mount Pleasant, TX"
+  },
+  {
+    "company": "WestStar Bank",
+    "domain": "weststarbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "El Paso, TX"
+  },
+  {
+    "company": "Moody National Bank",
+    "domain": "moodybank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP Technology",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Galveston, TX"
+  },
+  {
+    "company": "Extraco Banks",
+    "domain": "extracobanks.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Waco, TX"
+  },
+  {
+    "company": "Alliance Bank",
+    "domain": "alliancebank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "IT Security Director",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Sulphur Springs, TX"
+  },
+  {
+    "company": "National Western Financial",
+    "domain": "nwf.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
     "company": "Trellis",
     "domain": "trellis.health",
     "industry": "healthcare",
@@ -164,57 +315,6 @@
     "location": "Austin, TX"
   },
   {
-    "company": "Dallas Capital Bank",
-    "domain": "dallascapitalbank.com",
-    "industry": "banking",
-    "framework": "FFIEC",
-    "contact_title": "CISO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Dallas, TX",
-    "outreach_note": "Newsweek 2026 Best Regional Banks — use recognition wedge in opener"
-  },
-  {
-    "company": "Texas Capital Bank",
-    "domain": "texascapitalbank.com",
-    "industry": "banking",
-    "framework": "FFIEC",
-    "contact_title": "Chief Information Security Officer",
-    "contact_first": "Russ",
-    "contact_last": "Murrell",
-    "location": "Dallas, TX"
-  },
-  {
-    "company": "First United Bank",
-    "domain": "firstunitedbank.com",
-    "industry": "banking",
-    "framework": "FFIEC",
-    "contact_title": "CISO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "McKinney, TX"
-  },
-  {
-    "company": "Comerica Bank",
-    "domain": "comerica.com",
-    "industry": "banking",
-    "framework": "FFIEC",
-    "contact_title": "CISO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Dallas, TX"
-  },
-  {
-    "company": "PlainsCapital Bank",
-    "domain": "plainscapital.com",
-    "industry": "banking",
-    "framework": "FFIEC",
-    "contact_title": "VP Infrastructure",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
-    "location": "Dallas, TX"
-  },
-  {
     "company": "Medical City Alliance",
     "domain": "medicalcityalliance.com",
     "industry": "healthcare",
@@ -265,5 +365,105 @@
     "contact_first": "FILL_IN",
     "contact_last": "FILL_IN",
     "location": "Dallas, TX"
+  },
+  {
+    "company": "Western Alliance Bank",
+    "domain": "westernalliancebank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Phoenix, AZ"
+  },
+  {
+    "company": "Glacier Bancorp",
+    "domain": "glacierbancorp.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Kalispell, MT"
+  },
+  {
+    "company": "Heartland Financial",
+    "domain": "htlf.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dubuque, IA"
+  },
+  {
+    "company": "Banner Bank",
+    "domain": "bannerbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP Information Security",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Walla Walla, WA"
+  },
+  {
+    "company": "South State Bank",
+    "domain": "southstatebank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Winter Haven, FL"
+  },
+  {
+    "company": "Renasant Bank",
+    "domain": "renasant.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Tupelo, MS"
+  },
+  {
+    "company": "Byline Bank",
+    "domain": "bylinebank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Chicago, IL"
+  },
+  {
+    "company": "Atlantic Union Bank",
+    "domain": "atlanticunionbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Richmond, VA"
+  },
+  {
+    "company": "QCR Holdings",
+    "domain": "qcrh.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CTO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Moline, IL"
+  },
+  {
+    "company": "Heartland BancCorp",
+    "domain": "heartlandbancorp.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Gahanna, OH"
   }
 ]
