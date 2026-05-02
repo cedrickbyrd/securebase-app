@@ -27,7 +27,9 @@
     "contact_title": "Chief Technology & Information Security Officer",
     "contact_first": "Martin",
     "contact_last": "Littmann",
-    "location": "Dallas, TX"
+    "location": "Dallas, TX",
+    "outreach_status": "following_linkedin",
+    "outreach_date": "2026-05-02"
   },
   {
     "company": "Cook Children's Health",
@@ -57,7 +59,9 @@
     "contact_title": "Chief Information Security Officer",
     "contact_first": "Carlos",
     "contact_last": "Renteria",
-    "location": "Dallas, TX"
+    "location": "Dallas, TX",
+    "outreach_status": "following_linkedin",
+    "outreach_date": "2026-05-02"
   },
   {
     "company": "Trellis",
