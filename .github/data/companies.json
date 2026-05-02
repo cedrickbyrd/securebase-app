@@ -162,5 +162,208 @@
     "contact_first": "FILL_IN",
     "contact_last": "FILL_IN",
     "location": "Austin, TX"
+  },
+  {
+    "company": "Dallas Capital Bank",
+    "domain": "dallascapitalbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX",
+    "outreach_note": "Newsweek 2026 Best Regional Banks — use recognition wedge in opener"
+  },
+  {
+    "company": "Texas Capital Bank",
+    "domain": "texascapitalbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "Russ",
+    "contact_last": "Murrell",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "First United Bank",
+    "domain": "firstunitedbank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "McKinney, TX"
+  },
+  {
+    "company": "Comerica Bank",
+    "domain": "comerica.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "PlainsCapital Bank",
+    "domain": "plainscapital.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP Infrastructure",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Medical City Alliance",
+    "domain": "medicalcityalliance.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CIO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Fort Worth, TX",
+    "outreach_note": "Newsweek 2026 Top 100 Hospital — only North Texas hospital to earn this designation"
+  },
+  {
+    "company": "AccentCare",
+    "domain": "accentcare.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Vice President & CISO",
+    "contact_first": "Paul",
+    "contact_last": "Reyes",
+    "location": "Dallas, TX",
+    "outreach_note": "Smart Healthcare Facilities Convention May 2026 — mention event when reaching out"
+  },
+  {
+    "company": "Children's Health",
+    "domain": "childrens.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Parkland Health",
+    "domain": "parklandhealth.org",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CIO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Baylor Scott & White Health",
+    "domain": "bswhealth.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CISO",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "company": "Company 1",
+    "domain": "company1.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "CIO",
+    "contact_first": "Jane",
+    "contact_last": "Doe",
+    "location": "Frisco, TX"
+  },
+  {
+    "company": "Company 2",
+    "domain": "company2.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "John",
+    "contact_last": "Smith",
+    "location": "Irving, TX"
+  },
+  {
+    "company": "Company 3",
+    "domain": "company3.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "VP Engineering",
+    "contact_first": "Alice",
+    "contact_last": "Wang",
+    "location": "Garland, TX"
+  },
+  {
+    "company": "Company 4",
+    "domain": "company4.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Director",
+    "contact_first": "Bob",
+    "contact_last": "Johnson",
+    "location": "Richardson, TX"
+  },
+  {
+    "company": "Company 5",
+    "domain": "company5.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "CISO",
+    "contact_first": "Emma",
+    "contact_last": "Brown",
+    "location": "Carrollton, TX"
+  },
+  {
+    "company": "Company 6",
+    "domain": "company6.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "CTO",
+    "contact_first": "James",
+    "contact_last": "Garcia",
+    "location": "Lewisville, TX"
+  },
+  {
+    "company": "Company 7",
+    "domain": "company7.com",
+    "industry": "ai_ml",
+    "framework": "FedRAMP",
+    "contact_title": "Lead Engineer",
+    "contact_first": "Sophia",
+    "contact_last": "Martinez",
+    "location": "Duncanville, TX"
+  },
+  {
+    "company": "Company 8",
+    "domain": "company8.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Manager",
+    "contact_first": "Michael",
+    "contact_last": "Hernandez",
+    "location": "DeSoto, TX"
+  },
+  {
+    "company": "Company 9",
+    "domain": "company9.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "VP Security",
+    "contact_first": "Mia",
+    "contact_last": "Lopez",
+    "location": "Rowlett, TX"
+  },
+  {
+    "company": "Company 10",
+    "domain": "company10.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "Head of IT",
+    "contact_first": "Ethan",
+    "contact_last": "Wilson",
+    "location": "Flower Mound, TX"
   }
 ]
