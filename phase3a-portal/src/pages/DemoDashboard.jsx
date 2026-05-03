@@ -94,7 +94,8 @@ export default function DemoDashboard() {
         {/* HIPAA Dashboard Entry Point */}
         <a
           href="/hipaa-dashboard"
-          className="block bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-300 rounded-xl p-6 mb-8 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 transition-colors"
+          aria-label="Navigate to HIPAA Dashboard"
+          className="block bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-300 rounded-xl p-6 mb-8 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus-within:border-rose-500 transition-colors"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
