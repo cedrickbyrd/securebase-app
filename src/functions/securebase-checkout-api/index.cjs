@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // One-time payment tiers — these must use mode:'payment', not mode:'subscription'.
-const ONE_TIME_TIERS = new Set(['pilot_compliance']);
+const ONE_TIME_TIERS = new Set(['pilot_compliance', 'hipaa_assessment']);
 
 // Server-side tier → Stripe Price ID env var mapping.
 // Price IDs are resolved exclusively from environment variables; any client-supplied
@@ -14,6 +14,7 @@ const TIER_PRICE_ENV = {
   government:       'STRIPE_PRICE_GOVERNMENT',
   pilot:            'STRIPE_PRICE_PILOT',            // standalone pilot plan (backwards compat)
   pilot_compliance: 'STRIPE_PRICE_PILOT_COMPLIANCE',
+  hipaa_assessment: 'STRIPE_PRICE_HIPAA_ASSESSMENT',
 };
 
 const CORS_HEADERS = {

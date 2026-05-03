@@ -109,6 +109,13 @@ const PILOT_PRODUCTS = {
     framework:  'HIPAA',
     priceTBD:   false,
   },
+  hipaa_assessment: {
+    exportName: 'HIPAA_ASSESSMENT_ID',
+    priceId:    '',  // TBD — Stripe product not yet created
+    price:      0,   // TBD
+    framework:  'HIPAA',
+    priceTBD:   true, // skip price/priceId validation in CI
+  },
 };
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
@@ -201,11 +208,16 @@ function validateTier(tier, pricingTiers) {
 // ─── Pilot product validator ──────────────────────────────────────────────────
 /**
  * Verify that every PILOT_PRODUCTS entry matches the price ID declared in
- * live-config.js.
+ * live-config.js.  Entries with priceTBD:true skip price/priceId comparison.
  */
 function validatePilotProducts(pilotIds) {
   const errors = [];
   for (const [sku, spec] of Object.entries(PILOT_PRODUCTS)) {
+    // Skip price/priceId validation when the Stripe product is not yet created
+    if (spec.priceTBD) {
+      info(`[${sku}] priceTBD=true — skipping price/priceId validation (price TBD)`);
+      continue;
+    }
     const actual = pilotIds[spec.exportName];
     if (actual === undefined) {
       errors.push(`[${sku}] ${spec.exportName} not found in live-config.js`);
@@ -392,8 +404,13 @@ function main() {
       exitCode = 1;
     } else {
       for (const [sku, spec] of Object.entries(PILOT_PRODUCTS)) {
-        ok(`[${sku}] priceId matches manifest`);
-        info(`priceId: ${spec.priceId}  |  productId: ${spec.productId}  |  $${spec.price} one-time`);
+        if (spec.priceTBD) {
+          ok(`[${sku}] priceTBD=true — validation skipped (Stripe product pending)`);
+          info(`framework: ${spec.framework}  |  price TBD`);
+        } else {
+          ok(`[${sku}] priceId matches manifest`);
+          info(`priceId: ${spec.priceId}  |  productId: ${spec.productId}  |  $${spec.price} one-time`);
+        }
       }
     }
   }

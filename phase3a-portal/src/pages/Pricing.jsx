@@ -245,7 +245,7 @@ const Pricing = () => {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-20">
-          {plans.filter((p) => !p.isPilotOneTime).map((plan) => (
+          {plans.filter((p) => !p.isPilotOneTime && !p.isHIPAAWaitlist).map((plan) => (
             <div
               key={plan.key}
               className={`rounded-2xl p-8 flex flex-col bg-white/5 border ${
@@ -328,7 +328,7 @@ const Pricing = () => {
               <thead>
                 <tr className="bg-white/5">
                   <th className="text-left py-3 px-4 font-semibold text-gray-400 w-1/4" />
-                  {plans.filter((p) => !p.isPilotOneTime).map((plan) => (
+                  {plans.filter((p) => !p.isPilotOneTime && !p.isHIPAAWaitlist).map((plan) => (
                     <th
                       key={plan.key}
                       className={`py-3 px-4 text-center font-bold ${
@@ -344,7 +344,7 @@ const Pricing = () => {
                 {COMPARISON_ROWS.map((row, idx) => (
                   <tr key={row.label} className={idx % 2 === 0 ? 'bg-white/5' : 'bg-white/[0.02]'}>
                     <td className="py-3 px-4 font-medium text-gray-300 border-t border-white/5">{row.label}</td>
-                    {plans.filter((p) => !p.isPilotOneTime).map((plan) => {
+                    {plans.filter((p) => !p.isPilotOneTime && !p.isHIPAAWaitlist).map((plan) => {
                       const val = row[plan.key];
                       return (
                         <td key={plan.key} className="py-3 px-4 text-center border-t border-white/5">
