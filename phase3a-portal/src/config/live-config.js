@@ -14,6 +14,11 @@ const API_BASE_URL = 'https://api.securebase.tximhotep.com';
 // Stripe price   : price_1TNzAi5bg6XXXrmN5GGfPrtq
 const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
 
+// HIPAA Readiness Assessment one-time product ($1,995, SKU: hipaa_assessment)
+// Stripe product : "Securebase HIPAA Assessment"
+// Stripe price   : price_1TT9545bg6XXXrmNpB3Zcz79
+const HIPAA_ASSESSMENT_ID = 'price_1TT9545bg6XXXrmNpB3Zcz79';
+
 const PRICING_TIERS = {
   pilot_compliance: {
     name: 'Compliance Jumpstart',
@@ -28,6 +33,21 @@ const PRICING_TIERS = {
       'CloudTrail configuration review',
       '30-day email support',
       '$495 credited toward any subscription upgrade',
+    ],
+  },
+  hipaa_assessment: {
+    name: 'HIPAA Readiness Assessment',
+    price: 1995,
+    priceId: HIPAA_ASSESSMENT_ID,
+    billingType: 'payment',
+    description: 'One-time HIPAA gap assessment — scored §164.308/310/312 safeguards across 67 AWS services',
+    features: [
+      'Scored §164.308 / §164.310 / §164.312 safeguards',
+      'PHI controls mapped across 67 AWS services',
+      'Findings report with remediation owners & days-open',
+      'Auditor-ready HTML export',
+      'BAA readiness checklist',
+      '$1,995 credited toward Healthcare tier ($7,500/mo pilot)',
     ],
   },
   standard: {
@@ -104,5 +124,6 @@ export {
   PRICING_TIERS,
   PILOT_COUPON_ID,
   PILOT_COMPLIANCE_ID,
+  HIPAA_ASSESSMENT_ID,
   LIVE_STRIPE_PUBLIC_KEY
 };
