@@ -46,7 +46,7 @@ export default function DemoDashboard() {
             <span className="text-sm font-medium">🎯 Demo Environment</span>
             <div className="flex gap-3">
               <a
-                href="https://securebase.tximhotep.com/signup"
+                href="https://securebase.tximhotep.com/pricing"
                 className="bg-white text-purple-600 px-4 py-2 rounded-md text-sm font-medium"
               >
                 Start Free Trial
