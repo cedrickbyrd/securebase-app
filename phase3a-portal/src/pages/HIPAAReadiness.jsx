@@ -1,110 +1,73 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Clock, Loader, AlertCircle, Lock, FileText, Zap } from 'lucide-react';
+import { Shield, CheckCircle, Loader, AlertCircle, Lock, FileText, Activity, ClipboardList } from 'lucide-react';
 import { HIPAA_ASSESSMENT_ID } from '../config/live-config';
 import { trackEvent, trackCTAClick } from '../utils/analytics';
 
 const SKU = 'hipaa_assessment';
-const ASSESSMENT_PRICE = 0; // TBD — display "Price TBD", not $0
-const SLOT_POLL_INTERVAL_MS = 30_000;
+const ASSESSMENT_PRICE = 1995;
 
 const DELIVERABLES = [
-  { icon: <CheckCircle className="w-5 h-5 text-green-400" />, label: 'HIPAA Eligible AWS Services checklist (67 services mapped)' },
-  { icon: <FileText className="w-5 h-5 text-green-400" />, label: 'PHI data flow diagram template for your architecture' },
-  { icon: <Zap className="w-5 h-5 text-green-400" />, label: 'Gap report: current state vs. HIPAA Security Rule requirements' },
-  { icon: <Lock className="w-5 h-5 text-green-400" />, label: 'BAA readiness checklist — what you need before signing' },
-  { icon: <Shield className="w-5 h-5 text-green-400" />, label: '7-year retention policy Terraform scaffold' },
-  { icon: <CheckCircle className="w-5 h-5 text-green-400" />, label: 'Assessment credit toward Healthcare tier subscription' },
+  {
+    icon: <Activity className="w-5 h-5 text-teal-400" />,
+    label: 'Scored §164.308 (Administrative), §164.310 (Physical) & §164.312 (Technical) safeguards',
+  },
+  {
+    icon: <Shield className="w-5 h-5 text-teal-400" />,
+    label: 'PHI controls mapped across 67 AWS services with gap identification',
+  },
+  {
+    icon: <ClipboardList className="w-5 h-5 text-teal-400" />,
+    label: 'Findings report with remediation owners and days-open tracking',
+  },
+  {
+    icon: <FileText className="w-5 h-5 text-teal-400" />,
+    label: 'Auditor-ready HTML export for compliance evidence packages',
+  },
+  {
+    icon: <Lock className="w-5 h-5 text-teal-400" />,
+    label: 'BAA readiness checklist — know exactly what to prepare before signing',
+  },
+  {
+    icon: <CheckCircle className="w-5 h-5 text-teal-400" />,
+    label: '$1,995 credited toward Healthcare tier ($7,500/mo pilot) at upgrade',
+  },
 ];
 
 const FAQS = [
   {
-    q: 'What exactly do I get?',
-    a: 'A gap report comparing your current AWS environment against the HIPAA Security Rule, a PHI data flow diagram template, a BAA readiness checklist, a 7-year retention Terraform scaffold, and a credit toward the Healthcare tier subscription.',
+    q: 'What do I get for $1,995?',
+    a: 'A scored HIPAA gap assessment covering §164.308, §164.310, and §164.312 safeguards across 67 AWS services. Deliverables include a findings report with remediation owners and days-open tracking, an auditor-ready HTML export, and a BAA readiness checklist.',
   },
   {
-    q: 'Does this include a BAA?',
-    a: 'No. This assessment identifies gaps and prepares you for the BAA conversation. A BAA is required for full Healthcare tier access and is included when you upgrade.',
+    q: 'Does this constitute a BAA or legal advice?',
+    a: 'No. This assessment identifies technical and operational gaps against the HIPAA Security Rule and prepares you for the BAA conversation. It is not a Business Associate Agreement, legal advice, or HIPAA certification. Consult qualified legal counsel before signing a BAA.',
   },
   {
-    q: 'What AWS services are covered?',
-    a: 'All 67 HIPAA-eligible AWS services: S3, RDS, Lambda, KMS, CloudTrail, Macie, GuardDuty, Config, Security Hub, and more.',
+    q: 'What is the Healthcare tier and how does the credit work?',
+    a: 'The Healthcare tier is $15,000/mo (full) or $7,500/mo on the pilot plan. If you upgrade to Healthcare after completing your assessment, the $1,995 assessment fee is credited in full against your first invoice.',
   },
   {
-    q: 'Can I run this in my existing AWS account?',
-    a: 'Yes. No AWS Organizations required. The assessment targets your existing account and flags gaps relative to HIPAA requirements.',
+    q: 'How quickly will I receive results?',
+    a: 'The assessment dashboard is available immediately after payment. Your scored findings, auditor export, and BAA checklist are generated from your live AWS environment — results reflect the current state of your account.',
   },
   {
-    q: "What's the difference between this and the Healthcare tier?",
-    a: 'This assessment tells you where you stand. The Healthcare tier ($12K/mo) deploys the full HIPAA-compliant Landing Zone, includes a signed BAA, PHI encryption automation, 7-year audit retention, and dedicated support.',
+    q: 'Does this cover my entire AWS footprint?',
+    a: 'The assessment covers the 67 AWS services designated as HIPAA-eligible under the standard AWS BAA. Services outside that list are flagged separately as out-of-scope and require architectural review.',
   },
 ];
 
-function SlotBadge({ slotsRemaining, loading, error }) {
-  if (loading) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-200 text-sm">
-        <Loader className="w-3.5 h-3.5 animate-spin" />
-        Checking availability…
-      </span>
-    );
-  }
-  if (error || slotsRemaining === null) {
-    return null;
-  }
-  if (slotsRemaining === 0) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 border border-red-400/40 text-red-300 text-sm font-semibold">
-        <AlertCircle className="w-3.5 h-3.5" />
-        Sold out — join waitlist
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-400/10 border border-teal-400/30 text-teal-300 text-sm font-semibold">
-      <Clock className="w-3.5 h-3.5" />
-      {slotsRemaining} spot{slotsRemaining !== 1 ? 's' : ''} remaining
-    </span>
-  );
-}
-
 export default function HIPAAReadiness() {
   const navigate = useNavigate();
-  const [slotsRemaining, setSlotsRemaining] = useState(null);
-  const [slotsLoading, setSlotsLoading] = useState(true);
-  const [slotsError, setSlotsError] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
 
-  // Price is TBD when no price ID is configured OR the price is still 0
-  const priceTBD = !HIPAA_ASSESSMENT_ID || ASSESSMENT_PRICE === 0;
-
-  const fetchSlots = useCallback(async () => {
-    try {
-      const res = await fetch(`/pilot/availability?sku=${SKU}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSlotsRemaining(data.slots_remaining ?? null);
-      setSlotsError(false);
-    } catch {
-      setSlotsError(true);
-    } finally {
-      setSlotsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSlots();
-    const interval = setInterval(fetchSlots, SLOT_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchSlots]);
-
   const handleStartAssessment = async () => {
-    if (checkoutLoading || priceTBD) return;
+    if (checkoutLoading) return;
     setCheckoutLoading(true);
     setCheckoutError(null);
-    trackCTAClick('assessment_start', 'hipaa_readiness');
-    trackEvent('assessment_checkout_initiated', { sku: SKU, price: ASSESSMENT_PRICE });
+    trackCTAClick('hipaa_assessment_start', 'hipaa_readiness');
+    trackEvent('hipaa_assessment_checkout_initiated', { sku: SKU, price: ASSESSMENT_PRICE });
 
     try {
       const origin = window.location.origin;
@@ -114,10 +77,10 @@ export default function HIPAAReadiness() {
         body: JSON.stringify({
           tier: SKU,
           priceId: HIPAA_ASSESSMENT_ID,
-          successUrl: `${origin}/setup?session_id={CHECKOUT_SESSION_ID}`,
+          successUrl: `${origin}/setup?session_id={CHECKOUT_SESSION_ID}&product=hipaa_assessment`,
           cancelUrl: `${origin}/pilots/hipaa-readiness`,
           metadata: {
-            pilot_sku: SKU,
+            pilot_sku: 'hipaa_assessment',
             provision_type: 'hipaa_readiness_assessment',
           },
         }),
@@ -167,41 +130,25 @@ export default function HIPAAReadiness() {
         {/* Hero */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-teal-400/10 border border-teal-400/30">
-            <span className="text-teal-400 text-xs font-bold uppercase tracking-widest">Healthcare Entry Point</span>
+            <span className="text-teal-400 text-xs font-bold uppercase tracking-widest">HIPAA Readiness</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
-            Know your HIPAA posture before you need a BAA.
-            <br />
+            Know your HIPAA gaps<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-400">
-              One-time assessment. No subscription.
+              before your auditor finds them.
             </span>
           </h1>
           <p className="text-lg text-teal-200 max-w-2xl mx-auto mb-8">
-            Get a gap report, PHI data flow template, and BAA readiness checklist — one-time, no subscription.
+            Scored §164.308/310/312 safeguards, PHI controls across 67 AWS services, and an
+            auditor-ready export — for{' '}
+            <span className="text-white font-bold">$1,995</span> one-time.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <SlotBadge
-              slotsRemaining={slotsRemaining}
-              loading={slotsLoading}
-              error={slotsError}
-            />
-          </div>
         </div>
 
         {/* CTA Card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-12 text-center max-w-lg mx-auto">
-          {priceTBD ? (
-            <>
-              <p className="text-white text-2xl font-black mb-1">Price TBD</p>
-              <p className="text-teal-300 text-sm mb-6">One-time payment • Coming soon</p>
-            </>
-          ) : (
-            <>
-              <p className="text-white text-2xl font-black mb-1">${ASSESSMENT_PRICE.toLocaleString()}</p>
-              <p className="text-teal-300 text-sm mb-6">One-time payment • Instant delivery</p>
-            </>
-          )}
+          <p className="text-white text-2xl font-black mb-1">$1,995</p>
+          <p className="text-teal-300 text-sm mb-6">One-time payment · No subscription required</p>
 
           {checkoutError && (
             <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-400/30 text-red-300 text-sm">
@@ -210,62 +157,33 @@ export default function HIPAAReadiness() {
             </div>
           )}
 
-          {priceTBD ? (
-            <div className="space-y-3">
-              <p className="text-teal-200 text-sm">
-                Price coming soon — join the waitlist to be notified when this assessment launches.
-              </p>
-              <a
-                href="mailto:sales@securebase.tximhotep.com?subject=HIPAA Assessment Waitlist"
-                className="w-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-bold py-4 rounded-xl text-base shadow-lg hover:shadow-teal-500/25 transition-all flex items-center justify-center gap-2"
-              >
-                Join Waitlist →
-              </a>
-            </div>
-          ) : (
-            <button
-              onClick={handleStartAssessment}
-              disabled={checkoutLoading || soldOut}
-              className="w-full bg-gradient-to-r from-teal-400 to-green-500 text-gray-900 font-bold py-4 rounded-xl text-base shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {checkoutLoading ? (
-                <>
-                  <Loader className="animate-spin w-5 h-5" />
-                  Redirecting to Stripe…
-                </>
-              ) : soldOut ? (
-                'Join Waitlist →'
-              ) : (
-                'Start Assessment →'
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleStartAssessment}
+            disabled={checkoutLoading}
+            className="w-full bg-gradient-to-r from-teal-500 to-green-500 text-white font-bold py-4 rounded-xl text-base shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {checkoutLoading ? (
+              <>
+                <Loader className="animate-spin w-5 h-5" />
+                Redirecting to Stripe…
+              </>
+            ) : (
+              'Start Assessment — $1,995 →'
+            )}
+          </button>
 
           <div className="mt-4 flex flex-col gap-1.5">
             {[
-              'No BAA required for this assessment',
-              'No subscription required',
-              'Credit applied toward Healthcare tier upgrade',
+              'Secured by Stripe — PCI DSS Level 1',
+              'Dashboard available immediately after payment',
+              '$1,995 credited if you upgrade to Healthcare tier',
             ].map((line) => (
               <div key={line} className="flex items-center justify-center gap-1.5">
-                <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                 <span className="text-xs text-teal-300">{line}</span>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Scope boundary — must be prominent */}
-        <div className="bg-amber-900/30 border border-amber-400/40 rounded-xl p-6 mb-12">
-          <h3 className="text-amber-200 font-semibold mb-2 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            Important scope boundary
-          </h3>
-          <p className="text-amber-300 text-sm leading-relaxed">
-            This assessment does <strong className="text-white">not</strong> constitute a BAA, legal advice, or HIPAA
-            certification. It identifies infrastructure gaps and prepares your team for the BAA conversation. A signed
-            BAA is <strong className="text-white">required</strong> before handling PHI in production.
-          </p>
         </div>
 
         {/* Deliverables */}
@@ -282,6 +200,24 @@ export default function HIPAAReadiness() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Scope boundary */}
+        <div className="bg-teal-900/30 border border-teal-400/20 rounded-xl p-6 mb-12">
+          <h3 className="text-teal-200 font-semibold mb-2 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            Scope boundary
+          </h3>
+          <p className="text-teal-300 text-sm leading-relaxed">
+            This assessment identifies technical and operational gaps against the HIPAA Security Rule.
+            It is <strong className="text-white">not a Business Associate Agreement (BAA)</strong>,
+            not legal advice, and does not constitute HIPAA certification or a guarantee of compliance.
+            Consult qualified legal counsel before signing a BAA. For BAA drafting and enterprise
+            HIPAA support, contact{' '}
+            <a href="mailto:sales@securebase.tximhotep.com" className="underline text-teal-200 hover:text-white">
+              sales@securebase.tximhotep.com
+            </a>.
+          </p>
         </div>
 
         {/* FAQ */}
