@@ -18,6 +18,7 @@ import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
 import ContactSales from './pages/ContactSales';
 import ComplianceJumpstart from './pages/ComplianceJumpstart';
+import HIPAAReadiness from './pages/HIPAAReadiness';
 import Setup from './pages/Setup';
 import './App.css';
 
@@ -89,6 +90,7 @@ function App() {
         <Route path="/thank-you" element={<ThankYou />} />
         {/* Compliance Jumpstart Pilot — public landing page and post-payment setup */}
         <Route path="/pilots/compliance-jumpstart" element={<ComplianceJumpstart />} />
+        <Route path="/pilots/hipaa-readiness" element={<HIPAAReadiness />} />
         <Route path="/setup" element={<Setup />} />
         {/* Root: always show landing page in demo mode; otherwise redirect authenticated users to dashboard */}
         <Route path="/" element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />

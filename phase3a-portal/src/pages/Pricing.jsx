@@ -45,6 +45,7 @@ const Pricing = () => {
 
   const plans = [
     { key: 'pilot_compliance', ...PRICING_TIERS.pilot_compliance, mostPopular: false, isEnterprise: false, isPilotOneTime: true },
+    { key: 'hipaa_assessment', ...PRICING_TIERS.hipaa_assessment, mostPopular: false, isEnterprise: false, isPilotOneTime: true },
     { key: 'standard',   ...PRICING_TIERS.standard,   mostPopular: false, isEnterprise: false },
     { key: 'fintech',    ...PRICING_TIERS.fintech,    mostPopular: true,  isEnterprise: false },
     { key: 'healthcare', ...PRICING_TIERS.healthcare, mostPopular: false, isEnterprise: true  },
@@ -111,6 +112,7 @@ const Pricing = () => {
   const getCtaLabel = (plan) => {
     if (loadingTier === plan.key) return null; // handled inline
     if (plan.isEnterprise) return 'Contact Sales →';
+    if (plan.key === 'hipaa_assessment') return 'Start Assessment →';
     if (plan.isPilotOneTime) return 'Buy Now — $495 →';
     if (plan.key === 'fintech') return 'Start Free Trial →';
     return 'Get Started →';
@@ -142,7 +144,7 @@ const Pricing = () => {
 
         {/* Compliance Jumpstart Pilot Banner */}
         {(() => {
-          const pilotPlan = plans.find((p) => p.isPilotOneTime);
+          const pilotPlan = plans.find((p) => p.key === 'pilot_compliance');
           if (!pilotPlan) return null;
           return (
             <div className="mb-8 bg-gradient-to-r from-emerald-900/60 to-teal-900/60 border border-emerald-400/40 rounded-2xl p-6">
@@ -181,6 +183,58 @@ const Pricing = () => {
                       <><Loader className="animate-spin w-4 h-4 inline mr-2" />Connecting…</>
                     ) : (
                       getCtaLabel(pilotPlan)
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* HIPAA Readiness Assessment Banner */}
+        {(() => {
+          const hipaaPlan = plans.find((p) => p.key === 'hipaa_assessment');
+          if (!hipaaPlan) return null;
+          return (
+            <div className="mb-8 bg-gradient-to-r from-teal-900/60 to-green-900/60 border border-teal-400/40 rounded-2xl p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-teal-400/20 border border-teal-400/40 text-teal-300 text-xs font-bold px-3 py-0.5 rounded-full">
+                      🏥 HIPAA Readiness
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-1">{hipaaPlan.name}</h3>
+                  <p className="text-gray-300 text-sm mb-3">{hipaaPlan.description}</p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-sm">
+                    {hipaaPlan.features.map((f, i) => (
+                      <li key={i} className="flex gap-2 text-gray-300">
+                        <span className="text-teal-400 shrink-0">✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-gray-500 italic">
+                    Not a BAA or legal advice. Identifies gaps and prepares you for the BAA conversation.
+                  </p>
+                </div>
+                <div className="flex flex-col items-center lg:items-end gap-3 shrink-0">
+                  <div className="text-center lg:text-right">
+                    <span className="text-5xl font-bold text-white">${hipaaPlan.price.toLocaleString()}</span>
+                    <span className="text-teal-300 text-sm ml-1">one-time</span>
+                  </div>
+                  {errorTier === hipaaPlan.key && (
+                    <p className="text-red-400 text-xs text-center">Connection error — redirecting…</p>
+                  )}
+                  <button
+                    onClick={() => handleGetStarted(hipaaPlan)}
+                    disabled={loadingTier === hipaaPlan.key}
+                    className="bg-gradient-to-r from-teal-500 to-green-500 text-white font-bold py-3 px-8 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loadingTier === hipaaPlan.key ? (
+                      <><Loader className="animate-spin w-4 h-4 inline mr-2" />Connecting…</>
+                    ) : (
+                      'Start Assessment — $1,995 →'
                     )}
                   </button>
                 </div>

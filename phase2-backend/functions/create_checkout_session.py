@@ -30,6 +30,7 @@ PRICE_IDS = {
 # One-time payment products (not subscription tiers)
 ONE_TIME_PRICE_IDS = {
     'pilot_compliance': os.environ.get('STRIPE_PRICE_PILOT_COMPLIANCE'),
+    'hipaa_assessment': os.environ.get('STRIPE_PRICE_HIPAA_ASSESSMENT'),
 }
 
 # Modes by product type
@@ -44,6 +45,7 @@ TIER_COMPLIANCE_METADATA = {
     'healthcare': {'compliance_framework': 'HIPAA'},
     'government': {'audit_signature': 'required'},
     'pilot_compliance': {'compliance_framework': 'SOC2', 'pilot_product': 'compliance_jumpstart'},
+    'hipaa_assessment': {'compliance_framework': 'HIPAA', 'pilot_product': 'hipaa_readiness_assessment'},
 }
 
 # Full (non-discounted) monthly prices per tier, in USD.
@@ -54,6 +56,7 @@ FULL_PRICES = {
     'healthcare': 15000,
     'government': 25000,
     'pilot_compliance': 495,
+    'hipaa_assessment': 1995,
 }
 
 # Validate price IDs are configured
