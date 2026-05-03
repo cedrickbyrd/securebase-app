@@ -5,7 +5,7 @@ import { HIPAA_ASSESSMENT_ID } from '../config/live-config';
 import { trackEvent, trackCTAClick } from '../utils/analytics';
 
 const SKU = 'hipaa_assessment';
-const PILOT_PRICE = 0; // TBD — display "Price TBD", not $0
+const ASSESSMENT_PRICE = 0; // TBD — display "Price TBD", not $0
 const SLOT_POLL_INTERVAL_MS = 30_000;
 
 const DELIVERABLES = [
@@ -76,8 +76,8 @@ export default function HIPAAReadiness() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
 
-  // Price is TBD — checkout is disabled; waitlist CTA is shown instead
-  const priceTBD = !HIPAA_ASSESSMENT_ID;
+  // Price is TBD when no price ID is configured OR the price is still 0
+  const priceTBD = !HIPAA_ASSESSMENT_ID || ASSESSMENT_PRICE === 0;
 
   const fetchSlots = useCallback(async () => {
     try {
@@ -103,8 +103,8 @@ export default function HIPAAReadiness() {
     if (checkoutLoading || priceTBD) return;
     setCheckoutLoading(true);
     setCheckoutError(null);
-    trackCTAClick('pilot_start', 'hipaa_readiness');
-    trackEvent('pilot_checkout_initiated', { sku: SKU, price: PILOT_PRICE });
+    trackCTAClick('assessment_start', 'hipaa_readiness');
+    trackEvent('assessment_checkout_initiated', { sku: SKU, price: ASSESSMENT_PRICE });
 
     try {
       const origin = window.location.origin;
@@ -198,7 +198,7 @@ export default function HIPAAReadiness() {
             </>
           ) : (
             <>
-              <p className="text-white text-2xl font-black mb-1">${PILOT_PRICE.toLocaleString()}</p>
+              <p className="text-white text-2xl font-black mb-1">${ASSESSMENT_PRICE.toLocaleString()}</p>
               <p className="text-teal-300 text-sm mb-6">One-time payment • Instant delivery</p>
             </>
           )}
