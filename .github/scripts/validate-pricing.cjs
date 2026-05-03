@@ -56,6 +56,9 @@ const head = (msg) => console.log(`\n${C.bold}${C.blue}── ${msg} ──${C.r
 //   Stripe product ID : prod_UMibaH3IqO1SJD
 //   Stripe nickname   : SecureBase_Price_pilot_compliance
 //
+// HIPAA Assessment     | price_1TT9545bg6XXXrmNpB3Zcz79 | $1,995 | —  | pilot_product: hipaa_readiness_assessment
+//   Stripe product     : "Securebase HIPAA Assessment"
+//
 const MANIFEST = {
   standard: {
     priceId:    'price_1TNygX5bg6XXXrmNBtIT7j1P',
@@ -97,6 +100,14 @@ const PILOT_PRODUCTS = {
     nickname:   'SecureBase_Price_pilot_compliance',
     price:      495,
     framework:  'SOC2',
+    priceTBD:   false,
+  },
+  hipaa_assessment: {
+    exportName: 'HIPAA_ASSESSMENT_ID',
+    priceId:    'price_1TT9545bg6XXXrmNpB3Zcz79',
+    price:      1995,
+    framework:  'HIPAA',
+    priceTBD:   false,
   },
   hipaa_assessment: {
     exportName: 'HIPAA_ASSESSMENT_ID',
