@@ -91,6 +91,25 @@ export default function DemoDashboard() {
           </div>
         </div>
 
+        {/* HIPAA Dashboard Entry Point */}
+        <a
+          href="/hipaa-dashboard"
+          className="block bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-300 rounded-xl p-6 mb-8 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">🏥</span>
+              <div>
+                <div className="text-xl font-bold text-rose-800">HIPAA Dashboard</div>
+                <div className="text-sm text-rose-600">Healthcare compliance controls, PHI audit trail &amp; risk assessment</div>
+              </div>
+            </div>
+            <span className="bg-rose-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-rose-700">
+              View Dashboard →
+            </span>
+          </div>
+        </a>
+
         {/* Main Report Card */}
         <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl shadow-xl p-8 mb-8 border-2 border-blue-200">
           <div className="flex items-center justify-between">
