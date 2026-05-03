@@ -14,7 +14,27 @@ const API_BASE_URL = 'https://api.securebase.tximhotep.com';
 // Stripe price   : price_1TNzAi5bg6XXXrmN5GGfPrtq
 const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
 
+// HIPAA Readiness Assessment one-time product (price TBD, SKU: hipaa_assessment)
+// Stripe price ID will be set once the product is created in Stripe.
+// Use STRIPE_PRICE_HIPAA_ASSESSMENT env var to configure.
+const HIPAA_ASSESSMENT_ID = import.meta.env.VITE_STRIPE_PRICE_HIPAA_ASSESSMENT || '';
+
 const PRICING_TIERS = {
+  hipaa_assessment: {
+    name: 'HIPAA Readiness Assessment',
+    price: 0, // TBD
+    priceId: HIPAA_ASSESSMENT_ID,
+    billingType: 'payment',
+    description: 'One-time HIPAA gap assessment — no BAA required',
+    features: [
+      'HIPAA Eligible Services checklist (67 AWS services)',
+      'PHI data flow diagram template',
+      'Gap report vs. HIPAA Security Rule',
+      'BAA readiness checklist',
+      '7-year retention Terraform scaffold',
+      'Credit toward Healthcare tier subscription',
+    ],
+  },
   pilot_compliance: {
     name: 'Compliance Jumpstart',
     price: 495,
@@ -104,5 +124,6 @@ export {
   PRICING_TIERS,
   PILOT_COUPON_ID,
   PILOT_COMPLIANCE_ID,
+  HIPAA_ASSESSMENT_ID,
   LIVE_STRIPE_PUBLIC_KEY
 };
