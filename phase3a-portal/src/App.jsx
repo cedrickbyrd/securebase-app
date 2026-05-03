@@ -90,6 +90,7 @@ function App() {
         <Route path="/thank-you" element={<ThankYou />} />
         {/* Compliance Jumpstart Pilot — public landing page and post-payment setup */}
         <Route path="/pilots/compliance-jumpstart" element={<ComplianceJumpstart />} />
+        {/* HIPAA Readiness Assessment — public landing page */}
         <Route path="/pilots/hipaa-readiness" element={<HIPAAReadiness />} />
         <Route path="/setup" element={<Setup />} />
         {/* Root: always show landing page in demo mode; otherwise redirect authenticated users to dashboard */}

@@ -20,6 +20,21 @@ const PILOT_COMPLIANCE_ID = 'price_1TNzAi5bg6XXXrmN5GGfPrtq';
 const HIPAA_ASSESSMENT_ID = 'price_1TT9545bg6XXXrmNpB3Zcz79';
 
 const PRICING_TIERS = {
+  hipaa_assessment: {
+    name: 'HIPAA Readiness Assessment',
+    price: 0, // TBD
+    priceId: HIPAA_ASSESSMENT_ID,
+    billingType: 'payment',
+    description: 'One-time HIPAA gap assessment — no BAA required',
+    features: [
+      'HIPAA Eligible Services checklist (67 AWS services)',
+      'PHI data flow diagram template',
+      'Gap report vs. HIPAA Security Rule',
+      'BAA readiness checklist',
+      '7-year retention Terraform scaffold',
+      'Credit toward Healthcare tier subscription',
+    ],
+  },
   pilot_compliance: {
     name: 'Compliance Jumpstart',
     price: 495,
