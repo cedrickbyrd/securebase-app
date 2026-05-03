@@ -410,7 +410,7 @@ function Login({ setAuth }) {
 
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
             © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved.{' '}
-            <a href="https://securebase.tximhotep.com/signup" style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>
+            <a href="https://securebase.tximhotep.com/pricing" style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>
               Start Free Trial →
             </a>
           </div>

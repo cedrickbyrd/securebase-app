@@ -31,7 +31,7 @@ function OnboardingRoute() {
   );
 }
 
-const MAIN_SITE_SIGNUP_URL = 'https://securebase.tximhotep.com/signup';
+const MAIN_SITE_SIGNUP_URL = 'https://securebase.tximhotep.com/pricing';
 
 function ExternalSignupRedirect() {
   useEffect(() => {
