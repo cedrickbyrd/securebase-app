@@ -45,7 +45,7 @@ const FAQS = [
   },
   {
     q: 'What is the Healthcare tier and how does the credit work?',
-    a: 'The Healthcare tier is $15,000/mo (full) or $7,500/mo on the pilot plan. If you upgrade to Healthcare within 12 months of completing your assessment, the $1,995 assessment fee is credited in full against your first invoice.',
+    a: 'The Healthcare tier is $15,000/mo (full) or $7,500/mo on the pilot plan. If you upgrade to Healthcare after completing your assessment, the $1,995 assessment fee is credited in full against your first invoice.',
   },
   {
     q: 'How quickly will I receive results?',

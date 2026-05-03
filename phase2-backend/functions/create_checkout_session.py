@@ -30,7 +30,7 @@ PRICE_IDS = {
 # One-time payment products (not subscription tiers)
 ONE_TIME_PRICE_IDS = {
     'pilot_compliance': os.environ.get('STRIPE_PRICE_PILOT_COMPLIANCE'),
-    'hipaa_assessment': os.environ.get('STRIPE_PRICE_HIPAA_ASSESSMENT'),
+    'hipaa_assessment': os.environ.get('STRIPE_PRICE_HIPAA_ASSESSMENT', 'price_1TT9545bg6XXXrmNpB3Zcz79'),
 }
 
 # Modes by product type
