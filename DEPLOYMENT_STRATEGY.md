@@ -89,7 +89,7 @@ phase3a-portal/
 VITE_USE_MOCK_API=true
 VITE_ENV=demo
 VITE_ANALYTICS_ENABLED=false
-VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/signup
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/pricing
 VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.tximhotep.com/contact
 ```
 
@@ -144,7 +144,7 @@ Set these in Netlify Dashboard → Site settings → Environment variables:
 VITE_USE_MOCK_API=true
 VITE_ENV=demo
 VITE_ANALYTICS_ENABLED=false
-VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/signup
+VITE_DEMO_CTA_TRIAL_URL=https://securebase.tximhotep.com/pricing
 VITE_DEMO_CTA_BOOK_DEMO_URL=https://securebase.tximhotep.com/contact
 ```
 

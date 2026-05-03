@@ -61,13 +61,13 @@ base = "phase3a-portal"
 # SIGNUP - redirect to main marketing site (single source of truth)
 [[redirects]]
   from = "/signup"
-  to = "https://securebase.tximhotep.com/signup"
+  to = "https://securebase.tximhotep.com/pricing"
   status = 301
   force = true
 
 [[redirects]]
   from = "/register"
-  to = "https://securebase.tximhotep.com/signup"
+  to = "https://securebase.tximhotep.com/pricing"
   status = 301
   force = true
 
