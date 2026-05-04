@@ -1,45 +1,13 @@
 {
-  "generated": "2026-05-02T16:02:57.897889+00:00",
+  "generated": "2026-05-04T07:59:30.836756+00:00",
   "summary": {
-    "total": 26,
+    "total": 46,
     "enriched": 8,
-    "needs_names": 18
+    "needs_names": 38
   },
   "leads": [
     {
-      "company": "University Health Network",
-      "domain": "universityhealthsystem.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "Director of Cyber Security",
-      "contact_first": "Kajeevan",
-      "contact_last": "Rajanayagam",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}{last}",
-        "organization": "University Health System",
-        "emails_found": [
-          {
-            "value": "georgehernandez@universityhealthsystem.com",
-            "confidence": 91
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "kajeevanrajanayagam@universityhealthsystem.com",
-        "score": 74,
-        "verification_status": "accept_all"
-      },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=University_Health_Network",
-      "linkedin_dm": "Hi Kajeevan,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like University Health Network, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
-    },
-    {
+      "batch": 1,
       "company": "Veritex Community Bank",
       "domain": "veritexbank.com",
       "industry": "banking",
@@ -53,16 +21,12 @@
         "organization": "Veritex Community Bank",
         "emails_found": [
           {
-            "value": "mescalante-diaz@veritexbank.com",
-            "confidence": 99
+            "value": "bburnett@veritexbank.com",
+            "confidence": 96
           },
           {
-            "value": "mcarp@veritexbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "kluquette@veritexbank.com",
-            "confidence": 99
+            "value": "sepstein@veritexbank.com",
+            "confidence": 96
           }
         ]
       },
@@ -76,85 +40,7 @@
       "linkedin_dm": "Hi Robert,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Veritex Community Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
     {
-      "company": "Kelsey-Seybold Clinic",
-      "domain": "kelsey-seybold.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "Chief Technology & Information Security Officer",
-      "contact_first": "Martin",
-      "contact_last": "Littmann",
-      "location": "Dallas, TX",
-      "outreach_status": "following_linkedin",
-      "outreach_date": "2026-05-02",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Kelsey-Seybold Clinic",
-        "emails_found": [
-          {
-            "value": "shane.magee@kelsey-seybold.com",
-            "confidence": 94
-          },
-          {
-            "value": "aaron.carlson@kelsey-seybold.com",
-            "confidence": 94
-          },
-          {
-            "value": "matthew.fillipps@kelsey-seybold.com",
-            "confidence": 94
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": null,
-        "score": null,
-        "verification_status": null
-      },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Kelsey-Seybold_Clinic",
-      "linkedin_dm": "Hi Martin,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Kelsey-Seybold Clinic, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
-    },
-    {
-      "company": "Cook Children's Health",
-      "domain": "cookchildrens.org",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "Vice President and Chief Information Security Officer",
-      "contact_first": "Aaron",
-      "contact_last": "Wishon",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Cook Children's",
-        "emails_found": [
-          {
-            "value": "nancy.hall@cookchildrens.org",
-            "confidence": 94
-          },
-          {
-            "value": "greg.jimerson@cookchildrens.org",
-            "confidence": 94
-          },
-          {
-            "value": "nick.markham@cookchildrens.org",
-            "confidence": 94
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "aaron.wishon@cookchildrens.org",
-        "score": 99,
-        "verification_status": "accept_all"
-      },
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
-      "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
-    },
-    {
+      "batch": 1,
       "company": "First Financial Bank Texas",
       "domain": "ffin.com",
       "industry": "banking",
@@ -166,20 +52,7 @@
       "hunter_domain": {
         "email_pattern": "{f}{last}",
         "organization": "First Financial Bank",
-        "emails_found": [
-          {
-            "value": "mhickox@ffin.com",
-            "confidence": 99
-          },
-          {
-            "value": "ccregger@ffin.com",
-            "confidence": 99
-          },
-          {
-            "value": "reverett@ffin.com",
-            "confidence": 98
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {
         "email": "csuarez@ffin.com",
@@ -196,6 +69,7 @@
       "linkedin_dm": "Hi Cynthia,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor First Financial Bank Texas, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
     {
+      "batch": 1,
       "company": "Southside Bank",
       "domain": "southsidebank.com",
       "industry": "banking",
@@ -209,317 +83,19 @@
       "hunter_domain": {
         "email_pattern": "{f}{last}",
         "organization": "Southsidebank",
-        "emails_found": [
-          {
-            "value": "service@southsidebank.com",
-            "confidence": 75
-          },
-          {
-            "value": "survey@southsidebank.com",
-            "confidence": 75
-          },
-          {
-            "value": "mwjoseph@southsidebank.com",
-            "confidence": 74
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {
         "email": null,
         "score": null,
         "verification_status": null
       },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
+      "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Southside_Bank",
       "linkedin_dm": "Hi Carlos,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Southside Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
     {
-      "company": "Trellis",
-      "domain": "trellis.health",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "CTO",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Trellis",
-      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Trellis. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Strados Labs",
-      "domain": "stradoslabs.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "VP Engineering",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}",
-        "organization": "Strados Labs",
-        "emails_found": [
-          {
-            "value": "tom@stradoslabs.com",
-            "confidence": 99
-          },
-          {
-            "value": "shane@stradoslabs.com",
-            "confidence": 98
-          },
-          {
-            "value": "nick@stradoslabs.com",
-            "confidence": 98
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Strados_Labs",
-      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Strados Labs. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Procare Solutions",
-      "domain": "procaresolutions.com",
-      "industry": "saas",
-      "framework": "SOC2",
-      "contact_title": "Head of Infrastructure",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Plano, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}",
-        "organization": "Procare Solutions",
-        "emails_found": [
-          {
-            "value": "chasity@procaresolutions.com",
-            "confidence": 94
-          },
-          {
-            "value": "jason@procaresolutions.com",
-            "confidence": 94
-          },
-          {
-            "value": "jeff@procaresolutions.com",
-            "confidence": 94
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Procare_Solutions",
-      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Procare Solutions. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "MedStats",
-      "domain": "medstats.io",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "CTO",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=MedStats",
-      "linkedin_dm": "[Name needed] Template: HIPAA outreach for MedStats. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "ParkHub",
-      "domain": "parkhub.com",
-      "industry": "saas",
-      "framework": "SOC2",
-      "contact_title": "VP Engineering",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "ParkHub",
-        "emails_found": [
-          {
-            "value": "john.haase@parkhub.com",
-            "confidence": 93
-          },
-          {
-            "value": "angelique.temple@parkhub.com",
-            "confidence": 92
-          },
-          {
-            "value": "eric.warman@parkhub.com",
-            "confidence": 92
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=ParkHub",
-      "linkedin_dm": "[Name needed] Template: SOC2 outreach for ParkHub. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Hypergiant",
-      "domain": "hypergiant.com",
-      "industry": "ai_ml",
-      "framework": "FedRAMP",
-      "contact_title": "Head of Infrastructure",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Hypergiant",
-        "emails_found": [
-          {
-            "value": "jordan.fletcher@hypergiant.com",
-            "confidence": 99
-          },
-          {
-            "value": "gino.morrow@hypergiant.com",
-            "confidence": 99
-          },
-          {
-            "value": "patrick.mead@hypergiant.com",
-            "confidence": 98
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=ai_ml&framework=fedramp&company=Hypergiant",
-      "linkedin_dm": "[Name needed] Template: FedRAMP outreach for Hypergiant. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Phunware",
-      "domain": "phunware.com",
-      "industry": "saas",
-      "framework": "SOC2",
-      "contact_title": "VP Engineering",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Phunware",
-      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Phunware. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Crossover Health",
-      "domain": "crossoverhealth.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "Head of Cloud",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Crossover Health",
-        "emails_found": [
-          {
-            "value": "kevonna.fowler@crossoverhealth.com",
-            "confidence": 99
-          },
-          {
-            "value": "elizabeth.chavez@crossoverhealth.com",
-            "confidence": 99
-          },
-          {
-            "value": "melanie.johnson@crossoverhealth.com",
-            "confidence": 99
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Crossover_Health",
-      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Crossover Health. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Vyopta",
-      "domain": "vyopta.com",
-      "industry": "saas",
-      "framework": "SOC2",
-      "contact_title": "CTO",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Vyopta",
-        "emails_found": [
-          {
-            "value": "jonathan.sass@vyopta.com",
-            "confidence": 94
-          },
-          {
-            "value": "richard.mitchell@vyopta.com",
-            "confidence": 93
-          },
-          {
-            "value": "albert.burns@vyopta.com",
-            "confidence": 92
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Vyopta",
-      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Vyopta. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
-      "company": "Amino",
-      "domain": "amino.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "VP Infrastructure",
-      "contact_first": "FILL_IN",
-      "contact_last": "FILL_IN",
-      "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Amino",
-        "emails_found": [
-          {
-            "value": "mhawkins@amino.com",
-            "confidence": 94
-          },
-          {
-            "value": "lsteinbock@amino.com",
-            "confidence": 93
-          },
-          {
-            "value": "kirk@amino.com",
-            "confidence": 89
-          }
-        ]
-      },
-      "hunter_email": {},
-      "pdl_enrichment": {},
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Amino",
-      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Amino. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
-    },
-    {
+      "batch": 1,
       "company": "Dallas Capital Bank",
       "domain": "dallascapitalbank.com",
       "industry": "banking",
@@ -532,20 +108,7 @@
       "hunter_domain": {
         "email_pattern": "{f}{last}",
         "organization": "Dallas Capital Bank",
-        "emails_found": [
-          {
-            "value": "dfarnham@dallascapitalbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "tcobbs@dallascapitalbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "kweiss@dallascapitalbank.com",
-            "confidence": 99
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -553,6 +116,7 @@
       "linkedin_dm": "[Name needed] Template: FFIEC outreach for Dallas Capital Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 1,
       "company": "Texas Capital Bank",
       "domain": "texascapitalbank.com",
       "industry": "banking",
@@ -566,16 +130,16 @@
         "organization": "Texas Capital Bank",
         "emails_found": [
           {
-            "value": "candace.dennis@texascapitalbank.com",
+            "value": "jamie.brown@texascapitalbank.com",
             "confidence": 99
           },
           {
-            "value": "christopher.crook@texascapitalbank.com",
-            "confidence": 99
+            "value": "aaron.henry@texascapitalbank.com",
+            "confidence": 98
           },
           {
-            "value": "daniel.massanelli@texascapitalbank.com",
-            "confidence": 99
+            "value": "bill.murrell@texascapitalbank.com",
+            "confidence": 97
           }
         ]
       },
@@ -594,6 +158,7 @@
       "linkedin_dm": "Hi Russ,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Texas Capital Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
     {
+      "batch": 1,
       "company": "First United Bank",
       "domain": "firstunitedbank.com",
       "industry": "banking",
@@ -607,16 +172,16 @@
         "organization": "First United Bank",
         "emails_found": [
           {
-            "value": "aestrada@firstunitedbank.com",
+            "value": "pcarcone@firstunitedbank.com",
+            "confidence": 92
+          },
+          {
+            "value": "mbryson@firstunitedbank.com",
             "confidence": 99
           },
           {
-            "value": "cearthman@firstunitedbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "krissi.winningham@firstunitedbank.com",
-            "confidence": 99
+            "value": "djacobs@firstunitedbank.com",
+            "confidence": 98
           }
         ]
       },
@@ -626,6 +191,7 @@
       "linkedin_dm": "[Name needed] Template: FFIEC outreach for First United Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 1,
       "company": "Comerica Bank",
       "domain": "comerica.com",
       "industry": "banking",
@@ -639,15 +205,15 @@
         "organization": "Comerica Bank",
         "emails_found": [
           {
-            "value": "dbutler@comerica.com",
+            "value": "rrechlin@comerica.com",
             "confidence": 94
           },
           {
-            "value": "kfoyle@comerica.com",
+            "value": "azhang@comerica.com",
             "confidence": 94
           },
           {
-            "value": "sasuncion@comerica.com",
+            "value": "mbrown@comerica.com",
             "confidence": 94
           }
         ]
@@ -658,6 +224,7 @@
       "linkedin_dm": "[Name needed] Template: FFIEC outreach for Comerica Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 1,
       "company": "PlainsCapital Bank",
       "domain": "plainscapital.com",
       "industry": "banking",
@@ -669,20 +236,7 @@
       "hunter_domain": {
         "email_pattern": "{first}.{last}",
         "organization": "PlainsCapital Bank",
-        "emails_found": [
-          {
-            "value": "lane.giles@plainscapital.com",
-            "confidence": 94
-          },
-          {
-            "value": "michelle.hutchison@plainscapital.com",
-            "confidence": 94
-          },
-          {
-            "value": "daniela.mills@plainscapital.com",
-            "confidence": 94
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -690,6 +244,355 @@
       "linkedin_dm": "[Name needed] Template: FFIEC outreach for PlainsCapital Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 1,
+      "company": "Prosperity Bank",
+      "domain": "prosperitybank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "El Campo, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Prosperity Bank",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Prosperity_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Prosperity Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Hilltop Holdings",
+      "domain": "hilltop-holdings.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Hilltop Holdings",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Hilltop_Holdings",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Hilltop Holdings. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Independent Bank Group",
+      "domain": "ibtx.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "McKinney, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Independent Bank",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Independent_Bank_Group",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Independent Bank Group. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Texas Bank and Trust",
+      "domain": "texasbankandtrust.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "VP IT Security",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Longview, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Texas Bank and Trust",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Texas_Bank_and_Trust",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Texas Bank and Trust. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Guaranty Bancshares",
+      "domain": "gnty.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Mount Pleasant, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Guaranty Bank & Trust",
+        "emails_found": [
+          {
+            "value": "sshaik@gnty.com",
+            "confidence": 92
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Guaranty_Bancshares",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Guaranty Bancshares. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "WestStar Bank",
+      "domain": "weststarbank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "El Paso, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "WestStar Bank",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=WestStar_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for WestStar Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Moody National Bank",
+      "domain": "moodybank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "VP Technology",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Galveston, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Moody Bank",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Moody_National_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Moody National Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Extraco Banks",
+      "domain": "extracobanks.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Waco, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Extraco Banks",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Extraco_Banks",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Extraco Banks. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "Alliance Bank",
+      "domain": "alliancebank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "IT Security Director",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Sulphur Springs, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Alliance Bank",
+        "emails_found": [
+          {
+            "value": "bfreeman@alliancebank.com",
+            "confidence": 67
+          },
+          {
+            "value": "smoore@alliancebank.com",
+            "confidence": 94
+          },
+          {
+            "value": "dgrimal@alliancebank.com",
+            "confidence": 90
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Alliance_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Alliance Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "National Western Financial",
+      "domain": "nwf.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}{l}",
+        "organization": null,
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=National_Western_Financial",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for National Western Financial. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 1,
+      "company": "University Health Network",
+      "domain": "universityhealthsystem.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "Director of Cyber Security",
+      "contact_first": "Kajeevan",
+      "contact_last": "Rajanayagam",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}{last}",
+        "organization": "University Health System",
+        "emails_found": []
+      },
+      "hunter_email": {
+        "email": "kajeevanrajanayagam@universityhealthsystem.com",
+        "score": 74,
+        "verification_status": "accept_all"
+      },
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=University_Health_Network",
+      "linkedin_dm": "Hi Kajeevan,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like University Health Network, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
+    },
+    {
+      "batch": 1,
+      "company": "Kelsey-Seybold Clinic",
+      "domain": "kelsey-seybold.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "Chief Technology & Information Security Officer",
+      "contact_first": "Martin",
+      "contact_last": "Littmann",
+      "location": "Dallas, TX",
+      "outreach_status": "following_linkedin",
+      "outreach_date": "2026-05-02",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Kelsey-Seybold Clinic",
+        "emails_found": [
+          {
+            "value": "matthew.fillipps@kelsey-seybold.com",
+            "confidence": 94
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": null,
+        "score": null,
+        "verification_status": null
+      },
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Kelsey-Seybold_Clinic",
+      "linkedin_dm": "Hi Martin,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Kelsey-Seybold Clinic, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
+    },
+    {
+      "batch": 1,
+      "company": "Cook Children's Health",
+      "domain": "cookchildrens.org",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "Vice President and Chief Information Security Officer",
+      "contact_first": "Aaron",
+      "contact_last": "Wishon",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Cook Children's",
+        "emails_found": [
+          {
+            "value": "rode@cookchildrens.org",
+            "confidence": 86
+          },
+          {
+            "value": "danika.meyer@cookchildrens.org",
+            "confidence": 65
+          },
+          {
+            "value": "misty.hansen@cookchildrens.org",
+            "confidence": 91
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "aaron.wishon@cookchildrens.org",
+        "score": 99,
+        "verification_status": "accept_all"
+      },
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
+      "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
+    },
+    {
+      "batch": 1,
+      "company": "AccentCare",
+      "domain": "accentcare.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "Vice President & CISO",
+      "contact_first": "Paul",
+      "contact_last": "Reyes",
+      "location": "Dallas, TX",
+      "outreach_note": "Smart Healthcare Facilities Convention May 2026 \u2014 mention event when reaching out",
+      "hunter_domain": {
+        "email_pattern": "{first}{last}",
+        "organization": "AccentCare",
+        "emails_found": [
+          {
+            "value": "davidhahn@accentcare.com",
+            "confidence": 99
+          },
+          {
+            "value": "shannonberhalter@accentcare.com",
+            "confidence": 99
+          },
+          {
+            "value": "kietnguyen@accentcare.com",
+            "confidence": 99
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "paulreyes@accentcare.com",
+        "score": 98,
+        "verification_status": "valid"
+      },
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=AccentCare",
+      "linkedin_dm": "Hi Paul,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like AccentCare, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
+    },
+    {
+      "batch": 1,
       "company": "Medical City Alliance",
       "domain": "medicalcityalliance.com",
       "industry": "healthcare",
@@ -710,48 +613,7 @@
       "linkedin_dm": "[Name needed] Template: HIPAA outreach for Medical City Alliance. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
-      "company": "AccentCare",
-      "domain": "accentcare.com",
-      "industry": "healthcare",
-      "framework": "HIPAA",
-      "contact_title": "Vice President & CISO",
-      "contact_first": "Paul",
-      "contact_last": "Reyes",
-      "location": "Dallas, TX",
-      "outreach_note": "Smart Healthcare Facilities Convention May 2026 \u2014 mention event when reaching out",
-      "hunter_domain": {
-        "email_pattern": "{first}{last}",
-        "organization": "AccentCare",
-        "emails_found": [
-          {
-            "value": "danawilcox@accentcare.com",
-            "confidence": 99
-          },
-          {
-            "value": "sunniyapuri@accentcare.com",
-            "confidence": 99
-          },
-          {
-            "value": "paulreyes@accentcare.com",
-            "confidence": 99
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "paulreyes@accentcare.com",
-        "score": 98,
-        "verification_status": "valid"
-      },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
-      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=AccentCare",
-      "linkedin_dm": "Hi Paul,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like AccentCare, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
-    },
-    {
+      "batch": 1,
       "company": "Children's Health",
       "domain": "childrens.com",
       "industry": "healthcare",
@@ -763,20 +625,7 @@
       "hunter_domain": {
         "email_pattern": "{first}.{last}",
         "organization": "Children's Health",
-        "emails_found": [
-          {
-            "value": "clayton.smith@childrens.com",
-            "confidence": 94
-          },
-          {
-            "value": "paula.teagle@childrens.com",
-            "confidence": 94
-          },
-          {
-            "value": "sue.schell@childrens.com",
-            "confidence": 94
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -784,6 +633,7 @@
       "linkedin_dm": "[Name needed] Template: HIPAA outreach for Children's Health. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 1,
       "company": "Parkland Health",
       "domain": "parklandhealth.org",
       "industry": "healthcare",
@@ -795,20 +645,7 @@
       "hunter_domain": {
         "email_pattern": "{first}{l}",
         "organization": "Parkland Health",
-        "emails_found": [
-          {
-            "value": "katie@parklandhealth.org",
-            "confidence": 94
-          },
-          {
-            "value": "isaiah@parklandhealth.org",
-            "confidence": 94
-          },
-          {
-            "value": "diann@parklandhealth.org",
-            "confidence": 94
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -816,6 +653,7 @@
       "linkedin_dm": "[Name needed] Template: HIPAA outreach for Parkland Health. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     },
     {
+      "batch": 2,
       "company": "Baylor Scott & White Health",
       "domain": "bswhealth.com",
       "industry": "healthcare",
@@ -829,16 +667,16 @@
         "organization": "Baylor Scott & White Health",
         "emails_found": [
           {
-            "value": "carol.wyatt@bswhealth.com",
-            "confidence": 97
-          },
-          {
-            "value": "brian.townsend@bswhealth.com",
+            "value": "matthew.seale@bswhealth.com",
             "confidence": 94
           },
           {
-            "value": "larry.hutson@bswhealth.com",
-            "confidence": 94
+            "value": "johnette.lee@bswhealth.com",
+            "confidence": 93
+          },
+          {
+            "value": "cortney.dalcour@bswhealth.com",
+            "confidence": 90
           }
         ]
       },
@@ -846,6 +684,444 @@
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Baylor_Scott_&_White_Health",
       "linkedin_dm": "[Name needed] Template: HIPAA outreach for Baylor Scott & White Health. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Trellis",
+      "domain": "trellis.health",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Trellis",
+      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Trellis. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Strados Labs",
+      "domain": "stradoslabs.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "VP Engineering",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Strados Labs",
+        "emails_found": [
+          {
+            "value": "tom@stradoslabs.com",
+            "confidence": 99
+          },
+          {
+            "value": "tristan@stradoslabs.com",
+            "confidence": 98
+          },
+          {
+            "value": "callum@stradoslabs.com",
+            "confidence": 97
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Strados_Labs",
+      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Strados Labs. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Procare Solutions",
+      "domain": "procaresolutions.com",
+      "industry": "saas",
+      "framework": "SOC2",
+      "contact_title": "Head of Infrastructure",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Plano, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Procare Solutions",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Procare_Solutions",
+      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Procare Solutions. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "MedStats",
+      "domain": "medstats.io",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=MedStats",
+      "linkedin_dm": "[Name needed] Template: HIPAA outreach for MedStats. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "ParkHub",
+      "domain": "parkhub.com",
+      "industry": "saas",
+      "framework": "SOC2",
+      "contact_title": "VP Engineering",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dallas, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "ParkHub",
+        "emails_found": [
+          {
+            "value": "greg.walters@parkhub.com",
+            "confidence": 94
+          },
+          {
+            "value": "colin.campbell@parkhub.com",
+            "confidence": 91
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=ParkHub",
+      "linkedin_dm": "[Name needed] Template: SOC2 outreach for ParkHub. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Hypergiant",
+      "domain": "hypergiant.com",
+      "industry": "ai_ml",
+      "framework": "FedRAMP",
+      "contact_title": "Head of Infrastructure",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Austin, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Hypergiant",
+        "emails_found": [
+          {
+            "value": "nathaniel.tabit@hypergiant.com",
+            "confidence": 99
+          },
+          {
+            "value": "gustavo.espinoza@hypergiant.com",
+            "confidence": 98
+          },
+          {
+            "value": "ben.sumser@hypergiant.com",
+            "confidence": 97
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=ai_ml&framework=fedramp&company=Hypergiant",
+      "linkedin_dm": "[Name needed] Template: FedRAMP outreach for Hypergiant. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Phunware",
+      "domain": "phunware.com",
+      "industry": "saas",
+      "framework": "SOC2",
+      "contact_title": "VP Engineering",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Austin, TX",
+      "hunter_domain": {
+        "email_pattern": null,
+        "organization": null,
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Phunware",
+      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Phunware. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Crossover Health",
+      "domain": "crossoverhealth.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "Head of Cloud",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Austin, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Crossover Health",
+        "emails_found": [
+          {
+            "value": "maitreyi.gunye@crossoverhealth.com",
+            "confidence": 99
+          },
+          {
+            "value": "thomas.lochner@crossoverhealth.com",
+            "confidence": 99
+          },
+          {
+            "value": "ryan.donohue@crossoverhealth.com",
+            "confidence": 99
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Crossover_Health",
+      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Crossover Health. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Vyopta",
+      "domain": "vyopta.com",
+      "industry": "saas",
+      "framework": "SOC2",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Austin, TX",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Vyopta",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Vyopta",
+      "linkedin_dm": "[Name needed] Template: SOC2 outreach for Vyopta. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Amino",
+      "domain": "amino.com",
+      "industry": "healthcare",
+      "framework": "HIPAA",
+      "contact_title": "VP Infrastructure",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Austin, TX",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Amino",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Amino",
+      "linkedin_dm": "[Name needed] Template: HIPAA outreach for Amino. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Western Alliance Bank",
+      "domain": "westernalliancebank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Phoenix, AZ",
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Western Alliance Bank",
+        "emails_found": [
+          {
+            "value": "annika.robinson@westernalliancebank.com",
+            "confidence": 99
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Western_Alliance_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Western Alliance Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Glacier Bancorp",
+      "domain": "glacierbancorp.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Kalispell, MT",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "Glacier Ban",
+        "emails_found": []
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Glacier_Bancorp",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Glacier Bancorp. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Heartland Financial",
+      "domain": "htlf.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Dubuque, IA",
+      "hunter_domain": {
+        "email_pattern": "{f}{last}",
+        "organization": "HTLF",
+        "emails_found": [
+          {
+            "value": "tsteger@htlf.com",
+            "confidence": 90
+          },
+          {
+            "value": "aeva@htlf.com",
+            "confidence": 92
+          },
+          {
+            "value": "jrao@htlf.com",
+            "confidence": 90
+          }
+        ]
+      },
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Heartland_Financial",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Heartland Financial. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Banner Bank",
+      "domain": "bannerbank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "VP Information Security",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Walla Walla, WA",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Banner_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Banner Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "South State Bank",
+      "domain": "southstatebank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Winter Haven, FL",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=South_State_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for South State Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Renasant Bank",
+      "domain": "renasant.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Tupelo, MS",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Renasant_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Renasant Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Byline Bank",
+      "domain": "bylinebank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Chicago, IL",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Byline_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Byline Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Atlantic Union Bank",
+      "domain": "atlanticunionbank.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Richmond, VA",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Atlantic_Union_Bank",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Atlantic Union Bank. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "QCR Holdings",
+      "domain": "qcrh.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CTO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Moline, IL",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=QCR_Holdings",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for QCR Holdings. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
+    },
+    {
+      "batch": 2,
+      "company": "Heartland BancCorp",
+      "domain": "heartlandbancorp.com",
+      "industry": "banking",
+      "framework": "FFIEC",
+      "contact_title": "CISO",
+      "contact_first": "FILL_IN",
+      "contact_last": "FILL_IN",
+      "location": "Gahanna, OH",
+      "hunter_domain": {},
+      "hunter_email": {},
+      "pdl_enrichment": {},
+      "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Heartland_BancCorp",
+      "linkedin_dm": "[Name needed] Template: FFIEC outreach for Heartland BancCorp. Fill in contact_first/contact_last in companies.json to generate a personalized DM."
     }
   ]
 }
