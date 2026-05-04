@@ -44,7 +44,7 @@
     "contact_first": "FILL_IN",
     "contact_last": "FILL_IN",
     "location": "Dallas, TX",
-    "outreach_note": "Newsweek 2026 Best Regional Banks — use recognition wedge in opener"
+    "outreach_note": "Newsweek 2026 Best Regional Banks \u2014 use recognition wedge in opener"
   },
   {
     "batch": 1,
@@ -245,7 +245,7 @@
     "contact_first": "Paul",
     "contact_last": "Reyes",
     "location": "Dallas, TX",
-    "outreach_note": "Smart Healthcare Facilities Convention May 2026 — mention event when reaching out"
+    "outreach_note": "Smart Healthcare Facilities Convention May 2026 \u2014 mention event when reaching out"
   },
   {
     "batch": 1,
@@ -257,7 +257,7 @@
     "contact_first": "FILL_IN",
     "contact_last": "FILL_IN",
     "location": "Fort Worth, TX",
-    "outreach_note": "Newsweek 2026 Top 100 Hospital — only North Texas hospital to earn this designation"
+    "outreach_note": "Newsweek 2026 Top 100 Hospital \u2014 only North Texas hospital to earn this designation"
   },
   {
     "batch": 1,
@@ -511,5 +511,137 @@
     "contact_first": "FILL_IN",
     "contact_last": "FILL_IN",
     "location": "Gahanna, OH"
+  },
+  {
+    "batch": 3,
+    "company": "Triumph Financial",
+    "domain": "triumphfs.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Cadence Bank",
+    "domain": "cadencebank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Houston, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Amegy Bank",
+    "domain": "amegybank.com",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Houston, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Origin Bancorp",
+    "domain": "origin.bank",
+    "industry": "banking",
+    "framework": "FFIEC",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Ruston, LA"
+  },
+  {
+    "batch": 3,
+    "company": "Texas Health Resources",
+    "domain": "texashealth.org",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Arlington, TX"
+  },
+  {
+    "batch": 3,
+    "company": "CHRISTUS Health",
+    "domain": "christushealth.org",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Irving, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Altera Digital Health",
+    "domain": "alterahealth.com",
+    "industry": "healthcare",
+    "framework": "HIPAA",
+    "contact_title": "VP of Information Security",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Raleigh, NC"
+  },
+  {
+    "batch": 3,
+    "company": "RealPage",
+    "domain": "realpage.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Richardson, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Nexstar Media Group",
+    "domain": "nexstar.tv",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "Chief Information Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Irving, TX"
+  },
+  {
+    "batch": 3,
+    "company": "Dialexa",
+    "domain": "dialexa.com",
+    "industry": "saas",
+    "framework": "SOC2",
+    "contact_title": "Chief Technology Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Dallas, TX"
+  },
+  {
+    "batch": 3,
+    "company": "CACI International",
+    "domain": "caci.com",
+    "industry": "government",
+    "framework": "FedRAMP",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Reston, VA"
+  },
+  {
+    "batch": 3,
+    "company": "Leidos",
+    "domain": "leidos.com",
+    "industry": "government",
+    "framework": "FedRAMP",
+    "contact_title": "Chief Information Security Officer",
+    "contact_first": "FILL_IN",
+    "contact_last": "FILL_IN",
+    "location": "Reston, VA"
   }
 ]
