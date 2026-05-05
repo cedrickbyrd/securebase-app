@@ -106,17 +106,20 @@ export function isLinkedInTraffic() {
  * Banking/FFIEC sources that indicate a regulated financial institution visitor
  * who should see "Request Regulatory Briefing" instead of the self-service trial CTA.
  *
+ * Uses specific, unambiguous identifiers for recognised banking trade associations
+ * and FFIEC-focused campaigns only. Generic terms like 'bank' are intentionally
+ * excluded to avoid false positives (e.g. 'bank_holiday_promo').
+ *
  * Matches utm_source values set by:
  * - Texas Bankers Association campaigns (tba, texas_bankers)
  * - Independent Bankers Association of Texas (ibat)
  * - Community Bankers Association (cba)
  * - American Bankers Association (aba)
- * - Generic banking/FFIEC outbound campaigns
- * - utm_campaign containing 'ffiec' or 'banking'
+ * - FFIEC-specific outbound campaigns
+ * - utm_campaign containing 'ffiec' or 'examiner'
  */
 const BANKING_SOURCES = new Set([
-  'tba', 'texas_bankers', 'ibat', 'cba', 'aba',
-  'banking', 'bank', 'ffiec', 'community_bank',
+  'tba', 'texas_bankers', 'ibat', 'cba', 'aba', 'community_bank', 'ffiec',
 ]);
 
 /**
@@ -133,13 +136,10 @@ export function isBankingDomainTraffic() {
   const attribution = getStoredAttribution() || {};
   const source = (attribution.utm_source || '').toLowerCase();
   const campaign = (attribution.utm_campaign || '').toLowerCase();
-  const medium = (attribution.utm_medium || '').toLowerCase();
   return (
     BANKING_SOURCES.has(source) ||
     campaign.includes('ffiec') ||
-    campaign.includes('banking') ||
-    campaign.includes('examiner') ||
-    medium === 'banking'
+    campaign.includes('examiner')
   );
 }
 

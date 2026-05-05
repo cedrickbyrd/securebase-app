@@ -169,9 +169,17 @@ const MATURITY_LEVELS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Mock telemetry data
-// In production this is populated by the metrics_aggregation Lambda pulling
-// from CloudTrail, Config, GuardDuty, and Security Hub.
+// Default telemetry (demo / VITE_USE_MOCK_API=true mode).
+//
+// Shape: Record<domain_id, { maturity: string, score: number, findings: number }>
+//   - maturity: one of the MATURITY_LEVELS ids ('baseline' | 'evolving' |
+//               'intermediate' | 'advanced' | 'innovative')
+//   - score:    0–100 numeric score for the domain
+//   - findings: count of open findings for the domain
+//
+// In production (VITE_USE_MOCK_API=false), the parent component fetches live
+// data from GET /fintech/cat-status?customer_id=<uuid> and passes it as the
+// `telemetry` prop, overriding these defaults.
 // ---------------------------------------------------------------------------
 const DEFAULT_TELEMETRY = {
   cyber_risk_management: { maturity: 'intermediate', score: 72, findings: 3 },
@@ -316,6 +324,7 @@ export default function FFIECCATDashboard({ telemetry = DEFAULT_TELEMETRY, onEvi
       const idx = MATURITY_LEVELS.findIndex((m) => m.id === t.maturity);
       return idx >= 0 ? idx + 1 : 1;
     });
+    if (scores.length === 0) return MATURITY_LEVELS[0];
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
     const levelIdx = Math.max(0, Math.round(avg) - 1);
     return MATURITY_LEVELS[levelIdx] || MATURITY_LEVELS[0];

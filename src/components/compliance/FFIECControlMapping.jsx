@@ -325,8 +325,10 @@ function ControlMappingRow({ mapping }) {
 export default function FFIECControlMapping({ onExportClick }) {
   const [filterSection, setFilterSection] = useState('all');
 
+  // Extract the handbook prefix (e.g. "IS" from "IS §II.A", "BCP" from "BCP §II.B").
+  // Uses a regex so the logic is resilient to spacing variants like "IS§II.A".
   const sections = useMemo(
-    () => [...new Set(FFIEC_CONTROL_MAP.map((m) => m.handbookSection.split(' ')[0]))],
+    () => [...new Set(FFIEC_CONTROL_MAP.map((m) => m.handbookSection.match(/^[A-Z]+/)?.[0] ?? m.handbookSection))],
     [],
   );
 
