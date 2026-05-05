@@ -10,6 +10,12 @@
 
 ### Try the Demo Now
 
+There are two ways to enter the demo — no signup or credentials required:
+
+**Option 1 — Direct link (fastest):**
+Click the **"Explore the Demo →"** strip on the [securebase.tximhotep.com](https://securebase.tximhotep.com) landing page. This zero-friction banner links directly to the live compliance dashboard.
+
+**Option 2 — Manual login:**
 1. **Visit:** [https://demo.securebase.tximhotep.com](https://demo.securebase.tximhotep.com)
 2. **Login with:**
    - Username: `demo`
@@ -52,6 +58,13 @@
 - Responsive design (mobile-friendly)
 - Dark/light mode toggle
 - Real-time notifications (simulated)
+- Demo banner with "Start Free Trial" CTA and logout
+
+✅ **Demo Conversion Flow**
+- Landing page **demo invitation strip** — zero-friction path to the dashboard
+- **Compliance dashboard** logout redirects to the pricing page
+- **HIPAA dashboard** logout redirects to the pricing page
+- **DemoDashboard** banner includes a "Start Free Trial" button pointing to pricing
 
 ### Features Not Available in Demo
 
