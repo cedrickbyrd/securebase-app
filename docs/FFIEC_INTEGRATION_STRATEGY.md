@@ -1,6 +1,6 @@
 # SecureBase FFIEC Integration Strategy
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Owner:** SecureBase Engineering  
 **Audience:** Solutions Engineers, Integration Engineers, Customer Engineering  
 **Updated:** May 2026
@@ -9,133 +9,280 @@
 
 ## Overview
 
-SecureBase automates compliance evidence collection for financial institutions subject to FFIEC examination standards, specifically:
+SecureBase integrates with FFIEC-regulated institutions at two levels:
 
-- **BSA/AML** (Bank Secrecy Act / Anti-Money Laundering) under FinCEN supervision
-- **Texas DOB** (Texas Department of Banking) examinations for licensed money transmitters
-- **HB 1666** digital asset fund segregation requirements for Texas DASPs
-- **FFIEC IT Examination Handbook** controls for cybersecurity and information security
+1. **Regulatory Evidence Level** — Instead of showing "S3 encryption: Passed ✓", the platform explicitly links each telemetry finding to the specific FFIEC IT Handbook section it satisfies (e.g., IS §II.C: Data in Transit and at Rest). The goal: when an examiner asks "How do you ensure data integrity?", the application produces a one-click Evidence Package containing the policy, the technical proof (live AWS telemetry), and the remediation history — not a spreadsheet.
 
-The integration strategy describes how SecureBase connects to a customer's existing technology stack — transaction databases, AML systems, KYC/CIP providers, and reporting tools — to collect, sign, and vault evidence without moving sensitive data outside the customer's AWS environment.
+2. **CAT Auto-Mapping Level** — The FFIEC Cybersecurity Assessment Tool (CAT) is a voluntary self-assessment that most institutions complete manually over 3 months. SecureBase ingests AWS/GCP metadata to automatically suggest Maturity Levels (Baseline → Evolving → Intermediate → Advanced → Innovative) per CAT domain, turning the exercise into a real-time dashboard.
+
+The integration operates within a **Sovereign Cloud** architecture: all raw data and evidence stays in the customer's AWS account; SecureBase never holds or can decrypt customer evidence.
 
 ---
 
 ## Integration Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                     Customer AWS Account                          │
-│                                                                   │
-│  ┌────────────────┐   VPC Peering / Read Replica                 │
-│  │  Transaction   │ ─────────────────────────────┐               │
-│  │  Database      │                               │               │
-│  │  (PostgreSQL / │                               ▼               │
-│  │   MySQL)       │               ┌───────────────────────────┐  │
-│  └────────────────┘               │  SecureBase Lambda        │  │
-│                                   │  (VPC-attached, read-only) │  │
-│  ┌────────────────┐   Webhook /   │                           │  │
-│  │  AML System    │   REST API    │  texas_fintech_           │  │
-│  │  (Unit21 /     │ ─────────────►│  compliance_collector.py  │  │
-│  │   Sardine /    │               │                           │  │
-│  │   Verafin)     │               └─────────────┬─────────────┘  │
-│  └────────────────┘                             │                 │
-│                                                 │                 │
-│  ┌────────────────┐   REST API                  │                 │
-│  │  KYC/CIP       │ ─────────────►──────────────┘                │
-│  │  (Alloy /      │                             │                 │
-│  │   Socure /     │                             │ collect         │
-│  │   Jumio)       │                             ▼                 │
-│  └────────────────┘               ┌───────────────────────────┐  │
-│                                   │  SecureBase Aurora        │  │
-│                                   │  PostgreSQL (tx_* tables) │  │
-│                                   │  RLS per customer_id      │  │
-│                                   └─────────────┬─────────────┘  │
-│                                                 │ sign + vault    │
-│                                                 ▼                 │
-│                                   ┌───────────────────────────┐  │
-│                                   │  S3 Evidence Bucket       │  │
-│                                   │  Object Lock (Compliance) │  │
-│                                   │  KMS encrypted + signed   │  │
-│                                   └───────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        Customer AWS Account                               │
+│                                                                           │
+│  ┌────────────────┐  VPC Peering / Read Replica                          │
+│  │ Transaction DB │ ───────────────────────────────────┐                 │
+│  │ (PostgreSQL /  │                                     │                 │
+│  │  MySQL / Aurora│                                     ▼                 │
+│  └────────────────┘              ┌──────────────────────────────────┐    │
+│                                  │  SecureBase Lambda               │    │
+│  ┌────────────────┐  Webhook /   │  (VPC-attached, read-only IAM)   │    │
+│  │ AML System     │  REST API    │                                  │    │
+│  │ (Unit21 /      │ ────────────►│  texas_fintech_                  │    │
+│  │  Sardine)      │              │  compliance_collector.py         │    │
+│  └────────────────┘              │  + metrics_aggregation.py        │    │
+│                                  └──────────────┬───────────────────┘    │
+│  ┌────────────────┐  REST API                   │                        │
+│  │ KYC/CIP System │ ─────────────►──────────────┘                       │
+│  │ (Alloy/Socure) │                              │ collect + map          │
+│  └────────────────┘                              ▼                        │
+│                                  ┌──────────────────────────────────┐    │
+│  AWS Telemetry Sources           │  DynamoDB                        │    │
+│  ┌──────────────────────┐        │  securebase-compliance-violations │    │
+│  │ CloudTrail           │        │  securebase-metrics-history      │    │
+│  │ AWS Config           │        │  securebase-audit-trail          │    │
+│  │ GuardDuty            │───────►│  (KMS encrypted, per-customer)   │    │
+│  │ Security Hub         │        └──────────────┬───────────────────┘    │
+│  │ IAM Access Analyzer  │                        │ sign + vault           │
+│  │ VPC Flow Logs        │                        ▼                        │
+│  └──────────────────────┘        ┌──────────────────────────────────┐    │
+│                                  │  S3 Evidence Bucket              │    │
+│                                  │  Object Lock (Compliance mode)   │    │
+│                                  │  KMS encrypted + KMS-signed      │    │
+│                                  └──────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+                    │ API calls (read-only, no PII exported)
+                    ▼
+          SecureBase Portal (phase3a-portal)
+          ├── FFIECCATDashboard.jsx
+          ├── FFIECControlMapping.jsx
+          ├── ComplianceDrift.jsx
+          └── TenantDashboard.jsx
 ```
 
-**Key principles:**
-- All data stays in the **customer's AWS account** — no raw PII leaves the customer's VPC
-- The SecureBase Lambda attaches to the customer's VPC with **read-only** IAM permissions
-- Evidence is **KMS-signed** for non-repudiation (examiners cannot dispute authenticity)
-- S3 Object Lock (Compliance mode) enforces **5-year retention** per 7 TAC §33.35
+**Sovereign Cloud principles:**
+- All raw data stays in the customer's AWS account — no cross-account data transfer
+- PII is SHA-256 hashed before leaving the customer's VPC
+- Customer holds the KMS CMK; SecureBase cannot decrypt evidence
+- S3 Object Lock (Compliance mode) prevents modification for the retention period
+- Row-Level Security in Aurora enforces `customer_id` isolation for all SecureBase managed data
 
 ---
 
-## Supported Integration Patterns
+## Functional Mapping: From "Passed ✓" to Regulatory Evidence
 
-### Pattern 1: VPC Peering + Read Replica (Recommended)
+### The Problem with Generic Compliance Dashboards
 
-Best for customers with AWS-hosted PostgreSQL or Aurora databases.
-
+Most platforms display a status like:
 ```
-Customer VPC  ──── VPC Peering ────  SecureBase VPC
-     │                                      │
-  Read Replica  ◄─────────────────  Lambda (read-only IAM)
+✓ s3-bucket-server-side-encryption-enabled  — Passed
 ```
 
-**Setup steps:**
-1. Customer creates a read replica of their transaction database
-2. Customer initiates VPC peering request to SecureBase VPC (CIDR provided during onboarding)
-3. SecureBase deploys a Lambda function into the peered VPC
-4. Lambda uses a read-only IAM role; no write access is granted
-5. SecureBase tests connectivity and validates schema mapping
+This is meaningless to an FFIEC examiner. The examiner's framework asks:
 
-**Latency impact:** None on production database (replica handles all SecureBase queries)
+> *"Does the institution encrypt sensitive data at rest using approved cryptographic algorithms?"* — FFIEC IS §II.C
 
-**Schema requirements:** See [Database Schema Mapping](#database-schema-mapping)
+SecureBase links the two:
+
+```
+AWS Config Rule: s3-bucket-server-side-encryption-enabled — Passed
+    └──► FFIEC IT Handbook: IS §II.C — Data in Transit and at Rest
+         └──► CAT Statement (Domain 3): "Sensitive data is encrypted in transit and at rest."
+              └──► Evidence: "All S3 buckets: SSE-KMS (AES-256), KMS key: arn:aws:kms:..."
+```
+
+This is what the `FFIECControlMapping` component renders. Every telemetry check has:
+1. The AWS source (service + rule name)
+2. The finding (passed/warning/failed)
+3. The FFIEC IT Handbook section it satisfies
+4. The CAT assessment statement it maps to
+5. The raw evidence string (exportable to examiner package)
+
+### Control Mapping Table
+
+| AWS Telemetry | FFIEC IT Handbook | CAT Domain | CAT Statement |
+|---|---|---|---|
+| Config: `s3-bucket-server-side-encryption-enabled` | IS §II.C | 3: Cybersecurity Controls | Sensitive data encrypted at rest |
+| Config: `rds-storage-encrypted` | IS §II.C | 3: Cybersecurity Controls | Sensitive data encrypted at rest |
+| Config: `elb-tls-https-listeners-only` | IS §II.C | 3: Cybersecurity Controls | Sensitive data encrypted in transit |
+| Security Hub: IAM.6 (root MFA) | IS §II.D | 1: Cyber Risk Management | MFA controls are in place |
+| Security Hub: IAM.19 (user MFA) | IS §II.D | 1: Cyber Risk Management | MFA controls are in place |
+| IAM Access Analyzer: external access | IS §II.D | 1: Cyber Risk Management | Access controls limit access to authorized users |
+| CloudTrail: multi-region trail + Object Lock | IS §II.E | 3: Cybersecurity Controls | Audit logs captured and tamper-evident |
+| Config: `cloud-trail-log-file-validation-enabled` | IS §II.E | 3: Cybersecurity Controls | Log integrity validation enabled |
+| GuardDuty: HIGH/CRITICAL detections | CS §II.A | 2: Threat Intelligence | Threat monitoring and alerting is in place |
+| Security Hub: CISA KEV integration | CS §II.A | 2: Threat Intelligence | Threat intelligence feeds are current |
+| Aurora Global: replication lag | BCP §II.B | 5: Cyber Incident Management | RPO < 1 minute documented and tested |
+| Route 53 Health Check: failover | BCP §II.B | 5: Cyber Incident Management | RTO < 15 minutes documented and tested |
+| EventBridge: GuardDuty alert routing | BCP §III.A | 5: Cyber Incident Management | Incident response plan with automated escalation |
+| Config: `restricted-ssh` / `restricted-common-ports` | CS §II.A | 3: Cybersecurity Controls | Network perimeter controls implemented |
+| VPC Flow Logs: all VPCs | CS §II.A | 3: Cybersecurity Controls | Network traffic monitoring enabled |
+| Organizations SCPs: DenyRootUser | IS §II.A | 1: Cyber Risk Management | Information security program with board oversight |
+| Inspector: EC2 vulnerability findings | CS §I.B | 3: Cybersecurity Controls | Vulnerability management process in place |
 
 ---
 
-### Pattern 2: API/Webhook Integration (No DB Access)
+## CAT Auto-Mapping Architecture
 
-Best for customers who cannot grant database access, or whose AML system exposes a REST API.
+### From Manual Spreadsheet to Real-Time Dashboard
+
+**Before SecureBase (manual process):**
+1. CCO downloads FFIEC CAT Excel workbook (~200 rows)
+2. Convenes 3-month working group: IT, Compliance, Risk
+3. Each row is manually assessed against policy documents
+4. Consulting firm validates responses: $75K–$150K
+5. Result: point-in-time snapshot, outdated within weeks
+6. No link between CAT responses and actual AWS configuration
+
+**With SecureBase (automated):**
+1. Lambda runs daily at 03:00 UTC, collecting Config/GuardDuty/Security Hub results
+2. `metrics_aggregation.py` maps each finding to its CAT domain and assessment statement
+3. `FFIECCATDashboard.jsx` renders live maturity levels per domain
+4. When a Config rule regresses (e.g., encryption disabled on a new bucket), the CAT score drops and an alert fires
+5. `ComplianceDrift` shows the regression timeline with MTTR analytics
+6. One-click examiner package includes the CAT assessment with evidence citations
+
+### Maturity Level Calculation
+
+Each CAT domain's maturity is calculated from the control scores of its constituent AWS telemetry checks:
 
 ```
-AML System API  ──►  SecureBase Lambda  ──►  Evidence Vault (S3)
-KYC/CIP API     ──►       │
-                          ▼
-                     Aurora (tx_* tables)
+Domain Maturity Score = (controls_passing / controls_total) × 100
+
+Maturity Level:
+  0–39%  → Baseline
+  40–59% → Evolving
+  60–79% → Intermediate
+  80–94% → Advanced
+  95–100% → Innovative
 ```
 
-**Supported API sources:**
-- **Unit21:** `/events`, `/rules/alerts` webhooks → maps to CTR/SAR evidence
-- **Sardine:** `/cases`, `/decisions` webhooks → SAR evidence
-- **Alloy:** `/persons/{id}`, `/evaluations` → CIP evidence
-- **Socure:** `/verify`, `/decision` → CIP evidence
-- **Jumio:** `/verifications` webhook → CIP evidence
-- **Custom REST:** any JSON API with field mapping configured via `integration_config.json`
+The `FFIECCATDashboard` component exposes `telemetry` props that accept live data from the `GET /admin/compliance-summary` API endpoint (when `VITE_USE_MOCK_API=false`).
 
-**Webhook endpoint:**
-```
-POST https://api.securebase.tximhotep.com/fintech/webhook/{customer_id}/{source}
-Authorization: Bearer <customer_webhook_token>
-```
+### Lambda Evidence Collection Flow
 
-**Supported sources:** `unit21`, `sardine`, `alloy`, `socure`, `jumio`, `custom`
+```python
+# metrics_aggregation.py — FFIEC CAT mapping section (simplified)
+
+FFIEC_CONTROL_MAPPINGS = {
+    "s3-bucket-server-side-encryption-enabled": {
+        "cat_domain": "cybersecurity_controls",
+        "handbook_section": "IS §II.C",
+        "cat_statement": "Sensitive data is encrypted in transit and at rest.",
+        "weight": 1.0,
+    },
+    "iam-root-access-key-check": {
+        "cat_domain": "cyber_risk_management",
+        "handbook_section": "IS §II.D",
+        "cat_statement": "Multi-factor authentication controls are in place.",
+        "weight": 1.5,  # Higher weight = more impact on domain score
+    },
+    # ... all 20+ mappings
+}
+
+def score_cat_domain(domain_id: str, config_findings: list) -> dict:
+    domain_controls = [
+        m for m in FFIEC_CONTROL_MAPPINGS.values()
+        if m["cat_domain"] == domain_id
+    ]
+    relevant_findings = [
+        f for f in config_findings
+        if f["rule_name"] in FFIEC_CONTROL_MAPPINGS
+        and FFIEC_CONTROL_MAPPINGS[f["rule_name"]]["cat_domain"] == domain_id
+    ]
+    passing = sum(
+        FFIEC_CONTROL_MAPPINGS[f["rule_name"]]["weight"]
+        for f in relevant_findings if f["status"] == "COMPLIANT"
+    )
+    total = sum(m["weight"] for m in domain_controls)
+    score = (passing / total * 100) if total > 0 else 0
+    return {
+        "domain_id": domain_id,
+        "score": round(score, 1),
+        "maturity": _score_to_maturity(score),
+        "findings": len([f for f in relevant_findings if f["status"] != "COMPLIANT"]),
+    }
+```
 
 ---
 
-### Pattern 3: Flat-File / S3 Export (Batch)
+## Replacing "Self-Service" with "Briefings" for Banking Visitors
 
-Best for legacy systems that export to CSV/JSON on a schedule.
+### The Change
+
+For users arriving from banking domains (Texas Bankers Association, IBAT, ABA, NMLS campaigns), the platform replaces the low-friction "14-day trial" CTA with a "Request Regulatory Briefing" flow.
+
+**Rationale:**
+- Community banks and credit unions have mandatory vendor due diligence processes
+- A "Start Free Trial" button signals a consumer SaaS product — not an enterprise compliance platform
+- Banking buyers need to see the SOC 2 Type II report, Sovereign Cloud architecture brief, and penetration test results BEFORE touching any code
+- The regulatory briefing positions SecureBase as a peer institution rather than a vendor
+
+### Implementation
+
+**Detection:** `isBankingDomainTraffic()` in `src/utils/trackingUtils.js` detects banking-origin visitors via UTM parameters:
+- `utm_source`: `tba`, `ibat`, `aba`, `cba`, `texas_bankers`, `banking`, `ffiec`
+- `utm_campaign`: contains `ffiec`, `banking`, or `examiner`
+- `utm_medium`: `banking`
+
+**CTA swap in `Pricing.jsx`:**
+- Fintech/Healthcare plan card: "Start Free Trial" → "Request Regulatory Briefing →"
+- Urgency banner (pilot countdown): hidden for banking visitors
+- Banking banner shown instead: "FFIEC-regulated institution? Start with a Regulatory Briefing."
+- Click routes to: `/contact-sales?tier=fintech&source=banking&topic=ffiec&briefing=true`
+
+**FAQ update:**
+- "Is there a free trial?" FAQ replaced with "What is a Regulatory Briefing?" and "Does SecureBase support FFIEC examinations directly?" for banking visitors
+
+### UTM Campaign Setup (Texas Bankers Association)
 
 ```
-Legacy System  ──►  S3 Drop Bucket  ──►  SecureBase Ingestion Lambda
-                    (encrypted)                 │
-                                                ▼
-                                         Evidence Vault (S3)
+TBA email campaign link:
+https://securebase.tximhotep.com/pricing?utm_source=tba&utm_medium=banking&utm_campaign=ffiec_cat_2026&utm_content=cco_email
+
+TBA LinkedIn sponsored content:
+https://securebase.tximhotep.com/pricing?utm_source=tba&utm_medium=linkedin&utm_campaign=ffiec_examiner_2026&utm_content=banner
+
+IBAT outreach:
+https://securebase.tximhotep.com/pricing?utm_source=ibat&utm_medium=banking&utm_campaign=ffiec_community_bank_2026
 ```
 
-**File format:** JSON (preferred) or CSV with header row  
-**Drop bucket:** `s3://securebase-{env}-ingestion/{customer_id}/` (KMS encrypted)  
-**Schedule:** Daily export at 02:00 UTC recommended (before daily evidence collection at 03:00 UTC)
+---
+
+## Sovereign Cloud as the "Hook"
+
+### Why This Wins Banking Sales
+
+Generic compliance SaaS tools (Vanta, Drata, Ncontracts) operate as multi-tenant cloud services — customer evidence lives in the vendor's database. For financial institutions subject to OCC Bulletin 2013-29 (Third-Party Relationships) and FDIC FIL-44-2008 (Third-Party Risk Management), this creates a material vendor risk that must be disclosed to examiners.
+
+SecureBase's Sovereign Cloud architecture eliminates this risk:
+
+| Concern | Generic SaaS | SecureBase Sovereign Cloud |
+|---|---|---|
+| Data residency | Vendor's multi-tenant cloud | Customer's own AWS account |
+| Encryption key control | Vendor holds keys | Customer holds KMS CMK |
+| Evidence tampering risk | Vendor DB could be altered | S3 Object Lock (Compliance mode) prevents modification |
+| Regulatory disclosure | Must disclose to OCC/FDIC as critical vendor | Architecture aligns with OCC 2013-29 guidance |
+| Data export on termination | Vendor-dependent | All evidence in customer's S3; no migration needed |
+| Sub-processor risk | Vendor's sub-processors (AWS + others) | Customer is AWS account holder directly |
+
+### Sovereign Cloud Messaging for Sales Calls
+
+> *"When a Texas bank examiner or OCC examiner asks 'where is your compliance evidence stored?', you tell them: it's in our S3 bucket, in our AWS account, in us-east-1. Encrypted with our KMS key. We can prove the key ID right now. SecureBase has never touched it. That's a fundamentally different answer from 'it's in our GRC vendor's cloud.'"*
+
+**For OCC/FDIC-chartered banks specifically:**
+> *"We've structured SecureBase to satisfy OCC 2013-29. We're a critical vendor — and we know it. We've completed your due diligence package: SOC 2 Type II, BCP summary, penetration test executive summary, and a Sovereign Cloud architecture brief. We can have the full package to your vendor risk committee in 24 hours."*
+
+### Pricing Narrative: Not "Cheap SaaS," But "Infrastructure Investment"
+
+Position the price as infrastructure, not SaaS subscription:
+
+> *"You're not buying a subscription to a dashboard. You're deploying a compliance-grade data collection infrastructure inside your own AWS account. When you stop paying SecureBase, your evidence stays in your S3 bucket. You own it. That's how infrastructure works — it's not like turning off a SaaS tool and losing your data."*
 
 ---
 
@@ -145,308 +292,19 @@ The SecureBase Lambda maps customer transaction fields to the `tx_transaction_re
 
 ### Required Field Mappings (TX-MT-R1)
 
-| SecureBase Field | CFR Requirement | Customer Source | Example Customer Column |
+| SecureBase Field | CFR Requirement | Customer Source | Example Column |
 |---|---|---|---|
 | `transaction_id` | Unique identifier | Transaction DB | `id`, `txn_id`, `reference_number` |
-| `transaction_timestamp` | Date/time of transaction | Transaction DB | `created_at`, `txn_date` |
-| `amount_usd` | Transaction amount | Transaction DB | `amount`, `usd_amount` |
-| `currency_code` | Currency | Transaction DB | `currency`, `currency_code` |
-| `sender_name` | Sender full name | Transaction DB or CIP system | `sender_name`, `from_name` |
-| `sender_address_line1` | Sender address | Transaction DB or CIP system | `sender_address`, `from_address` |
+| `transaction_timestamp` | Date/time | Transaction DB | `created_at`, `txn_date` |
+| `amount_usd` | Amount | Transaction DB | `amount`, `usd_amount` |
+| `sender_name` | Sender full name | Transaction DB or CIP | `sender_name`, `from_name` |
 | `sender_id_type` | Government ID type | CIP system | `id_type`, `verification_type` |
-| `sender_id_number` | Government ID number (hashed) | CIP system | `id_number` (SHA-256 hashed) |
-| `recipient_name` | Recipient full name | Transaction DB | `recipient_name`, `to_name` |
-| `payment_method` | Method of payment | Transaction DB | `payment_method`, `channel` |
-| `fee_charged` | Fee amount | Transaction DB | `fee`, `service_fee` |
-| `receipt_number` | Receipt/confirmation number | Transaction DB | `receipt_id`, `confirmation_number` |
-| `processing_employee_id` | Employee who processed | Transaction DB | `processed_by`, `agent_id` |
-| `texas_nexus` | TX connection flag | Derived or explicit | `state = 'TX'` or boolean column |
-
-### Schema Mapping Configuration Example
-
-```json
-{
-  "customer_id": "550e8400-e29b-41d4-a716-446655440000",
-  "source_table": "transactions",
-  "field_mappings": {
-    "transaction_id": "id",
-    "transaction_timestamp": "created_at",
-    "amount_usd": "amount_cents / 100.0",
-    "currency_code": "'USD'",
-    "sender_name": "sender_full_name",
-    "sender_address_line1": "sender_address_street",
-    "sender_id_type": "\"kyc\".id_document_type",
-    "sender_id_number": "sha256(\"kyc\".id_document_number)",
-    "recipient_name": "beneficiary_name",
-    "payment_method": "payment_channel",
-    "fee_charged": "fee_amount",
-    "receipt_number": "confirmation_number",
-    "processing_employee_id": "agent_user_id",
-    "texas_nexus": "origin_state = 'TX' OR destination_state = 'TX'"
-  },
-  "join_tables": [
-    {
-      "table": "kyc_verifications",
-      "alias": "kyc",
-      "join": "kyc.customer_id = transactions.customer_id"
-    }
-  ],
-  "filters": {
-    "texas_nexus": true,
-    "date_range": "configurable at runtime"
-  }
-}
-```
-
----
-
-## Control-by-Control Integration Guide
-
-### TX-MT-R1: Transaction Recordkeeping
-
-**Regulation:** 31 CFR §1010.410(e), 7 TAC §33.35  
-**Collection method:** Direct DB query or batch file  
-**Frequency:** Daily at 03:00 UTC (configurable)  
-**Compliance threshold:** ≥95% of sampled records must have all required fields
-
-**What SecureBase collects:**
-```sql
--- SecureBase runs this query (simplified) against the read replica
-SELECT
-  transaction_id,
-  transaction_timestamp,
-  amount_usd,
-  sender_name,
-  sender_address_line1,
-  sender_id_type,
-  sha256(sender_id_number::text) as sender_id_hash,
-  recipient_name,
-  payment_method,
-  fee_charged,
-  receipt_number,
-  processing_employee_id
-FROM transactions
-WHERE texas_nexus = true
-  AND transaction_timestamp BETWEEN :start AND :end
-ORDER BY transaction_timestamp
-LIMIT :sample_size;
-```
-
-**Evidence output:** `s3://securebase-evidence/{customer_id}/TX-MT-R1/{date}.json`
-
----
-
-### TX-MT-R2a/b: CTR and SAR Filing Compliance
-
-**Regulation:** 31 CFR §1022.310 (CTR), 31 CFR §1022.320 (SAR)  
-**Collection method:** AML system API/webhook OR direct `ctr_filings` / `sar_filings` table  
-**Frequency:** Daily  
-**Compliance thresholds:**
-- CTR: 100% of transactions >$10,000 must have CTR filed within 15 calendar days
-- SAR: 100% of detected suspicious activity must have SAR filed within 30 calendar days
-
-**Unit21 webhook mapping:**
-```json
-{
-  "event_type": "alert.created",
-  "alert_id": "→ sar_filings.aml_alert_id",
-  "created_at": "→ sar_filings.detection_date",
-  "transaction_ids": "→ sar_transactions (many-to-many)",
-  "status": "→ sar_filings.status",
-  "total_amount": "→ sar_filings.total_amount_usd"
-}
-```
-
-**Structuring detection** (built into SecureBase Lambda):
-```python
-# Detects potential structuring: multiple sub-$10K transactions
-# by same sender that sum to ≥$10K within 24-hour window
-detect_structuring(customer_id, lookback_hours=24, threshold_usd=10000)
-```
-
----
-
-### TX-MT-R3: Customer Identification Program (CIP)
-
-**Regulation:** 31 CFR §1022.210, 7 TAC §33.3  
-**Collection method:** KYC/CIP system API (Alloy, Socure, Jumio) OR direct `fintech_customer_details` table  
-**Frequency:** Daily  
-**Compliance threshold:** 100% of active customers must have verified government ID
-
-**Alloy API mapping:**
-```json
-{
-  "GET /persons/{person_token}": {
-    "name_first + name_last": "→ cip_records.customer_name",
-    "birth_date": "→ cip_records.date_of_birth",
-    "ssn_itin": "→ cip_records.tax_id_hash (SHA-256)",
-    "addresses[0]": "→ cip_records.address",
-    "documents[0].type": "→ cip_records.id_document_type",
-    "documents[0].number": "→ cip_records.id_document_number_hash",
-    "kyc_status": "→ cip_records.verification_status",
-    "risk_rating": "→ cip_records.risk_rating"
-  }
-}
-```
-
-**PEP and OFAC screening** result stored in `cip_records.ofac_screened` (boolean) and `cip_records.pep_screened` (boolean).
-
----
-
-### TX-MT-R4: Authorized Delegate Oversight
-
-**Regulation:** 7 TAC §33.35(b)(3)  
-**Collection method:** Customer provides delegate list via API or manual upload  
-**Frequency:** Weekly  
-**Compliance threshold:** 100% of active delegates have signed agreement + annual audit within last 365 days
-
-**Delegate data input format:**
-```json
-{
-  "delegates": [
-    {
-      "delegate_id": "uuid",
-      "business_name": "Acme Remittance Center",
-      "agreement_signed_date": "2024-01-15",
-      "last_audit_date": "2024-06-15",
-      "location_count": 3,
-      "compliance_status": "compliant"
-    }
-  ]
-}
-```
-
----
-
-### TX-DASP-R1: Digital Asset Fund Segregation
-
-**Regulation:** TX HB 1666, Texas Finance Code §152  
-**Applies to:** Customers with ≥500 TX customers OR ≥$10M in customer digital asset funds  
-**Collection method:** Direct DB query to `digital_asset_accounts` and `company_accounts`  
-**Frequency:** Daily  
-**Compliance threshold:** Customer funds must be fully segregated from company operational funds
-
-**Balance reconciliation query:**
-```sql
--- SecureBase runs daily to verify segregation
-SELECT
-  SUM(da.balance_usd) as total_customer_funds,
-  (SELECT balance_usd FROM company_accounts WHERE customer_id = :cid) as company_funds,
-  CASE
-    WHEN SUM(da.balance_usd) <= (SELECT balance_usd FROM company_accounts WHERE customer_id = :cid)
-    THEN 'SEGREGATED'
-    ELSE 'COMMINGLING_DETECTED'
-  END as segregation_status
-FROM digital_asset_accounts da
-WHERE da.customer_id = :cid
-  AND da.account_type = 'customer_custody';
-```
-
----
-
-## Security Architecture
-
-### Data Residency
-
-All raw transaction data and PII remains in the customer's AWS account:
-
-| Data Type | Location | Access |
-|---|---|---|
-| Raw transaction records | Customer's RDS/Aurora read replica | Read-only Lambda query |
-| PII (names, addresses, IDs) | Customer's database — never exported | Hashed before leaving the VPC |
-| Evidence records (aggregates) | SecureBase Aurora (`tx_*` tables) | Row-Level Security per `customer_id` |
-| Evidence packages (signed) | Customer's S3 bucket (Object Lock) | Examiner Portal only |
-| Signing keys | Customer's KMS (CMK) | Lambda IAM role only |
-
-### PII Handling
-
-**SecureBase never stores raw PII.** All sensitive fields are hashed before storage:
-
-```python
-import hashlib
-
-def hash_pii(value: str, salt: str) -> str:
-    """SHA-256 hash with per-customer salt (stored in Secrets Manager)."""
-    return hashlib.sha256(f"{salt}:{value}".encode()).hexdigest()
-
-# Usage in evidence collection
-sender_id_hash = hash_pii(raw_id_number, customer_salt)
-```
-
-The per-customer salt is stored in AWS Secrets Manager and rotated annually.
-
-### IAM Permissions (Principle of Least Privilege)
-
-**SecureBase Lambda execution role — minimum required permissions:**
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["secretsmanager:GetSecretValue"],
-      "Resource": "arn:aws:secretsmanager:us-east-1:*:secret:securebase/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["kms:Sign", "kms:GetPublicKey"],
-      "Resource": "arn:aws:kms:us-east-1:*:key/*",
-      "Condition": {
-        "StringEquals": {"kms:ViaService": "lambda.us-east-1.amazonaws.com"}
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:PutObject"],
-      "Resource": "arn:aws:s3:::securebase-evidence-*/*"
-    },
-    {
-      "Effect": "Deny",
-      "Action": ["s3:DeleteObject", "s3:DeleteBucket"],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-**Customer read-only role (for VPC peering):**
-```sql
--- PostgreSQL: grant read-only to SecureBase Lambda user
-CREATE ROLE securebase_readonly;
-GRANT CONNECT ON DATABASE securebase TO securebase_readonly;
-GRANT USAGE ON SCHEMA public TO securebase_readonly;
-GRANT SELECT ON transactions, ctr_filings, sar_filings,
-               kyc_verifications, digital_asset_accounts
-  TO securebase_readonly;
-REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM securebase_readonly;
-```
-
-### Evidence Signing and Integrity
-
-Every evidence package is:
-1. **SHA-256 hashed** record-by-record
-2. **KMS-signed** with the customer's CMK (RSA-4096)
-3. **Manifest generated** listing all record hashes + overall package hash
-4. **Stored in S3 with Object Lock** (Compliance mode, 5-year retention)
-
-```python
-# Evidence signing (from texas_fintech_compliance_collector.py)
-def sign_evidence_package(package_data: dict, kms_key_id: str) -> dict:
-    package_json = json.dumps(package_data, sort_keys=True).encode()
-    package_hash = hashlib.sha256(package_json).hexdigest()
-
-    response = kms_client.sign(
-        KeyId=kms_key_id,
-        Message=package_hash.encode(),
-        MessageType='RAW',
-        SigningAlgorithm='RSASSA_PKCS1_V1_5_SHA_256'
-    )
-    return {
-        "package_hash": package_hash,
-        "signature": base64.b64encode(response['Signature']).decode(),
-        "key_id": kms_key_id
-    }
-```
+| `sender_id_number` | Government ID (hashed) | CIP system | SHA-256 hashed before storage |
+| `recipient_name` | Recipient name | Transaction DB | `recipient_name`, `to_name` |
+| `payment_method` | Method | Transaction DB | `payment_method`, `channel` |
+| `fee_charged` | Fee | Transaction DB | `fee`, `service_fee` |
+| `receipt_number` | Receipt/confirmation | Transaction DB | `receipt_id`, `confirmation_number` |
+| `texas_nexus` | TX connection flag | Derived | `state = 'TX'` or boolean |
 
 ---
 
@@ -456,45 +314,31 @@ def sign_evidence_package(package_data: dict, kms_key_id: str) -> dict:
 
 | Requirement | Detail |
 |---|---|
-| AWS Account | Customer must have AWS account (any region, us-east-1 or us-west-2 preferred) |
-| Transaction DB | PostgreSQL 12+ or MySQL 8+ (Aurora, RDS, or self-managed) |
-| AML System | Unit21, Sardine, Verafin, or custom webhook-capable system |
-| KYC/CIP System | Alloy, Socure, or Jumio (API access required) |
-| S3 Bucket | Object Lock-enabled bucket in customer's account |
+| AWS Account | Customer must have AWS account |
+| Transaction DB | PostgreSQL 12+ or MySQL 8+ |
+| AML System | Unit21, Sardine, or custom webhook |
+| KYC/CIP System | Alloy, Socure, or Jumio |
+| S3 Bucket | Object Lock-enabled bucket |
 | KMS Key | RSA-4096 CMK for evidence signing |
 
-### Step-by-Step Onboarding
+### Step-by-Step: 48-Hour Onboarding
 
-**Step 1: Database Schema Mapping (Day 1)**
+**Hour 0–4: Database Schema Mapping**
 ```bash
-# Download the schema mapping template
 curl -O https://docs.securebase.io/onboarding/schema_mapping_template.json
-
-# Fill in your field mappings
-# See: Database Schema Mapping section above
-
-# Upload to SecureBase onboarding portal
+# Fill in field mappings, then:
 POST /api/onboarding/schema-mapping
 Authorization: Bearer <onboarding_token>
-Content-Type: application/json
-<schema_mapping.json contents>
 ```
 
-**Step 2: VPC Peering or API Configuration (Day 1–2)**
-
-*Option A — VPC Peering:*
+**Hour 4–12: VPC Peering or API Webhook Setup**
 ```bash
-# SecureBase provides VPC ID and CIDR during onboarding
-# Customer initiates peering request in AWS Console:
+# Option A — VPC Peering:
+# Customer initiates in AWS Console:
 # VPC → Peering Connections → Create Peering Connection
-# Requester: Customer VPC
-# Accepter: SecureBase VPC (ID provided by SecureBase)
-```
+# Accepter: SecureBase VPC ID (provided during onboarding)
 
-*Option B — AML System Webhooks:*
-```bash
-# Register SecureBase as a webhook destination in your AML system
-# Unit21 example:
+# Option B — AML Webhook (Unit21):
 POST https://app.unit21.ai/api/v1/webhooks
 {
   "url": "https://api.securebase.tximhotep.com/fintech/webhook/<customer_id>/unit21",
@@ -503,78 +347,29 @@ POST https://app.unit21.ai/api/v1/webhooks
 }
 ```
 
-**Step 3: S3 Evidence Bucket Setup (Day 2)**
+**Hour 12–24: S3 + KMS Setup**
 ```bash
-# Create S3 bucket with Object Lock
 aws s3api create-bucket \
   --bucket securebase-evidence-<customer_id> \
   --region us-east-1 \
   --object-lock-enabled-for-bucket
 
-# Configure default Object Lock retention (5 years = 1826 days)
 aws s3api put-object-lock-configuration \
   --bucket securebase-evidence-<customer_id> \
   --object-lock-configuration '{
-    "ObjectLockEnabled": "Enabled",
-    "Rule": {
-      "DefaultRetention": {
-        "Mode": "COMPLIANCE",
-        "Days": 1826
-      }
-    }
+    "ObjectLockEnabled":"Enabled",
+    "Rule":{"DefaultRetention":{"Mode":"COMPLIANCE","Days":1826}}
   }'
-```
 
-**Step 4: KMS Key Setup (Day 2)**
-```bash
-# Create RSA-4096 KMS key for evidence signing
 aws kms create-key \
   --key-usage SIGN_VERIFY \
   --key-spec RSA_4096 \
-  --description "SecureBase FFIEC evidence signing key" \
-  --tags '[{"TagKey":"Purpose","TagValue":"FFIEC_evidence_signing"}]'
-
-# Grant SecureBase Lambda role access to sign
-aws kms create-grant \
-  --key-id <key-id> \
-  --grantee-principal arn:aws:iam::<account>:role/securebase-lambda-role \
-  --operations Sign GetPublicKey
+  --description "SecureBase FFIEC evidence signing key"
 ```
 
-**Step 5: Lambda Deployment (Day 3)**
+**Hour 24–48: Lambda Deployment + POC Collection**
 ```bash
-# SecureBase deploys the collector Lambda into the peered VPC
-# Terraform (managed by SecureBase):
-resource "aws_lambda_function" "texas_fintech_compliance" {
-  function_name = "securebase-${var.environment}-texas-fintech-compliance-${var.customer_id}"
-  filename      = "deploy/texas_fintech_compliance_collector.zip"
-  role          = aws_iam_role.securebase_lambda.arn
-  handler       = "texas_fintech_compliance_collector.lambda_handler"
-  runtime       = "python3.11"
-  timeout       = 300
-  memory_size   = 512
-
-  vpc_config {
-    subnet_ids         = var.customer_subnet_ids
-    security_group_ids = [aws_security_group.securebase_lambda.id]
-  }
-
-  environment {
-    variables = {
-      RDS_HOST          = var.customer_db_endpoint
-      RDS_SECRET_ARN    = aws_secretsmanager_secret.db_creds.arn
-      KMS_KEY_ID        = var.customer_kms_key_id
-      S3_EVIDENCE_BUCKET = var.customer_evidence_bucket
-      CUSTOMER_ID       = var.customer_id
-      ENVIRONMENT       = var.environment
-    }
-  }
-}
-```
-
-**Step 6: POC Validation (Week 1–2)**
-```bash
-# Trigger on-demand evidence collection for the POC period
+# Trigger on-demand collection for POC period
 POST /fintech/collect
 Authorization: Bearer <api_key>
 {
@@ -586,204 +381,82 @@ Authorization: Bearer <api_key>
 }
 ```
 
-**Step 7: Schedule Daily Collection (Day 14 — Go Live)**
-```bash
-# EventBridge rule runs daily at 03:00 UTC
-aws events put-rule \
-  --name "securebase-daily-evidence-collection-<customer_id>" \
-  --schedule-expression "cron(0 3 * * ? *)" \
-  --state ENABLED
-
-aws events put-targets \
-  --rule "securebase-daily-evidence-collection-<customer_id>" \
-  --targets '[{
-    "Id": "texas_fintech_compliance",
-    "Arn": "arn:aws:lambda:us-east-1:<account>:function:securebase-prod-texas-fintech-compliance-<customer_id>"
-  }]'
-```
-
 ---
 
 ## API Reference
 
 ### Evidence Collection
-
 ```
 POST /fintech/collect
 Authorization: Bearer <api_key>
+{ "customer_id": "uuid", "controls": [...], "start_date": "...", "end_date": "..." }
 
-{
-  "customer_id": "uuid",
-  "controls": ["TX-MT-R1", "TX-MT-R2a", "TX-MT-R2b", "TX-MT-R3", "TX-MT-R4", "TX-DASP-R1"],
-  "start_date": "2025-01-01",    // ISO 8601
-  "end_date": "2025-03-31",
-  "sample_size": 500             // optional; default: all records
-}
-
-Response 200:
-{
-  "collection_id": "uuid",
-  "customer_id": "uuid",
-  "controls_collected": ["TX-MT-R1", "TX-MT-R2a", "TX-MT-R2b", "TX-MT-R3"],
-  "compliance_scores": {
-    "TX-MT-R1": 98.7,
-    "TX-MT-R2a": 100.0,
-    "TX-MT-R2b": 100.0,
-    "TX-MT-R3": 96.4
-  },
-  "evidence_s3_keys": ["evidence/prod/uuid/TX-MT-R1/2025-03-31.json", "..."],
-  "collection_timestamp": "2025-04-01T03:00:00Z"
-}
+Response 200: { "collection_id", "compliance_scores", "evidence_s3_keys" }
 ```
 
 ### Examiner Package Generation
-
 ```
 POST /fintech/examiner-export
 Authorization: Bearer <api_key>
+{ "customer_id": "uuid", "period_start": "...", "period_end": "...", "examiner_name": "...", "examiner_email": "..." }
 
-{
-  "customer_id": "uuid",
-  "period_start": "2025-01-01",
-  "period_end": "2025-03-31",
-  "examiner_name": "Jane Smith",
-  "examiner_email": "jsmith@dob.texas.gov",
-  "controls": ["TX-MT-R1", "TX-MT-R2a", "TX-MT-R2b", "TX-MT-R3"]  // optional
-}
+Response 200: { "export_reference", "s3_key", "package_hash", "signature", "record_counts" }
+```
 
-Response 200:
-{
-  "export_reference": "TX-EXAM-PROD-20250401120000-A1B2C3D4",
-  "s3_key": "evidence/prod/uuid/examiner_export/TX-EXAM-PROD-20250401120000-A1B2C3D4.zip",
-  "package_hash": "sha256:abc123...",
-  "signature": "base64_kms_signature...",
-  "record_counts": {
-    "transactions": 1247,
-    "ctr_filings": 3,
-    "sar_filings": 1,
-    "cip_records": 482
-  },
-  "generated_at": "2025-04-01T12:00:00Z"
+### FFIEC CAT Status
+```
+GET /fintech/cat-status?customer_id=<uuid>
+Authorization: Bearer <api_key>
+
+Response 200: {
+  "overall_maturity": "intermediate",
+  "domains": [
+    { "domain_id": "cybersecurity_controls", "maturity": "intermediate", "score": 81.0, "findings": 2 },
+    ...
+  ],
+  "last_collected": "2026-05-01T03:00:00Z"
 }
 ```
 
 ### Compliance Status
-
 ```
 GET /fintech/compliance-status?customer_id=<uuid>
 Authorization: Bearer <api_key>
 
-Response 200:
-{
-  "customer_id": "uuid",
-  "overall_score": 94.2,
-  "last_collected": "2025-04-01T03:00:00Z",
-  "controls": [
-    {
-      "control_id": "TX-MT-R1",
-      "name": "Transaction Recordkeeping",
-      "score": 98.7,
-      "status": "passing",
-      "last_collected": "2025-04-01T03:00:00Z",
-      "findings": 16
-    },
-    {
-      "control_id": "TX-MT-R2a",
-      "name": "CTR Filing Compliance",
-      "score": 100.0,
-      "status": "passing",
-      "last_collected": "2025-04-01T03:00:00Z",
-      "findings": 0
-    }
-  ]
-}
+Response 200: { "overall_score": 94.2, "controls": [...] }
 ```
-
----
-
-## FFIEC IT Examination Handbook Integration
-
-Beyond BSA/AML, FFIEC-regulated institutions are also subject to the **FFIEC IT Examination Handbook** (Cybersecurity, Information Security, Management). SecureBase maps these controls to existing SOC 2 / CIS controls already on the platform:
-
-| FFIEC IT Handbook Domain | SecureBase Control Mapping |
-|---|---|
-| Access Controls (AC) | CIS Control 5, 6; SOC 2 CC6.1 |
-| Audit Logging (AL) | CloudTrail + Aurora audit logs; SOC 2 CC7.2 |
-| Configuration Management (CM) | CIS Control 4; SOC 2 CC7.1 |
-| Incident Response (IR) | SOC 2 CC7.3, CC7.4; GuardDuty alerts |
-| Network Security (NS) | CIS Control 9, 12; VPC + WAF |
-| Risk Management (RM) | SOC 2 CC3.1, CC3.2 |
-| Third-Party Management (TPM) | SOC 2 CC9.1, CC9.2 |
-
-**Examiner Report Sections:**
-
-The FFIEC compliance report exported from SecureBase includes:
-1. **Executive Summary** — overall risk rating (Low / Moderate / High)
-2. **BSA/AML Evidence** — TX-MT-R1 through TX-DASP-R1 results
-3. **IT Controls** — SOC 2 / CIS control status mapped to FFIEC handbook
-4. **Findings & Recommendations** — flagged items with remediation guidance
-5. **Evidence Manifest** — SHA-256 hashes + KMS signatures for all evidence records
 
 ---
 
 ## Multi-Region Considerations
 
-For Fintech Elite customers with operations across multiple states:
+For Fintech Elite / Enterprise customers:
 
 | State | Regulator | Additional Controls |
 |---|---|---|
 | **Texas** | TX DOB + FinCEN | TX-MT-R1 through TX-DASP-R1 (fully automated) |
 | **New York** | NY DFS (Part 504) | SAR lookback period, transaction monitoring program |
-| **California** | CA DFPI (CDFIL) | CA-specific CIP requirements, non-resident remittance rules |
-| **Florida** | FL OFR | FL Chapter 560 recordkeeping requirements |
+| **California** | CA DFPI | CA-specific CIP requirements |
+| **Florida** | FL OFR | FL Chapter 560 recordkeeping |
 
-Multi-state evidence collection is available on **Fintech Elite** at $12,000/month. Each additional state adds 2–4 new controls mapped to that state's money services business regulations.
+Multi-state coverage is included in Fintech Elite ($12,000/month).
 
 ---
 
-## Troubleshooting
+## Security Architecture Summary
 
-### Evidence collection returns empty results
-```bash
-# Check: Is texas_nexus flag set on transactions?
-SELECT COUNT(*) FROM transactions WHERE texas_nexus = true;
+| Data Type | Location | Access |
+|---|---|---|
+| Raw transaction records | Customer RDS/Aurora read replica | Read-only Lambda query |
+| PII (names, IDs) | Customer database — never exported | SHA-256 hashed before leaving VPC |
+| Evidence records | SecureBase Aurora (`tx_*` tables) | RLS per `customer_id` |
+| Evidence packages | Customer's S3 bucket (Object Lock) | Examiner Portal only |
+| Signing keys | Customer's KMS (CMK) | Lambda IAM role only |
 
-# If zero, verify the field mapping or add a derived field:
-ALTER TABLE transactions ADD COLUMN texas_nexus BOOLEAN
-  GENERATED ALWAYS AS (origin_state = 'TX' OR destination_state = 'TX') STORED;
-```
-
-### Lambda times out during large collection
-```bash
-# Reduce sample_size or collect one control at a time:
-POST /fintech/collect
-{
-  "controls": ["TX-MT-R1"],
-  "sample_size": 200
-}
-```
-
-### KMS signature verification fails
-```bash
-# Verify public key is accessible:
-aws kms get-public-key --key-id <key-id>
-
-# Verify Lambda role has kms:Sign permission:
-aws iam simulate-principal-policy \
-  --policy-source-arn arn:aws:iam::<account>:role/securebase-lambda-role \
-  --action-names kms:Sign \
-  --resource-arns arn:aws:kms:us-east-1:<account>:key/<key-id>
-```
-
-### CTR counts don't match AML system
-```bash
-# Check: Are CTR filings ingested via webhook?
-GET /fintech/compliance-status?customer_id=<uuid>&debug=true
-
-# Look for: "ctr_source": "webhook" vs "ctr_source": "database"
-# If webhook: verify Unit21/Sardine webhook is registered and active
-# If database: verify ctr_filings table has correct customer_id FK
-```
+**IAM: Principle of Least Privilege**
+- Lambda execution role: `secretsmanager:GetSecretValue`, `kms:Sign`, `kms:GetPublicKey`, `s3:PutObject` only
+- No `s3:DeleteObject`, no `rds:*` write, no `iam:*`
+- Customer DB user: `SELECT` only; no `INSERT`, `UPDATE`, `DELETE`
 
 ---
 
@@ -792,12 +465,16 @@ GET /fintech/compliance-status?customer_id=<uuid>&debug=true
 | Resource | Location |
 |---|---|
 | FFIEC Sales Playbook | [`docs/FFIEC_SALES_PLAYBOOK.md`](./FFIEC_SALES_PLAYBOOK.md) |
-| Texas Fintech Compliance Controls | [`docs/TEXAS_FINTECH_COMPLIANCE.md`](./TEXAS_FINTECH_COMPLIANCE.md) |
-| Compliance Lambda Source | `phase2-backend/functions/texas_fintech_compliance_collector.py` |
+| Texas Fintech Compliance | [`docs/TEXAS_FINTECH_COMPLIANCE.md`](./TEXAS_FINTECH_COMPLIANCE.md) |
+| Compliance Lambda | `phase2-backend/functions/texas_fintech_compliance_collector.py` |
+| Metrics Aggregation Lambda | `phase2-backend/functions/metrics_aggregation.py` |
+| CAT Dashboard Component | `src/components/FFIECCATDashboard.jsx` |
+| Control Mapping Component | `src/components/compliance/FFIECControlMapping.jsx` |
 | Database Schema | `phase2-backend/database/migrations/005_texas_fintech_compliance.sql` |
-| Fintech Pro MVP Spec | [`docs/fintech_pro_mvp_spec.md`](./fintech_pro_mvp_spec.md) |
-| Quick Reference | [`docs/TEXAS_FINTECH_QUICK_REFERENCE.md`](./TEXAS_FINTECH_QUICK_REFERENCE.md) |
+| FFIEC IT Examination Handbooks | https://ithandbook.ffiec.gov/ |
+| FFIEC CAT Official Tool | https://www.ffiec.gov/cyberassessmenttool.htm |
+| OCC Bulletin 2013-29 | https://www.occ.gov/news-issuances/bulletins/2013/bulletin-2013-29.html |
 
 ---
 
-*Maintained by: SecureBase Engineering · Questions: compliance-tech@securebase.io*
+*Maintained by: SecureBase Engineering · Questions: compliance-tech@securebase.io · Last updated: May 2026*

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
 import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick, trackAddToCart } from '../utils/analytics';
-import { isLinkedInTraffic, PILOT_PRICING } from '../utils/trackingUtils';
+import { isLinkedInTraffic, isBankingDomainTraffic, PILOT_PRICING } from '../utils/trackingUtils';
 import { mockComplianceData } from '../mock-api';
 
 const PLANS = [
@@ -121,7 +121,7 @@ function getDaysUntil(targetDate) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-const FAQ = [
+const FAQ_DEFAULT = [
   {
     q: 'How quickly can I be audit-ready?',
     a: 'Most customers are audit-ready in under 48 hours after onboarding. Our Terraform deploys a pre-hardened Landing Zone that satisfies CIS, SOC 2, and HIPAA controls out of the box.',
@@ -140,6 +140,29 @@ const FAQ = [
   },
 ];
 
+const FAQ_BANKING = [
+  {
+    q: 'How quickly can I be audit-ready?',
+    a: 'Most customers are audit-ready in under 48 hours after onboarding. Our Terraform deploys a pre-hardened Landing Zone that satisfies CIS, SOC 2, and HIPAA controls out of the box.',
+  },
+  {
+    q: 'Do I need an existing AWS Organization?',
+    a: 'No. SecureBase provisions a new AWS Organization from scratch, including all OUs, accounts, and SCPs. If you have an existing org, we can import it.',
+  },
+  {
+    q: 'What is a Regulatory Briefing?',
+    a: 'For financial institutions subject to FFIEC examination, we start with a 30-minute regulatory briefing rather than a self-service trial. We walk you through our vendor due diligence package (SOC 2 Type II report, Sovereign Cloud architecture brief, and FFIEC IT Handbook control mapping) before you touch any code.',
+  },
+  {
+    q: 'Does SecureBase support FFIEC examinations directly?',
+    a: 'Yes. The Fintech/Healthcare plan includes our FFIEC compliance module: automated CTR/SAR evidence collection, CIP completeness checks, and one-click DOB examiner package generation. All evidence is KMS-signed and stored in S3 with Object Lock.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'All plans are month-to-month with no lock-in. Cancel from the portal at any time.',
+  },
+];
+
 export default function Pricing() {
   const navigate = useNavigate();
   const [complianceData, setComplianceData] = useState(null);
@@ -147,6 +170,7 @@ export default function Pricing() {
   const [tooltipVisible, setTooltipVisible] = useState(false);
 
   const isPilotEligible = isLinkedInTraffic();
+  const isBanking = isBankingDomainTraffic();
 
   useEffect(() => {
     // Simulate async fetch from mock API
@@ -172,6 +196,12 @@ export default function Pricing() {
     trackPricingCTA(plan.id);
     if (plan.id === 'enterprise') {
       navigate('/contact-sales?tier=enterprise&source=pricing');
+      return;
+    }
+    // Banking domain visitors (TBA, IBAT, ABA, etc.) skip self-service checkout
+    // and are routed to a regulatory briefing to complete vendor due diligence first.
+    if (isBanking && plan.id === 'fintech') {
+      navigate('/contact-sales?tier=fintech&source=banking&topic=ffiec&briefing=true');
       return;
     }
     // Fire add_to_cart — use pilot price when eligible, otherwise full price.
@@ -255,31 +285,61 @@ export default function Pricing() {
           </p>
         </div>
 
-        {/* Urgency Banner */}
-        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl" role="img" aria-label="target">🎯</span>
-            <div>
-              <p className="font-bold text-blue-900">
-                {PILOT_SPOTS_REMAINING} pilot spots remaining for Q2 2026
-              </p>
-              <p className="text-sm text-blue-700">
-                {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} until June 30, 2026 deadline
-              </p>
+        {/* Urgency Banner — suppressed for banking domain visitors */}
+        {!isBanking && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" role="img" aria-label="target">🎯</span>
+              <div>
+                <p className="font-bold text-blue-900">
+                  {PILOT_SPOTS_REMAINING} pilot spots remaining for Q2 2026
+                </p>
+                <p className="text-sm text-blue-700">
+                  {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} until June 30, 2026 deadline
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                trackPilotCTAClick('urgency_banner');
+                trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
+                navigate(`/checkout?plan=pilot_compliance&planName=Compliance+Jumpstart`);
+              }}
+              className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
+            >
+              Get the $495 Pilot →
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={() => {
-              trackPilotCTAClick('urgency_banner');
-              trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
-              navigate(`/checkout?plan=pilot_compliance&planName=Compliance+Jumpstart`);
-            }}
-            className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
-          >
-            Get the $495 Pilot →
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        )}
+
+        {/* Banking / FFIEC Banner — shown only for banking domain visitors */}
+        {isBanking && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" role="img" aria-label="bank">🏦</span>
+              <div>
+                <p className="font-bold text-amber-900">
+                  FFIEC-regulated institution? Start with a Regulatory Briefing.
+                </p>
+                <p className="text-sm text-amber-700">
+                  We walk you through our SOC 2 report, Sovereign Cloud architecture,
+                  and FFIEC IT Handbook control mapping before you touch any code.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                trackPilotCTAClick('banking_banner');
+                navigate('/contact-sales?tier=fintech&source=banking&topic=ffiec&briefing=true');
+              }}
+              className="shrink-0 inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
+            >
+              Request Regulatory Briefing →
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
@@ -361,8 +421,8 @@ export default function Pricing() {
                     : 'bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:scale-105'
                 }`}
               >
-                {plan.cta}
-                <ArrowRight className="w-4 h-4" />
+                {isBanking && plan.id === 'fintech' ? 'Request Regulatory Briefing →' : plan.cta}
+                {!(isBanking && plan.id === 'fintech') && <ArrowRight className="w-4 h-4" />}
               </button>
             </div>
           ))}
@@ -454,7 +514,7 @@ export default function Pricing() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-10">Frequently Asked Questions</h2>
           <div className="space-y-4">
-            {FAQ.map((item) => (
+            {(isBanking ? FAQ_BANKING : FAQ_DEFAULT).map((item) => (
               <div key={item.q} className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="font-semibold text-slate-900 mb-2">{item.q}</h3>
                 <p className="text-sm text-slate-600">{item.a}</p>
