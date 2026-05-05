@@ -122,7 +122,7 @@ export default function DemoDashboard() {
               <span className="text-4xl">✅</span>
               <div>
                 <div className="text-xl font-bold text-green-800">SOC 2 Compliance</div>
-                <div className="text-sm text-green-600">Trust Service Criteria, findings, Texas DOB controls &amp; audit evidence</div>
+                <div className="text-sm text-green-600">Trust Service Criteria, findings, Texas DOB controls & audit evidence</div>
               </div>
             </div>
             <span className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-700">
