@@ -65,7 +65,10 @@ export default function DemoDashboard() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-2">Demo-Dashboard</h1>
-        <p className="text-gray-600 mb-8">Acme Corporation • FinTech Tier</p>
+        <p className="text-gray-600 mb-8">
+          Acme Corporation • FinTech Tier
+          <span className="text-gray-400 text-sm"> · Explore dashboards below to see other compliance tiers</span>
+        </p>
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-6 mb-8">
@@ -101,7 +104,10 @@ export default function DemoDashboard() {
             <div className="flex items-center gap-4">
               <span className="text-4xl">🏥</span>
               <div>
-                <div className="text-xl font-bold text-rose-800">HIPAA Dashboard</div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-xl font-bold text-rose-800">HIPAA Dashboard</div>
+                  <span className="text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-300 px-2 py-0.5 rounded-full">Healthcare Tier</span>
+                </div>
                 <div className="text-sm text-rose-600">Healthcare compliance controls, PHI audit trail &amp; risk assessment</div>
               </div>
             </div>
