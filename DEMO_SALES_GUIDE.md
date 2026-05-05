@@ -12,8 +12,28 @@ interactive, data-rich demo environment in minutes.
 
 | Path | Setup Time | Best For |
 |------|-----------|----------|
+| [Landing Page Demo Strip](#landing-page-demo-strip) | 0 min | Organic visitors, paid traffic, any inbound |
 | [Shared Demo URL](#shared-demo-link) | 0 min | Early-stage exploration, email campaigns |
 | [Golden Sales Path](#golden-sales-path-self-serve) | ~5 min | Live calls, evaluations, custom walkthroughs |
+
+---
+
+## Landing Page Demo Strip
+
+The marketing site (`securebase.tximhotep.com`) now includes a **zero-friction demo invitation strip** in the hero section. Any visitor can click it to go directly to the live compliance dashboard — no signup, no credentials, no waiting.
+
+```
+🖥️  See a live compliance dashboard — HIPAA, SOC 2, and AWS controls, no signup required.
+                                                             [ Explore the Demo → ]
+```
+
+**This strip is the lowest-commitment conversion path.** Use it as your primary CTA target for:
+- Paid ad landing pages
+- Social media links
+- Conference & QR codes
+- Any "show don't tell" moment
+
+When demo visitors finish exploring, the **Compliance** and **HIPAA Dashboard** logout buttons redirect them to the **pricing page** — capturing intent without a hard sell.
 
 ---
 
