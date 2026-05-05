@@ -102,6 +102,12 @@ const TAB_LABELS = {
 export default function HIPAADashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'https://securebase.tximhotep.com/pricing';
+  };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -202,6 +208,12 @@ export default function HIPAADashboard() {
                 <div style={{ fontSize: '1.25rem', fontWeight: 700, textTransform: 'capitalize', lineHeight: 1 }}>{data.riskLevel}</div>
                 <div style={{ fontSize: '0.78rem', opacity: 0.85, marginTop: 2 }}>Risk Level</div>
               </div>
+              <button
+                onClick={handleLogout}
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                Logout
+              </button>
             </div>
           </div>
 
