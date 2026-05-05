@@ -20,6 +20,12 @@ function getCustomerTier() {
 
 export default function Compliance({ isPublic = false }) {
   const personalization = usePersonalization();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'https://securebase.tximhotep.com/pricing';
+  };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [complianceData, setComplianceData] = useState(null);
@@ -232,9 +238,19 @@ export default function Compliance({ isPublic = false }) {
         </div>
       )}
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">SOC 2 Compliance</h1>
-        <p className="text-gray-600">Trust Service Criteria Status</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">SOC 2 Compliance</h1>
+          <p className="text-gray-600">Trust Service Criteria Status</p>
+        </div>
+        {!isPublic && (
+          <button
+            onClick={handleLogout}
+            className="shrink-0 text-sm font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-lg transition"
+          >
+            Logout
+          </button>
+        )}
       </div>
 
       {/* Audit Readiness Assessment CTA */}
