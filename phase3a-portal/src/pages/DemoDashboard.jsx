@@ -95,7 +95,7 @@ export default function DemoDashboard() {
         <a
           href="/hipaa-dashboard"
           aria-label="Navigate to HIPAA Dashboard"
-          className="block bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-300 rounded-xl p-6 mb-8 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus-within:border-rose-500 transition-colors"
+          className="block bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-300 rounded-xl p-6 mb-6 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus-within:border-rose-500 transition-colors"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -107,6 +107,26 @@ export default function DemoDashboard() {
             </div>
             <span className="bg-rose-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-rose-700">
               View Dashboard →
+            </span>
+          </div>
+        </a>
+
+        {/* Compliance Entry Point */}
+        <a
+          href="/compliance"
+          aria-label="Navigate to SOC 2 Compliance"
+          className="block bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6 mb-8 hover:from-green-100 hover:to-emerald-100 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus-within:border-green-500 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">✅</span>
+              <div>
+                <div className="text-xl font-bold text-green-800">SOC 2 Compliance</div>
+                <div className="text-sm text-green-600">Trust Service Criteria, findings, Texas DOB controls &amp; audit evidence</div>
+              </div>
+            </div>
+            <span className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-700">
+              View Compliance →
             </span>
           </div>
         </a>
