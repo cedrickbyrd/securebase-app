@@ -103,6 +103,47 @@ export function isLinkedInTraffic() {
 }
 
 /**
+ * Banking/FFIEC sources that indicate a regulated financial institution visitor
+ * who should see "Request Regulatory Briefing" instead of the self-service trial CTA.
+ *
+ * Uses specific, unambiguous identifiers for recognised banking trade associations
+ * and FFIEC-focused campaigns only. Generic terms like 'bank' are intentionally
+ * excluded to avoid false positives (e.g. 'bank_holiday_promo').
+ *
+ * Matches utm_source values set by:
+ * - Texas Bankers Association campaigns (tba, texas_bankers)
+ * - Independent Bankers Association of Texas (ibat)
+ * - Community Bankers Association (cba)
+ * - American Bankers Association (aba)
+ * - FFIEC-specific outbound campaigns
+ * - utm_campaign containing 'ffiec' or 'examiner'
+ */
+const BANKING_SOURCES = new Set([
+  'tba', 'texas_bankers', 'ibat', 'cba', 'aba', 'community_bank', 'ffiec',
+]);
+
+/**
+ * Determine whether the current (or stored) attribution indicates a banking
+ * domain visitor (Texas Bankers Association, IBAT, ABA, etc.).
+ *
+ * These visitors skip the self-service trial flow and are instead routed to
+ * a "Request Regulatory Briefing" CTA that opens the Contact Sales form with
+ * FFIEC-specific context pre-filled.
+ *
+ * @returns {boolean}
+ */
+export function isBankingDomainTraffic() {
+  const attribution = getStoredAttribution() || {};
+  const source = (attribution.utm_source || '').toLowerCase();
+  const campaign = (attribution.utm_campaign || '').toLowerCase();
+  return (
+    BANKING_SOURCES.has(source) ||
+    campaign.includes('ffiec') ||
+    campaign.includes('examiner')
+  );
+}
+
+/**
  * Per-tier pilot pricing (50% discount) for the Q2 2026 pilot programme.
  * Source of truth: scripts/check-pilot-conversions.js PRICING_TIERS.
  *
