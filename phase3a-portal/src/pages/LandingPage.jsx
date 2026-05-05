@@ -32,10 +32,25 @@ const LandingPage = () => {
           Compliant AWS Infrastructure<br />
           <span className="text-yellow-300">in 48 Hours</span>
         </h1>
-        <p className="text-xl text-blue-100 max-w-2xl mb-10">
+        <p className="text-xl text-blue-100 max-w-2xl mb-8">
           SecureBase delivers enterprise-grade SOC 2, HIPAA, and FedRAMP-ready AWS Landing Zones
           as a managed service — without the million-dollar consulting bill.
         </p>
+
+        {/* Demo invitation strip — low-commitment path before the signup ask */}
+        <Link
+          to="/dashboard"
+          aria-label="View live compliance dashboard demo — no signup required"
+          className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/30 text-white rounded-xl px-6 py-3 mb-8 transition max-w-xl w-full justify-center"
+        >
+          <span className="text-2xl">🖥️</span>
+          <span className="text-sm text-left">
+            <span className="font-semibold">See a live compliance dashboard</span>
+            {' '}— HIPAA, SOC 2, and AWS controls, no signup required.
+          </span>
+          <span className="ml-auto font-bold text-yellow-300 whitespace-nowrap">Explore the Demo →</span>
+        </Link>
+
         <div className="flex gap-4 justify-center flex-wrap">
           <a href="#request-access" className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition">
             🚀 Request Early Access
@@ -60,21 +75,6 @@ const LandingPage = () => {
               <p className="text-blue-100 text-sm">{prop.description}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Demo Access Section */}
-      <section className="px-6 py-10 flex flex-col items-center">
-        <div className="w-full max-w-lg text-center">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-4 px-10 rounded-xl text-lg shadow-lg transition transform hover:scale-105"
-          >
-            🎮 Enter Demo (One Click)
-          </Link>
-          <p className="text-blue-200 text-xs mt-4">
-            Instant access — no signup required.
-          </p>
         </div>
       </section>
 

@@ -189,6 +189,7 @@ export default function HIPAADashboard() {
               </button>
               <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>🏥 HIPAA Compliance Dashboard</h1>
               <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: '0.9rem' }}>
+                <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 8px', fontSize: '0.75rem', marginRight: 8, fontWeight: 600 }}>Now viewing: Healthcare Tier</span>
                 HealthCorp Medical Systems · Last assessment: {formatDate(data.lastAssessmentDate)}
               </p>
             </div>
