@@ -11,6 +11,19 @@ import {
 
 // Wrap API service to return mock data in demo mode
 export const demoAwareApiService = {
+  // Generic catch-all pass-through for any apiService methods not explicitly overridden below.
+  // This MUST be first so that the explicit demo-aware implementations below take precedence.
+  ...Object.keys(apiService).reduce((acc, key) => {
+    acc[key] = async (...args) => {
+      if (isDemoMode()) {
+        console.warn(`Demo mode: ${key} called, returning empty response`);
+        return Promise.resolve({ success: true, data: null });
+      }
+      return apiService[key] ? apiService[key](...args) : Promise.resolve({ data: null });
+    };
+    return acc;
+  }, {}),
+
   // Compliance methods
   getComplianceFindings: async () => {
     if (isDemoMode()) {
@@ -36,6 +49,9 @@ export const demoAwareApiService = {
             totalControls: mockComplianceData.totalControls,
             passedControls: mockComplianceData.passedControls,
             failedControls: mockComplianceData.failedControls,
+            criticalFindings: mockComplianceData.criticalFindings,
+            highFindings: mockComplianceData.highFindings,
+            mediumFindings: mockComplianceData.mediumFindings,
             categories: mockComplianceData.categories
           }
         }), 300);
@@ -164,19 +180,6 @@ export const demoAwareApiService = {
       : Promise.resolve({ data: mockFintechTransactions });
   },
 
-  // Add any other methods that need to be proxied
-  ...Object.keys(apiService).reduce((acc, key) => {
-    if (!acc[key]) {
-      acc[key] = async (...args) => {
-        if (isDemoMode()) {
-          console.warn(`Demo mode: ${key} called, returning empty response`);
-          return Promise.resolve({ success: true, data: null });
-        }
-        return apiService[key] ? apiService[key](...args) : Promise.resolve({ data: null });
-      };
-    }
-    return acc;
-  }, {})
 };
 
 export default demoAwareApiService;
