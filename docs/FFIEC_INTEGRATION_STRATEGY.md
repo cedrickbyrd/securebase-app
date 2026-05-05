@@ -67,7 +67,7 @@ The integration operates within a **Sovereign Cloud** architecture: all raw data
 
 **Sovereign Cloud principles:**
 - All raw data stays in the customer's AWS account — no cross-account data transfer
-- PII is SHA-256 hashed before leaving the customer's VPC
+- PII is HMAC-SHA256 hashed (per-customer salt from Secrets Manager) before leaving the customer's VPC
 - Customer holds the KMS CMK; SecureBase cannot decrypt evidence
 - S3 Object Lock (Compliance mode) prevents modification for the retention period
 - Row-Level Security in Aurora enforces `customer_id` isolation for all SecureBase managed data
@@ -299,7 +299,7 @@ The SecureBase Lambda maps customer transaction fields to the `tx_transaction_re
 | `amount_usd` | Amount | Transaction DB | `amount`, `usd_amount` |
 | `sender_name` | Sender full name | Transaction DB or CIP | `sender_name`, `from_name` |
 | `sender_id_type` | Government ID type | CIP system | `id_type`, `verification_type` |
-| `sender_id_number` | Government ID (hashed) | CIP system | SHA-256 hashed before storage |
+| `sender_id_number` | Government ID (hashed) | CIP system | HMAC-SHA256 hashed with per-customer salt (Secrets Manager) before storage |
 | `recipient_name` | Recipient name | Transaction DB | `recipient_name`, `to_name` |
 | `payment_method` | Method | Transaction DB | `payment_method`, `channel` |
 | `fee_charged` | Fee | Transaction DB | `fee`, `service_fee` |
@@ -448,7 +448,7 @@ Multi-state coverage is included in Fintech Elite ($12,000/month).
 | Data Type | Location | Access |
 |---|---|---|
 | Raw transaction records | Customer RDS/Aurora read replica | Read-only Lambda query |
-| PII (names, IDs) | Customer database — never exported | SHA-256 hashed before leaving VPC |
+| PII (names, IDs) | Customer database — never exported | HMAC-SHA256 hashed (per-customer salt) before leaving VPC |
 | Evidence records | SecureBase Aurora (`tx_*` tables) | RLS per `customer_id` |
 | Evidence packages | Customer's S3 bucket (Object Lock) | Examiner Portal only |
 | Signing keys | Customer's KMS (CMK) | Lambda IAM role only |
