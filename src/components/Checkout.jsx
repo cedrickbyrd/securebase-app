@@ -22,13 +22,20 @@ const PLAN_LABELS = {
   fintech: 'Fintech',
   healthcare: 'Healthcare',
   government: 'Government',
-  enterprise: 'Enterprise / FedRAMP',
   pilot: 'Pilot Program',
   pilot_compliance: 'Compliance Jumpstart',
   hipaa_assessment: 'HIPAA Readiness Assessment',
 };
 
-const KNOWN_PLANS = Object.keys(PLAN_LABELS);
+const CHECKOUT_SUPPORTED_PLANS = new Set(Object.keys(PLAN_LABELS));
+
+const SALES_ONLY_PLANS = {
+  enterprise: {
+    label: 'Enterprise / FedRAMP',
+    description: 'This plan requires a sales conversation before provisioning, so it cannot be purchased through self-service checkout.',
+    contactSalesPath: '/contact-sales?tier=enterprise&source=checkout',
+  },
+};
 
 // List prices (before any pilot discount) used when isPilot is false.
 // healthcare and government are enterprise tiers sold via portal/sales.
@@ -71,10 +78,38 @@ export default function Checkout() {
   const pilotPricing = getPilotPricing();
   const rawPlan = searchParams.get('plan') || (pilotPricing ? 'pilot' : 'standard');
 
+  if (SALES_ONLY_PLANS[rawPlan]) {
+    const salesPlan = SALES_ONLY_PLANS[rawPlan];
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">{salesPlan.label} requires sales assistance</h1>
+          <p className="text-slate-500 text-sm mb-6">{salesPlan.description}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => navigate(salesPlan.contactSalesPath)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-xl font-bold hover:shadow-lg transition-all"
+            >
+              Contact Sales
+            </button>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Pricing
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Fail-loud: unknown plan must surface as a visible error instead of silently
   // rendering with undefined price/label data.
-  if (!KNOWN_PLANS.includes(rawPlan)) {
-    console.error(`Unknown plan: "${rawPlan}". Known plans: ${KNOWN_PLANS.join(', ')}`);
+  if (!CHECKOUT_SUPPORTED_PLANS.has(rawPlan)) {
+    console.error(`Unknown plan: "${rawPlan}". Known plans: ${[...CHECKOUT_SUPPORTED_PLANS, ...Object.keys(SALES_ONLY_PLANS)].join(', ')}`);
     return (
       <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-red-200 p-8 text-center">
