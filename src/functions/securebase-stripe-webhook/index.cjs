@@ -5,8 +5,22 @@ const sesClient = new SESClient({ region: "us-east-1" });
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Config table that drives auto-enrollment for each assessment SKU.
-// Adding a new SKU only requires a new entry here plus the matching env var.
+/**
+ * Config table that drives auto-enrollment for each assessment SKU.
+ * Adding support for a new SKU requires only a new entry here plus the matching
+ * ASSESSMENT_UPGRADES entry in the checkout API and the env var it references.
+ *
+ * Each entry must contain:
+ *   subscriptionPriceEnvVar {string} — env var name holding the Stripe subscription Price ID
+ *   creditDescription       {string} — description stamped on the Stripe balance transaction
+ *   source                  {string} — value for the subscription's metadata.source field
+ *   displayTier             {string} — human-readable tier name used in logs and emails
+ *   displayPilotPrice       {string} — pilot price string for informational use
+ *   emailSubject            {string} — SES email subject line
+ *   emailIntro              {string} — HTML opening sentence (may include <strong>)
+ *   emailSteps              {string[]} — ordered list items explaining what happens next
+ *   ctaLabel                {string} — label for the "Access portal" CTA button
+ */
 const UPGRADE_CONFIG = {
   pilot_compliance: {
     subscriptionPriceEnvVar: 'STRIPE_PRICE_STANDARD',
@@ -41,9 +55,20 @@ const UPGRADE_CONFIG = {
 };
 
 /**
- * Handle auto-enrollment for assessment SKUs:
- * 1. Apply the assessment fee as a Stripe customer balance credit.
- * 2. Create the target subscription with a 30-day trial + pilot coupon.
+ * Handle auto-enrollment for assessment SKUs.
+ *
+ * @param {object} session        - Stripe Checkout Session object from the webhook event.
+ * @param {object} config         - Entry from UPGRADE_CONFIG for the session's tier.
+ * @param {string|undefined} pilotCouponId - Stripe coupon ID to apply (50% off pilot), or falsy to skip.
+ *
+ * Steps:
+ *   1. Apply the assessment fee as a negative Stripe customer balance credit so Stripe
+ *      automatically deducts it from the first real invoice when the trial ends.
+ *   2. Create the target subscription with a 30-day trial and the pilot coupon.
+ *
+ * The credit is applied *before* the subscription is created so that if
+ * createBalanceTransaction throws, the outer catch block prevents the subscription
+ * from being created in an uncredited state.
  */
 async function handleAssessmentUpgrade(session, config, pilotCouponId) {
   const customerId = session.customer;
@@ -89,7 +114,13 @@ async function handleAssessmentUpgrade(session, config, pilotCouponId) {
 }
 
 /**
- * Build the onboarding email HTML for assessment SKU purchasers.
+ * Build the onboarding email HTML body for assessment SKU purchasers.
+ *
+ * @param {object} config - Entry from UPGRADE_CONFIG. Must include:
+ *   emailIntro  {string}   — HTML opening sentence
+ *   emailSteps  {string[]} — ordered list items (HTML allowed)
+ *   ctaLabel    {string}   — text for the "Access portal" button
+ * @returns {string} HTML string for the email body.
  */
 function buildAssessmentEmail(config) {
   const steps = config.emailSteps
