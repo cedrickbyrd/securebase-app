@@ -228,7 +228,7 @@ def lambda_handler(event, context):
         original_price = FULL_PRICES.get(tier, 0)
 
         if is_one_time:
-            # One-time payment (e.g. Compliance Jumpstart pilot at $495)
+            # One-time payment (e.g. HIPAA Assessment at $1,995 or Compliance Jumpstart at $495)
             session_params = {
                 'payment_method_types': ['card'],
                 'line_items': [{
@@ -240,6 +240,9 @@ def lambda_handler(event, context):
                 'cancel_url': cancel_url,
                 'customer_email': customer_email,
                 'client_reference_id': customer_email,
+                # Always create a Stripe Customer object so the webhook can
+                # apply a balance credit and create the follow-on subscription.
+                'customer_creation': 'always',
                 'metadata': {
                     'tier': tier,
                     'customer_name': customer_name,
@@ -249,6 +252,15 @@ def lambda_handler(event, context):
                     **tier_compliance,
                 },
             }
+
+            # For the HIPAA Assessment, embed the auto-enrollment signals that
+            # the webhook uses to apply the $1,995 balance credit and create the
+            # Healthcare subscription after payment completes.
+            if tier == 'hipaa_assessment':
+                session_params['metadata'].update({
+                    'upgrade_to': 'healthcare',
+                    'assessment_credit': str(original_price),
+                })
         else:
             session_params = {
                 'payment_method_types': ['card'],
