@@ -12,7 +12,7 @@
  * is no longer used.
  */
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle, ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
 import { trackCheckoutStarted, trackViewItem } from '../utils/analytics';
 import { getPilotPricing, PILOT_PRICING } from '../utils/trackingUtils';
@@ -90,6 +90,14 @@ export default function Checkout() {
         </div>
       </div>
     );
+  }
+
+  // Enterprise is a sales-only plan — redirect to Contact Sales so it never
+  // reaches the checkout form.  Pricing.jsx already does this for CTA clicks,
+  // but a direct URL hit to /checkout?plan=enterprise would bypass that guard
+  // and fail at the Lambda (enterprise is not in TIER_PRICE_ENV).
+  if (rawPlan === 'enterprise') {
+    return <Navigate to="/contact-sales?tier=enterprise&source=checkout" replace />;
   }
 
   const plan = rawPlan;
