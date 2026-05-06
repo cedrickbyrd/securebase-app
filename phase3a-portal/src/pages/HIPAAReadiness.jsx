@@ -101,12 +101,13 @@ export default function HIPAAReadiness() {
       window.location.href = checkout_url;
     } catch (err) {
       console.error('HIPAA assessment checkout error:', err);
-      const fallback = getCheckoutFallback(SKU, err.message);
+      const errorMessage = err?.message || String(err);
+      const fallback = getCheckoutFallback(SKU, errorMessage);
       if (fallback) {
         navigate(fallback.contactSalesPath);
         return;
       }
-      setCheckoutError(err.message || 'Something went wrong. Please try again.');
+      setCheckoutError(errorMessage || 'Something went wrong. Please try again.');
       setCheckoutLoading(false);
     }
   };

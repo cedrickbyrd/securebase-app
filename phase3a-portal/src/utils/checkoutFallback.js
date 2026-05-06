@@ -1,3 +1,4 @@
+// Only tiers that should degrade to sales-assisted onboarding belong here.
 const SALES_FALLBACKS = {
   hipaa_assessment: {
     contactSalesTier: 'healthcare',
@@ -17,7 +18,9 @@ export function getCheckoutFallback(tier, apiError) {
   const fallback = SALES_FALLBACKS[tier];
   if (!fallback || !apiError) return null;
 
-  const validTierMatch = String(apiError).match(/Valid tiers:\s*(.+)$/i);
+  const validTierMatch = String(apiError)
+    .replace(/\s+/g, ' ')
+    .match(/Valid tiers:\s*(.+)$/i);
   if (!validTierMatch) return null;
 
   const validTiers = validTierMatch[1]
