@@ -9,6 +9,7 @@ const FRAMEWORK_OPTIONS = [
   { value: 'soc2', label: 'SOC 2 (Fintech / SaaS)' },
   { value: 'hipaa', label: 'HIPAA (Healthcare)' },
   { value: 'fedramp', label: 'FedRAMP (Government)' },
+  { value: 'ffiec', label: 'FFIEC CAT (Banking / Financial Institution)' },
   { value: 'cis', label: 'CIS Foundations (General)' },
 ];
 
@@ -33,6 +34,10 @@ const TIER_MESSAGING = {
     heading: 'Schedule Your Enterprise Demo',
     subheading: "Let's discuss FedRAMP Moderate, NIST 800-53, and your dedicated AWS GovCloud options.",
   },
+  ffiec: {
+    heading: 'Request Your FFIEC Regulatory Briefing',
+    subheading: "We'll walk you through our SOC 2 Type II report, Sovereign Cloud architecture brief, and FFIEC IT Handbook control mapping — before you touch any code.",
+  },
 };
 
 const DEFAULT_MESSAGING = {
@@ -45,8 +50,16 @@ export default function ContactSales() {
   const [searchParams] = useSearchParams();
 
   const tierParam = searchParams.get('tier') || '';
-  const messaging = TIER_MESSAGING[tierParam] || DEFAULT_MESSAGING;
-  const defaultFramework = TIER_TO_FRAMEWORK[tierParam] || 'soc2';
+  const topicParam = searchParams.get('topic') || '';
+  const isBriefing = searchParams.get('briefing') === 'true';
+
+  // Banking/FFIEC visitors (routed via ?topic=ffiec&briefing=true) get
+  // FFIEC-specific messaging regardless of tier.
+  const messagingKey = (topicParam === 'ffiec' || isBriefing) ? 'ffiec' : tierParam;
+  const messaging = TIER_MESSAGING[messagingKey] || DEFAULT_MESSAGING;
+  const defaultFramework = (topicParam === 'ffiec' || isBriefing)
+    ? 'ffiec'
+    : TIER_TO_FRAMEWORK[tierParam] || 'soc2';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -210,9 +223,7 @@ export default function ContactSales() {
                       <Loader className="animate-spin w-5 h-5" />
                       Sending…
                     </>
-                  ) : (
-                    'Request Demo'
-                  )}
+                  ) : (messagingKey === 'ffiec' ? 'Request Regulatory Briefing' : 'Request Demo')}
                 </button>
 
                 <p className="text-xs text-blue-400 text-center">
