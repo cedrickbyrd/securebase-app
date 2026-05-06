@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode, mockComplianceData, mockTexasComplianceData } from '../utils/demoData';
+import { logoutDemo } from '../services/jwtService';
 import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -24,7 +25,8 @@ function getCustomerTier() {
 export default function Compliance({ isPublic = false }) {
   const personalization = usePersonalization();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutDemo();
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'https://securebase.tximhotep.com/pricing';

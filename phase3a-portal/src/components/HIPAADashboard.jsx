@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
+import { logoutDemo } from '../services/jwtService';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -103,7 +104,8 @@ export default function HIPAADashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutDemo();
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'https://securebase.tximhotep.com/pricing';
