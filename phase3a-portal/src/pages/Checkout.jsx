@@ -19,7 +19,7 @@ import { Shield, Loader, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-re
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { trackCheckoutStarted } from '../utils/analytics';
-import { getCheckoutFallback } from '../utils/checkoutFallback';
+import { getCheckoutErrorMessage, getCheckoutFallback } from '../utils/checkoutFallback';
 
 const KNOWN_PLANS = Object.keys(PRICING_TIERS);
 
@@ -116,7 +116,7 @@ export default function Checkout() {
       window.location.href = checkout_url;
     } catch (err) {
       console.error('Checkout error:', err);
-      const errorMessage = err?.message || String(err);
+      const errorMessage = getCheckoutErrorMessage(err);
       const fallback = getCheckoutFallback(plan, errorMessage);
       if (fallback) {
         setFallbackPath(fallback.contactSalesPath);

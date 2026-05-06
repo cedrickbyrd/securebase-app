@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, Loader, AlertCircle, Lock, FileText, Activity, ClipboardList } from 'lucide-react';
 import { HIPAA_ASSESSMENT_ID } from '../config/live-config';
 import { trackEvent, trackCTAClick } from '../utils/analytics';
-import { getCheckoutFallback } from '../utils/checkoutFallback';
+import { getCheckoutErrorMessage, getCheckoutFallback } from '../utils/checkoutFallback';
 
 const SKU = 'hipaa_assessment';
 const ASSESSMENT_PRICE = 1995;
@@ -101,7 +101,7 @@ export default function HIPAAReadiness() {
       window.location.href = checkout_url;
     } catch (err) {
       console.error('HIPAA assessment checkout error:', err);
-      const errorMessage = err?.message || String(err);
+      const errorMessage = getCheckoutErrorMessage(err);
       const fallback = getCheckoutFallback(SKU, errorMessage);
       if (fallback) {
         navigate(fallback.contactSalesPath);

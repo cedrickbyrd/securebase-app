@@ -412,7 +412,7 @@ jobs:
           fi
           echo "✅ No hardcoded price_ strings in Lambda source"
 
-      - name: Run validate-pricing.cjs for all 4 subscription tiers
+      - name: Run validate-pricing.cjs for all subscription tiers
         run: |
           echo "── Running validate-pricing.cjs for each subscription tier ──"
           for tier in standard fintech healthcare government; do
@@ -435,7 +435,7 @@ jobs:
           echo "| STRIPE_PRICE_PILOT_COMPLIANCE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_HIPAA_ASSESSMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| No hardcoded price_ IDs | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| validate-pricing.cjs (4 tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| validate-pricing.cjs (4 subscription tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Hop 5 · Live Lambda Probe
