@@ -23,6 +23,7 @@ import { trackUtmCaptured } from '../utils/analytics';
 
 const SESSION_KEY = 'sb_session_attribution';
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+const MAX_UTM_LENGTH = 100;
 
 /**
  * Resolve UTM params from the current URL.
@@ -35,7 +36,7 @@ function parseCurrentUtms() {
   const result = {};
   UTM_KEYS.forEach((key) => {
     const val = search.get(key);
-    if (val) result[key] = val.slice(0, 200);
+    if (val) result[key] = val.slice(0, MAX_UTM_LENGTH);
   });
   return result;
 }
@@ -78,10 +79,11 @@ export function getSessionAttribution() {
  * - Delegates first-touch persistence to `captureUtmParams()` (localStorage, 30-day TTL).
  * - Writes to sessionStorage for same-tab attribution.
  * - Fires the GA4 `utm_captured` event when fresh UTM params are present.
- *
- * Safe to call multiple times — duplicate GA4 events are suppressed via a
- * module-level flag.
+ *   Fires at most once per page-load (guarded by a module-level flag reset on
+ *   each call so that SPA navigations each get their own event).
  */
+let _lastCapturedHref = null;
+
 export function initMarketingCapture() {
   // Always persist to first-touch (localStorage) via existing utility.
   captureUtmParams();
@@ -92,7 +94,11 @@ export function initMarketingCapture() {
   // Session-scoped persistence.
   persistToSession(fresh);
 
-  // Fire GA4 event so every UTM landing is counted.
+  // Fire GA4 event once per unique URL (avoids duplicates on re-renders while
+  // still counting each distinct UTM-tagged navigation).
+  const currentHref = window.location.href;
+  if (currentHref === _lastCapturedHref) return;
+  _lastCapturedHref = currentHref;
   trackUtmCaptured({ ...fresh, landing_path: window.location.pathname });
 }
 

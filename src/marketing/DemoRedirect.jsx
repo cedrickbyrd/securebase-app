@@ -15,10 +15,21 @@ import { buildUtmPassthrough, detectVertical, getSessionAttribution } from './ut
 import { getStoredAttribution } from '../utils/trackingUtils';
 
 const DEMO_BASE = 'https://demo.securebase.tximhotep.com';
+const DEMO_ORIGIN = new URL(DEMO_BASE).origin;
 
 function getDemoUrl() {
   const qs = buildUtmPassthrough();
-  return `${DEMO_BASE}${qs}`;
+  // Construct and validate the redirect URL so UTM params can never redirect
+  // to an unexpected origin (defense-in-depth against open-redirect).
+  try {
+    const url = new URL(`${DEMO_BASE}${qs}`);
+    if (url.origin !== DEMO_ORIGIN) {
+      return DEMO_BASE;
+    }
+    return url.toString();
+  } catch {
+    return DEMO_BASE;
+  }
 }
 
 function getTierAndCampaign() {

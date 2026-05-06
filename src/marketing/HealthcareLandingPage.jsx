@@ -61,7 +61,7 @@ export default function HealthcareLandingPage() {
 
   function handleViewDemo() {
     trackDemoRequest('healthcare');
-    window.open(`${DEMO_URL}?utm_source=healthcare_landing&utm_medium=cta&utm_campaign=hipaa_demo`, '_blank', 'noopener');
+    window.open(`${DEMO_URL}?utm_source=healthcare_landing&utm_medium=cta&utm_campaign=hipaa_demo`, '_blank', 'noopener,noreferrer');
   }
 
   return (

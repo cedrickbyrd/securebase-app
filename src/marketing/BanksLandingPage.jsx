@@ -49,7 +49,7 @@ export default function BanksLandingPage() {
 
   function handleViewDemo() {
     trackDemoRequest('banking');
-    window.open(`${DEMO_URL}?utm_source=banks_landing&utm_medium=cta&utm_campaign=ffiec_demo`, '_blank', 'noopener');
+    window.open(`${DEMO_URL}?utm_source=banks_landing&utm_medium=cta&utm_campaign=ffiec_demo`, '_blank', 'noopener,noreferrer');
   }
 
   const passing = FFIEC_SECTIONS.filter((s) => s.passing).length;
