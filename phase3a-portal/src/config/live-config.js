@@ -40,14 +40,14 @@ const PRICING_TIERS = {
     price: 1995,
     priceId: HIPAA_ASSESSMENT_ID,
     billingType: 'payment',
-    description: 'One-time HIPAA gap assessment — scored §164.308/310/312 safeguards across 67 AWS services',
+    description: 'One-time HIPAA gap assessment — auto-enrolled in Healthcare tier ($7,500/mo pilot, billing deferred 30 days, $1,995 credited)',
     features: [
       'Scored §164.308 / §164.310 / §164.312 safeguards',
       'PHI controls mapped across 67 AWS services',
       'Findings report with remediation owners & days-open',
       'Auditor-ready HTML export',
       'BAA readiness checklist',
-      '$1,995 credited toward Healthcare tier ($7,500/mo pilot)',
+      'Auto-enrolled in Healthcare tier — $7,500/mo pilot billing starts after 30 days, $1,995 credited to first invoice',
     ],
   },
   standard: {

@@ -99,10 +99,23 @@ exports.handler = async (event) => {
         tier: tier,
         company_email: customer_email,
         provisioning_status: 'queued',
+        // hipaa_assessment: signal the webhook to auto-enroll in the Healthcare tier
+        // with deferred billing and apply the assessment fee as a balance credit.
+        ...(tier === 'hipaa_assessment'
+          ? { upgrade_to: 'healthcare', assessment_credit: '1995' }
+          : {}),
       },
       success_url,
       cancel_url,
     };
+
+    // hipaa_assessment is a one-time payment, but the webhook needs a Stripe Customer
+    // object so it can apply the balance credit and create the deferred Healthcare
+    // subscription.  customer_creation:'always' guarantees one is created even though
+    // mode is 'payment'.
+    if (tier === 'hipaa_assessment') {
+      sessionParams.customer_creation = 'always';
+    }
 
     // Subscription sessions either get a 14-day free trial OR a pilot coupon.
     // Stripe does not allow `discounts` and `subscription_data.trial_period_days`
