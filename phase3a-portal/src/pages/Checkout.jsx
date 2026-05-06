@@ -34,7 +34,7 @@ export default function Checkout() {
 
   // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
   const locationState = location.state || {};
-  const rawPlan = locationState.tier || searchParams.get('plan') || 'standard';
+  const rawPlan = locationState.tier || searchParams.get('plan') || searchParams.get('tier') || 'standard';
 
   // Compute once at render time; isDemoMode reads env/localStorage/URL which are
   // stable for the lifetime of the page, so this value won't change after mount.
