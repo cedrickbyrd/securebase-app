@@ -5,9 +5,10 @@ Processes payment events and updates customer records
 
 import json
 import os
+import uuid
 import boto3
 import stripe
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import shared database utilities from Lambda Layer
 from db_utils import (
@@ -24,6 +25,11 @@ WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 # Initialize AWS clients
 secretsmanager = boto3.client('secretsmanager')
 sns = boto3.client('sns')
+
+DEFAULT_ASSESSMENT_CREDIT_USD = 1995
+DEFAULT_ASSESSMENT_CREDIT_CENTS = DEFAULT_ASSESSMENT_CREDIT_USD * 100
+FRAMEWORK_HIPAA = 'hipaa'
+STATUS_TRIAL = 'trial'
 
 
 def get_stripe_key():
@@ -141,7 +147,10 @@ def handle_hipaa_assessment_completed(session):
     )
     stripe_customer_id = session.get('customer')
     metadata = session.get('metadata', {})
-    customer_name = metadata.get('customer_name', (customer_email.split('@')[0] if customer_email else 'customer'))
+    default_customer_name = 'customer'
+    if customer_email:
+        default_customer_name = customer_email.split('@')[0]
+    customer_name = metadata.get('customer_name', default_customer_name)
 
     if not stripe_customer_id:
         raise ValueError("checkout.session.completed missing Stripe customer ID for hipaa_assessment flow")
@@ -150,11 +159,11 @@ def handle_hipaa_assessment_completed(session):
 
     # Credit amount — stored as USD integer string in session metadata
     try:
-        assessment_credit_usd = int(metadata.get('assessment_credit', '1995'))
+        assessment_credit_usd = int(metadata.get('assessment_credit', str(DEFAULT_ASSESSMENT_CREDIT_USD)))
         assessment_credit_cents = assessment_credit_usd * 100
     except (ValueError, TypeError):
-        assessment_credit_usd = 1995
-        assessment_credit_cents = 199500
+        assessment_credit_usd = DEFAULT_ASSESSMENT_CREDIT_USD
+        assessment_credit_cents = DEFAULT_ASSESSMENT_CREDIT_CENTS
 
     upgrade_to_tier = metadata.get('upgrade_to', 'healthcare')
     healthcare_price_id = os.environ.get('STRIPE_PRICE_HEALTHCARE')
@@ -177,7 +186,7 @@ def handle_hipaa_assessment_completed(session):
             metadata={
                 'assessment_credit_applied': str(assessment_credit_usd),
                 'assessment_session_id': session.get('id', ''),
-                'credit_applied_at': datetime.utcnow().isoformat(),
+                'credit_applied_at': datetime.now(timezone.utc).isoformat(),
             }
         )
         print(f"Applied -${assessment_credit_usd} balance credit to {stripe_customer_id}")
@@ -213,7 +222,7 @@ def handle_hipaa_assessment_completed(session):
         stripe_subscription_id = healthcare_sub['id']
         trial_end_ts = healthcare_sub.get('trial_end')
         trial_end_str = (
-            datetime.fromtimestamp(trial_end_ts).isoformat() if trial_end_ts else 'N/A'
+            datetime.fromtimestamp(trial_end_ts, tz=timezone.utc).isoformat() if trial_end_ts else 'N/A'
         )
         print(
             f"Healthcare subscription {stripe_subscription_id} created for "
@@ -229,7 +238,6 @@ def handle_hipaa_assessment_completed(session):
     conn = get_db_connection()
     customer_id = None
     try:
-        import uuid
         sql_check = "SELECT id FROM customers WHERE email = %s"
         existing = execute_query(conn, sql_check, (customer_email,))
 
@@ -267,7 +275,7 @@ def handle_hipaa_assessment_completed(session):
             result = execute_update(
                 conn, sql_insert,
                 (customer_id, customer_name, customer_email, customer_email,
-                 upgrade_to_tier, 'hipaa', 'trial',
+                 upgrade_to_tier, FRAMEWORK_HIPAA, STATUS_TRIAL,
                  stripe_customer_id, stripe_subscription_id,
                  'trialing', 'stripe', True)
             )
@@ -289,7 +297,7 @@ def handle_hipaa_assessment_completed(session):
             'assessment_credit_usd': assessment_credit_usd,
             'stripe_subscription_id': stripe_subscription_id,
             'stripe_customer_id': stripe_customer_id,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
         })
         execute_update(
             conn, sql_audit,
@@ -362,7 +370,6 @@ def handle_subscription_checkout_completed(session):
                 (stripe_customer_id, stripe_subscription_id, tier, customer_email)
             )
         else:
-            import uuid
             customer_id = str(uuid.uuid4())
             sql_insert = """
                 INSERT INTO customers (
@@ -428,7 +435,7 @@ def handle_payment_succeeded(invoice):
                 stripe_payment_intent_id = %s, updated_at = NOW()
             WHERE stripe_invoice_id = %s
         """
-        paid_at = datetime.fromtimestamp(invoice['status_transitions']['paid_at'])
+        paid_at = datetime.fromtimestamp(invoice['status_transitions']['paid_at'], tz=timezone.utc)
         payment_intent_id = invoice.get('payment_intent')
         execute_update(conn, sql_update, (paid_at, payment_intent_id, stripe_invoice_id))
         print(f"Invoice {stripe_invoice_id} marked as paid: ${amount_paid}")
