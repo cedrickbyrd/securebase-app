@@ -67,6 +67,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     process.env.STRIPE_PRICE_GOVERNMENT       = 'price_test_government';
     process.env.STRIPE_PRICE_PILOT            = 'price_test_pilot';
     process.env.STRIPE_PRICE_PILOT_COMPLIANCE = 'price_test_pilot_compliance';
+    process.env.STRIPE_PRICE_HIPAA_ASSESSMENT = 'price_test_hipaa_assessment';
     process.env.STRIPE_PILOT_COUPON_ID        = 'pilot_50_off';
     process.env.STRIPE_SECRET_KEY             = 'sk_test_dummy';
   });
@@ -78,6 +79,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     delete process.env.STRIPE_PRICE_GOVERNMENT;
     delete process.env.STRIPE_PRICE_PILOT;
     delete process.env.STRIPE_PRICE_PILOT_COMPLIANCE;
+    delete process.env.STRIPE_PRICE_HIPAA_ASSESSMENT;
     delete process.env.STRIPE_PILOT_COUPON_ID;
     delete process.env.STRIPE_SECRET_KEY;
   });
@@ -140,7 +142,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
 
     assert.equal(response.statusCode, 400);
     const body = JSON.parse(response.body);
-    assert.match(body.error, /tier is required/i);
+    assert.match(body.error, /unsupported tier/i);
   });
 
   test('missing tier returns 400', async () => {
@@ -219,6 +221,20 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     assert.equal(response.statusCode, 200);
     assert.equal(capturedSessionParams.line_items[0].price, 'price_test_government');
     assert.equal(capturedSessionParams.mode, 'subscription');
+  });
+
+  test('hipaa_assessment tier uses STRIPE_PRICE_HIPAA_ASSESSMENT env var and payment mode', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'test@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_hipaa_assessment');
+    assert.equal(capturedSessionParams.mode, 'payment');
+    assert.equal(capturedSessionParams.customer_creation, 'always');
   });
 
   test('use_pilot_coupon:true adds discounts and does NOT set trial_period_days', async () => {
