@@ -920,3 +920,50 @@ export function trackPilotCTAClick(location = 'pricing_page') {
   }
 }
 
+/**
+ * Track when UTM parameters are captured from a URL (fired once per landing).
+ *
+ * HIPAA note: only non-PII UTM fields and a sanitised path are sent.
+ *
+ * @param {object} params - UTM fields: utm_source, utm_medium, utm_campaign,
+ *   utm_content, utm_term, landing_path.
+ */
+export function trackUtmCaptured(params = {}) {
+  if (!canTrack()) return;
+  try {
+    const safe = {
+      utm_source:   (params.utm_source   || '').slice(0, 100),
+      utm_medium:   (params.utm_medium   || '').slice(0, 100),
+      utm_campaign: (params.utm_campaign || '').slice(0, 100),
+      utm_content:  (params.utm_content  || '').slice(0, 100),
+      utm_term:     (params.utm_term     || '').slice(0, 100),
+      landing_path: sanitizePath(params.landing_path || ''),
+    };
+    ReactGA.event('utm_captured', safe);
+    devLog('Event tracked: utm_captured', safe);
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: utm_captured', error);
+  }
+}
+
+/**
+ * Track when a visitor submits the lead-capture gate before the demo.
+ *
+ * HIPAA note: no email or name is sent — only tier and campaign label.
+ *
+ * @param {string} [tier='unknown'] - e.g. 'healthcare', 'banking'.
+ * @param {string} [campaign=''] - utm_campaign value.
+ */
+export function trackLeadGateSubmit(tier = 'unknown', campaign = '') {
+  if (!canTrack()) return;
+  try {
+    ReactGA.event('lead_gate_submit', {
+      tier,
+      utm_campaign: campaign.slice(0, 100),
+    });
+    devLog('Event tracked: lead_gate_submit', { tier, campaign });
+  } catch (error) {
+    console.error('[Analytics] Error tracking event: lead_gate_submit', error);
+  }
+}
+
