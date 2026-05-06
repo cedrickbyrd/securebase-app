@@ -14,12 +14,21 @@ const DELIVERABLES = [
   { icon: <Zap className="w-5 h-5 text-green-400" />, label: 'Deploy in 60 minutes — not 60 days' },
   { icon: <Lock className="w-5 h-5 text-green-400" />, label: 'CloudTrail, Config, Security Hub — pre-wired' },
   { icon: <Shield className="w-5 h-5 text-green-400" />, label: 'CIS AWS Foundations Benchmark applied by default' },
+  { icon: <CheckCircle className="w-5 h-5 text-green-400" />, label: 'Auto-enrolled in Fintech tier ($4,000/mo pilot, 30-day free trial, $495 credited to first invoice)' },
 ];
 
 const FAQS = [
   {
     q: 'What exactly do I get for $495?',
     a: 'A production-ready zip containing Terraform modules that deploy a SOC 2–aligned AWS Landing Zone, plus a Compliance Matrix PDF that maps each control to the specific code. You can deploy in under 60 minutes.',
+  },
+  {
+    q: 'How does the Fintech tier enrollment work?',
+    a: 'After payment, you are automatically enrolled in the Fintech tier at the $4,000/mo pilot rate. Your Fintech subscription includes a 30-day free trial — no billing until after your pilot period is complete. Your $495 fee is applied as a credit against your first Fintech invoice, reducing your first month\'s charge.',
+  },
+  {
+    q: 'Can I cancel the Fintech subscription before billing starts?',
+    a: 'Yes. You can cancel the Fintech subscription at any time from the portal before the 30-day trial ends and you will not be charged. The $495 Compliance Jumpstart fee for the one-time deliverables is non-refundable.',
   },
   {
     q: 'Does this include audit representation or a SOC 2 certificate?',
@@ -184,7 +193,7 @@ export default function ComplianceJumpstart() {
         {/* CTA Card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-12 text-center max-w-lg mx-auto">
           <p className="text-white text-2xl font-black mb-1">$495</p>
-          <p className="text-blue-300 text-sm mb-6">One-time payment • Instant delivery</p>
+          <p className="text-blue-300 text-sm mb-6">One-time payment · Fintech tier enrollment included</p>
 
           {checkoutError && (
             <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-400/30 text-red-300 text-sm">
@@ -214,7 +223,8 @@ export default function ComplianceJumpstart() {
             {[
               'Secured by Stripe — PCI DSS Level 1',
               'Instant access after payment',
-              'No subscription required',
+              'Auto-enrolled in Fintech tier ($4,000/mo pilot, 30-day free trial)',
+              '$495 credited to your first Fintech invoice',
             ].map((line) => (
               <div key={line} className="flex items-center justify-center gap-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
