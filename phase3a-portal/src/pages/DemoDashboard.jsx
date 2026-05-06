@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchData } from '../utils/fetchData';
+import { logoutDemo } from '../services/jwtService';
 
 export default function DemoDashboard() {
   const [downloading, setDownloading] = useState(false);
@@ -31,7 +32,8 @@ export default function DemoDashboard() {
     }, 2000);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutDemo();
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = '/login';

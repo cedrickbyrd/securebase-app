@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { demoAwareApiService } from '../services/demoApiService';
+import { logoutDemo } from '../services/jwtService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
 import BRANDING from '../config/branding';
@@ -94,7 +95,8 @@ function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutDemo();
     localStorage.removeItem('sessionToken');
     navigate('/login');
   };
