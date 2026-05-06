@@ -25,14 +25,14 @@ const PRICING_TIERS = {
     price: 495,
     priceId: PILOT_COMPLIANCE_ID,
     billingType: 'payment',
-    description: 'One-time compliance audit — AWS Landing Zone pilot at $495',
+    description: 'One-time compliance pilot — auto-enrolled in Fintech tier ($4,000/mo pilot, billing deferred 30 days, $495 credited)',
     features: [
       'CIS AWS Foundations compliance scan',
       'AWS Landing Zone audit report',
       'Security Hub baseline assessment',
       'CloudTrail configuration review',
       '30-day email support',
-      '$495 credited toward any subscription upgrade',
+      'Auto-enrolled in Fintech tier — $4,000/mo pilot billing starts after 30 days, $495 credited to first invoice',
     ],
   },
   hipaa_assessment: {
@@ -40,14 +40,14 @@ const PRICING_TIERS = {
     price: 1995,
     priceId: HIPAA_ASSESSMENT_ID,
     billingType: 'payment',
-    description: 'One-time HIPAA gap assessment — scored §164.308/310/312 safeguards across 67 AWS services',
+    description: 'One-time HIPAA gap assessment — auto-enrolled in Healthcare tier ($7,500/mo pilot, billing deferred 30 days, $1,995 credited)',
     features: [
       'Scored §164.308 / §164.310 / §164.312 safeguards',
       'PHI controls mapped across 67 AWS services',
       'Findings report with remediation owners & days-open',
       'Auditor-ready HTML export',
       'BAA readiness checklist',
-      '$1,995 credited toward Healthcare tier ($7,500/mo pilot)',
+      'Auto-enrolled in Healthcare tier — $7,500/mo pilot billing starts after 30 days, $1,995 credited to first invoice',
     ],
   },
   standard: {
