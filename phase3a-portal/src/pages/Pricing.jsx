@@ -57,7 +57,7 @@ const Pricing = () => {
     // One-time pilot → navigate directly to checkout form (no coupon/subscription logic)
     if (plan.isPilotOneTime) {
       trackCTAClick('pricing', plan.key);
-      navigate('/checkout', { state: { tier: plan.key } });
+      navigate(`/checkout?plan=${encodeURIComponent(plan.key)}`, { state: { tier: plan.key } });
       return;
     }
 
@@ -106,7 +106,7 @@ const Pricing = () => {
       setErrorTier(plan.key);
       setLoadingTier(null);
       // Graceful fallback to the full checkout form
-      navigate('/checkout', { state: { tier: plan.key } });
+      navigate(`/checkout?plan=${encodeURIComponent(plan.key)}`, { state: { tier: plan.key } });
     }
   };
 
