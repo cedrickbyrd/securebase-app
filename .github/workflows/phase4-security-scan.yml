@@ -35,7 +35,15 @@ jobs:
     
     strategy:
       matrix:
-        language: ['python', 'javascript']
+        include:
+          # Python: use build-mode none (buildless) to guarantee full source
+          # coverage. Autobuild fails on complex AWS/Terraform dependency trees
+          # and results in only ~26% of Python files being scanned.
+          - language: python
+            build-mode: none
+          # JavaScript/TypeScript: autobuild works reliably for this stack.
+          - language: javascript
+            build-mode: autobuild
     
     steps:
       - name: Checkout code
@@ -45,9 +53,11 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended,security-and-quality
 
       - name: Autobuild
+        if: matrix.build-mode == 'autobuild'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
