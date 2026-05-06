@@ -18,6 +18,8 @@ export function getCheckoutFallback(tier, apiError) {
   const fallback = SALES_FALLBACKS[tier];
   if (!fallback || !apiError) return null;
 
+  // Checkout Lambda 400s include `Valid tiers: tier_a, tier_b, ...`; when the
+  // requested tier is absent from that list we route qualifying plans to sales.
   const validTierMatch = getCheckoutErrorMessage(apiError)
     .replace(/\s+/g, ' ')
     .match(/Valid tiers:\s*(.+)$/i);

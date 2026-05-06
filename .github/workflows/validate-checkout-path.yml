@@ -176,7 +176,7 @@ jobs:
           done
           [ "${FAILED}" -eq 0 ] || exit 1
           echo ""
-          echo "── Tier map coverage: ${#TIERS[@]}/${#TIERS[@]} tiers ──"
+          echo "── Tier map coverage: ${#TIERS[@]} tiers ──"
 
       - name: Assert Missing priceId canary string absent
         run: |
