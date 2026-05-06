@@ -8,6 +8,7 @@ const COMPARISON_ROWS = [
   { label: 'AWS Landing Zone',       standard: true,   fintech: true,   healthcare: true,   government: true  },
   { label: 'Evidence Vaults',        standard: true,   fintech: true,   healthcare: true,   government: true  },
   { label: 'SOC 2 Controls',         standard: false,  fintech: true,   healthcare: true,   government: true  },
+  { label: 'FFIEC Readiness',        standard: false,  fintech: true,   healthcare: false,  government: true  },
   { label: 'HIPAA / BAA',            standard: false,  fintech: false,  healthcare: true,   government: true  },
   { label: 'FedRAMP Alignment',      standard: false,  fintech: false,  healthcare: false,  government: true  },
   { label: 'Dedicated CSM',          standard: false,  fintech: false,  healthcare: true,   government: true  },
