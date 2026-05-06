@@ -101,8 +101,6 @@ export default function HIPAAReadiness() {
     }
   };
 
-  const soldOut = slotsRemaining === 0;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 font-sans">
       {/* Nav */}
