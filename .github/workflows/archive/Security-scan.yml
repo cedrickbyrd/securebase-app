@@ -32,7 +32,10 @@ jobs:
 
       # 2. Scan Filesystem for known vulnerabilities in dependencies
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        # Pinned to v0.35.0 (SHA verified safe after the March 19 2026
+        # supply-chain compromise that affected almost all @v* tags on the
+        # aquasecurity/trivy-action repository).
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           scan-type: 'fs'
           ignore-unfixed: true
