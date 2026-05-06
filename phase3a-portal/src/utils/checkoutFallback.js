@@ -18,7 +18,7 @@ export function getCheckoutFallback(tier, apiError) {
   const fallback = SALES_FALLBACKS[tier];
   if (!fallback || !apiError) return null;
 
-  const validTierMatch = String(apiError)
+  const validTierMatch = getCheckoutErrorMessage(apiError)
     .replace(/\s+/g, ' ')
     .match(/Valid tiers:\s*(.+)$/i);
   if (!validTierMatch) return null;
@@ -34,4 +34,12 @@ export function getCheckoutFallback(tier, apiError) {
     ...fallback,
     contactSalesPath: `/contact-sales?tier=${encodeURIComponent(fallback.contactSalesTier)}&source=${encodeURIComponent(tier)}_checkout_fallback`,
   };
+}
+
+export function getCheckoutErrorMessage(error) {
+  if (!error) return '';
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object' && typeof error.error === 'string') return error.error;
+  if (typeof error === 'object' && typeof error.message === 'string') return error.message;
+  return String(error);
 }
