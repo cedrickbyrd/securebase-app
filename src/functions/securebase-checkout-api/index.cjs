@@ -15,7 +15,7 @@ const ONE_TIME_TIERS = new Set(['pilot_compliance', 'hipaa_assessment']);
 // To add a new assessment-to-tier mapping, add an entry here and a matching entry
 // in the webhook's UPGRADE_CONFIG table.
 const ASSESSMENT_UPGRADES = {
-  pilot_compliance: { upgrade_to: 'standard',    assessment_credit: '495'  },
+  pilot_compliance: { upgrade_to: 'fintech',     assessment_credit: '495'  },
   hipaa_assessment: { upgrade_to: 'healthcare',  assessment_credit: '1995' },
 };
 
