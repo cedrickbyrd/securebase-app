@@ -8,8 +8,11 @@ import { usePersonalization } from '../hooks/usePersonalization';
 import LeadCaptureForm from './LeadCaptureForm';
 import SocialProof from './SocialProof';
 import SignatureBadge from './SignatureBadge';
+import FFIECCATDashboard from './FFIECCATDashboard';
+import FFIECControlMapping from './compliance/FFIECControlMapping';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
+const FFIEC_TIERS = new Set(['fintech_elite']);
 
 // Pilot spots — update this number as spots fill
 const PILOT_SPOTS_REMAINING = 8;
@@ -38,6 +41,7 @@ export default function Compliance({ isPublic = false }) {
   const reportRef = useRef(null);
 
   const isTexasTier = isPublic || TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
+  const isFFIECTier = FFIEC_TIERS.has(getCustomerTier()) || isDemoMode();
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -401,6 +405,29 @@ export default function Compliance({ isPublic = false }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* FFIEC CAT Dashboard (fintech_elite tier) */}
+        {isFFIECTier && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #d97706' }}>
+            <FFIECCATDashboard
+              onEvidenceExport={(domain) => {
+                const label = domain ? domain.name : 'All Domains';
+                alert(`Demo Mode: Examiner evidence package for "${label}" would be generated and KMS-signed in production.`);
+              }}
+            />
+          </div>
+        )}
+
+        {/* FFIEC IT Handbook Control Mapping (fintech_elite tier) */}
+        {isFFIECTier && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <FFIECControlMapping
+              onExportClick={() => {
+                alert('Demo Mode: FFIEC examiner report would be exported as a KMS-signed PDF in production.');
+              }}
+            />
           </div>
         )}
 
