@@ -36,6 +36,17 @@ SENDER = os.environ.get(
 RATE_LIMIT_SLEEP = 0.5  # seconds between API calls
 PDL_MIN_LIKELIHOOD = 6  # minimum PDL match confidence (0–10); filters weak/ambiguous records
 
+# Hunter.io /v2/domain-search department filter per industry.
+# banking/fintech → 'it'  (security/IT staff)
+# healthcare      → 'management'  (CISO/CTO/VP roles are classified as
+#                                  management for most hospital/health-system domains)
+# Add new verticals here as the pipeline expands.
+INDUSTRY_HUNTER_DEPARTMENT: dict[str, str] = {
+    "banking": "it",
+    "fintech": "it",
+    "healthcare": "management",
+}
+
 # ── LinkedIn DM Templates ──────────────────────────────────────────────────────
 
 LINKEDIN_TEMPLATES = {
@@ -107,7 +118,7 @@ def hunter_domain_search(domain: str, industry: str = "banking") -> dict:
     if not HUNTER_API_KEY:
         print("  ⚠️  HUNTER_API_KEY not set — skipping domain search")
         return {}
-    department = "management" if industry == "healthcare" else "it"
+    department = INDUSTRY_HUNTER_DEPARTMENT.get(industry, "it")
     try:
         resp = requests.get(
             "https://api.hunter.io/v2/domain-search",
