@@ -30,22 +30,26 @@ const DELIVERABLES = [
   },
   {
     icon: <CheckCircle className="w-5 h-5 text-teal-400" />,
-    label: '$1,995 credited toward Healthcare tier ($7,500/mo pilot) at upgrade',
+    label: 'Auto-enrolled in Healthcare tier ($7,500/mo pilot) — billing starts after 30 days, $1,995 credited to first invoice',
   },
 ];
 
 const FAQS = [
   {
     q: 'What do I get for $1,995?',
-    a: 'A scored HIPAA gap assessment covering §164.308, §164.310, and §164.312 safeguards across 67 AWS services. Deliverables include a findings report with remediation owners and days-open tracking, an auditor-ready HTML export, and a BAA readiness checklist.',
+    a: 'A scored HIPAA gap assessment covering §164.308, §164.310, and §164.312 safeguards across 67 AWS services. Deliverables include a findings report with remediation owners and days-open tracking, an auditor-ready HTML export, and a BAA readiness checklist. You are also automatically enrolled in the Healthcare tier subscription.',
   },
   {
     q: 'Does this constitute a BAA or legal advice?',
     a: 'No. This assessment identifies technical and operational gaps against the HIPAA Security Rule and prepares you for the BAA conversation. It is not a Business Associate Agreement, legal advice, or HIPAA certification. Consult qualified legal counsel before signing a BAA.',
   },
   {
-    q: 'What is the Healthcare tier and how does the credit work?',
-    a: 'The Healthcare tier is $15,000/mo (full) or $7,500/mo on the pilot plan. If you upgrade to Healthcare after completing your assessment, the $1,995 assessment fee is credited in full against your first invoice.',
+    q: 'How does the Healthcare tier enrollment work?',
+    a: 'After payment, you are automatically enrolled in the Healthcare tier at the $7,500/mo pilot rate. Your Healthcare subscription includes a 30-day free trial — no billing until after your assessment period is complete. Your $1,995 assessment fee is applied as a credit against your first Healthcare invoice, reducing your first month\'s charge.',
+  },
+  {
+    q: 'Can I cancel the Healthcare subscription before billing starts?',
+    a: 'Yes. You can cancel the Healthcare subscription at any time from the portal before the 30-day trial ends and you will not be charged. The $1,995 assessment fee for the one-time gap report is non-refundable.',
   },
   {
     q: 'How quickly will I receive results?',
@@ -146,7 +150,7 @@ export default function HIPAAReadiness() {
         {/* CTA Card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-12 text-center max-w-lg mx-auto">
           <p className="text-white text-2xl font-black mb-1">$1,995</p>
-          <p className="text-teal-300 text-sm mb-6">One-time payment · No subscription required</p>
+          <p className="text-teal-300 text-sm mb-6">One-time payment · Healthcare tier enrollment included</p>
 
           {checkoutError && (
             <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-400/30 text-red-300 text-sm">
@@ -174,7 +178,8 @@ export default function HIPAAReadiness() {
             {[
               'Secured by Stripe — PCI DSS Level 1',
               'Dashboard available immediately after payment',
-              '$1,995 credited if you upgrade to Healthcare tier',
+              'Auto-enrolled in Healthcare tier ($7,500/mo pilot, 30-day free trial)',
+              '$1,995 credited to your first Healthcare invoice',
             ].map((line) => (
               <div key={line} className="flex items-center justify-center gap-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-teal-400 shrink-0" />
