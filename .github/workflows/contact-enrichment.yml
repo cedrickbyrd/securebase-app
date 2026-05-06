@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   enrich:
-    name: Enrich Contacts via Hunter.io + PDL
+    name: Enrich Banking + Healthcare Contacts via Hunter.io + PDL
     runs-on: ubuntu-latest
 
     steps:
@@ -32,15 +32,16 @@ jobs:
           ENRICHMENT_SENDER_IDENTITY: ${{ vars.ENRICHMENT_SENDER_IDENTITY || 'Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX' }}
         run: python .github/scripts/enrich_contacts.py
 
-      - name: Commit enriched_leads.json
+      - name: Commit enriched leads and heartbeat
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/data/enriched_leads.json
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/data/last_run.txt
+          git add .github/data/enriched_leads.json .github/data/last_run.txt
           if git diff --cached --quiet; then
-            echo "No changes to enriched_leads.json — skipping commit"
+            echo "No changes — skipping commit"
           else
-            git commit -m "chore: update enriched leads [skip ci]"
+            git commit -m "chore: weekly marketing engine run [skip ci]"
             git push
           fi
 
