@@ -228,6 +228,7 @@ export default function Checkout() {
                     <button
                       type="button"
                       onClick={() => navigate(fallbackPath)}
+                      aria-label={`Contact sales for ${planName} onboarding`}
                       className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
                     >
                       Contact Sales Instead
