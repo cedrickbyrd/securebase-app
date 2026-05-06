@@ -116,12 +116,13 @@ export default function Checkout() {
       window.location.href = checkout_url;
     } catch (err) {
       console.error('Checkout error:', err);
-      const fallback = getCheckoutFallback(plan, err.message);
+      const errorMessage = err?.message || String(err);
+      const fallback = getCheckoutFallback(plan, errorMessage);
       if (fallback) {
         setFallbackPath(fallback.contactSalesPath);
         setError(fallback.message);
       } else {
-        setError(err.message || 'Something went wrong. Please try again.');
+        setError(errorMessage || 'Something went wrong. Please try again.');
       }
       setLoading(false);
     }
