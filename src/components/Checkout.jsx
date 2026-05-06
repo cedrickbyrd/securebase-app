@@ -25,6 +25,7 @@ const PLAN_LABELS = {
   enterprise: 'Enterprise / FedRAMP',
   pilot: 'Pilot Program',
   pilot_compliance: 'Compliance Jumpstart',
+  hipaa_assessment: 'HIPAA Readiness Assessment',
 };
 
 const KNOWN_PLANS = Object.keys(PLAN_LABELS);
@@ -39,6 +40,7 @@ const PLAN_PRICES = {
   enterprise: 3999,
   pilot: 2000,
   pilot_compliance: 495,
+  hipaa_assessment: 1995,
 };
 
 const PLAN_BILLING_TYPE = {
@@ -49,6 +51,7 @@ const PLAN_BILLING_TYPE = {
   enterprise: 'subscription',
   pilot: 'subscription',
   pilot_compliance: 'payment',
+  hipaa_assessment: 'payment',
 };
 
 // The pilot 50% discount applies to any of these plans.
@@ -202,6 +205,12 @@ export default function Checkout() {
                 <span className="text-sm font-bold">Pilot Discount Applied! — 50% savings</span>
               </div>
             )}
+            {plan === 'hipaa_assessment' && (
+              <div className="flex items-center gap-2 mb-3 bg-white/20 rounded-lg px-3 py-2">
+                <CheckCircle className="w-4 h-4 text-green-300 shrink-0" />
+                <span className="text-sm font-bold">Auto-enrolled in Healthcare tier — $1,995 credited to first invoice</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
@@ -223,6 +232,23 @@ export default function Checkout() {
 
           {/* Checkout form */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            {/* Healthcare → HIPAA assessment upsell */}
+            {plan === 'healthcare' && (
+              <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                <p className="text-xs font-bold text-teal-800 mb-1">Recommended: Start with the HIPAA Readiness Assessment</p>
+                <p className="text-xs text-teal-700 mb-2">
+                  Get a scored gap analysis of HIPAA technical safeguards first ($1,995 one-time).
+                  You'll be automatically enrolled in the Healthcare tier with a 30-day trial and the fee credited to your first invoice.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout?plan=hipaa_assessment')}
+                  className="text-xs font-bold text-teal-700 hover:text-teal-900 underline"
+                >
+                  Start with HIPAA Assessment instead ($1,995) →
+                </button>
+              </div>
+            )}
             <h1 className="text-2xl font-bold text-slate-900 mb-2">
               {billingType === 'payment' ? 'Complete your purchase' : 'Start your subscription'}
             </h1>
@@ -295,7 +321,13 @@ export default function Checkout() {
             {/* Trust signals */}
             <div className="mt-6 pt-5 border-t border-slate-100">
               <div className="flex flex-col gap-2">
-                {(billingType === 'payment'
+                {(plan === 'hipaa_assessment'
+                  ? [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      'Auto-enrolled in Healthcare tier — 30-day trial, $1,995 credited',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                  : billingType === 'payment'
                   ? [
                       'Secured by Stripe — PCI DSS Level 1',
                       'One-time payment — no recurring charges',
