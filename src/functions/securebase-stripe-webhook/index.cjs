@@ -23,17 +23,17 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
  */
 const UPGRADE_CONFIG = {
   pilot_compliance: {
-    subscriptionPriceEnvVar: 'STRIPE_PRICE_STANDARD',
-    creditDescription: 'Compliance Jumpstart credit toward Standard subscription',
+    subscriptionPriceEnvVar: 'STRIPE_PRICE_FINTECH',
+    creditDescription: 'Compliance Jumpstart credit toward Fintech subscription',
     source: 'pilot_compliance_upgrade',
-    displayTier: 'Standard',
-    displayPilotPrice: '$1,000/mo pilot',
-    emailSubject: 'Welcome to SecureBase — Your Compliance Jumpstart + Standard Tier Enrollment',
+    displayTier: 'Fintech',
+    displayPilotPrice: '$4,000/mo pilot',
+    emailSubject: 'Welcome to SecureBase — Your Compliance Jumpstart + Fintech Tier Enrollment',
     emailIntro: 'Your <strong>Compliance Jumpstart</strong> payment has been received.',
     emailSteps: [
       'Your SOC 2-ready Terraform modules and Compliance Matrix PDF are available in the portal.',
-      'You have been automatically enrolled in the <strong>Standard tier</strong> ($1,000/mo pilot) with a <strong>30-day free trial</strong> — no billing until your pilot period is complete.',
-      'Your $495 pilot fee has been applied as a credit toward your first Standard invoice.',
+      'You have been automatically enrolled in the <strong>Fintech tier</strong> ($4,000/mo pilot) with a <strong>30-day free trial</strong> — no billing until your pilot period is complete.',
+      'Your $495 pilot fee has been applied as a credit toward your first Fintech invoice.',
     ],
     ctaLabel: 'Access Your Compliance Dashboard',
   },

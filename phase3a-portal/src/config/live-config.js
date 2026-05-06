@@ -25,14 +25,14 @@ const PRICING_TIERS = {
     price: 495,
     priceId: PILOT_COMPLIANCE_ID,
     billingType: 'payment',
-    description: 'One-time compliance pilot — auto-enrolled in Standard tier ($1,000/mo pilot, billing deferred 30 days, $495 credited)',
+    description: 'One-time compliance pilot — auto-enrolled in Fintech tier ($4,000/mo pilot, billing deferred 30 days, $495 credited)',
     features: [
       'CIS AWS Foundations compliance scan',
       'AWS Landing Zone audit report',
       'Security Hub baseline assessment',
       'CloudTrail configuration review',
       '30-day email support',
-      'Auto-enrolled in Standard tier — $1,000/mo pilot billing starts after 30 days, $495 credited to first invoice',
+      'Auto-enrolled in Fintech tier — $4,000/mo pilot billing starts after 30 days, $495 credited to first invoice',
     ],
   },
   hipaa_assessment: {
