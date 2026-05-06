@@ -36,6 +36,17 @@ SENDER = os.environ.get(
 RATE_LIMIT_SLEEP = 0.5  # seconds between API calls
 PDL_MIN_LIKELIHOOD = 6  # minimum PDL match confidence (0–10); filters weak/ambiguous records
 
+# Hunter.io /v2/domain-search department filter per industry.
+# banking/fintech → 'it'  (security/IT staff)
+# healthcare      → 'management'  (CISO/CTO/VP roles are classified as
+#                                  management for most hospital/health-system domains)
+# Add new verticals here as the pipeline expands.
+INDUSTRY_HUNTER_DEPARTMENT: dict[str, str] = {
+    "banking": "it",
+    "fintech": "it",
+    "healthcare": "management",
+}
+
 # ── LinkedIn DM Templates ──────────────────────────────────────────────────────
 
 LINKEDIN_TEMPLATES = {
@@ -94,17 +105,20 @@ DEFAULT_TEMPLATE = lambda contact: (
 
 # ── API Helpers ────────────────────────────────────────────────────────────────
 
-def hunter_domain_search(domain: str) -> dict:
+def hunter_domain_search(domain: str, industry: str = "banking") -> dict:
     """Call Hunter.io /v2/domain-search. Returns email pattern and known emails.
 
     Extra params sent:
-      type='personal'   — exclude generic/service addresses (e.g. info@, support@)
-      department='it'   — scope results to IT / security staff
+      type='personal'    — exclude generic/service addresses (e.g. info@, support@)
+      department         — 'it' for banking (security/IT staff); 'management' for
+                           healthcare (CISO/CTO/VP roles are classified as management
+                           in Hunter.io for most hospital and health-system domains)
       seniority='senior' — return senior-level contacts only
     """
     if not HUNTER_API_KEY:
         print("  ⚠️  HUNTER_API_KEY not set — skipping domain search")
         return {}
+    department = INDUSTRY_HUNTER_DEPARTMENT.get(industry, "it")
     try:
         resp = requests.get(
             "https://api.hunter.io/v2/domain-search",
@@ -112,7 +126,7 @@ def hunter_domain_search(domain: str) -> dict:
                 "domain": domain,
                 "api_key": HUNTER_API_KEY,
                 "type": "personal",
-                "department": "it",
+                "department": department,
                 "seniority": "senior",
             },
             timeout=15,
@@ -274,18 +288,19 @@ def enrich_contacts():
     for i, contact in enumerate(companies, 1):
         company_name = contact.get("company", "")
         domain = contact.get("domain", "")
+        industry = contact.get("industry", "banking")
         first = contact.get("contact_first", "")
         last = contact.get("contact_last", "")
         has_name = first != "FILL_IN" and last != "FILL_IN"
 
-        print(f"[{i}/{total}] {company_name} ({domain})")
+        print(f"[{i}/{total}] {company_name} ({domain}) [{industry}]")
 
         result = {**contact}
 
         # 1. Hunter domain search (always — pattern is useful even without a name)
         if domain:
             print(f"  → Hunter domain search: {domain}")
-            domain_data = hunter_domain_search(domain)
+            domain_data = hunter_domain_search(domain, industry)
             result["hunter_domain"] = domain_data
         else:
             result["hunter_domain"] = {}
