@@ -3,6 +3,14 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // One-time payment tiers — these must use mode:'payment', not mode:'subscription'.
 const ONE_TIME_TIERS = new Set(['pilot_compliance', 'hipaa_assessment']);
 
+// Assessment SKUs that auto-enroll the customer in a subscription tier after payment.
+// The webhook reads upgrade_to / assessment_credit from session metadata to apply
+// the balance credit and create the deferred subscription.
+const ASSESSMENT_UPGRADES = {
+  pilot_compliance: { upgrade_to: 'standard',    assessment_credit: '495'  },
+  hipaa_assessment: { upgrade_to: 'healthcare',  assessment_credit: '1995' },
+};
+
 // Server-side tier → Stripe Price ID env var mapping.
 // Price IDs are resolved exclusively from environment variables; any client-supplied
 // priceId is IGNORED for these tiers. This prevents an attacker (or stale frontend
@@ -99,21 +107,18 @@ exports.handler = async (event) => {
         tier: tier,
         company_email: customer_email,
         provisioning_status: 'queued',
-        // hipaa_assessment: signal the webhook to auto-enroll in the Healthcare tier
-        // with deferred billing and apply the assessment fee as a balance credit.
-        ...(tier === 'hipaa_assessment'
-          ? { upgrade_to: 'healthcare', assessment_credit: '1995' }
-          : {}),
+        // Assessment SKUs signal the webhook to auto-enroll in the target subscription
+        // tier with deferred billing and apply the assessment fee as a balance credit.
+        ...(ASSESSMENT_UPGRADES[tier] || {}),
       },
       success_url,
       cancel_url,
     };
 
-    // hipaa_assessment is a one-time payment, but the webhook needs a Stripe Customer
-    // object so it can apply the balance credit and create the deferred Healthcare
-    // subscription.  customer_creation:'always' guarantees one is created even though
-    // mode is 'payment'.
-    if (tier === 'hipaa_assessment') {
+    // Assessment SKUs are one-time payments, but the webhook needs a Stripe Customer
+    // object to apply the balance credit and create the deferred subscription.
+    // customer_creation:'always' guarantees one is created even though mode is 'payment'.
+    if (ASSESSMENT_UPGRADES[tier]) {
       sessionParams.customer_creation = 'always';
     }
 
