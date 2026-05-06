@@ -66,13 +66,23 @@ exports.handler = async (event) => {
     const pilotCouponId    = process.env.STRIPE_PILOT_COUPON_ID || 'pilot_50_off';
 
     // Require a known tier — the price ID is always resolved server-side from env vars.
-    if (!tier || !TIER_PRICE_ENV[tier]) {
+    if (!tier) {
       const valid = Object.keys(TIER_PRICE_ENV).join(', ');
-      console.error(`Unknown or missing tier "${tier}". Valid tiers: ${valid}`);
+      console.error(`Missing tier. Valid tiers: ${valid}`);
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
         body: JSON.stringify({ error: `tier is required. Valid tiers: ${valid}` }),
+      };
+    }
+
+    if (!TIER_PRICE_ENV[tier]) {
+      const valid = Object.keys(TIER_PRICE_ENV).join(', ');
+      console.error(`Unsupported tier "${tier}". Valid tiers: ${valid}`);
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: `Unsupported tier "${tier}". Valid tiers: ${valid}` }),
       };
     }
 

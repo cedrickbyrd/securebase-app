@@ -19,6 +19,7 @@ import { Shield, Loader, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-re
 import { PRICING_TIERS } from '../config/live-config';
 import { isDemoMode } from '../utils/demoData';
 import { trackCheckoutStarted } from '../utils/analytics';
+import { getCheckoutFallback } from '../utils/checkoutFallback';
 
 const KNOWN_PLANS = Object.keys(PRICING_TIERS);
 
@@ -31,6 +32,7 @@ export default function Checkout() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fallbackPath, setFallbackPath] = useState(null);
 
   // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
   const locationState = location.state || {};
@@ -81,6 +83,7 @@ export default function Checkout() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setFallbackPath(null);
 
     trackCheckoutStarted({ tier: plan, ...(planPrice !== null && { value: planPrice }), method: 'form' });
 
@@ -113,7 +116,13 @@ export default function Checkout() {
       window.location.href = checkout_url;
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err.message || 'Something went wrong. Please try again.');
+      const fallback = getCheckoutFallback(plan, err.message);
+      if (fallback) {
+        setFallbackPath(fallback.contactSalesPath);
+        setError(fallback.message);
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.');
+      }
       setLoading(false);
     }
   };
@@ -210,9 +219,20 @@ export default function Checkout() {
               </div>
 
               {error && (
-                <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
-                  {error}
-                </p>
+                <div className="space-y-3">
+                  <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
+                    {error}
+                  </p>
+                  {fallbackPath && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(fallbackPath)}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
+                    >
+                      Contact Sales Instead
+                    </button>
+                  )}
+                </div>
               )}
 
               <button

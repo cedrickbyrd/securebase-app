@@ -161,10 +161,10 @@ jobs:
           fi
           echo "✅ handler_version=2026-04-20 present"
 
-      - name: Assert all 5 tiers in TIER_PRICE_ENV
+      - name: Assert all supported tiers in TIER_PRICE_ENV
         run: |
           FILE="src/functions/securebase-checkout-api/index.cjs"
-          TIERS=(standard fintech healthcare government pilot_compliance)
+          TIERS=(standard fintech healthcare government pilot pilot_compliance hipaa_assessment)
           FAILED=0
           for tier in "${TIERS[@]}"; do
             if ! grep -qF "${tier}" "${FILE}"; then
@@ -176,7 +176,7 @@ jobs:
           done
           [ "${FAILED}" -eq 0 ] || exit 1
           echo ""
-          echo "── Tier map coverage: ${#TIERS[@]}/5 tiers ──"
+          echo "── Tier map coverage: ${#TIERS[@]}/${#TIERS[@]} tiers ──"
 
       - name: Assert Missing priceId canary string absent
         run: |
@@ -200,7 +200,7 @@ jobs:
           echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
           echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
           echo "| \`handler_version=2026-04-20\` | ✅ present |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| TIER_PRICE_ENV (5 tiers) | ✅ standard, fintech, healthcare, government, pilot_compliance |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| TIER_PRICE_ENV (7 tiers) | ✅ standard, fintech, healthcare, government, pilot, pilot_compliance, hipaa_assessment |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| \`Missing priceId\` canary | ✅ absent |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| Unit tests | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
@@ -375,7 +375,9 @@ jobs:
             STRIPE_PRICE_FINTECH
             STRIPE_PRICE_HEALTHCARE
             STRIPE_PRICE_GOVERNMENT
+            STRIPE_PRICE_PILOT
             STRIPE_PRICE_PILOT_COMPLIANCE
+            STRIPE_PRICE_HIPAA_ASSESSMENT
           )
 
           FAILED=0
@@ -429,7 +431,9 @@ jobs:
           echo "| STRIPE_PRICE_FINTECH | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_HEALTHCARE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_GOVERNMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_PILOT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_PILOT_COMPLIANCE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_HIPAA_ASSESSMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| No hardcoded price_ IDs | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| validate-pricing.cjs (4 tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
