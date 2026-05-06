@@ -143,6 +143,23 @@ export default function LinkedInPostBuilder() {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(label);
       setTimeout(() => setCopied(null), 2000);
+    }).catch(() => {
+      // Clipboard API unavailable (e.g. non-HTTPS, blocked permissions) —
+      // fall back to execCommand for older environments.
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(label);
+        setTimeout(() => setCopied(null), 2000);
+      } catch {
+        // Both methods failed — nothing to do without breaking the UI.
+      }
     });
   }
 
@@ -249,8 +266,9 @@ export default function LinkedInPostBuilder() {
             ))}
           </div>
           <p className="text-xs text-blue-500 mt-2">
-            trackingUtils.js will capture these on landing and classify as{' '}
-            <code className="bg-gray-800 px-1 rounded">{campaign.vertical === 'banking' ? 'isBankingDomainTraffic()' : 'isLinkedInTraffic()'}</code>
+            trackingUtils.js will capture these on landing; <code className="bg-gray-800 px-1 rounded">detectVertical()</code> in utmCapture.js will classify this visitor as{' '}
+            <code className="bg-gray-800 px-1 rounded">'{campaign.vertical}'</code>
+            {campaign.vertical === 'banking' ? ' and redirect to /banks' : ' and redirect to /healthcare'}.
           </p>
         </section>
 

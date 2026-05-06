@@ -50,9 +50,12 @@ export default function LeadCapture({ onSubmit, tier = 'unknown', campaign = '' 
           viewedPricing: false,
         }),
       });
-    } catch {
+    } catch (err) {
       // Non-blocking: if the API call fails we still let the visitor through
       // to the demo — losing a lead record is better than blocking the demo.
+      if (import.meta.env.DEV) {
+        console.error('[LeadCapture] /api/leads request failed:', err);
+      }
     }
 
     trackLeadGateSubmit(tier, campaign);
