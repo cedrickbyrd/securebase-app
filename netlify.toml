@@ -52,6 +52,13 @@
   status = 200
   force = true
 
+# S3 PROXY SHIELD - Blocks direct S3 URL exposure; routes storage requests through API Gateway.
+[[redirects]]
+  from = "/storage/*"
+  to = "https://api.securebase.tximhotep.com/storage/:splat"
+  status = 200
+  force = true
+
 # ADMIN METRICS / ALERTS - Served by the Phase 5 /admin/* API Gateway routes.
 [[redirects]]
   from = "/api/admin/metrics"
