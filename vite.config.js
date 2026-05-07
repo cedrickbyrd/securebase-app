@@ -14,8 +14,30 @@ export default defineConfig({
     sourcemap: true,          // Enable source maps for debugging
     
     // Performance optimizations
-    target: 'es2015',
+    target: 'esnext',
     minify: 'esbuild',        // Fast minification with esbuild
+
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Ant Design — largest single library, split it out
+          'vendor-antd': ['antd'],
+          // AWS SDK clients
+          'vendor-aws': [
+            '@aws-sdk/client-dynamodb',
+            '@aws-sdk/client-s3',
+            '@aws-sdk/client-ses',
+            '@aws-sdk/lib-dynamodb',
+          ],
+          // Charting stack
+          'vendor-charts': ['chart.js', 'react-chartjs-2'],
+          // Stripe browser SDK
+          'vendor-stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          // React runtime
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
   },
   
   // Base path configuration

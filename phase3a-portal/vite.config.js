@@ -17,13 +17,23 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
     copyPublicDir: true,
     sourcemap: true,
-    target: 'es2015',
+    target: 'esnext',
     minify: 'esbuild',
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name].${timestamp}.js`,
         chunkFileNames: `assets/[name].${timestamp}.js`,
         assetFileNames: `assets/[name].${timestamp}.[ext]`,
+        manualChunks: {
+          // Charting stack
+          'vendor-charts': ['chart.js', 'react-chartjs-2', 'recharts'],
+          // Stripe browser SDK
+          'vendor-stripe': ['@stripe/stripe-js'],
+          // Animation library
+          'vendor-motion': ['framer-motion'],
+          // React runtime
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+        },
       },
     },
   },
