@@ -235,7 +235,7 @@ resource "aws_scheduler_schedule" "aurora_scale_up_monday" {
   })
 }
 
-
+resource "aws_iam_role" "scheduler" {
   name = "securebase-${var.environment}-scheduler"
 
   assume_role_policy = jsonencode({

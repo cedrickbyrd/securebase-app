@@ -41,9 +41,9 @@ jobs:
           # and results in only ~26% of Python files being scanned.
           - language: python
             build-mode: none
-          # JavaScript/TypeScript: autobuild works reliably for this stack.
+          # JavaScript/TypeScript: autobuild is NOT supported; use none (buildless).
           - language: javascript
-            build-mode: autobuild
+            build-mode: none
     
     steps:
       - name: Checkout code
@@ -55,10 +55,6 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended,security-and-quality
-
-      - name: Autobuild
-        if: matrix.build-mode == 'autobuild'
-        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
