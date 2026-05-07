@@ -44,7 +44,7 @@ data "aws_ssoadmin_instances" "this" {}
 
 # Call the root module
 module "securebase" {
-  source = "../.."
+  source = "../.." 
   sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]  # ← dynamic
 # sso_instance_arn = "arn:aws:sso:::instance/ssoins-7223295e77f4f12d"
 
@@ -88,43 +88,11 @@ module "netlify_sites" {
   tags               = var.tags
 }
 
-<<<<<<< HEAD
-# Phase 5.3 – Component 4: Logging & Distributed Tracing
-=======
-# ── Phase 5.3: Logging & Distributed Tracing ─────────────────────────────────
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+# ── Phase 5.3: Logging & Distributed Tracing ──────────────────────────────────
 module "phase5_logging" {
   source = "../../modules/phase5-logging"
 
   environment = var.environment
-<<<<<<< HEAD
-  tags        = var.tags
-}
-
-# Phase 5.3 – Component 5: Alerting & Incident Response
-module "phase5_alerting" {
-  source = "../../modules/phase5-alerting"
-
-  environment                  = var.environment
-  tags                         = var.tags
-  pagerduty_routing_key        = var.pagerduty_routing_key
-  oncall_email                 = var.oncall_email
-  lambda_concurrency_threshold = var.lambda_concurrency_threshold
-  api_usage_spike_threshold    = var.api_usage_spike_threshold
-}
-
-# Phase 5.3 – Component 7: Infrastructure Scaling & Cost Optimization
-module "phase5_cost_optimization" {
-  source = "../../modules/phase5-cost-optimization"
-
-  environment                = var.environment
-  tags                       = var.tags
-  aurora_min_acu             = var.min_aurora_capacity
-  aurora_max_acu             = var.max_aurora_capacity
-  aurora_off_peak_min_acu    = var.aurora_off_peak_min_acu
-  high_alert_sns_topic_arn   = module.phase5_alerting.high_topic_arn
-  cost_anomaly_threshold_usd = var.cost_anomaly_threshold_usd
-=======
   aws_region  = var.target_region
 
   lambda_function_names = local.phase5_lambda_names
@@ -133,12 +101,12 @@ module "phase5_cost_optimization" {
   tags           = var.tags
 }
 
-# ── Phase 5.3: Alerting & Incident Response ───────────────────────────────────
+# ── Phase 5.3: Alerting & Incident Response ──────────────────────────────────
 module "phase5_alerting" {
   source = "../../modules/phase5-alerting"
 
-  environment    = var.environment
-  aws_region     = var.target_region
+  environment     = var.environment
+  aws_region      = var.target_region
   sns_kms_key_arn = module.phase5_logging.kms_key_arn
 
   lambda_function_names = local.phase5_lambda_names
@@ -147,10 +115,17 @@ module "phase5_alerting" {
   aurora_cluster_id = var.aurora_cluster_id
 
   alert_email = var.alert_email
-  tags        = var.tags
+
+  # Legacy alerting vars (kept for backward compatibility)
+  pagerduty_routing_key        = var.pagerduty_routing_key
+  oncall_email                 = var.oncall_email
+  lambda_concurrency_threshold = var.lambda_concurrency_threshold
+  api_usage_spike_threshold    = var.api_usage_spike_threshold
+
+  tags = var.tags
 }
 
-# ── Phase 5.3: Multi-Region DR ────────────────────────────────────────────────
+# ── Phase 5.3: Multi-Region DR ───────────────────────────────────────────────
 module "multi_region" {
   source = "../../modules/multi-region"
 
@@ -170,7 +145,7 @@ module "multi_region" {
   tags = var.tags
 }
 
-# ── Phase 5.3: Cost Optimization ──────────────────────────────────────────────
+# ── Phase 5.3: Cost Optimization ─────────────────────────────────────────────────
 module "phase5_cost" {
   source = "../../modules/phase5-cost"
 
@@ -178,10 +153,12 @@ module "phase5_cost" {
   alert_sns_arn             = module.phase5_alerting.alert_sns_arn
   anomaly_threshold_percent = 20
 
+  aurora_off_peak_min_acu    = var.aurora_off_peak_min_acu
+  cost_anomaly_threshold_usd = var.cost_anomaly_threshold_usd
+
   s3_bucket_names = var.s3_cost_tiering_buckets
 
   tags = var.tags
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }
 
 terraform {
