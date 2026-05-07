@@ -49,6 +49,10 @@
     "vite": "^6.4.1"
   },
   "overrides": {
-    "fast-xml-parser": "5.5.8"
+    "fast-xml-parser": "5.5.8",
+    "antd": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }
