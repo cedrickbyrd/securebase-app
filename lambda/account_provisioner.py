@@ -265,7 +265,7 @@ def send_welcome(email, first_name, org_name, account_id, sender):
                         f"Hi {first_name},\n\n"
                         f"Your AWS landing zone for {org_name} is ready.\n"
                         f"AWS Account ID: {account_id}\n\n"
-                        "https://securebase.tximhotep.com/dashboard\n\n"
+                        "https://securebase.tximhotep.com/login\n\n"
                         "— SecureBase"
                     )
                 }
@@ -424,4 +424,3 @@ def handler(event, context):
         job_id, customer_id, email, org_name, aws_region,
         mfa_enabled, guardrails_level, pool_id, cb_project, ses_sender,
     )
-
