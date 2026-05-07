@@ -22,11 +22,15 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 // We mock 'stripe' before requiring the handler so we can inspect what session
 // params were passed without making real Stripe API calls.
 let capturedSessionParams = null;
+let stripeCreateImpl = null;
 
 const mockStripe = () => ({
   checkout: {
     sessions: {
       create: async (params) => {
+        if (stripeCreateImpl) {
+          return stripeCreateImpl(params);
+        }
         capturedSessionParams = params;
         return { url: 'https://checkout.stripe.com/mock-session', id: 'cs_mock_123' };
       },
@@ -60,6 +64,7 @@ function makeEvent(body) {
 describe('securebase-checkout-api price-ID server-side resolution', () => {
   beforeEach(() => {
     capturedSessionParams = null;
+    stripeCreateImpl = null;
     // Set env vars for the known tiers
     process.env.STRIPE_PRICE_STANDARD         = 'price_test_standard';
     process.env.STRIPE_PRICE_FINTECH          = 'price_test_fintech';
@@ -67,8 +72,10 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     process.env.STRIPE_PRICE_GOVERNMENT       = 'price_test_government';
     process.env.STRIPE_PRICE_PILOT            = 'price_test_pilot';
     process.env.STRIPE_PRICE_PILOT_COMPLIANCE = 'price_test_pilot_compliance';
+    process.env.STRIPE_PRICE_HIPAA_ASSESSMENT = 'price_test_hipaa_assessment';
     process.env.STRIPE_PILOT_COUPON_ID        = 'pilot_50_off';
     process.env.STRIPE_SECRET_KEY             = 'sk_test_dummy';
+    process.env.URL                           = 'https://securebase.tximhotep.com';
   });
 
   afterEach(() => {
@@ -78,8 +85,11 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     delete process.env.STRIPE_PRICE_GOVERNMENT;
     delete process.env.STRIPE_PRICE_PILOT;
     delete process.env.STRIPE_PRICE_PILOT_COMPLIANCE;
+    delete process.env.STRIPE_PRICE_HIPAA_ASSESSMENT;
     delete process.env.STRIPE_PILOT_COUPON_ID;
+    delete process.env.STRIPE_PILOT_COUPON;
     delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.URL;
   });
 
   test('standard tier uses STRIPE_PRICE_STANDARD env var, not client priceId', async () => {
@@ -190,6 +200,13 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     assert.equal(response.statusCode, 200);
   });
 
+  test('invalid JSON body returns 400', async () => {
+    const response = await handler({ httpMethod: 'POST', body: '{', headers: {} });
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /invalid json body/i);
+  });
+
   test('GET returns 405', async () => {
     const response = await handler({ httpMethod: 'GET', body: '', headers: {} });
     assert.equal(response.statusCode, 405);
@@ -290,5 +307,89 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
       undefined,
       'Coupon must not be applied in payment mode (pilot_compliance)',
     );
+  });
+
+  test('hipaa_assessment tier uses payment mode and sets assessment-upgrade metadata', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'hipaa@example.com',
+      name: 'HIPAA Assessment',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.mode, 'payment');
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_hipaa_assessment');
+    assert.equal(capturedSessionParams.customer_creation, 'always');
+    assert.equal(capturedSessionParams.metadata.upgrade_to, 'healthcare');
+    assert.equal(capturedSessionParams.metadata.assessment_credit, '1995');
+  });
+
+  test('pilot_compliance tier sets customer_creation:always and fintech upgrade metadata', async () => {
+    const response = await handler(makeEvent({
+      tier: 'pilot_compliance',
+      email: 'pilot@example.com',
+      name: 'Pilot Compliance',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.customer_creation, 'always');
+    assert.equal(capturedSessionParams.metadata.upgrade_to, 'fintech');
+    assert.equal(capturedSessionParams.metadata.assessment_credit, '495');
+  });
+
+  test('supports snake_case request fields', async () => {
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      customer_email: 'snake@example.com',
+      plan_name: 'Snake Case Plan',
+      success_url: 'https://example.com/success-snake',
+      cancel_url: 'https://example.com/cancel-snake',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(capturedSessionParams.customer_email, 'snake@example.com');
+    assert.equal(capturedSessionParams.metadata.company_email, 'snake@example.com');
+    assert.equal(capturedSessionParams.metadata.plan, 'Snake Case Plan');
+    assert.equal(capturedSessionParams.success_url, 'https://example.com/success-snake');
+    assert.equal(capturedSessionParams.cancel_url, 'https://example.com/cancel-snake');
+  });
+
+  test('uses STRIPE_PILOT_COUPON env var when STRIPE_PILOT_COUPON_ID is unset', async () => {
+    delete process.env.STRIPE_PILOT_COUPON_ID;
+    process.env.STRIPE_PILOT_COUPON = 'pilot_coupon_from_primary_env';
+
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'coupon@example.com',
+      use_pilot_coupon: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(capturedSessionParams.discounts, [{ coupon: 'pilot_coupon_from_primary_env' }]);
+  });
+
+  test('returns Stripe error status code when stripe session creation fails', async () => {
+    stripeCreateImpl = async () => {
+      const err = new Error('Invalid price');
+      err.statusCode = 402;
+      throw err;
+    };
+
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'stripe-error@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 402);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /invalid price/i);
   });
 });
