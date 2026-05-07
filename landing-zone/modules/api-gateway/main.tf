@@ -720,8 +720,9 @@ resource "aws_lambda_permission" "permission_management_api_gateway" {
 # CORS Configuration
 # ============================================================================
 
+# Use enhanced CORS with credentials for auth endpoints
 module "cors_auth" {
-  source = "./cors"
+  source = "./cors-with-credentials"
 
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.auth.id
@@ -758,7 +759,7 @@ module "cors_forecasting" {
 # CORS for RBAC endpoints
 module "cors_users" {
   count  = var.user_management_lambda_name != null ? 1 : 0
-  source = "./cors"
+  source = "./cors-with-credentials"
 
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.users[0].id
@@ -766,7 +767,7 @@ module "cors_users" {
 
 module "cors_auth_login" {
   count  = var.session_management_lambda_name != null ? 1 : 0
-  source = "./cors"
+  source = "./cors-with-credentials"
 
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.auth_login[0].id

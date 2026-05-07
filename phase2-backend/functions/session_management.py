@@ -77,35 +77,39 @@ def lambda_handler(event, context):
         source_ip = event.get('requestContext', {}).get('identity', {}).get('sourceIp')
         user_agent = headers.get('User-Agent', headers.get('user-agent', ''))
         
+        # Handle OPTIONS for CORS
+        if http_method == 'OPTIONS':
+            return success_response({}, event)
+        
         # Route to appropriate handler
         if http_method == 'POST' and path == '/auth/login':
-            return login(body, source_ip, user_agent)
+            return login(body, source_ip, user_agent, event)
         
         elif http_method == 'POST' and path == '/auth/mfa/verify':
-            return verify_mfa(body, source_ip, user_agent)
+            return verify_mfa(body, source_ip, user_agent, event)
         
         elif http_method == 'POST' and path == '/auth/mfa/setup':
-            return setup_mfa(body)
+            return setup_mfa(body, event)
         
         elif http_method == 'POST' and path == '/auth/refresh':
-            return refresh_session(body, source_ip, user_agent)
+            return refresh_session(body, source_ip, user_agent, event)
         
         elif http_method == 'POST' and path == '/auth/logout':
-            return logout(body)
+            return logout(body, event)
         
         elif http_method == 'GET' and path == '/auth/session':
             auth_header = headers.get('Authorization', headers.get('authorization', ''))
-            return get_session_info(auth_header)
+            return get_session_info(auth_header, event)
         
         else:
-            return error_response(404, f'Not found: {http_method} {path}')
+            return error_response(404, f'Not found: {http_method} {path}', event, event)
     
     except Exception as e:
         logger.error(f'Error in session management: {str(e)}', exc_info=True)
-        return error_response(500, f'Internal server error: {str(e)}')
+        return error_response(500, f'Internal server error: {str(e, event)}', event)
 
 
-def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
+def login(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
     """
     User login with email and password.
     Returns session token if successful, or requires MFA if enabled.
@@ -114,7 +118,7 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
     password = data.get('password', '')
     
     if not email or not password:
-        return error_response(400, 'Email and password are required')
+        return error_response(400, 'Email and password are required', event, event)
     
     conn = None
     try:
@@ -135,7 +139,7 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
         
         if not user:
             # Don't reveal if user exists or not
-            return error_response(401, 'Invalid email or password')
+            return error_response(401, 'Invalid email or password', event)
         
         user_id = str(user[0])
         customer_id = str(user[1])
@@ -151,11 +155,11 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
         
         # Check if account is locked
         if locked_until and locked_until > datetime.utcnow():
-            return error_response(423, f'Account is locked until {locked_until.isoformat()}')
+            return error_response(423, f'Account is locked until {locked_until.isoformat(, event)}')
         
         # Check account status
         if status != 'active':
-            return error_response(403, f'Account is {status}')
+            return error_response(403, f'Account is {status}', event)
         
         # Verify password
         if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
@@ -171,7 +175,7 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
                     WHERE id = %s
                 """, (failed_attempts, lockout_until, user_id))
                 conn.commit()
-                return error_response(423, f'Account locked due to too many failed attempts. Try again after {LOCKOUT_DURATION_MINUTES} minutes.')
+                return error_response(423, f'Account locked due to too many failed attempts. Try again after {LOCKOUT_DURATION_MINUTES} minutes.', event)
             else:
                 cursor.execute("""
                     UPDATE users
@@ -179,7 +183,7 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
                     WHERE id = %s
                 """, (failed_attempts, user_id))
                 conn.commit()
-                return error_response(401, f'Invalid email or password. {MAX_FAILED_ATTEMPTS - failed_attempts} attempts remaining.')
+                return error_response(401, f'Invalid email or password. {MAX_FAILED_ATTEMPTS - failed_attempts} attempts remaining.', event)
         
         # Password is correct - reset failed attempts
         cursor.execute("""
@@ -202,7 +206,7 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
                 'mfa_required': True,
                 'pre_auth_token': pre_auth_token,
                 'message': 'MFA verification required'
-            })
+            }, event)
         
         # No MFA - create session directly
         session_token, refresh_token, expires_at = create_session(
@@ -242,20 +246,20 @@ def login(data: Dict, source_ip: str, user_agent: str) -> Dict:
         if conn:
             conn.rollback()
         logger.error(f'Error during login: {str(e)}')
-        return error_response(500, 'Login failed')
+        return error_response(500, 'Login failed', event)
     
     finally:
         if conn:
             release_connection(conn)
 
 
-def verify_mfa(data: Dict, source_ip: str, user_agent: str) -> Dict:
+def verify_mfa(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
     """Verify MFA code and create session."""
     pre_auth_token = data.get('pre_auth_token', '')
     mfa_code = data.get('mfa_code', '')
     
     if not pre_auth_token or not mfa_code:
-        return error_response(400, 'Pre-auth token and MFA code are required')
+        return error_response(400, 'Pre-auth token and MFA code are required', event)
     
     # Validate pre-auth token
     try:
@@ -265,9 +269,9 @@ def verify_mfa(data: Dict, source_ip: str, user_agent: str) -> Dict:
         customer_id = payload['customer_id']
         email = payload['email']
     except jwt.ExpiredSignatureError:
-        return error_response(401, 'Pre-auth token expired')
+        return error_response(401, 'Pre-auth token expired', event)
     except jwt.InvalidTokenError:
-        return error_response(401, 'Invalid pre-auth token')
+        return error_response(401, 'Invalid pre-auth token', event)
     
     conn = None
     try:
@@ -283,7 +287,7 @@ def verify_mfa(data: Dict, source_ip: str, user_agent: str) -> Dict:
         
         user = cursor.fetchone()
         if not user:
-            return error_response(404, 'User not found')
+            return error_response(404, 'User not found', event)
         
         mfa_secret = user[0]
         role = user[1]
@@ -291,12 +295,12 @@ def verify_mfa(data: Dict, source_ip: str, user_agent: str) -> Dict:
         status = user[3]
         
         if status != 'active':
-            return error_response(403, f'Account is {status}')
+            return error_response(403, f'Account is {status}', event)
         
         # Verify MFA code
         totp = pyotp.TOTP(mfa_secret)
         if not totp.verify(mfa_code, valid_window=1):  # Allow 1 time step before/after
-            return error_response(401, 'Invalid MFA code')
+            return error_response(401, 'Invalid MFA code', event)
         
         # MFA verified - create session
         session_token, refresh_token, expires_at = create_session(
@@ -336,21 +340,21 @@ def verify_mfa(data: Dict, source_ip: str, user_agent: str) -> Dict:
         if conn:
             conn.rollback()
         logger.error(f'Error verifying MFA: {str(e)}')
-        return error_response(500, 'MFA verification failed')
+        return error_response(500, 'MFA verification failed', event)
     
     finally:
         if conn:
             release_connection(conn)
 
 
-def setup_mfa(data: Dict) -> Dict:
+def setup_mfa(data: Dict, event: Dict) -> Dict:
     """Setup MFA for a user. Returns QR code data for TOTP app."""
     # This would typically require an authenticated session
     # For simplicity, we'll use user_id from request
     user_id = data.get('user_id')
     
     if not user_id:
-        return error_response(400, 'User ID is required')
+        return error_response(400, 'User ID is required', event)
     
     conn = None
     try:
@@ -366,7 +370,7 @@ def setup_mfa(data: Dict) -> Dict:
         
         user = cursor.fetchone()
         if not user:
-            return error_response(404, 'User not found')
+            return error_response(404, 'User not found', event)
         
         email = user[0]
         full_name = user[1]
@@ -410,25 +414,25 @@ def setup_mfa(data: Dict) -> Dict:
             # Note: For production, generate QR code on frontend using qrcode.js library
             # to avoid exposing secret to third-party services
             'message': 'Use provisioning_uri to generate QR code on client side, then scan with authenticator app'
-        })
+        }, event)
     
     except Exception as e:
         if conn:
             conn.rollback()
         logger.error(f'Error setting up MFA: {str(e)}')
-        return error_response(500, 'MFA setup failed')
+        return error_response(500, 'MFA setup failed', event)
     
     finally:
         if conn:
             release_connection(conn)
 
 
-def refresh_session(data: Dict, source_ip: str, user_agent: str) -> Dict:
+def refresh_session(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
     """Refresh session using refresh token."""
     refresh_token = data.get('refresh_token', '')
     
     if not refresh_token:
-        return error_response(400, 'Refresh token is required')
+        return error_response(400, 'Refresh token is required', event)
     
     refresh_token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
     
@@ -449,7 +453,7 @@ def refresh_session(data: Dict, source_ip: str, user_agent: str) -> Dict:
         session = cursor.fetchone()
         
         if not session:
-            return error_response(401, 'Invalid refresh token')
+            return error_response(401, 'Invalid refresh token', event)
         
         session_id = session[0]
         user_id = str(session[1])
@@ -462,13 +466,13 @@ def refresh_session(data: Dict, source_ip: str, user_agent: str) -> Dict:
         status = session[8]
         
         if not is_active:
-            return error_response(401, 'Session is no longer active')
+            return error_response(401, 'Session is no longer active', event)
         
         if expires_at < datetime.utcnow():
-            return error_response(401, 'Refresh token expired')
+            return error_response(401, 'Refresh token expired', event)
         
         if status != 'active':
-            return error_response(403, f'Account is {status}')
+            return error_response(403, f'Account is {status}', event)
         
         # Create new session
         new_session_token, new_refresh_token, new_expires_at = create_session(
@@ -504,19 +508,19 @@ def refresh_session(data: Dict, source_ip: str, user_agent: str) -> Dict:
         if conn:
             conn.rollback()
         logger.error(f'Error refreshing session: {str(e)}')
-        return error_response(500, 'Session refresh failed')
+        return error_response(500, 'Session refresh failed', event)
     
     finally:
         if conn:
             release_connection(conn)
 
 
-def logout(data: Dict) -> Dict:
+def logout(data: Dict, event: Dict) -> Dict:
     """Logout and invalidate session."""
     session_token = data.get('session_token', '')
     
     if not session_token:
-        return error_response(400, 'Session token is required')
+        return error_response(400, 'Session token is required', event)
     
     session_token_hash = hashlib.sha256(session_token.encode()).hexdigest()
     
@@ -554,23 +558,23 @@ def logout(data: Dict) -> Dict:
         
         conn.commit()
         
-        return success_response({'message': 'Logged out successfully'})
+        return success_response({'message': 'Logged out successfully'}, event)
     
     except Exception as e:
         if conn:
             conn.rollback()
         logger.error(f'Error during logout: {str(e)}')
-        return error_response(500, 'Logout failed')
+        return error_response(500, 'Logout failed', event)
     
     finally:
         if conn:
             release_connection(conn)
 
 
-def get_session_info(auth_header: str) -> Dict:
+def get_session_info(auth_header: str, event: Dict) -> Dict:
     """Get current session information from bearer token."""
     if not auth_header.startswith('Bearer '):
-        return error_response(401, 'Missing or invalid Authorization header')
+        return error_response(401, 'Missing or invalid Authorization header', event)
     
     session_token = auth_header[7:]  # Remove 'Bearer ' prefix
     session_token_hash = hashlib.sha256(session_token.encode()).hexdigest()
@@ -593,20 +597,20 @@ def get_session_info(auth_header: str) -> Dict:
         session = cursor.fetchone()
         
         if not session:
-            return error_response(401, 'Invalid session token')
+            return error_response(401, 'Invalid session token', event)
         
         is_active = session[3]
         expires_at = session[4]
         status = session[11]
         
         if not is_active:
-            return error_response(401, 'Session is no longer active')
+            return error_response(401, 'Session is no longer active', event)
         
         if expires_at < datetime.utcnow():
-            return error_response(401, 'Session expired')
+            return error_response(401, 'Session expired', event)
         
         if status != 'active':
-            return error_response(403, f'Account is {status}')
+            return error_response(403, f'Account is {status}', event)
         
         # Update last activity
         cursor.execute("""
@@ -636,7 +640,7 @@ def get_session_info(auth_header: str) -> Dict:
     
     except Exception as e:
         logger.error(f'Error getting session info: {str(e)}')
-        return error_response(500, 'Failed to get session info')
+        return error_response(500, 'Failed to get session info', event)
     
     finally:
         if conn:
@@ -709,29 +713,50 @@ def get_jwt_secret() -> str:
         raise AuthenticationError('Failed to retrieve JWT secret')
 
 
-def success_response(data: Dict) -> Dict:
-    """Format success response."""
+def get_cors_headers(event: Dict) -> Dict:
+    """Get CORS headers with credentials support."""
+    # Get origin from request
+    origin = event.get('headers', {}).get('origin', 'https://securebase.tximhotep.com')
+    
+    # Allowed origins for credentials
+    allowed_origins = [
+        'https://securebase.tximhotep.com',
+        'https://www.securebase.tximhotep.com', 
+        'https://demo.securebase.tximhotep.com',
+        'http://localhost:3000',
+        'http://localhost:5173'
+    ]
+    
+    # Use specific origin if allowed, otherwise default
+    cors_origin = origin if origin in allowed_origins else 'https://securebase.tximhotep.com'
+    
+    return {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': cors_origin,
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-CSRF-Token,Cookie',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+        'Access-Control-Expose-Headers': 'Set-Cookie,X-CSRF-Token'
+    }
+
+
+def success_response(data: Dict, event: Dict = None, additional_headers: Dict = None) -> Dict:
+    """Format success response with CORS and optional additional headers."""
+    headers = get_cors_headers(event or {})
+    if additional_headers:
+        headers.update(additional_headers)
+    
     return {
         'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-        },
+        'headers': headers,
         'body': json.dumps(data)
     }
 
 
-def error_response(status_code: int, message: str) -> Dict:
-    """Format error response."""
+def error_response(status_code: int, message: str, event: Dict = None) -> Dict:
+    """Format error response with CORS."""
     return {
         'statusCode': status_code,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-        },
+        'headers': get_cors_headers(event or {}),
         'body': json.dumps({'error': message})
     }
