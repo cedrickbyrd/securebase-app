@@ -1081,7 +1081,7 @@ resource "aws_api_gateway_integration" "demo_auth_post" {
   http_method             = aws_api_gateway_method.demo_auth_post.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.demo_auth_lambda_arn}/invocations"
+  uri                     = var.demo_auth_lambda_invoke_arn
 }
 
 # OPTIONS /demo-auth — CORS preflight
@@ -1098,7 +1098,7 @@ resource "aws_api_gateway_integration" "demo_auth_options" {
   http_method             = aws_api_gateway_method.demo_auth_options.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.demo_auth_lambda_arn}/invocations"
+  uri                     = var.demo_auth_lambda_invoke_arn
 }
 
 resource "aws_lambda_permission" "demo_auth_api_gateway" {

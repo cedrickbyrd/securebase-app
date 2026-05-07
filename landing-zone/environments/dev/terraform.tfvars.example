@@ -24,7 +24,7 @@ tags = {
 }
 
 # --- Demo Auth ---
-# Set via TF_VAR_demo_auth_jwt_secret in CI; do NOT commit real values.
+# Set demo_auth_* variables via TF_VAR environment variables in CI; do NOT commit real values.
 # demo_auth_jwt_secret = "REPLACE_WITH_STRONG_SECRET"
 # demo_auth_password   = "REPLACE_WITH_DEMO_PASSWORD"
 # demo_auth_email      = "demo@securebase.tximhotep.com"
