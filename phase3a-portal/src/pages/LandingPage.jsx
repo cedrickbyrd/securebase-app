@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import EarlyAccessForm from '../components/EarlyAccessForm';
 
 const valueProps = [
@@ -38,8 +37,8 @@ const LandingPage = () => {
         </p>
 
         {/* Demo invitation strip — low-commitment path before the signup ask */}
-        <Link
-          to="/dashboard"
+        <a
+          href="https://demo.securebase.tximhotep.com"
           aria-label="View live compliance dashboard demo — no signup required"
           className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/30 text-white rounded-xl px-6 py-3 mb-8 transition max-w-xl w-full justify-center"
         >
@@ -49,7 +48,7 @@ const LandingPage = () => {
             {' '}— HIPAA, SOC 2, and AWS controls, no signup required.
           </span>
           <span className="ml-auto font-bold text-yellow-300 whitespace-nowrap">Explore the Demo →</span>
-        </Link>
+        </a>
 
         <div className="flex gap-4 justify-center flex-wrap">
           <a href="#request-access" className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition">
