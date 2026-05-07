@@ -182,6 +182,10 @@ module "lambda_functions" {
   lambda_security_group_id = module.phase2_database.lambda_security_group_id
   netlify_api_token        = var.netlify_api_token
 
+  demo_auth_jwt_secret     = var.demo_auth_jwt_secret
+  demo_auth_email          = var.demo_auth_email
+  demo_auth_password       = var.demo_auth_password
+
   depends_on = [module.phase2_database]
 }
 
@@ -204,6 +208,9 @@ module "api_gateway" {
   health_check_lambda_name = module.lambda_functions.health_check_name
   submit_lead_lambda_arn   = module.lambda_functions.submit_lead_arn
   submit_lead_lambda_name  = module.lambda_functions.submit_lead_name
+  demo_auth_lambda_arn        = module.lambda_functions.demo_auth_arn
+  demo_auth_lambda_invoke_arn = module.lambda_functions.demo_auth_invoke_arn
+  demo_auth_lambda_name       = module.lambda_functions.demo_auth_name
   tags = merge(var.tags, { Phase = "Phase3-API" })
   depends_on = [module.lambda_functions]
 }
