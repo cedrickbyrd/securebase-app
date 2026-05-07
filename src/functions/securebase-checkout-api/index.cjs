@@ -54,7 +54,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    const body = JSON.parse(event.body);
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (parseError) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: 'Invalid JSON body.' }),
+      };
+    }
 
     // Accept both camelCase (frontend) and snake_case (legacy) field names.
     const customer_email = body.customer_email || body.email;
@@ -63,7 +72,7 @@ exports.handler = async (event) => {
     const success_url    = body.successUrl     || body.success_url || `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}&tab=success`;
     const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
     const use_pilot_coupon = !!body.use_pilot_coupon;
-    const pilotCouponId    = process.env.STRIPE_PILOT_COUPON_ID || 'pilot_50_off';
+    const pilotCouponId    = process.env.STRIPE_PILOT_COUPON || process.env.STRIPE_PILOT_COUPON_ID || 'pilot_50_off';
 
     // Require a known tier — the price ID is always resolved server-side from env vars.
     if (!tier || !TIER_PRICE_ENV[tier]) {
