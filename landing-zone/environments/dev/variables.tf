@@ -145,13 +145,26 @@ variable "enable_vpc" {
   description = "Enable per-customer VPC creation"
   default     = false
 }
+
 variable "stripe_secret_key" {
   type      = string
   sensitive = true
 }
 
-<<<<<<< HEAD
-# Phase 5.3 – Alerting variables
+# ── Phase 5.3 Variables ───────────────────────────────────────────────────────────────
+variable "aurora_cluster_id" {
+  description = "Existing Aurora cluster ID for Phase 5.3 alerting and DR"
+  type        = string
+  default     = "securebase-dev-cluster"
+}
+
+variable "alert_email" {
+  description = "Email address for SNS alert fallback subscription"
+  type        = string
+  default     = ""
+}
+
+# PagerDuty / on-call
 variable "pagerduty_routing_key" {
   description = "PagerDuty Events API v2 integration routing key"
   type        = string
@@ -161,22 +174,10 @@ variable "pagerduty_routing_key" {
 
 variable "oncall_email" {
   description = "On-call engineer email address for SNS subscriptions"
-=======
-# ── Phase 5.3 Variables ───────────────────────────────────────────────────────
-variable "aurora_cluster_id" {
-  description = "Existing Aurora cluster ID for Phase 5.3 alerting and DR"
-  type        = string
-  default     = "securebase-dev-cluster"
-}
-
-variable "alert_email" {
-  description = "Email address for SNS alert fallback subscription"
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
   type        = string
   default     = ""
 }
 
-<<<<<<< HEAD
 variable "lambda_concurrency_threshold" {
   description = "Lambda concurrent execution alarm threshold"
   type        = number
@@ -189,7 +190,7 @@ variable "api_usage_spike_threshold" {
   default     = 100000
 }
 
-# Phase 5.3 – Cost Optimization variables
+# Cost optimization
 variable "aurora_off_peak_min_acu" {
   description = "Minimum Aurora Serverless v2 ACU during off-peak hours (nights/weekends)"
   type        = number
@@ -202,10 +203,12 @@ variable "cost_anomaly_threshold_usd" {
   default     = 50
 }
 
+# Demo auth
 variable "demo_auth_jwt_secret" {
   description = "JWT signing secret for the demo-auth Lambda"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "demo_auth_email" {
@@ -218,7 +221,10 @@ variable "demo_auth_password" {
   description = "Demo login password"
   type        = string
   sensitive   = true
-=======
+  default     = ""
+}
+
+# Route 53 / DR endpoints
 variable "route53_hosted_zone_id" {
   description = "Route 53 hosted zone ID for api.securebase.tximhotep.com failover records"
   type        = string
@@ -241,5 +247,4 @@ variable "s3_cost_tiering_buckets" {
   description = "S3 bucket names to enable Intelligent-Tiering on"
   type        = set(string)
   default     = []
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
 }
