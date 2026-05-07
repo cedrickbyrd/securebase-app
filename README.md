@@ -61,6 +61,8 @@ cd securebase-app
 npm install react-chartjs-2 chart.js --save --legacy-peer-deps
 ```
 
+> **Dependency compatibility note:** Root ESLint is intentionally pinned to `^9.39.4` because `eslint-plugin-react-hooks@^7.0.1` currently supports ESLint up to `^9`. This pin avoids `npm` `ERESOLVE` failures in `.github/workflows/validate-checkout-path.yml` during `npm install --omit=dev`.
+
 [🚀 Book a Demo](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo) | 📞 Sales Inquiries
 
 ## 🌐 The Two Portals
