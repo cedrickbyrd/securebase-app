@@ -379,6 +379,40 @@ resource "aws_cloudwatch_log_group" "submit_lead" {
   tags              = var.tags
 }
 
+# Demo Auth Lambda — issues short-lived HttpOnly JWT cookies for demo visitors.
+# NOT placed in the VPC: no database access required, benefits from faster cold starts.
+resource "aws_lambda_function" "demo_auth" {
+  filename         = var.lambda_packages["demo_auth"]
+  function_name    = "securebase-${var.environment}-demo-auth"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "demo_auth.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["demo_auth"])
+  runtime          = "python3.11"
+  timeout          = 10
+  memory_size      = 256
+
+  environment {
+    variables = {
+      ENVIRONMENT    = var.environment
+      JWT_SECRET     = var.demo_auth_jwt_secret
+      DEMO_EMAIL     = var.demo_auth_email
+      DEMO_PASSWORD  = var.demo_auth_password
+      ALLOWED_ORIGIN = var.demo_auth_allowed_origin
+      TOKEN_TTL_SECS = tostring(var.demo_auth_token_ttl_secs)
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name = "securebase-${var.environment}-demo-auth"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "demo_auth" {
+  name              = "/aws/lambda/securebase-${var.environment}-demo-auth"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
 #
 # MODULES
 #

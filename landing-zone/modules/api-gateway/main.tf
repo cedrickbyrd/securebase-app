@@ -1057,3 +1057,55 @@ resource "aws_lambda_permission" "leads_api_gateway" {
   source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
 }
 
+# ============================================================================
+# API Resources - Demo Auth (public, no JWT required — issues demo cookie)
+# ============================================================================
+
+resource "aws_api_gateway_resource" "demo_auth" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "demo-auth"
+}
+
+# POST /demo-auth — validate demo credentials and issue HttpOnly JWT cookie
+resource "aws_api_gateway_method" "demo_auth_post" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.demo_auth.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "demo_auth_post" {
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.demo_auth.id
+  http_method             = aws_api_gateway_method.demo_auth_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.demo_auth_lambda_invoke_arn
+}
+
+# OPTIONS /demo-auth — CORS preflight
+resource "aws_api_gateway_method" "demo_auth_options" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.demo_auth.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "demo_auth_options" {
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.demo_auth.id
+  http_method             = aws_api_gateway_method.demo_auth_options.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.demo_auth_lambda_invoke_arn
+}
+
+resource "aws_lambda_permission" "demo_auth_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvokeDemoAuth"
+  action        = "lambda:InvokeFunction"
+  function_name = var.demo_auth_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+

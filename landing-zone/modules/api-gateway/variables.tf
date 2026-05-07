@@ -210,3 +210,18 @@ variable "submit_lead_lambda_name" {
   description = "Name of the submit_lead Lambda function"
   type        = string
 }
+
+variable "demo_auth_lambda_arn" {
+  description = "ARN of the demo_auth Lambda function"
+  type        = string
+}
+
+variable "demo_auth_lambda_invoke_arn" {
+  description = "Invoke ARN of the demo_auth Lambda function (used in API Gateway integration URI)"
+  type        = string
+}
+
+variable "demo_auth_lambda_name" {
+  description = "Name of the demo_auth Lambda function"
+  type        = string
+}
