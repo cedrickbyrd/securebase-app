@@ -1,51 +1,35 @@
 variable "environment" {
-<<<<<<< HEAD
-  description = "Environment name (dev, staging, prod)"
+  description = "Deployment environment (dev, staging, prod)"
   type        = string
-}
-
-variable "tags" {
-  description = "Common tags to apply to all resources"
-  type        = map(string)
-  default     = {}
-}
-
-variable "pagerduty_routing_key" {
-  description = "PagerDuty Events API v2 integration routing key (stored in SSM Parameter Store)"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "oncall_email" {
-  description = "On-call engineer email address for SNS email subscription (leave empty to skip)"
-=======
-  type = string
 }
 
 variable "aws_region" {
-  type    = string
-  default = "us-east-1"
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
 }
 
 variable "lambda_function_names" {
-  description = "Lambda functions to alarm on"
+  description = "Lambda functions to create error/throttle alarms for"
   type        = list(string)
 }
 
 variable "api_gateway_id" {
-  type    = string
-  default = ""
+  description = "REST API Gateway ID for 5xx/latency alarms"
+  type        = string
+  default     = ""
 }
 
 variable "api_gateway_stage" {
-  type    = string
-  default = "prod"
+  description = "API Gateway stage name"
+  type        = string
+  default     = "prod"
 }
 
 variable "aurora_cluster_id" {
-  type    = string
-  default = ""
+  description = "Aurora cluster identifier for DB alarms"
+  type        = string
+  default     = ""
 }
 
 variable "sns_kms_key_arn" {
@@ -61,44 +45,60 @@ variable "alert_webhook_ssm_param" {
 }
 
 variable "alert_email" {
-  description = "Email address for SNS alert subscription (fallback)"
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+  description = "Email address for SNS alert subscription (fallback/dev)"
   type        = string
   default     = ""
 }
 
-<<<<<<< HEAD
+# ── Legacy / backward-compat vars (HEAD branch) ───────────────────────────────
+
+variable "pagerduty_routing_key" {
+  description = "PagerDuty Events API v2 routing key (passed to alert_router Lambda env)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "oncall_email" {
+  description = "On-call engineer email for an additional SNS subscription"
+  type        = string
+  default     = ""
+}
+
 variable "lambda_concurrency_threshold" {
-  description = "Maximum concurrent Lambda executions before alerting (should be ~80% of account limit)"
+  description = "Account-wide concurrent Lambda executions alarm threshold"
   type        = number
   default     = 800
 }
 
 variable "api_usage_spike_threshold" {
-  description = "Daily API request count threshold for spike detection"
+  description = "Daily API request count for spike-detection alarm"
   type        = number
   default     = 100000
-=======
+}
+
+# ── Alarm thresholds ──────────────────────────────────────────────────────────
+
 variable "lambda_error_threshold" {
-  description = "Lambda error count per 5 min to trigger alarm"
+  description = "Lambda error count per 5-min evaluation period to trigger alarm"
   type        = number
   default     = 5
 }
 
 variable "api_5xx_threshold_pct" {
-  description = "API Gateway 5xx rate (%) to trigger alarm"
+  description = "API Gateway 5xx error rate percentage to trigger alarm"
   type        = number
   default     = 1
 }
 
 variable "api_latency_p99_ms" {
-  description = "API Gateway P99 latency threshold in ms"
+  description = "API Gateway P99 integration-latency threshold in milliseconds"
   type        = number
   default     = 3000
 }
 
 variable "tags" {
-  type    = map(string)
-  default = {}
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+  description = "Common tags applied to all resources"
+  type        = map(string)
+  default     = {}
 }
