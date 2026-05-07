@@ -116,3 +116,22 @@ variable "sso_instance_arn" {
   type        = string
   default     = "arn:aws:sso:::instance/ssoins-7223295e77f4f12d"
 }
+
+# --- Demo Auth ---
+variable "demo_auth_jwt_secret" {
+  description = "JWT signing secret for the demo-auth Lambda. Pass via TF_VAR_demo_auth_jwt_secret or Secrets Manager reference."
+  type        = string
+  sensitive   = true
+}
+
+variable "demo_auth_email" {
+  description = "Demo login email accepted by the demo-auth Lambda"
+  type        = string
+  default     = "demo@securebase.tximhotep.com"
+}
+
+variable "demo_auth_password" {
+  description = "Demo login password accepted by the demo-auth Lambda"
+  type        = string
+  sensitive   = true
+}

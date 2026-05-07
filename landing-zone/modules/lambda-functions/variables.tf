@@ -77,3 +77,33 @@ variable "ses_identity_arn" {
   type        = string
   default     = ""
 }
+
+variable "demo_auth_jwt_secret" {
+  description = "JWT signing secret for the demo-auth Lambda. Store in Secrets Manager and pass via TF_VAR."
+  type        = string
+  sensitive   = true
+}
+
+variable "demo_auth_email" {
+  description = "Demo login email accepted by the demo-auth Lambda"
+  type        = string
+  default     = "demo@securebase.tximhotep.com"
+}
+
+variable "demo_auth_password" {
+  description = "Demo login password accepted by the demo-auth Lambda"
+  type        = string
+  sensitive   = true
+}
+
+variable "demo_auth_allowed_origin" {
+  description = "CORS allowed origin for the demo-auth Lambda"
+  type        = string
+  default     = "https://demo.securebase.tximhotep.com"
+}
+
+variable "demo_auth_token_ttl_secs" {
+  description = "JWT cookie lifetime in seconds for demo sessions (default 1 hour)"
+  type        = number
+  default     = 3600
+}

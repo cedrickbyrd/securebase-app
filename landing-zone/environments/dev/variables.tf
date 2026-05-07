@@ -188,3 +188,21 @@ variable "cost_anomaly_threshold_usd" {
   type        = number
   default     = 50
 }
+
+variable "demo_auth_jwt_secret" {
+  description = "JWT signing secret for the demo-auth Lambda"
+  type        = string
+  sensitive   = true
+}
+
+variable "demo_auth_email" {
+  description = "Demo login email"
+  type        = string
+  default     = "demo@securebase.tximhotep.com"
+}
+
+variable "demo_auth_password" {
+  description = "Demo login password"
+  type        = string
+  sensitive   = true
+}

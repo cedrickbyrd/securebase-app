@@ -108,6 +108,7 @@ output "all_lambda_arns" {
     support_tickets  = aws_lambda_function.support_tickets.arn
     cost_forecasting = aws_lambda_function.cost_forecasting.arn
     submit_lead      = aws_lambda_function.submit_lead.arn
+    demo_auth        = aws_lambda_function.demo_auth.arn
   }
 }
 
@@ -119,4 +120,19 @@ output "submit_lead_arn" {
 output "submit_lead_name" {
   description = "Name of the submit_lead Lambda function"
   value       = aws_lambda_function.submit_lead.function_name
+}
+
+output "demo_auth_arn" {
+  description = "ARN of the demo_auth Lambda function"
+  value       = aws_lambda_function.demo_auth.arn
+}
+
+output "demo_auth_invoke_arn" {
+  description = "Invoke ARN of the demo_auth Lambda function (used by API Gateway integration)"
+  value       = aws_lambda_function.demo_auth.invoke_arn
+}
+
+output "demo_auth_name" {
+  description = "Name of the demo_auth Lambda function"
+  value       = aws_lambda_function.demo_auth.function_name
 }
