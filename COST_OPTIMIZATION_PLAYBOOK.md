@@ -2,7 +2,7 @@
 
 ## 1) Current Cost Baseline (Fill with live monthly values)
 
-Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered by `Project=securebase` tag (last 30 days), then update this table during monthly FinOps review.
+Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered by `Project=securebase` tag (last 30 days), then update this table during monthly FinOps review. Initial baseline must be completed within 2 weeks of Phase 5 production rollout.
 
 | Service | Current Spend (USD) | Baseline Target (USD) | Notes |
 |---|---:|---:|---|
@@ -23,7 +23,7 @@ Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered
 - Right-size memory and timeout based on p95 duration profiling.
 
 ### DynamoDB
-- Use auto scaling on provisioned tables with 70–80% utilization target (start at 70%, tune upward as workload stabilizes).
+- Use auto scaling on provisioned tables with a 70–80% utilization target, tuned based on observed throttling risk and cost/performance trade-offs.
 - Keep tables on on-demand when average utilization stays below ~10 RCU / 10 WCU or <1M requests/month.
 - Monitor throttles and replication metrics for global tables.
 
