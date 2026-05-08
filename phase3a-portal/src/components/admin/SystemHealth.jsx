@@ -6,12 +6,14 @@ const statusStyles = {
   healthy: 'bg-green-500',
   degraded: 'bg-yellow-500',
   down: 'bg-red-500',
+  unknown: 'bg-gray-400',
 };
 
 const cardStyles = {
   healthy: 'border-green-200 bg-green-50',
   degraded: 'border-yellow-200 bg-yellow-50',
   down: 'border-red-200 bg-red-50',
+  unknown: 'border-gray-200 bg-gray-50',
 };
 
 const SystemHealth = ({ refreshKey = 0 }) => {
@@ -66,7 +68,8 @@ const SystemHealth = ({ refreshKey = 0 }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {health.services.map((service) => {
-            const status = (service.status || 'down').toLowerCase();
+            const rawStatus = (service.status || 'unknown').toLowerCase();
+            const status = statusStyles[rawStatus] ? rawStatus : 'unknown';
             return (
               <div
                 key={service.name}
