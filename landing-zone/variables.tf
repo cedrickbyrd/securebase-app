@@ -135,3 +135,16 @@ variable "demo_auth_password" {
   type        = string
   sensitive   = true
 }
+
+# --- Phase 5.3 SRE API Wiring ---
+variable "sre_metrics_lambda_invoke_arn" {
+  description = "Invoke ARN of the SRE metrics Lambda used to enable /sre/* API routes"
+  type        = string
+  default     = null
+}
+
+variable "sre_metrics_lambda_name" {
+  description = "Name of the SRE metrics Lambda used for API Gateway invoke permissions"
+  type        = string
+  default     = null
+}
