@@ -71,6 +71,18 @@ variable "alert_email" {
   default     = ""
 }
 
+variable "sre_metrics_lambda_zip_path" {
+  description = "Path to the sre_metrics Lambda deployment zip"
+  type        = string
+  default     = "../../../phase2-backend/deploy/sre_metrics.zip"
+}
+
+variable "sre_metrics_cors_origin" {
+  description = "CORS allowed origin for SRE metrics endpoints"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
+}
+
 variable "pagerduty_routing_key" {
   description = "PagerDuty integration routing key"
   type        = string

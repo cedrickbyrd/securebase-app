@@ -11,6 +11,7 @@ cluster as primary and re-adding us-west-2 as a replica.
 import json
 import os
 import logging
+import time
 import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime, timezone
@@ -29,6 +30,7 @@ ENVIRONMENT          = os.environ.get("ENVIRONMENT", "prod")
 ssm = boto3.client("ssm", region_name=PRIMARY_REGION)
 rds = boto3.client("rds", region_name=PRIMARY_REGION)
 sns = boto3.client("sns", region_name=PRIMARY_REGION)
+cw = boto3.client("cloudwatch", region_name=PRIMARY_REGION)
 
 
 def _verify_primary_healthy() -> bool:
@@ -74,6 +76,21 @@ def _page_oncall(subject: str, message: str) -> None:
     sns.publish(TopicArn=ALERT_SNS_ARN, Subject=subject, Message=message)
 
 
+def _publish_failback_duration(duration_seconds: float) -> None:
+    cw.put_metric_data(
+        Namespace="SecureBase/DR",
+        MetricData=[{
+            "MetricName": "FailbackDurationSeconds",
+            "Dimensions": [
+                {"Name": "Environment", "Value": ENVIRONMENT},
+                {"Name": "Region", "Value": PRIMARY_REGION},
+            ],
+            "Value": duration_seconds,
+            "Unit": "Seconds",
+        }],
+    )
+
+
 def handler(event, _context):
     """
     Expected event body:
@@ -82,6 +99,8 @@ def handler(event, _context):
         "new_global_cluster_id": "securebase-global-prod-v2"  // optional
     }
     """
+    start_time = time.time()
+
     body = event.get("body", event)
     if isinstance(body, str):
         body = json.loads(body)
@@ -114,6 +133,7 @@ def handler(event, _context):
         new_global_id = body.get("new_global_cluster_id", f"securebase-global-{ENVIRONMENT}-v2")
         _create_global_cluster_with_primary(new_global_id)
         _update_active_region(PRIMARY_REGION)
+        _publish_failback_duration(time.time() - start_time)
 
         msg = (
             f"FAILBACK COMPLETE at {timestamp}\n"

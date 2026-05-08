@@ -62,6 +62,7 @@ resource "aws_lambda_function" "alert_router" {
       ENVIRONMENT           = var.environment
       SNS_TOPIC_ARN         = aws_sns_topic.alerts.arn
       ALERT_WEBHOOK_SSM     = var.alert_webhook_ssm_param
+      MAINTENANCE_MODE_PARAM = aws_ssm_parameter.maintenance_mode.name
       PAGERDUTY_ROUTING_KEY = var.pagerduty_routing_key
     }
   }

@@ -1,3 +1,6 @@
+# DEPRECATED: As of Phase 5.3, this module is deprecated.
+# Use landing-zone/modules/phase5-logging for all new environments.
+#
 resource "aws_cloudwatch_log_group" "audit_logs" {
   name              = "/aws/audit/logs"
   retention_in_days = var.log_retention_days

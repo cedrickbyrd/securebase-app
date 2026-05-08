@@ -26,6 +26,12 @@ variable "api_gateway_stage" {
   default     = "prod"
 }
 
+variable "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID used for cache hit-rate alarm; leave empty to disable"
+  type        = string
+  default     = ""
+}
+
 variable "aurora_cluster_id" {
   description = "Aurora cluster identifier for DB alarms"
   type        = string
@@ -97,6 +103,24 @@ variable "initial_webhook_url" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+variable "maintenance_window_enabled" {
+  description = "Enable maintenance-window alert suppression schedule"
+  type        = bool
+  default     = false
+}
+
+variable "maintenance_window_schedule" {
+  description = "Cron expression for maintenance window start (EventBridge schedule)"
+  type        = string
+  default     = "cron(0 2 ? * SUN *)"
+}
+
+variable "maintenance_window_end_schedule" {
+  description = "Cron expression for maintenance window end (EventBridge schedule)"
+  type        = string
+  default     = "cron(0 4 ? * SUN *)"
 }
 
 variable "alert_email" {

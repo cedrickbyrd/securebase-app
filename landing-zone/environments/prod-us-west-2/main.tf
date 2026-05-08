@@ -108,6 +108,17 @@ module "phase5_cost" {
   tags = var.tags
 }
 
+# ── Phase 5.3: SRE Metrics (standby region) ───────────────────────────────────
+module "phase5_sre_metrics" {
+  source = "../../modules/phase5-sre-metrics"
+
+  environment     = var.environment
+  tags            = var.tags
+  lambda_zip_path = var.sre_metrics_lambda_zip_path
+  cors_origin     = var.sre_metrics_cors_origin
+  alert_email     = var.alert_email
+}
+
 terraform {
   backend "s3" {}
 }

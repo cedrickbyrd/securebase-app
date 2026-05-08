@@ -248,3 +248,9 @@ variable "s3_cost_tiering_buckets" {
   type        = set(string)
   default     = []
 }
+
+variable "sre_metrics_lambda_zip_path" {
+  description = "Path to the sre_metrics Lambda deployment zip"
+  type        = string
+  default     = "../../../phase2-backend/deploy/sre_metrics.zip"
+}

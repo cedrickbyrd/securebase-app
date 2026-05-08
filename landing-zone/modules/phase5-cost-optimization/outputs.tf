@@ -1,3 +1,6 @@
+# DEPRECATED: As of Phase 5.3, this module is deprecated and not the canonical
+# cost module. Use landing-zone/modules/phase5-cost for active deployments.
+#
 output "cost_anomaly_monitor_arn" {
   description = "ARN of the AWS Cost Anomaly Detection monitor"
   value       = aws_ce_anomaly_monitor.securebase.arn

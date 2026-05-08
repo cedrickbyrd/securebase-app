@@ -12,7 +12,16 @@ resource "aws_iam_policy" "alert_router" {
         Effect = "Allow"
         Action = ["ssm:GetParameter"]
         Resource = [
-          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.alert_webhook_ssm_param}"
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.alert_webhook_ssm_param}",
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/${var.environment}/maintenance_mode"
+        ]
+      },
+      {
+        Sid    = "WriteMaintenanceModeSSM"
+        Effect = "Allow"
+        Action = ["ssm:PutParameter"]
+        Resource = [
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/${var.environment}/maintenance_mode"
         ]
       },
       {

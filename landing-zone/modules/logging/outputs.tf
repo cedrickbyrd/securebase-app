@@ -1,3 +1,6 @@
+# DEPRECATED: As of Phase 5.3, this module is deprecated.
+# Use landing-zone/modules/phase5-logging for all new environments.
+#
 output "central_log_bucket_name" {
   value = aws_s3_bucket.central_logs.bucket
 }
