@@ -32,7 +32,8 @@ aws ssm get-parameter \
 ```
 2. Confirm incident command has approved failover.
    - Expected value: `true`
-   - If value is `false`, escalate to Platform Lead to explicitly approve enablement; if urgent, follow manual failover procedure with incident commander approval.
+   - If value is `false`, escalate to Platform Lead to explicitly approve enablement.
+   - Bypass only for declared **SEV-1** incidents (>80% customer impact for >5 minutes) with incident commander approval.
 
 ### Execute
 ```bash
