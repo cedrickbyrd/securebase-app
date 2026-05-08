@@ -27,19 +27,27 @@ const AdminDashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const delayRef = useRef(INITIAL_DELAY_MS);
   const hasLoadedRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const role = (localStorage.getItem('userRole') || '').toLowerCase();
   const isAdmin = role === 'admin';
 
   useEffect(() => {
-    delayRef.current = refreshDelay;
-  }, [refreshDelay]);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     if (!hasLoadedRef.current) {
-      setIsInitialLoading(true);
+      if (isMountedRef.current) {
+        setIsInitialLoading(true);
+      }
     } else {
-      setIsRefreshing(true);
+      if (isMountedRef.current) {
+        setIsRefreshing(true);
+      }
     }
 
     try {
@@ -61,19 +69,30 @@ const AdminDashboard = () => {
         adminService.getRecentAlerts(),
       ]);
 
-      setMetrics({ overview, infrastructure, security, customers, costs, operations, alerts });
-      setError(null);
-      setRefreshDelay(INITIAL_DELAY_MS);
-      setLastUpdated(new Date());
-      setRefreshKey((value) => value + 1);
+      delayRef.current = INITIAL_DELAY_MS;
+      if (isMountedRef.current) {
+        setMetrics({ overview, infrastructure, security, customers, costs, operations, alerts });
+        setError(null);
+        setRefreshDelay(INITIAL_DELAY_MS);
+        setLastUpdated(new Date());
+        setRefreshKey((value) => value + 1);
+      }
       hasLoadedRef.current = true;
+      return INITIAL_DELAY_MS;
     } catch (fetchError) {
-      setError(fetchError);
-      setRefreshDelay((currentDelay) => Math.min(currentDelay * 2, MAX_DELAY_MS));
-      setLastUpdated(new Date());
+      const nextDelay = Math.min(delayRef.current * 2, MAX_DELAY_MS);
+      delayRef.current = nextDelay;
+      if (isMountedRef.current) {
+        setError(fetchError);
+        setRefreshDelay(nextDelay);
+        setLastUpdated(new Date());
+      }
+      return nextDelay;
     } finally {
-      setIsInitialLoading(false);
-      setIsRefreshing(false);
+      if (isMountedRef.current) {
+        setIsInitialLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
@@ -83,9 +102,9 @@ const AdminDashboard = () => {
 
     const run = async () => {
       if (!mounted) return;
-      await loadDashboard();
+      const nextDelay = await loadDashboard();
       if (!mounted) return;
-      timer = setTimeout(run, delayRef.current);
+      timer = setTimeout(run, nextDelay ?? delayRef.current);
     };
 
     run();
@@ -102,11 +121,21 @@ const AdminDashboard = () => {
 
   const mrrTrend = useMemo(() => {
     const points = metrics.customers?.mrrTrend || [];
-    if (points.length === 0) return 'No trend data';
+    if (points.length < 2) return 'No trend data';
     const start = points[0];
     const end = points[points.length - 1];
+    if (
+      typeof start !== 'number'
+      || typeof end !== 'number'
+      || !Number.isFinite(start)
+      || !Number.isFinite(end)
+      || start === 0
+    ) {
+      return 'Trend unavailable';
+    }
     const delta = (((end - start) / start) * 100).toFixed(1);
-    return `${delta}% over trend window`;
+    const sign = Number(delta) >= 0 ? '+' : '';
+    return `${sign}${delta}% over trend window`;
   }, [metrics.customers]);
 
   if (!isAdmin) {

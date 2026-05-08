@@ -36,4 +36,14 @@ describe('SystemHealth', () => {
     expect(screen.getByTestId('status-indicator-Lambda metrics_aggregation')).toHaveClass('bg-yellow-500');
     expect(screen.getByTestId('status-indicator-CloudFront')).toHaveClass('bg-red-500');
   });
+
+  it('shows an inline error notice when health API call fails', async () => {
+    adminService.getSystemHealth.mockRejectedValue(new Error('network error'));
+
+    render(<SystemHealth refreshKey={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/unable to load system health right now/i)).toBeInTheDocument();
+    });
+  });
 });
