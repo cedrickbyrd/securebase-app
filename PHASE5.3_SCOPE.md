@@ -2,7 +2,7 @@
 
 **Project:** SecureBase  
 **Phase:** 5.3 — Remaining Phase 5 Components (ACT 3)  
-**Status:** ✅ Complete  
+**Status:** 🔨 In Progress — implementation scaffold complete, production validation pending  
 **Depends On:** Phase 5.1 ✅ (Admin Dashboard), Phase 5.2 ✅ (Tenant Dashboard)  
 **Completion Date:** May 2026  
 **Components:** Multi-Region DR, Logging/Tracing, Alerting/Incident Response, Cost Optimization
@@ -119,16 +119,16 @@ _Documentation:_
 
 ## Success Criteria
 
-- [x] Aurora Global Database failover completes in < 15 minutes (99% of automated tests)
-- [x] Zero data loss during failover (RPO < 1 min)
-- [x] Automated failover success rate > 95%
-- [x] Manual failback completes in < 30 minutes
-- [x] Monthly DR drill passes (no critical issues)
-- [x] Dashboard load time < 2 seconds (p95)
-- [x] Alert noise < 5% false positives
-- [x] X-Ray traces capture > 99% of requests
-- [x] Log retention policies enforced
-- [x] Infrastructure costs within budget ($250–$400/month)
+- [ ] Aurora Global Database failover completes in < 15 minutes (99% of automated tests)
+- [ ] Zero data loss during failover (RPO < 1 min)
+- [ ] Automated failover success rate > 95%
+- [ ] Manual failback completes in < 30 minutes
+- [ ] Monthly DR drill passes (no critical issues)
+- [ ] Dashboard load time < 2 seconds (p95)
+- [ ] Alert noise < 5% false positives
+- [ ] X-Ray traces capture > 99% of requests
+- [ ] Log retention policies enforced
+- [ ] Infrastructure costs within budget ($250–$400/month)
 
 ---
 
@@ -141,8 +141,9 @@ _Documentation:_
 - [`DR_RUNBOOK.md`](DR_RUNBOOK.md) — Step-by-step failover guide
 - [`MULTI_REGION_STRATEGY.md`](MULTI_REGION_STRATEGY.md) — Multi-region rationale
 - [`COST_OPTIMIZATION_PLAYBOOK.md`](COST_OPTIMIZATION_PLAYBOOK.md) — Cost best practices
+- [`docs/MULTI_REGION_EPIC.md`](docs/MULTI_REGION_EPIC.md) — Remaining DR validation gates before production closure
 
 ---
 
 **Created:** April 10, 2026  
-**Status:** ✅ Completed  
+**Status:** 🔨 In Progress — implementation scaffold landed, acceptance criteria still require explicit validation  
