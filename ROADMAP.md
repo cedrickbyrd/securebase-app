@@ -348,3 +348,14 @@ AWS Organizations (Landing Zone)
 | Observability | CloudWatch, X-Ray (Phase 5), PagerDuty (Phase 5) |
 | Deployment | Netlify (frontend), AWS (backend + infra) |
 | CI/CD | GitHub Actions |
+
+---
+
+## Deployment Hygiene & Consolidation (Ongoing)
+
+- Branch cleanup: delete all merged `copilot/*` branches
+- Migrate phase-specific deploy scripts to unified `scripts/deploy.sh`
+- Set up GitHub Environments for staging → production promotion
+- Complete multi-region DR acceptance criteria (see `docs/MULTI_REGION_EPIC.md`)
+- Establish feature-vertical release cadence (HIPAA v2, FFIEC v2, Core Platform)
+- Add PR labels: `hipaa`, `ffiec`, `core`, `ci`, `infra`, `docs`
