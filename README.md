@@ -1,19 +1,21 @@
 # SecureBase
 
-### Sovereign AI Infrastructure & Security Orchestration
+### Executive Risk Intelligence for Institutional Governance  
 **Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)  
 **Developer:** [Cedrick J. Byrd / TxImhotep LLC](https://tximhotep.com)
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-securebase.tximhotep.com-blue?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
-[![Book a Demo](https://img.shields.io/badge/Book%20a%20Demo-Schedule%20Now-green?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo)
+[![Book a Demo](https://img.shields.io/badge/Executive%20Briefing-Schedule%20Now-green?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo)
 
 ---
 
 ## Overview
 
-**SecureBase** is a security-first orchestration platform designed for the next generation of sovereign infrastructure. Originally conceived as an AWS landing zone orchestrator, SecureBase has evolved into a comprehensive suite for **AI Agent Authentication**, **Non-Human Identity Management (NHI/IAM)**, and **Regulatory Compliance Automation**.
+**SecureBase** is an executive-grade governance intelligence platform that transforms fragmented security telemetry, compliance signals, and infrastructure evidence into clear, defensible risk insight for institutional leadership.
 
-In an era where AI agents and autonomous systems interact with critical infrastructure, SecureBase provides the "Source of Truth" for security posture, asset discovery, and audit readiness.
+Originally conceived as an AWS landing zone orchestrator, SecureBase now serves as a unified governance layer for organizations that need board-ready visibility into operational exposure, regulatory posture, control maturity, and evidentiary integrity.
+
+In an era where cloud infrastructure, AI workloads, and non-human identities introduce compounding operational risk, SecureBase provides a single command center for executive accountability, institutional resilience, and defensible audit narratives.
 
 📋 **[Full Project Roadmap →](ROADMAP.md)**
 
@@ -23,21 +25,31 @@ In an era where AI agents and autonomous systems interact with critical infrastr
 |-------|-------------|--------|
 | Phase 1 | AWS Landing Zone (Terraform IaC) | ✅ Complete |
 | Phase 2 | Serverless Database & API Backend | ✅ Complete |
-| Phase 3a | Customer Portal (React) | ✅ Complete |
+| Phase 3a | Executive Portal (React) | ✅ Complete |
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete |
-| Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete |
+| Phase 4 | Enterprise Governance Features (RBAC, Analytics, Notifications) | ✅ Complete |
 | Phase 5.1 | Executive/Admin Dashboard | ✅ Complete |
 | Phase 5.2 | Tenant/Customer Dashboard & Compliance Drift | ✅ Complete |
 | Phase 5.3 | Multi-Region DR, Alerting & Cost Optimization | 🔨 In Progress |
 | Phase 6 | Compliance Automation & Operations Scale | 📅 Planned |
 
-## Key Capabilities
+## Strategic Capabilities
 
-* **Sovereign Identity:** Advanced IAM protocols for non-human identities and AI agents.
-* **Compliance Drift Monitoring:** Real-time visualization of infrastructure status against NERC CIP, NIST, SOC 2, HIPAA, and FedRAMP standards.
-* **AI-Native Orchestration:** Security-hardened landing zones optimized for LLM inference and agentic workloads.
-* **Executive Insights:** High-fidelity data visualization for regulatory reporting and risk assessment.
-* **Multi-Region DR:** Aurora Global Database + us-east-1/us-west-2 failover with < 15 min RTO, < 1 min RPO.
+* **Unified Governance Visibility:** Consolidates infrastructure, compliance, and security signals into a single executive view of organizational exposure.
+* **Board-Ready Risk Intelligence:** Organizes telemetry around institutional risk domains leadership can review, defend, and act upon.
+* **Defensible Audit Accountability:** Preserves immutable evidence, time-bound governance snapshots, and historical risk posture reconstruction.
+* **Regulatory Posture Monitoring:** Visualizes trajectory across SOC 2, HIPAA, PCI DSS, SOX, FedRAMP, and related control environments.
+* **Operational Resilience:** Supports executive decisions with insight into exposure concentration, remediation priority, and control integrity.
+
+## Strategic Exposure Domains
+
+SecureBase organizes intelligence around five executive governance lenses:
+
+* **Data Sovereignty & Privacy Risk**
+* **Access Governance & Privileged Identity Exposure**
+* **Regulatory Compliance Posture**
+* **Vendor & Third-Party Risk**
+* **Operational Resilience & Control Integrity**
 
 ## Tech Stack
 
@@ -61,45 +73,45 @@ cd securebase-app
 npm install react-chartjs-2 chart.js --save --legacy-peer-deps
 ```
 
-> **Dependency compatibility note:** Root ESLint is intentionally pinned to `^9.39.4` because `eslint-plugin-react-hooks@^7.0.1` currently supports ESLint up to `^9`. This pin avoids `npm` `ERESOLVE` failures in `.github/workflows/validate-checkout-path.yml` during `npm install --omit=dev`.
+> **Dependency compatibility note:** Root ESLint is intentionally pinned to `^9.39.4` because `eslint-plugin-react-hooks@^7.0.1` currently supports ESLint up to `^9`. This pin avoids `npm` `ERESOLVE` conflicts while preserving hook linting behavior.
 
-[🚀 Book a Demo](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo) | 📞 Sales Inquiries
+[📞 Schedule an Executive Briefing](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo) | [💬 Sales Inquiries](mailto:sales@securebase.tximhotep.com)
 
 ## 🌐 The Two Portals
 
-We maintain two distinct environments to serve both prospects and active pilot partners:
+We maintain two distinct environments for institutional buyers, pilot partners, and governance stakeholders:
 
-### 1. Interactive Demo Endpoint
+### 1. Interactive Executive Demo
 **URL:** [demo.securebase.tximhotep.com](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
 
-- **Purpose:** A high-fidelity, read-only "Sandbox" for prospects to explore the UI.
-- **Features:** Pre-populated with mock data for Healthcare (HIPAA), Fintech (SOC 2), and Gov-Tech (FedRAMP).
+- **Purpose:** A high-fidelity, read-only executive command center for exploring board-ready risk intelligence.
+- **Features:** Pre-populated governance scenarios for Healthcare (HIPAA), Fintech (SOC 2), and Gov-Tech (FedRAMP).
 - **Availability:** Public access; no signup required.
 
-### 2. Production Audit Portal
+### 2. Production Governance Portal
 **URL:** [tximhotep.com/compliance](https://tximhotep.com/compliance?utm_source=github&utm_medium=readme&utm_campaign=portal)
 
-- **Purpose:** The live "Source of Truth" for SecureBase customers.
+- **Purpose:** The live system of record for SecureBase customers.
 - **Live Data:** Fetches real-time, signed evidence from private S3 vaults.
 - **Current Baseline:** 75% Compliance Pass Rate (Active Monitoring).
 - **Security:** Requires customer authentication and AWS KMS signature verification.
 
-## 🛠️ The "Integrity Loop" Architecture
+## 🛠️ The Integrity Loop Architecture
 
-SecureBase is built on a "Zero-Trust Audit" model to ensure evidence cannot be tampered with.
+SecureBase is built on a zero-trust audit model designed for evidentiary integrity and institutional defensibility.
 
 - **Collect:** The ComplianceEvidenceCollector (Python 3.11) probes 20+ control points across AWS/macOS/Linux.
 - **Vault:** Evidence is hashed (SHA-256) and stored in a private S3 bucket with AWS Object Lock enabled.
 - **Sign:** Every audit manifest is digitally signed via AWS KMS (RSASSA-PSS).
-- **Verify:** The Production Portal verifies the signature before rendering the compliance score to the customer.
+- **Verify:** The Production Portal verifies the signature before rendering risk and compliance posture to customers.
 
-## 💰 Pilot Program (Phase 4)
+## 💼 Executive Access Program
 
-**Status:** Active — Limited spots available (as of April 2026)
+**Status:** Active — Limited availability (as of April 2026)
 
-- **30-Day Free Trial:** Deploy production workloads with zero commitment.
-- **White-Glove Onboarding:** Automated SES welcome flow and dedicated technical support.
-- **Pricing:** 50% discount for the first 6 months ($4,000/mo for Fintech tier).
+- **Executive Briefing:** Governance-focused walkthrough for leadership, board, and audit stakeholders.
+- **White-Glove Onboarding:** Guided deployment, evidence activation, and stakeholder alignment support.
+- **Pilot Pricing:** 50% discount for the first 6 months ($4,000/mo for Fintech tier).
 
 ## 🚀 Technical Quick Start (For Developers)
 
@@ -115,9 +127,7 @@ python3 ../projects/securebase-terraform/compliance_evidence_collector.py --fram
 
 ## 🏢 About TxImhotep LLC
 
-Based in Mexia, Texas. Founded by veterans. Built for companies that need compliant AWS infrastructure without the 12-week wait.
-
-"Infrastructure HIPAA-Ready (BAA Active)."
+Based in Mexia, Texas. Founded by veterans. Built for organizations that need defensible governance operations, evidentiary integrity, and executive-level risk clarity.
 
 **Contact:**
 - Sales: sales@securebase.tximhotep.com
