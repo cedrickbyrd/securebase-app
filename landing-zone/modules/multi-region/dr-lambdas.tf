@@ -142,8 +142,9 @@ resource "aws_cloudwatch_metric_alarm" "primary_region_unhealthy" {
 
 # ── Automated failover invocation glue ──────────────────────────────────────────
 # When the primary-region health alarm enters ALARM, invoke the failover
-# orchestrator. The Lambda's own SSM guard rail still controls whether it
-# proceeds, so this event path is safe to keep wired in all environments.
+# orchestrator. Execution is still gated inside the Lambda by the
+# /securebase/dr/failover_enabled SSM parameter, so operators can disable
+# automated failover without removing this EventBridge wiring.
 resource "aws_cloudwatch_event_rule" "primary_region_unhealthy_alarm" {
   name        = "securebase-${var.environment}-primary-region-unhealthy-alarm"
   description = "Invoke failover orchestrator when the primary region health alarm fires"
