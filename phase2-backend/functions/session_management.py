@@ -53,6 +53,8 @@ SESSION_DURATION = int(os.environ.get('SESSION_DURATION', 86400))  # 24 hours
 COOKIE_DOMAIN = os.environ.get('COOKIE_DOMAIN', '.tximhotep.com')
 COOKIE_NAME = 'securebase_session'
 REFRESH_COOKIE_NAME = 'securebase_refresh'
+CSRF_COOKIE_NAME = 'securebase_csrf'
+CSRF_HEADER_NAME = 'X-CSRF-Token'
 
 
 class AuthenticationError(Exception):
@@ -105,6 +107,11 @@ def lambda_handler(event, context):
         elif http_method == 'GET' and path == '/auth/session':
             auth_header = headers.get('Authorization', headers.get('authorization', ''))
             # Also check cookie-based session
+            cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+            return get_session_info(auth_header, event, cookie_header)
+
+        elif http_method == 'GET' and path == '/auth/session/validate':
+            auth_header = headers.get('Authorization', headers.get('authorization', ''))
             cookie_header = headers.get('Cookie', headers.get('cookie', ''))
             return get_session_info(auth_header, event, cookie_header)
 
@@ -237,7 +244,8 @@ def login(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
         conn.commit()
 
         # Build Set-Cookie headers for unified cross-domain auth
-        cookie_headers = build_session_cookies(session_token, refresh_token, expires_at)
+        csrf_token = generate_csrf_token(session_token)
+        cookie_headers = build_session_cookies(session_token, refresh_token, expires_at, csrf_token)
 
         return success_response({
             'session_token': session_token,
@@ -334,7 +342,8 @@ def verify_mfa(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict
         conn.commit()
 
         # Build Set-Cookie headers for unified cross-domain auth
-        cookie_headers = build_session_cookies(session_token, refresh_token, expires_at)
+        csrf_token = generate_csrf_token(session_token)
+        cookie_headers = build_session_cookies(session_token, refresh_token, expires_at, csrf_token)
 
         return success_response({
             'session_token': session_token,
@@ -439,10 +448,20 @@ def setup_mfa(data: Dict, event: Dict) -> Dict:
 
 def refresh_session(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
     """Refresh session using refresh token (body or cookie)."""
+    headers = event.get('headers', {})
+    cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+
+    # Enforce CSRF token validation for cookie-based refresh requests
+    cookie_session_token = extract_cookie(cookie_header, COOKIE_NAME)
+    if cookie_session_token:
+        csrf_header = headers.get(CSRF_HEADER_NAME, headers.get(CSRF_HEADER_NAME.lower(), ''))
+        csrf_cookie = extract_cookie(cookie_header, CSRF_COOKIE_NAME)
+        if not validate_csrf_token(cookie_session_token, csrf_header, csrf_cookie):
+            return error_response(403, 'Invalid CSRF token', event)
+
     # Accept refresh token from body or from cookie
     refresh_token = data.get('refresh_token', '')
     if not refresh_token:
-        cookie_header = event.get('headers', {}).get('Cookie', event.get('headers', {}).get('cookie', ''))
         refresh_token = extract_cookie(cookie_header, REFRESH_COOKIE_NAME)
 
     if not refresh_token:
@@ -505,7 +524,8 @@ def refresh_session(data: Dict, source_ip: str, user_agent: str, event: Dict) ->
         conn.commit()
 
         # Build Set-Cookie headers for refreshed session
-        cookie_headers = build_session_cookies(new_session_token, new_refresh_token, new_expires_at)
+        csrf_token = generate_csrf_token(new_session_token)
+        cookie_headers = build_session_cookies(new_session_token, new_refresh_token, new_expires_at, csrf_token)
 
         return success_response({
             'session_token': new_session_token,
@@ -535,11 +555,19 @@ def refresh_session(data: Dict, source_ip: str, user_agent: str, event: Dict) ->
 def logout(data: Dict, event: Dict) -> Dict:
     """Logout and invalidate session. Clears httpOnly cookies."""
     session_token = data.get('session_token', '')
+    headers = event.get('headers', {})
+    cookie_header = headers.get('Cookie', headers.get('cookie', ''))
 
     # Also check cookie if no token in body
     if not session_token:
-        cookie_header = event.get('headers', {}).get('Cookie', event.get('headers', {}).get('cookie', ''))
         session_token = extract_cookie(cookie_header, COOKIE_NAME)
+
+    # Enforce CSRF token validation for cookie-based logout requests
+    if cookie_header and extract_cookie(cookie_header, COOKIE_NAME):
+        csrf_header = headers.get(CSRF_HEADER_NAME, headers.get(CSRF_HEADER_NAME.lower(), ''))
+        csrf_cookie = extract_cookie(cookie_header, CSRF_COOKIE_NAME)
+        if not validate_csrf_token(session_token, csrf_header, csrf_cookie):
+            return error_response(403, 'Invalid CSRF token', event)
 
     if not session_token:
         return error_response(400, 'Session token is required', event)
@@ -771,7 +799,23 @@ def get_cors_headers(event: Dict) -> Dict:
     }
 
 
-def build_session_cookies(session_token: str, refresh_token: str, expires_at: datetime) -> Dict:
+def generate_csrf_token(session_token: str) -> str:
+    """Generate CSRF token bound to the session token."""
+    csrf_secret = os.environ.get('CSRF_SECRET') or os.environ.get('JWT_SECRET') or 'securebase-csrf-secret'
+    return hashlib.sha256(f'{session_token}:{csrf_secret}'.encode()).hexdigest()[:32]
+
+
+def validate_csrf_token(session_token: str, provided_token: str, cookie_token: str) -> bool:
+    """Validate CSRF token from request header against cookie and expected value."""
+    if not session_token or not provided_token or not cookie_token:
+        return False
+    if not secrets.compare_digest(provided_token, cookie_token):
+        return False
+    expected_token = generate_csrf_token(session_token)
+    return secrets.compare_digest(expected_token, cookie_token)
+
+
+def build_session_cookies(session_token: str, refresh_token: str, expires_at: datetime, csrf_token: str = '') -> Dict:
     """
     Build Set-Cookie headers for unified cross-domain session management.
     Uses httpOnly + Secure + SameSite=None for cross-domain cookie sharing.
@@ -795,8 +839,18 @@ def build_session_cookies(session_token: str, refresh_token: str, expires_at: da
         'HttpOnly; Secure; SameSite=None'
     )
 
-    # Return as multiValueHeaders key so API Gateway sends both Set-Cookie headers
-    return {'multiValueHeaders': {'Set-Cookie': [session_cookie, refresh_cookie]}}
+    cookies = [session_cookie, refresh_cookie]
+    if csrf_token:
+        csrf_cookie = (
+            f'{CSRF_COOKIE_NAME}={csrf_token}; '
+            f'Domain={COOKIE_DOMAIN}; Path=/; '
+            f'Max-Age={max_age}; '
+            'Secure; SameSite=None'
+        )
+        cookies.append(csrf_cookie)
+
+    # Return as multiValueHeaders key so API Gateway sends all Set-Cookie headers
+    return {'multiValueHeaders': {'Set-Cookie': cookies}}
 
 
 def build_clear_cookies() -> Dict:
@@ -815,7 +869,14 @@ def build_clear_cookies() -> Dict:
         'HttpOnly; Secure; SameSite=None'
     )
 
-    return {'multiValueHeaders': {'Set-Cookie': [clear_session, clear_refresh]}}
+    clear_csrf = (
+        f'{CSRF_COOKIE_NAME}=; '
+        f'Domain={COOKIE_DOMAIN}; Path=/; '
+        'Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; '
+        'Secure; SameSite=None'
+    )
+
+    return {'multiValueHeaders': {'Set-Cookie': [clear_session, clear_refresh, clear_csrf]}}
 
 
 def extract_cookie(cookie_header: str, cookie_name: str) -> Optional[str]:

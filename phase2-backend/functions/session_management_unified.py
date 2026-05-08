@@ -93,61 +93,12 @@ def validate_cookie_session(event: dict) -> Dict:
     Validate session from cookie header.
     Used for cross-domain session validation.
     """
-    # Extract cookies from request
-    cookie_header = event.get('headers', {}).get('Cookie', '')
-    if not cookie_header:
-        return {
-            'statusCode': 401,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': get_allowed_origin(event),
-                'Access-Control-Allow-Credentials': 'true'
-            },
-            'body': json.dumps({'error': 'No session cookie found'})
-        }
-    
-    # Parse cookies
-    cookie = SimpleCookie()
-    cookie.load(cookie_header)
-    
-    session_token = None
-    if COOKIE_CONFIG['name'] in cookie:
-        session_token = cookie[COOKIE_CONFIG['name']].value
-    
-    if not session_token:
-        return {
-            'statusCode': 401,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': get_allowed_origin(event),
-                'Access-Control-Allow-Credentials': 'true'
-            },
-            'body': json.dumps({'error': 'Invalid session cookie'})
-        }
-    
-    # Hash token for database lookup
-    session_token_hash = hashlib.sha256(session_token.encode()).hexdigest()
-    
-    # In production, this would query the database for session details
-    # For now, return mock validated session
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': get_allowed_origin(event),
-            'Access-Control-Allow-Credentials': 'true'
-        },
-        'body': json.dumps({
-            'valid': True,
-            'user': {
-                'id': 'mock-user-id',
-                'customer_id': 'mock-customer-id',
-                'email': 'user@example.com',
-                'role': 'admin'
-            },
-            'expires_at': (datetime.utcnow() + timedelta(hours=24)).isoformat()
-        })
-    }
+    from session_management import get_session_info
+
+    headers = event.get('headers', {})
+    auth_header = headers.get('Authorization', headers.get('authorization', ''))
+    cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+    return get_session_info(auth_header, event, cookie_header)
 
 
 def build_session_cookie(session_token: str) -> str:
