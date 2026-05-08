@@ -38,7 +38,7 @@ const LandingPage = () => {
 
         {/* Demo invitation strip — low-commitment path before the signup ask */}
         <a
-          href="https://demo.securebase.tximhotep.com"
+          href="https://demo.securebase.tximhotep.com/login"
           aria-label="View live compliance dashboard demo — no signup required"
           className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/30 text-white rounded-xl px-6 py-3 mb-8 transition max-w-xl w-full justify-center"
         >
