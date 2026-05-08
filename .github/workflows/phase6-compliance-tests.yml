@@ -97,7 +97,7 @@ jobs:
             --tb=short \
             --cov=phase6-backend/functions \
             --cov-report=term-missing \
-            --cov-fail-under=70
+            --cov-fail-under=80
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: testing
