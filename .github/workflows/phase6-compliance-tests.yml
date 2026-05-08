@@ -1,0 +1,184 @@
+name: Phase 6 Compliance Tests
+
+# CI for Phase 6 backend — runs lint, unit tests, and Terraform validation
+# whenever changes are pushed to phase6-backend/ or the landing-zone phase6 modules.
+
+on:
+  push:
+    branches:
+      - main
+      - 'copilot/**'
+      - 'feature/**'
+    paths:
+      - 'phase6-backend/**'
+      - 'landing-zone/modules/phase6-**'
+      - 'tests/phase6/**'
+      - '.github/workflows/phase6-compliance-tests.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase6-backend/**'
+      - 'landing-zone/modules/phase6-**'
+      - 'tests/phase6/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Python Lint (flake8 + black)
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint Python (flake8 + black)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install lint tools
+        run: |
+          pip install --upgrade pip
+          pip install flake8 black
+
+      - name: Run flake8
+        run: |
+          flake8 phase6-backend/functions/ \
+            --max-line-length=100 \
+            --extend-ignore=E203,W503 \
+            --exclude=__pycache__ \
+            --statistics
+        continue-on-error: false
+
+      - name: Run black (check mode)
+        run: |
+          black --check --line-length=100 phase6-backend/functions/
+        continue-on-error: false
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Unit Tests (pytest with coverage)
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: Unit Tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-cov pytest-mock boto3 moto[s3,dynamodb,config,guardduty]
+
+      - name: Run Phase 6 unit tests
+        run: |
+          pytest tests/phase6/ \
+            -v \
+            --tb=short \
+            --cov=phase6-backend/functions \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+          AUDIT_SOURCE_BUCKET: test-audit-source
+          EVIDENCE_BUCKET: test-evidence-bucket
+          COMPLIANCE_SCORES_TABLE: securebase-compliance-scores-test
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase6-coverage-report
+          path: .coverage
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Terraform Validate
+  # ---------------------------------------------------------------------------
+  terraform-validate:
+    name: Terraform Validate (phase6 modules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '~> 1.5'
+
+      - name: Validate phase6-audit-logging module
+        working-directory: landing-zone/modules/phase6-audit-logging
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate phase6-compliance module
+        working-directory: landing-zone/modules/phase6-compliance
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+  # ---------------------------------------------------------------------------
+  # Job 4: JSON Schema Validation (compliance mapping files)
+  # ---------------------------------------------------------------------------
+  validate-mappings:
+    name: Validate Compliance Mapping JSONs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: |
+          python -c "
+          import json, sys
+          files = [
+            'phase6-backend/compliance/soc2_mapping.json',
+            'phase6-backend/compliance/hipaa_mapping.json',
+            'phase6-backend/compliance/fedramp_mapping.json',
+          ]
+          errors = []
+          for f in files:
+            try:
+              data = json.load(open(f))
+              controls = data.get('controls', [])
+              print(f'  {f}: {len(controls)} controls OK')
+              for ctrl in controls:
+                if not ctrl.get('control_id'):
+                  errors.append(f'{f}: control missing control_id')
+                if not ctrl.get('severity'):
+                  errors.append(f'{f}: {ctrl.get(\"control_id\", \"?\")} missing severity')
+            except Exception as e:
+              errors.append(f'{f}: {e}')
+          if errors:
+            print('ERRORS:', *errors, sep='\n  ')
+            sys.exit(1)
+          print('All mapping files valid.')
+          "
