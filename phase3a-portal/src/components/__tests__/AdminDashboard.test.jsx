@@ -1,234 +1,140 @@
-/**
- * Unit tests for AdminDashboard component
- * Phase 5.1: Executive/Admin Dashboard
- */
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import AdminDashboard from '../admin/AdminDashboard';
+import { MemoryRouter } from 'react-router-dom';
+import { adminService } from '../../services/adminService';
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import AdminDashboard from '../AdminDashboard';
-
-// Mock the adminService
 vi.mock('../../services/adminService', () => ({
   adminService: {
-    getPlatformMetrics: vi.fn(() => Promise.resolve({
-      customers: {
-        total: 147,
-        active: 142,
-        churned: 5,
-        growth: 12.5,
-        mrr: 58400
-      },
-      api: {
-        requests: 2800000,
-        latency_p50: 45,
-        latency_p95: 285,
-        latency_p99: 820,
-        errorRate: 0.18,
-        successRate: 99.82
-      },
-      infrastructure: {
-        lambdaColdStarts: 487,
-        lambdaErrors: 15,
-        dynamodbThrottles: 0,
-        auroraConnections: 42,
-        cacheHitRate: 78.5
-      },
-      security: {
-        criticalAlerts: 0,
-        violations: 3,
-        openIncidents: 1,
-        complianceScore: 97.2
-      },
-      costs: {
-        current: 8420,
-        projected: 12630,
-        byService: [
-          { name: 'Aurora', cost: 2840 },
-          { name: 'Lambda', cost: 1920 },
-          { name: 'DynamoDB', cost: 1540 }
-        ],
-        trend: 8.3
-      },
-      deployments: {
-        recent: [
-          {
-            service: 'API Gateway',
-            version: 'v2.4.1',
-            environment: 'production',
-            status: 'success',
-            deployer: 'alice@securebase.com',
-            timestamp: new Date().toISOString(),
-            duration: '2m 34s'
-          }
-        ],
-        successRate: 98.5
-      }
-    }))
-  }
+    getSystemOverview: vi.fn(),
+    getInfrastructureHealth: vi.fn(),
+    getSecurityMetrics: vi.fn(),
+    getCustomerAnalytics: vi.fn(),
+    getCostManagement: vi.fn(),
+    getOperationsStatus: vi.fn(),
+    getRecentAlerts: vi.fn(),
+  },
 }));
 
-// Mock SystemHealth component
-vi.mock('../SystemHealth', () => ({
-  default: () => <div data-testid="system-health">System Health Component</div>
+vi.mock('../admin/SystemHealth', () => ({
+  default: () => <div data-testid="system-health-widget">System health widget</div>,
 }));
 
-describe('AdminDashboard Component', () => {
+const getResolvedPayloads = () => ({
+  overview: { activeTenants: 42, totalRevenue: 96000, uptimePercentage: 99.9, openSupportTickets: 3 },
+  infrastructure: { lambdaInvocations: 250000, apiLatency: { p50: 30, p95: 80, p99: 120 }, errorRate: 0.2, cloudwatchAlarms: 1 },
+  security: { complianceScores: { soc2: 98, fedramp: 95, hipaa: 97 }, failedAuthAttempts: 5, securityEvents24h: 2 },
+  customers: { newSignups30d: 12, churnRate: 1.2, mrrTrend: [90000, 96000], npsScore: 55 },
+  costs: { awsSpendMtd: 12000, costPerTenant: 89, savingsVsOnDemand: 22, topServicesByCost: [{ name: 'Aurora', cost: 5000 }] },
+  operations: { activeDeployments: 1, failedPipelines: 0, pendingTerraformChanges: 2, lambdaColdStarts: 10 },
+  alerts: [{ id: 'a1', severity: 'high', summary: 'Latency spike', source: 'CloudWatch', createdAt: new Date().toISOString() }],
+});
+
+const primeSuccessMocks = () => {
+  const payloads = getResolvedPayloads();
+  adminService.getSystemOverview.mockResolvedValue(payloads.overview);
+  adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+  adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+  adminService.getCustomerAnalytics.mockResolvedValue(payloads.customers);
+  adminService.getCostManagement.mockResolvedValue(payloads.costs);
+  adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+  adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
+};
+
+const renderDashboard = () =>
+  render(
+    <MemoryRouter>
+      <AdminDashboard />
+    </MemoryRouter>
+  );
+
+describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('userRole', 'admin');
   });
 
-  it('should render AdminDashboard component', () => {
-    render(<AdminDashboard />);
-    expect(screen.getByText(/executive dashboard/i)).toBeInTheDocument();
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('should display platform-wide health and performance metrics subtitle', () => {
-    render(<AdminDashboard />);
-    expect(screen.getByText(/platform-wide health and performance metrics/i)).toBeInTheDocument();
+  it('shows loading skeleton on first load', () => {
+    const payloads = getResolvedPayloads();
+    let release;
+    const pending = new Promise((resolve) => {
+      release = resolve;
+    });
+
+    adminService.getSystemOverview.mockReturnValue(pending);
+    adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+    adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+    adminService.getCustomerAnalytics.mockResolvedValue(payloads.customers);
+    adminService.getCostManagement.mockResolvedValue(payloads.costs);
+    adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+    adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
+
+    renderDashboard();
+
+    expect(screen.getByText(/loading executive dashboard/i)).toBeInTheDocument();
+    release(payloads.overview);
   });
 
-  it('should have time range selector with default 24h', () => {
-    render(<AdminDashboard />);
-    const select = screen.getByRole('combobox');
-    expect(select).toBeInTheDocument();
-    expect(select.value).toBe('24h');
-  });
+  it('shows error state when fetch fails', async () => {
+    adminService.getSystemOverview.mockRejectedValue(new Error('boom'));
+    adminService.getInfrastructureHealth.mockResolvedValue({});
+    adminService.getSecurityMetrics.mockResolvedValue({});
+    adminService.getCustomerAnalytics.mockResolvedValue({});
+    adminService.getCostManagement.mockResolvedValue({});
+    adminService.getOperationsStatus.mockResolvedValue({});
+    adminService.getRecentAlerts.mockResolvedValue([]);
 
-  it('should have auto-refresh toggle button', () => {
-    render(<AdminDashboard />);
-    expect(screen.getByText(/auto-refresh on/i)).toBeInTheDocument();
-  });
+    renderDashboard();
 
-  it('should have manual refresh button', () => {
-    render(<AdminDashboard />);
-    expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
-  });
-
-  it('should display customer overview section', async () => {
-    render(<AdminDashboard />);
-    
     await waitFor(() => {
-      expect(screen.getByText(/customer overview/i)).toBeInTheDocument();
+      expect(screen.getByText(/unable to refresh admin metrics/i)).toBeInTheDocument();
     });
   });
 
-  it('should display API performance metrics', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/api performance/i)).toBeInTheDocument();
-    });
-  });
+  it('renders all seven required sections on success', async () => {
+    primeSuccessMocks();
 
-  it('should display infrastructure health section', async () => {
-    render(<AdminDashboard />);
-    
+    renderDashboard();
+
     await waitFor(() => {
+      expect(screen.getByText(/system overview/i)).toBeInTheDocument();
       expect(screen.getByText(/infrastructure health/i)).toBeInTheDocument();
-    });
-  });
-
-  it('should display security & compliance section', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
       expect(screen.getByText(/security & compliance/i)).toBeInTheDocument();
+      expect(screen.getByText(/customer analytics/i)).toBeInTheDocument();
+      expect(screen.getByText(/cost management/i)).toBeInTheDocument();
+      expect(screen.getByText(/operations/i)).toBeInTheDocument();
+      expect(screen.getByText(/recent alerts/i)).toBeInTheDocument();
+      expect(screen.getByTestId('system-health-widget')).toBeInTheDocument();
     });
   });
 
-  it('should display cost analytics section', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/cost analytics/i)).toBeInTheDocument();
-    });
-  });
+  it('uses exponential backoff (30s then 60s) after a refresh error', async () => {
+    vi.useFakeTimers();
 
-  it('should display recent deployments section', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/recent deployments/i)).toBeInTheDocument();
-    });
-  });
+    const payloads = getResolvedPayloads();
+    adminService.getSystemOverview
+      .mockResolvedValueOnce(payloads.overview)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+      .mockResolvedValue(payloads.overview);
+    adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+    adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+    adminService.getCustomerAnalytics.mockResolvedValue(payloads.customers);
+    adminService.getCostManagement.mockResolvedValue(payloads.costs);
+    adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+    adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
 
-  it('should render SystemHealth component', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('system-health')).toBeInTheDocument();
-    });
-  });
+    renderDashboard();
 
-  it('should display customer metrics after loading', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      // Check for total customers
-      expect(screen.getByText('147')).toBeInTheDocument();
-      // Check for MRR (in K format)
-      expect(screen.getByText(/58.4K/i)).toBeInTheDocument();
-    });
-  });
+    await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(1));
 
-  it('should display API latency metrics', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('45ms')).toBeInTheDocument(); // P50
-      expect(screen.getByText('285ms')).toBeInTheDocument(); // P95
-      expect(screen.getByText('820ms')).toBeInTheDocument(); // P99
-    });
-  });
+    await vi.advanceTimersByTimeAsync(30000);
+    await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2));
 
-  it('should display security compliance score', async () => {
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('97.2%')).toBeInTheDocument();
-    });
-  });
-
-  it('should toggle auto-refresh when button is clicked', async () => {
-    render(<AdminDashboard />);
-    
-    const autoRefreshButton = screen.getByText(/auto-refresh on/i);
-    fireEvent.click(autoRefreshButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/auto-refresh off/i)).toBeInTheDocument();
-    });
-  });
-
-  it('should change time range when selector is changed', async () => {
-    render(<AdminDashboard />);
-    
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: '7d' } });
-    
-    expect(select.value).toBe('7d');
-  });
-
-  it('should display last updated timestamp', () => {
-    render(<AdminDashboard />);
-    expect(screen.getByText(/last updated:/i)).toBeInTheDocument();
-  });
-
-  it('should handle error gracefully when API fails', async () => {
-    // Mock the service to fail
-    const mockService = await import('../../services/adminService');
-    mockService.adminService.getPlatformMetrics.mockRejectedValueOnce(new Error('API Error'));
-    
-    // Suppress console.error for this test
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
-    render(<AdminDashboard />);
-    
-    await waitFor(() => {
-      // Component should still render without crashing
-      expect(screen.getByText(/executive dashboard/i)).toBeInTheDocument();
-    });
-    
-    consoleSpy.mockRestore();
+    await vi.advanceTimersByTimeAsync(60000);
+    await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(3));
   });
 });
