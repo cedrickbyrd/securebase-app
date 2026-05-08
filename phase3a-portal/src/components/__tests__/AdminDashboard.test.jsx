@@ -134,7 +134,61 @@ describe('AdminDashboard', () => {
     await vi.advanceTimersByTimeAsync(30000);
     await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2));
 
-    await vi.advanceTimersByTimeAsync(60000);
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(30000);
     await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(3));
+  });
+
+  it('renders trend unavailable when mrr trend starts at zero', async () => {
+    const payloads = getResolvedPayloads();
+    adminService.getSystemOverview.mockResolvedValue(payloads.overview);
+    adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+    adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+    adminService.getCustomerAnalytics.mockResolvedValue({
+      ...payloads.customers,
+      mrrTrend: [0, 96000],
+    });
+    adminService.getCostManagement.mockResolvedValue(payloads.costs);
+    adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+    adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Trend unavailable')).toBeInTheDocument();
+    });
+  });
+
+  it('does not set state after unmount when a request resolves late', async () => {
+    const payloads = getResolvedPayloads();
+    let resolveOverview;
+    const delayedOverview = new Promise((resolve) => {
+      resolveOverview = resolve;
+    });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    adminService.getSystemOverview.mockReturnValue(delayedOverview);
+    adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+    adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+    adminService.getCustomerAnalytics.mockResolvedValue(payloads.customers);
+    adminService.getCostManagement.mockResolvedValue(payloads.costs);
+    adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+    adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
+
+    const { unmount } = renderDashboard();
+    unmount();
+
+    resolveOverview(payloads.overview);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const hasUnmountWarning = consoleErrorSpy.mock.calls.some((call) =>
+      String(call?.[0] || '').includes("Can't perform a React state update on an unmounted component")
+    );
+    expect(hasUnmountWarning).toBe(false);
+
+    consoleErrorSpy.mockRestore();
   });
 });

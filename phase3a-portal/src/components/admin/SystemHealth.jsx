@@ -19,6 +19,7 @@ const cardStyles = {
 const SystemHealth = ({ refreshKey = 0 }) => {
   const [health, setHealth] = useState({ services: [], lastUpdated: null });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -26,12 +27,18 @@ const SystemHealth = ({ refreshKey = 0 }) => {
     const loadHealth = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await adminService.getSystemHealth();
         if (mounted) {
           setHealth({
             services: data.services || [],
             lastUpdated: data.lastUpdated || new Date().toISOString(),
           });
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err);
+          setHealth({ services: [], lastUpdated: new Date().toISOString() });
         }
       } finally {
         if (mounted) setLoading(false);
@@ -58,6 +65,11 @@ const SystemHealth = ({ refreshKey = 0 }) => {
           </span>
         )}
       </div>
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          Unable to load system health right now.
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
