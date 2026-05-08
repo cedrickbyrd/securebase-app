@@ -135,7 +135,7 @@ describe('AdminDashboard', () => {
     await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2));
 
     await vi.advanceTimersByTimeAsync(30000);
-    expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2));
 
     await vi.advanceTimersByTimeAsync(30000);
     await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(3));
