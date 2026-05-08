@@ -225,3 +225,57 @@ variable "demo_auth_lambda_name" {
   description = "Name of the demo_auth Lambda function"
   type        = string
 }
+
+# ============================================================================
+# Phase 6 Compliance Lambdas — optional, provisioned by phase6-compliance module
+# ============================================================================
+
+variable "soc2_collector_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "soc2_collector_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "fedramp_collector_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "fedramp_collector_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "compliance_export_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "compliance_export_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "control_test_runner_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "control_test_runner_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "vendor_risk_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "vendor_risk_lambda_name" {
+  type    = string
+  default = null
+}
