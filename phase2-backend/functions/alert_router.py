@@ -10,6 +10,7 @@ import logging
 import urllib.request
 import urllib.error
 import boto3
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -31,8 +32,9 @@ def _is_maintenance_mode(param_name: str) -> bool:
     try:
         value = ssm.get_parameter(Name=param_name)["Parameter"]["Value"].strip().lower()
         return value == "true"
-    except Exception as e:
-        logger.warning("Maintenance mode param unavailable (%s): %s", param_name, e)
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "Unknown")
+        logger.warning("Maintenance mode param lookup failed (%s, code=%s): %s", param_name, code, e)
         return False
 
 
