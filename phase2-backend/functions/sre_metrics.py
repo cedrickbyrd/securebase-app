@@ -87,21 +87,36 @@ def _error(status: int, message: str) -> Dict[str, Any]:
 
 def _cw_metric(namespace: str, metric_name: str, dimensions: List[Dict],
                stat: str, period: int, start: datetime, end: datetime) -> Optional[float]:
-    """Fetch a single scalar CloudWatch metric value. Returns None on error."""
+    """Fetch a single scalar CloudWatch metric value. Returns None on error.
+
+    For percentile statistics (e.g., 'p95', 'p99'), pass them in the ``stat``
+    parameter — the function automatically routes them to ``ExtendedStatistics``
+    in the CloudWatch API.
+    """
+    _STANDARD_STATS = {'Average', 'Sum', 'Maximum', 'Minimum', 'SampleCount'}
     try:
-        resp = cloudwatch.get_metric_statistics(
+        is_percentile = stat not in _STANDARD_STATS
+        api_kwargs = dict(
             Namespace=namespace,
             MetricName=metric_name,
             Dimensions=dimensions,
             StartTime=start,
             EndTime=end,
             Period=period,
-            Statistics=[stat],
         )
+        if is_percentile:
+            api_kwargs['ExtendedStatistics'] = [stat]
+        else:
+            api_kwargs['Statistics'] = [stat]
+
+        resp = cloudwatch.get_metric_statistics(**api_kwargs)
         datapoints = resp.get('Datapoints', [])
         if not datapoints:
             return None
         latest = sorted(datapoints, key=lambda d: d['Timestamp'])[-1]
+        # Percentile values are nested under 'ExtendedStatistics'
+        if is_percentile:
+            return latest.get('ExtendedStatistics', {}).get(stat)
         return latest.get(stat)
     except Exception as exc:
         logger.warning("CloudWatch error: %s", exc)
@@ -362,8 +377,11 @@ def get_errors(query_params: Dict) -> Dict[str, Any]:
     try:
         log_end = int(end.timestamp())
         log_start = int((end - timedelta(minutes=15)).timestamp())
+        # Query the SRE metrics Lambda's own log group; use a prefix filter for
+        # the environment so results are scoped to this deployment.
+        log_group = f'/aws/lambda/securebase-{ENVIRONMENT}-sre-metrics'
         query_resp = logs_client.start_query(
-            logGroupName='/aws/lambda/securebase-' + ENVIRONMENT,
+            logGroupName=log_group,
             startTime=log_start,
             endTime=log_end,
             queryString='fields @timestamp, @message | filter @message like /ERROR/ | limit 10',
@@ -381,7 +399,6 @@ def get_errors(query_params: Dict) -> Dict[str, Any]:
     except Exception as exc:
         logger.warning("Logs Insights error: %s", exc)
         errors.append(str(exc))
-
     return _ok({
         'timestamp': datetime.utcnow().isoformat() + 'Z',
         'lambda': {

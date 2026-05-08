@@ -47,10 +47,10 @@ resource "aws_dynamodb_table" "sre_ops_metrics" {
     enabled        = true
   }
 
-  # KMS encryption
+  # KMS encryption — uses AWS-managed key (null = default SSE with AWS managed key)
   server_side_encryption {
     enabled     = var.encryption_at_rest
-    kms_key_arn = var.encryption_at_rest ? null : null  # Uses AWS-managed key when true
+    kms_key_arn = null
   }
 
   # Point-in-time recovery for production resilience
