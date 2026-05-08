@@ -11,6 +11,12 @@ variable "resource_id" {
   type        = string
 }
 
+variable "allowed_origin" {
+  description = "Single specific origin for credentialed CORS (wildcard not allowed with credentials)"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
+}
+
 variable "allowed_origins" {
   description = "List of allowed CORS origins"
   type        = list(string)
@@ -104,7 +110,7 @@ resource "aws_api_gateway_integration_response" "options" {
     "method.response.header.Access-Control-Allow-Headers"     = "'${join(",", var.allowed_headers)}'"
     "method.response.header.Access-Control-Allow-Methods"     = "'${join(",", var.allowed_methods)}'"
     # For credentials, we must use specific origins, not wildcards
-    "method.response.header.Access-Control-Allow-Origin"      = "'https://securebase.tximhotep.com'"
+    "method.response.header.Access-Control-Allow-Origin"      = "'${var.allowed_origin}'"
     "method.response.header.Access-Control-Allow-Credentials" = "'true'"
     "method.response.header.Access-Control-Expose-Headers"    = "'${join(",", var.exposed_headers)}'"
     "method.response.header.Access-Control-Max-Age"          = "'7200'"

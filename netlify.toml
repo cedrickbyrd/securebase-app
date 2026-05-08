@@ -87,6 +87,74 @@
   force = true
 
 
+# COMPLIANCE API - Phase 6 (Component 1-5)
+[[redirects]]
+  from = "/api/compliance/soc2/collect"
+  to = "https://api.securebase.tximhotep.com/compliance/soc2/collect"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/soc2/audit-export"
+  to = "https://api.securebase.tximhotep.com/compliance/soc2/audit-export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/fedramp/collect"
+  to = "https://api.securebase.tximhotep.com/compliance/fedramp/collect"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/export"
+  to = "https://api.securebase.tximhotep.com/compliance/export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/export/:job_id"
+  to = "https://api.securebase.tximhotep.com/compliance/export/:job_id"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/controls/status"
+  to = "https://api.securebase.tximhotep.com/compliance/controls/status"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/controls/test"
+  to = "https://api.securebase.tximhotep.com/compliance/controls/test"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/vendors"
+  to = "https://api.securebase.tximhotep.com/compliance/vendors"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/vendors/:vendor_id"
+  to = "https://api.securebase.tximhotep.com/compliance/vendors/:vendor_id"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/vendors/:vendor_id/baa"
+  to = "https://api.securebase.tximhotep.com/compliance/vendors/:vendor_id/baa"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/compliance/baa/expiring"
+  to = "https://api.securebase.tximhotep.com/compliance/baa/expiring"
+  status = 200
+  force = true
+
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
