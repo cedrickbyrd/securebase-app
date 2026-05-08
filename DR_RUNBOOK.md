@@ -18,6 +18,7 @@
 - **SEV-3:** Elevated DR risk only (replication lag, noisy alarms, transient degradation with <20% impact)
 
 Escalation: **On-call SRE → Platform Lead → Security/Compliance Lead → Engineering Director**.
+Incident commander role: **On-call SRE** by default, transferred to **Platform Lead** for extended SEV-1 events.
 
 ## 3) Automated Failover Procedure (Preferred)
 
