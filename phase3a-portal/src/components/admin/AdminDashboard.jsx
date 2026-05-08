@@ -124,7 +124,15 @@ const AdminDashboard = () => {
     if (points.length < 2) return 'No trend data';
     const start = points[0];
     const end = points[points.length - 1];
-    if (!start || typeof start !== 'number') return 'Trend unavailable';
+    if (
+      typeof start !== 'number'
+      || typeof end !== 'number'
+      || !Number.isFinite(start)
+      || !Number.isFinite(end)
+      || start === 0
+    ) {
+      return 'Trend unavailable';
+    }
     const delta = (((end - start) / start) * 100).toFixed(1);
     const sign = Number(delta) >= 0 ? '+' : '';
     return `${sign}${delta}% over trend window`;
