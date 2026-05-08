@@ -222,6 +222,7 @@ resource "aws_lambda_function" "session_management" {
       DATABASE_NAME       = var.database_name
       DATABASE_SECRET_ARN = var.database_secret_arn
       JWT_SECRET_ARN      = var.jwt_secret_arn
+      COOKIE_DOMAIN       = var.cookie_domain
       ENVIRONMENT         = var.environment
       LOG_LEVEL           = "INFO"
     }
