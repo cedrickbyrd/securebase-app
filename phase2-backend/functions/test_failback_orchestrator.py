@@ -14,14 +14,17 @@ class TestFailbackOrchestrator(unittest.TestCase):
         self.ssm = MagicMock()
         self.rds = MagicMock()
         self.sns = MagicMock()
+        self.cw = MagicMock()
 
         module.ssm = self.ssm
         module.rds = self.rds
         module.sns = self.sns
+        module.cw = self.cw
         module.PRIMARY_CLUSTER_ARN = "arn:aws:rds:us-east-1:123456789012:cluster:primary"
         module.ALERT_SNS_ARN = "arn:aws:sns:us-east-1:123456789012:securebase-alerts"
         module.PRIMARY_REGION = "us-east-1"
         module.SECONDARY_REGION = "us-west-2"
+        module.ENVIRONMENT = "prod"
 
     def test_lambda_handler_requires_confirm(self):
         result = get_handler(module)({"body": json.dumps({"confirm": False})}, None)
@@ -50,6 +53,7 @@ class TestFailbackOrchestrator(unittest.TestCase):
             Overwrite=True,
         )
         self.rds.create_global_cluster.assert_called_once()
+        self.cw.put_metric_data.assert_called_once()
 
     def test_already_on_primary_noop(self):
         self.ssm.get_parameter.return_value = {"Parameter": {"Value": "us-east-1"}}

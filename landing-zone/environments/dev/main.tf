@@ -167,7 +167,7 @@ module "phase5_sre_metrics" {
 
   environment     = var.environment
   tags            = var.tags
-  lambda_zip_path = "../../../phase2-backend/deploy/sre_metrics.zip"
+  lambda_zip_path = var.sre_metrics_lambda_zip_path
   cors_origin     = "https://securebase.tximhotep.com"
   alert_email     = var.alert_email
 }

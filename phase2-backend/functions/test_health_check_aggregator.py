@@ -17,18 +17,21 @@ class TestHealthCheckAggregator(unittest.TestCase):
         module.SECONDARY_REGION = "us-west-2"
         module.AURORA_CLUSTER = "securebase-prod-cluster"
         module.API_GW_ID = "abc123def4"
+        module.SECONDARY_API_GW_ID = "zyx987uvw6"
         module.ENVIRONMENT = "prod"
 
     @patch.object(module, "_check_aurora", return_value=True)
     @patch.object(module, "_check_dynamodb", return_value=True)
     @patch.object(module, "_check_api_gateway", return_value=True)
-    def test_health_aggregation_all_healthy(self, *_):
+    def test_health_aggregation_all_healthy(self, mock_api, *_):
         result = get_handler(module)({}, None)
 
         self.assertEqual(result["statusCode"], 200)
         body = json.loads(result["body"])
         self.assertTrue(body["us-east-1"]["healthy"])
         self.assertTrue(body["us-west-2"]["healthy"])
+        mock_api.assert_any_call("us-east-1", "abc123def4")
+        mock_api.assert_any_call("us-west-2", "zyx987uvw6")
 
     @patch.object(module, "_check_aurora", side_effect=[False, True])
     @patch.object(module, "_check_dynamodb", return_value=True)
@@ -71,7 +74,7 @@ class TestHealthCheckAggregator(unittest.TestCase):
 
         self.assertTrue(module._check_aurora("us-east-1"))
         self.assertTrue(module._check_dynamodb("us-east-1"))
-        self.assertTrue(module._check_api_gateway("us-east-1"))
+        self.assertTrue(module._check_api_gateway("us-east-1", "abc123def4"))
 
 
 if __name__ == "__main__":

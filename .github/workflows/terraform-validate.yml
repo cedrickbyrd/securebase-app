@@ -1,0 +1,42 @@
+name: Terraform Validate (Multi-Region Module)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "landing-zone/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-multi-region:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing-zone/modules/multi-region
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        if: ${{ hashFiles('landing-zone/modules/multi-region/.tflint.hcl') != '' }}
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Run TFLint
+        if: ${{ hashFiles('landing-zone/modules/multi-region/.tflint.hcl') != '' }}
+        run: tflint --init && tflint
