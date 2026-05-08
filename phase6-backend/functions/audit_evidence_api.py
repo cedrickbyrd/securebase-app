@@ -53,7 +53,6 @@ sys.path.insert(0, '/opt/python')
 from db_utils import (
     get_connection_pool,
     set_rls_context,
-    query_one,
     execute_query,
     get_api_key_by_prefix,
     DatabaseError,

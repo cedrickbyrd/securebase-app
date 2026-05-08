@@ -287,6 +287,7 @@ def _write_score_to_dynamodb(
         dry_run:          If True, log the item but skip the actual write.
     """
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    now = datetime.now(timezone.utc)
     item = {
         'PK': f'CUSTOMER#{customer_id}',
         'SK': f'FRAMEWORK#{framework}#DATE#{today}',
@@ -301,10 +302,9 @@ def _write_score_to_dynamodb(
         'high_violations': violations.get('HIGH', 0),
         'medium_violations': violations.get('MEDIUM', 0),
         'low_violations': violations.get('LOW', 0),
-        'calculated_at': datetime.now(timezone.utc).isoformat(),
+        'calculated_at': now.isoformat(),
         'ttl': int(
-            (datetime.now(timezone.utc).replace(year=datetime.now(timezone.utc).year + 1)
-             ).timestamp()
+            (now.replace(year=now.year + 1)).timestamp()
         ),
     }
 
