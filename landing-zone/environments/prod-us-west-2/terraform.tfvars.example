@@ -16,6 +16,7 @@ api_gateway_id         = "abc123def4"
 alert_email           = "oncall@securebase.tximhotep.com"
 oncall_email          = "platform-oncall@securebase.tximhotep.com"
 # pagerduty_routing_key = "pd_xxxxx"  # set via TF_VAR_pagerduty_routing_key in CI or secret manager injection
+# WARNING: never commit real routing keys or secrets to this file.
 
 # Cost optimization targets
 anomaly_threshold_percent = 20
