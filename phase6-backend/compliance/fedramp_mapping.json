@@ -1,0 +1,159 @@
+{
+  "framework": "FedRAMP",
+  "version": "Rev5",
+  "baseline": "Moderate",
+  "description": "Mapping of FedRAMP Rev 5 control families to AWS Security Hub NIST 800-53 standards and AWS Config managed rules.",
+  "last_updated": "2026-05-08",
+  "controls": [
+    {
+      "control_id": "AC-2",
+      "control_name": "Account Management",
+      "family": "AC",
+      "description": "Manage information system accounts, including establishing, activating, modifying, reviewing, disabling, and removing accounts.",
+      "severity": "HIGH",
+      "config_rule": "iam-no-inline-policy-check",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.16",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "AC-3",
+      "control_name": "Access Enforcement",
+      "family": "AC",
+      "description": "The information system enforces approved authorizations for logical access to information and system resources in accordance with applicable access control policies.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-public-read-prohibited",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/2.3",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "AC-17",
+      "control_name": "Remote Access",
+      "family": "AC",
+      "description": "Establish and document usage restrictions and implementation guidance for each type of remote access allowed.",
+      "severity": "HIGH",
+      "config_rule": "rds-instance-public-access-check",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "AU-2",
+      "control_name": "Audit Events",
+      "family": "AU",
+      "description": "Determine that the information system is capable of auditing events deemed significant and relevant to the security of the information system.",
+      "severity": "CRITICAL",
+      "config_rule": "cloudtrail-enabled",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/2.1",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
+    },
+    {
+      "control_id": "AU-9",
+      "control_name": "Protection of Audit Information",
+      "family": "AU",
+      "description": "The information system protects audit information and audit tools from unauthorized access, modification, and deletion.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-logging-enabled",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "CM-2",
+      "control_name": "Baseline Configuration",
+      "family": "CM",
+      "description": "Develop, document, and maintain under configuration control a current baseline configuration of the information system.",
+      "severity": "MEDIUM",
+      "config_rule": "ec2-imdsv2-check",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "CM-6",
+      "control_name": "Configuration Settings",
+      "family": "CM",
+      "description": "Establish and document configuration settings for information technology products employed within the information system.",
+      "severity": "MEDIUM",
+      "config_rule": "s3-bucket-versioning-enabled",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "IA-2",
+      "control_name": "Identification and Authentication — Organizational Users",
+      "family": "IA",
+      "description": "The information system uniquely identifies and authenticates organizational users.",
+      "severity": "CRITICAL",
+      "config_rule": "mfa-enabled-for-iam-console-access",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.2",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "IA-5",
+      "control_name": "Authenticator Management",
+      "family": "IA",
+      "description": "Manage information system authenticators by verifying the identity of the individual, group, role, or device receiving the authenticator.",
+      "severity": "HIGH",
+      "config_rule": "access-keys-rotated",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.3",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "family": "SC",
+      "description": "The information system monitors and controls communications at the external boundary and at key internal boundaries.",
+      "severity": "HIGH",
+      "config_rule": "vpc-flow-logs-enabled",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "SC-8",
+      "control_name": "Transmission Confidentiality and Integrity",
+      "family": "SC",
+      "description": "The information system implements cryptographic mechanisms to prevent unauthorized disclosure of information and detect changes during transmission.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-ssl-requests-only",
+      "security_hub_standard": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/2.3",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "SC-28",
+      "control_name": "Protection of Information at Rest",
+      "family": "SC",
+      "description": "The information system protects the confidentiality and integrity of information at rest.",
+      "severity": "CRITICAL",
+      "config_rule": "encrypted-volumes",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "SI-2",
+      "control_name": "Flaw Remediation",
+      "family": "SI",
+      "description": "Identify, report, and correct information system flaws; test software and firmware updates; install security-relevant updates within organization-defined time period.",
+      "severity": "HIGH",
+      "config_rule": "rds-multi-az-support",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "SI-3",
+      "control_name": "Malicious Code Protection",
+      "family": "SI",
+      "description": "Employ malicious code protection mechanisms at information system entry and exit points to detect and eradicate malicious code.",
+      "severity": "HIGH",
+      "config_rule": "guardduty-enabled-centralized",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+    },
+    {
+      "control_id": "SI-7",
+      "control_name": "Software, Firmware, and Information Integrity",
+      "family": "SI",
+      "description": "Employ integrity verification tools to detect unauthorized changes to software, firmware, and information.",
+      "severity": "HIGH",
+      "config_rule": "kms-cmk-not-scheduled-for-deletion",
+      "security_hub_standard": "",
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/kms-controls.html"
+    }
+  ]
+}

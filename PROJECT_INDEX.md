@@ -71,11 +71,14 @@ PHASE 5.3: Multi-Region DR, Alerting & Cost Optimization 🔨
 ├─ Component 7 (Infrastructure Scaling & Cost Optimization): 📅 Planned
 └─ Success Criteria: 99.95% uptime SLA, <5% alert false positive rate
 
-PHASE 6: Compliance Automation & Operations Scale 📅
-├─ Status: PLANNED (starts after Phase 5.3)
-├─ Scope: 50+ AWS Config rules mapped to SOC 2/HIPAA/FedRAMP
-├─ Features: Immutable audit packaging, 10,000+ user scalability, dev experience
-└─ See: PHASE5_AND_PHASE6_ROADMAP.md
+PHASE 6: Compliance Automation & Operations Scale 🔨
+├─ Status: IN PROGRESS (started May 2026)
+├─ 6.1 Immutable Audit Logging: 🔨 Scaffolded
+├─ 6.2 Compliance Automation (50+ Config rules): 🔨 Scaffolded
+├─ 6.3 Scalability (10k+ users): 📅 Planned
+├─ 6.4 Build Debt Cleanup: 📅 Planned
+├─ 6.5 Developer Experience: 📅 Planned
+└─ See: PHASE6_SCOPE.md | TODO_PHASE6.md
 ```
 
 ---
@@ -377,7 +380,7 @@ Breakeven: <1 customer
 | Phase 5.1 | 3 weeks | ✅ Complete |
 | Phase 5.2 | 3 weeks | ✅ Complete |
 | Phase 5.3 | 6 weeks | 🔨 In Progress |
-| Phase 6 | TBD | 📅 Planned |
+| Phase 6 | 6 weeks | 🔨 In Progress |
 
 ---
 
