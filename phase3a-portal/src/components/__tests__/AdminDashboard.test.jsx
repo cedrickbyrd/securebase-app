@@ -161,6 +161,26 @@ describe('AdminDashboard', () => {
     });
   });
 
+  it('renders trend unavailable when mrr trend endpoint is invalid', async () => {
+    const payloads = getResolvedPayloads();
+    adminService.getSystemOverview.mockResolvedValue(payloads.overview);
+    adminService.getInfrastructureHealth.mockResolvedValue(payloads.infrastructure);
+    adminService.getSecurityMetrics.mockResolvedValue(payloads.security);
+    adminService.getCustomerAnalytics.mockResolvedValue({
+      ...payloads.customers,
+      mrrTrend: [90000, null],
+    });
+    adminService.getCostManagement.mockResolvedValue(payloads.costs);
+    adminService.getOperationsStatus.mockResolvedValue(payloads.operations);
+    adminService.getRecentAlerts.mockResolvedValue(payloads.alerts);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Trend unavailable')).toBeInTheDocument();
+    });
+  });
+
   it('does not set state after unmount when a request resolves late', async () => {
     const payloads = getResolvedPayloads();
     let resolveOverview;
