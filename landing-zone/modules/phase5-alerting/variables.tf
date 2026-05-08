@@ -32,6 +32,42 @@ variable "aurora_cluster_id" {
   default     = ""
 }
 
+variable "dynamodb_table_names" {
+  description = "DynamoDB table names to create throttle/error alarms for"
+  type        = list(string)
+  default     = []
+}
+
+variable "dynamodb_throttle_threshold" {
+  description = "DynamoDB throttled request count to trigger alarm"
+  type        = number
+  default     = 10
+}
+
+variable "elasticache_cluster_id" {
+  description = "ElastiCache cluster ID for cache alarms"
+  type        = string
+  default     = ""
+}
+
+variable "cache_eviction_threshold" {
+  description = "ElastiCache eviction count threshold"
+  type        = number
+  default     = 1000
+}
+
+variable "cache_max_connections" {
+  description = "ElastiCache max connections threshold"
+  type        = number
+  default     = 500
+}
+
+variable "aurora_max_connections" {
+  description = "Aurora max connections threshold for alarm"
+  type        = number
+  default     = 200
+}
+
 variable "sns_kms_key_arn" {
   description = "KMS key ARN for SNS topic encryption (from phase5-logging output)"
   type        = string
@@ -42,6 +78,25 @@ variable "alert_webhook_ssm_param" {
   description = "SSM parameter path storing the PagerDuty/Opsgenie webhook URL"
   type        = string
   default     = "/securebase/alerts/webhook_url"
+}
+
+variable "alert_webhook_kms_key_arn" {
+  description = "KMS key ARN used to encrypt the alert webhook SSM parameter"
+  type        = string
+  default     = ""
+}
+
+variable "create_webhook_ssm_param" {
+  description = "Whether to create the SSM parameter placeholder for the webhook URL"
+  type        = bool
+  default     = false
+}
+
+variable "initial_webhook_url" {
+  description = "Initial webhook URL value for SSM param (leave blank to use placeholder)"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "alert_email" {
