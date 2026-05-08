@@ -34,7 +34,9 @@ resource "aws_iam_policy" "alert_router" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = ["arn:aws:logs:*:*:*"]
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/securebase-${var.environment}-alert-router:*"
+        ]
       }
     ]
   })
@@ -54,7 +56,7 @@ resource "aws_ssm_parameter" "webhook_url" {
 
   name        = var.alert_webhook_ssm_param
   type        = "SecureString"
-  value       = var.initial_webhook_url != "" ? var.initial_webhook_url : "PLACEHOLDER_REPLACE_ME"
+  value       = var.initial_webhook_url != "" ? var.initial_webhook_url : "https://example.invalid/replace-me"
   description = "PagerDuty/Opsgenie/Slack webhook URL for SecureBase ${var.environment} alerts"
   overwrite   = false
 

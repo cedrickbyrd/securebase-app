@@ -54,7 +54,7 @@ resource "aws_cloudwatch_event_rule" "dr_failover_detected" {
     source      = ["aws.rds", "aws.route53"]
     detail-type = ["RDS DB Cluster Event", "Route 53 Health Check Status Change"]
     detail = {
-      EventCategories = [["failover", "failure"]]
+      EventCategories = ["failover", "failure"]
     }
   })
   tags = local.common_tags
