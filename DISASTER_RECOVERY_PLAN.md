@@ -33,7 +33,7 @@
 
 ### DNS Configuration Note
 
-Lower TTL improves failover convergence but increases DNS query volume. For production failover records, use 30s TTL to align with RTO goals.
+Lower TTL improves failover convergence but increases DNS query volume. For production **failover Route53 records only** (`api_primary` / `api_secondary` in `landing-zone/modules/multi-region/route53-failover.tf`), use 30s TTL as a required DR setting to align with RTO goals.
 
 ## 3) Failover Decision Tree (Automated vs Manual)
 

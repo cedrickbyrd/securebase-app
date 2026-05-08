@@ -2,7 +2,7 @@
 
 ## 1) Current Cost Baseline (Fill with live monthly values)
 
-Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered by `Project=securebase` tag (last 30 days), then update this table during monthly FinOps review. Initial baseline must be completed within 2 weeks of Phase 5 production rollout.
+Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered by `Project=securebase` tag (last 30 days). Initial baseline must be completed within 2 weeks of Phase 5 production rollout. Maintain monthly tracking in the FinOps operations sheet; update this repository table quarterly (or after major architecture changes).
 
 | Service | Current Spend (USD) | Baseline Target (USD) | Notes |
 |---|---:|---:|---|
@@ -28,6 +28,7 @@ Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered
   - Prefer **80%** for steady predictable workloads where higher utilization improves cost efficiency.
 - Keep tables on on-demand when average utilization stays below ~10 RCU / 10 WCU or <1M requests/month.
 - Monitor throttles and replication metrics for global tables.
+- Implementation reference: configure `target_tracking_scaling_policy_configuration.target_value` in Terraform auto-scaling policies under `landing-zone/modules/phase5-cost/main.tf` and `landing-zone/modules/phase5-cost-optimization/main.tf`.
 
 ### Aurora
 - Tune Serverless v2 min/max ACU by environment and traffic profile.
