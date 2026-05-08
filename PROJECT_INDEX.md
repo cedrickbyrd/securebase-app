@@ -546,6 +546,13 @@ Active Phase 5.3 work:
 3. Component 6 — Aurora Global Database, DynamoDB Global Tables, Route 53 failover 🔨
 4. Component 7 — Auto-scaling policies & cost anomaly detection 📅
 
+SRE implementation/deployment status (May 2026 check):
+- ✅ `landing-zone/modules/phase5-sre-metrics/` module exists and defines SRE metrics Lambda + table + alarms.
+- ✅ API Gateway `/sre/*` routes are implemented in `landing-zone/modules/api-gateway/main.tf` behind optional SRE Lambda inputs.
+- ✅ Terraform wiring gap addressed: root module now accepts and forwards `sre_metrics_lambda_invoke_arn` + `sre_metrics_lambda_name` to API Gateway (dev env now passes these from `module.phase5_sre_metrics`).
+- ⚠️ Deployment still requires `terraform apply` from environment directories to promote wiring changes in AWS.
+- ⚠️ CI validation for Terraform is environment-limited here (Terraform CLI unavailable in this execution environment).
+
 **SLA Targets:** 99.95% uptime | RTO < 15 min | RPO < 1 min
 
 **Next step:** See [PHASE5.3_SCOPE.md](PHASE5.3_SCOPE.md) for detailed component breakdown and success criteria.
