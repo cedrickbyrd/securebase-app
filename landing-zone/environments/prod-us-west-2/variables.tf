@@ -1,92 +1,35 @@
 variable "environment" {
-<<<<<<< HEAD
   description = "Environment name"
   type        = string
   default     = "prod"
 }
 
-variable "tags" {
-  description = "Common tags"
-  type        = map(string)
-  default = {
-    Project             = "SecureBase"
-    ManagedBy           = "Terraform"
-    ComplianceFramework = "SOC2,FedRAMP,HIPAA"
-    DataClassification  = "sensitive"
-  }
-}
-
-variable "primary_api_fqdn" {
-  description = "Primary region API FQDN (us-east-1)"
+variable "target_region" {
+  description = "Standby deployment region for this environment"
   type        = string
+  default     = "us-west-2"
 }
 
-variable "secondary_api_fqdn" {
-  description = "Secondary region API FQDN (us-west-2)"
+variable "source_region" {
+  description = "Primary source region used for cross-region DR resources"
   type        = string
-}
-
-variable "hosted_zone_id" {
-  description = "Route 53 hosted zone ID"
-  type        = string
-}
-
-variable "secondary_vpc_id" {
-  description = "VPC ID in us-west-2"
-  type        = string
-}
-
-variable "secondary_vpc_cidr" {
-  description = "CIDR block of the us-west-2 VPC"
-  type        = string
-  default     = "10.1.0.0/16"
-}
-
-variable "secondary_subnet_ids" {
-  description = "Subnet IDs in us-west-2 for Aurora and Lambda"
-  type        = list(string)
-  default     = []
-}
-
-variable "cloudfront_aliases" {
-  description = "Custom domain aliases for CloudFront"
-  type        = list(string)
-  default     = ["api.securebase.tximhotep.com"]
-}
-
-variable "acm_certificate_arn" {
-  description = "ACM certificate ARN in us-east-1 for CloudFront"
-  type        = string
-  default     = ""
-}
-=======
-  type    = string
-  default = "prod"
-}
-
-variable "primary_region" {
-  type    = string
-  default = "us-east-1"
-}
-
-variable "secondary_region" {
-  type    = string
-  default = "us-west-2"
+  default     = "us-east-1"
 }
 
 variable "aurora_cluster_id" {
-  description = "Primary Aurora cluster ID (in us-east-1)"
+  description = "Aurora cluster ID associated with DR orchestration"
   type        = string
   default     = "securebase-prod-cluster"
 }
 
 variable "aurora_engine_version" {
-  type    = string
-  default = "8.0.mysql_aurora.3.04.0"
+  description = "Aurora engine version used by the multi-region module"
+  type        = string
+  default     = "8.0.mysql_aurora.3.04.0"
 }
 
 variable "dynamodb_table_names" {
-  description = "Tables to replicate to us-west-2"
+  description = "DynamoDB tables to include in global table replication"
   type        = list(string)
   default = [
     "securebase-users",
@@ -99,36 +42,80 @@ variable "dynamodb_table_names" {
 }
 
 variable "route53_hosted_zone_id" {
-  type    = string
-  default = ""
+  description = "Route 53 hosted zone ID for API failover records"
+  type        = string
+  default     = ""
 }
 
 variable "primary_api_endpoint" {
-  description = "Primary (us-east-1) API GW FQDN"
+  description = "Primary API endpoint used by Route 53 health checks"
   type        = string
-  default     = "9xyetu7zq3.execute-api.us-east-1.amazonaws.com"
+  default     = "api.securebase.tximhotep.com"
 }
 
 variable "secondary_api_endpoint" {
-  description = "Secondary (us-west-2) API GW FQDN — set after deploying API GW in secondary region"
+  description = "Secondary API endpoint for failover records"
   type        = string
   default     = ""
 }
 
-variable "alert_sns_arn" {
-  description = "SNS topic ARN from phase5-alerting (prod)"
+variable "api_gateway_id" {
+  description = "API Gateway ID for alarm and logging resources"
   type        = string
   default     = ""
+}
+
+variable "alert_email" {
+  description = "Fallback email destination for alerts"
+  type        = string
+  default     = ""
+}
+
+variable "pagerduty_routing_key" {
+  description = "PagerDuty integration routing key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "oncall_email" {
+  description = "On-call email address for alert subscription"
+  type        = string
+  default     = ""
+}
+
+variable "lambda_concurrency_threshold" {
+  description = "Threshold for account Lambda concurrency alarm"
+  type        = number
+  default     = 800
+}
+
+variable "api_usage_spike_threshold" {
+  description = "Threshold for API usage spike alarm"
+  type        = number
+  default     = 100000
+}
+
+variable "anomaly_threshold_percent" {
+  description = "Minimum percentage for cost anomaly alerting"
+  type        = number
+  default     = 20
+}
+
+variable "s3_cost_tiering_buckets" {
+  description = "S3 buckets to place on intelligent tiering policies"
+  type        = set(string)
+  default     = []
 }
 
 variable "tags" {
-  type = map(string)
+  description = "Common tags for all resources in this environment"
+  type        = map(string)
   default = {
     Project             = "SecureBase"
     ManagedBy           = "Terraform"
-    Environment         = "prod"
+    Environment         = "prod-us-west-2"
     ComplianceFramework = "SOC2,FedRAMP,HIPAA"
     DataClassification  = "sensitive"
   }
 }
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization

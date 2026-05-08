@@ -1,10 +1,5 @@
 provider "aws" {
-<<<<<<< HEAD
-  alias  = "primary"
-  region = "us-east-1"
-=======
-  region = var.primary_region
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+  region = var.target_region
 
   default_tags {
     tags = var.tags
@@ -13,84 +8,106 @@ provider "aws" {
 
 provider "aws" {
   alias  = "secondary"
-<<<<<<< HEAD
-  region = "us-west-2"
-=======
-  region = var.secondary_region
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+  region = var.source_region
 
   default_tags {
     tags = var.tags
   }
 }
 
-<<<<<<< HEAD
-# =============================================================================
-# Multi-Region DR Module
-# =============================================================================
+locals {
+  phase5_lambda_names = [
+    "securebase-${var.environment}-auth-v2",
+    "securebase-${var.environment}-webhook-manager",
+    "securebase-${var.environment}-billing-worker",
+    "securebase-${var.environment}-support-tickets",
+    "securebase-${var.environment}-cost-forecasting",
+    "securebase-${var.environment}-health-check",
+    "securebase-${var.environment}-submit-lead",
+    "securebase-${var.environment}-metrics-aggregation",
+    "securebase-${var.environment}-tenant-metrics",
+    "securebase-${var.environment}-alert-router",
+    "securebase-${var.environment}-health-check-aggregator",
+    "securebase-${var.environment}-failover-orchestrator",
+    "securebase-${var.environment}-failback-orchestrator",
+  ]
+}
 
-=======
-# ── Multi-Region DR ────────────────────────────────────────────────────────────
-# This environment manages only the cross-region DR infrastructure.
-# Primary region resources (Aurora primary, API GW, Lambdas) are managed by
-# landing-zone/environments/production.
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+# ── Phase 5.3: Logging & Distributed Tracing (standby region) ─────────────────
+module "phase5_logging" {
+  source = "../../modules/phase5-logging"
+
+  environment = var.environment
+  aws_region  = var.target_region
+
+  lambda_function_names = local.phase5_lambda_names
+
+  api_gateway_id = var.api_gateway_id
+  tags           = var.tags
+}
+
+# ── Phase 5.3: Alerting & Incident Response (standby region) ──────────────────
+module "phase5_alerting" {
+  source = "../../modules/phase5-alerting"
+
+  environment     = var.environment
+  aws_region      = var.target_region
+  sns_kms_key_arn = module.phase5_logging.kms_key_arn
+
+  lambda_function_names = local.phase5_lambda_names
+
+  api_gateway_id    = var.api_gateway_id
+  aurora_cluster_id = var.aurora_cluster_id
+
+  alert_email = var.alert_email
+
+  pagerduty_routing_key        = var.pagerduty_routing_key
+  oncall_email                 = var.oncall_email
+  lambda_concurrency_threshold = var.lambda_concurrency_threshold
+  api_usage_spike_threshold    = var.api_usage_spike_threshold
+
+  tags = var.tags
+}
+
+# ── Phase 5.3: Multi-Region DR (reversed providers: west primary, east secondary) ─
 module "multi_region" {
   source = "../../modules/multi-region"
 
   providers = {
-<<<<<<< HEAD
-    aws.primary   = aws.primary
-    aws.secondary = aws.secondary
-  }
-
-  environment    = var.environment
-  primary_region = "us-east-1"
-  secondary_region = "us-west-2"
-  tags           = var.tags
-
-  primary_api_fqdn     = var.primary_api_fqdn
-  secondary_api_fqdn   = var.secondary_api_fqdn
-  hosted_zone_id       = var.hosted_zone_id
-  secondary_vpc_id     = var.secondary_vpc_id
-  secondary_vpc_cidr   = var.secondary_vpc_cidr
-  secondary_subnet_ids = var.secondary_subnet_ids
-  cloudfront_aliases   = var.cloudfront_aliases
-  acm_certificate_arn  = var.acm_certificate_arn
-=======
     aws           = aws
     aws.secondary = aws.secondary
   }
 
   environment       = var.environment
-  primary_region    = var.primary_region
-  secondary_region  = var.secondary_region
+  primary_region    = var.target_region
+  secondary_region  = var.source_region
   aurora_cluster_id = var.aurora_cluster_id
 
-  aurora_engine_version  = var.aurora_engine_version
-  dynamodb_table_names   = var.dynamodb_table_names
+  aurora_engine_version = var.aurora_engine_version
+  dynamodb_table_names  = var.dynamodb_table_names
 
   route53_hosted_zone_id = var.route53_hosted_zone_id
   primary_api_endpoint   = var.primary_api_endpoint
   secondary_api_endpoint = var.secondary_api_endpoint
 
-  alert_sns_arn = var.alert_sns_arn
+  alert_sns_arn = module.phase5_alerting.sns_topic_arn
 
   tags = var.tags
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
+}
+
+# ── Phase 5.3: Cost Optimization (standby region) ──────────────────────────────
+module "phase5_cost" {
+  source = "../../modules/phase5-cost"
+
+  environment               = var.environment
+  alert_sns_arn             = module.phase5_alerting.sns_topic_arn
+  anomaly_threshold_percent = var.anomaly_threshold_percent
+
+  s3_bucket_names = var.s3_cost_tiering_buckets
+
+  tags = var.tags
 }
 
 terraform {
-  required_version = ">= 1.5.0"
-<<<<<<< HEAD
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-=======
->>>>>>> feat(phase5.3): implement logging, alerting, multi-region DR, and cost optimization
-
   backend "s3" {}
 }
