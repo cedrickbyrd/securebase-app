@@ -73,11 +73,11 @@ class TestSREMetrics(unittest.TestCase):
         self.addCleanup(patcher_ssm.stop)
         self.addCleanup(patcher_ddb.stop)
 
-        # Default CloudWatch response — two datapoints
+        # Default CloudWatch response — datapoints including both standard and percentile stats
         self.mock_cw.get_metric_statistics.return_value = {
             'Datapoints': [
                 {'Timestamp': datetime(2026, 1, 1, 0, 0), 'Average': 12.5, 'Sum': 50.0,
-                 'Maximum': 20.0, 'p95': 0.02},
+                 'Maximum': 20.0, 'ExtendedStatistics': {'p95': 0.02}},
             ]
         }
         self.mock_cw.get_metric_data.return_value = {

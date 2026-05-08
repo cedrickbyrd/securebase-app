@@ -5,7 +5,7 @@
 Base URL: `https://api.securebase.tximhotep.com`  
 Portal proxy: `/api/sre/*` → `https://api.securebase.tximhotep.com/sre/:splat`
 
-All endpoints are authenticated at the Lambda level (JWT via `Authorization: Bearer <token>` header). CORS is restricted to `https://securebase.tximhotep.com`.
+> **Authentication note**: API Gateway methods use `NONE` authorization (consistent with other Phase 5 admin endpoints in this repo). In a production deployment, add an API Gateway Authorizer or restrict access to internal VPC endpoints. All endpoints return CORS headers scoped to `https://securebase.tximhotep.com`.
 
 ---
 
