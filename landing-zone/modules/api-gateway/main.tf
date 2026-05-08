@@ -1110,3 +1110,178 @@ resource "aws_lambda_permission" "demo_auth_api_gateway" {
   source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
 }
 
+# ============================================================================
+# API Resources - Phase 6 Compliance (Component 1–5)
+# ============================================================================
+
+resource "aws_api_gateway_resource" "compliance" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "compliance"
+}
+
+# /compliance/soc2
+resource "aws_api_gateway_resource" "compliance_soc2" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "soc2"
+}
+
+resource "aws_api_gateway_resource" "compliance_soc2_collect" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_soc2.id
+  path_part   = "collect"
+}
+
+resource "aws_api_gateway_resource" "compliance_soc2_export" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_soc2.id
+  path_part   = "audit-export"
+}
+
+# /compliance/fedramp
+resource "aws_api_gateway_resource" "compliance_fedramp" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "fedramp"
+}
+
+resource "aws_api_gateway_resource" "compliance_fedramp_collect" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_fedramp.id
+  path_part   = "collect"
+}
+
+# /compliance/export
+resource "aws_api_gateway_resource" "compliance_export" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "export"
+}
+
+resource "aws_api_gateway_resource" "compliance_export_job" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_export.id
+  path_part   = "{job_id}"
+}
+
+# /compliance/controls
+resource "aws_api_gateway_resource" "compliance_controls" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "controls"
+}
+
+resource "aws_api_gateway_resource" "compliance_controls_status" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_controls.id
+  path_part   = "status"
+}
+
+resource "aws_api_gateway_resource" "compliance_controls_test" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_controls.id
+  path_part   = "test"
+}
+
+# /compliance/vendors
+resource "aws_api_gateway_resource" "compliance_vendors" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "vendors"
+}
+
+resource "aws_api_gateway_resource" "compliance_vendor_id" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_vendors.id
+  path_part   = "{vendor_id}"
+}
+
+resource "aws_api_gateway_resource" "compliance_vendor_baa" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_vendor_id.id
+  path_part   = "baa"
+}
+
+# /compliance/baa
+resource "aws_api_gateway_resource" "compliance_baa" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance.id
+  path_part   = "baa"
+}
+
+resource "aws_api_gateway_resource" "compliance_baa_expiring" {
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.compliance_baa.id
+  path_part   = "expiring"
+}
+
+# ---- CORS modules for all Phase 6 resources ----
+# Use cors-with-credentials for all compliance endpoints (JWT auth + cookie)
+
+module "cors_compliance_soc2_collect" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_soc2_collect.id
+}
+
+module "cors_compliance_soc2_export" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_soc2_export.id
+}
+
+module "cors_compliance_fedramp_collect" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_fedramp_collect.id
+}
+
+module "cors_compliance_export" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_export.id
+}
+
+module "cors_compliance_export_job" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_export_job.id
+}
+
+module "cors_compliance_controls_status" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_controls_status.id
+}
+
+module "cors_compliance_controls_test" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_controls_test.id
+}
+
+module "cors_compliance_vendors" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_vendors.id
+}
+
+module "cors_compliance_vendor_id" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_vendor_id.id
+}
+
+module "cors_compliance_vendor_baa" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_vendor_baa.id
+}
+
+module "cors_compliance_baa_expiring" {
+  source      = "./cors-with-credentials"
+  api_id      = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.compliance_baa_expiring.id
+}
+
