@@ -28,7 +28,7 @@ const LandingPage = () => {
           🚀 Now in Early Access · 200+ Companies on the Waitlist
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4 max-w-3xl">
-          Compliant AWS Infrastructure<br />
+          Rapid Infrastructure Sovereignty<br />
           <span className="text-yellow-300">in 48 Hours</span>
         </h1>
         <p className="text-xl text-blue-100 max-w-2xl mb-8">
