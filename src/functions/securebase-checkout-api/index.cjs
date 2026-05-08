@@ -3,6 +3,24 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // One-time payment tiers — these must use mode:'payment', not mode:'subscription'.
 const ONE_TIME_TIERS = new Set(['pilot_compliance', 'hipaa_assessment']);
 
+// Tiers subject to HIPAA BAA + work-email + company-name requirements.
+const HIPAA_TIERS = new Set(['healthcare', 'hipaa_assessment']);
+
+// Free / consumer e-mail domains that are not valid for HIPAA-tier enrollment.
+// Any e-mail whose domain appears here is rejected with a 400 on HIPAA tiers.
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com',
+  'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',
+  'hotmail.com', 'hotmail.co.uk',
+  'outlook.com', 'live.com', 'msn.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'aol.com',
+  'protonmail.com', 'proton.me',
+  'yandex.com', 'yandex.ru',
+  'mail.com', 'inbox.com',
+  'zoho.com',
+]);
+
 // Assessment SKUs that auto-enroll the customer in a subscription tier after payment.
 // The webhook reads upgrade_to / assessment_credit from session metadata to apply
 // the balance credit and create the deferred subscription.
@@ -41,7 +59,7 @@ const CORS_HEADERS = {
 };
 
 exports.handler = async (event) => {
-  console.log('handler_version=2026-04-20');
+  console.log('handler_version=2026-05-08');
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -73,6 +91,9 @@ exports.handler = async (event) => {
     const cancel_url     = body.cancelUrl      || body.cancel_url  || `${process.env.URL}/?tab=pricing`;
     const use_pilot_coupon = !!body.use_pilot_coupon;
     const pilotCouponId    = process.env.STRIPE_PILOT_COUPON || process.env.STRIPE_PILOT_COUPON_ID || 'pilot_50_off';
+    // HIPAA-specific fields — accepted in both snake_case and camelCase.
+    const company_name        = (body.company_name || body.companyName || '').trim();
+    const hipaa_baa_acknowledged = body.hipaa_baa_acknowledged ?? body.hipaaBaaAcknowledged ?? false;
 
     // Require a known tier — the price ID is always resolved server-side from env vars.
     if (!tier || !TIER_PRICE_ENV[tier]) {
@@ -83,6 +104,51 @@ exports.handler = async (event) => {
         headers: CORS_HEADERS,
         body: JSON.stringify({ error: `tier is required. Valid tiers: ${valid}` }),
       };
+    }
+
+    // HIPAA-tier guard: enforce work email, company name, and BAA acknowledgment.
+    if (HIPAA_TIERS.has(tier)) {
+      const emailDomain = (customer_email || '').split('@')[1]?.toLowerCase() || '';
+      const isPersonalEmail = FREE_EMAIL_DOMAINS.has(emailDomain);
+
+      // Emit a structured audit log for every HIPAA checkout attempt.
+      const auditBase = {
+        event: 'hipaa_checkout_attempt',
+        tier,
+        email_domain: emailDomain,
+        company_name,
+        baa_acknowledged: hipaa_baa_acknowledged,
+        timestamp: new Date().toISOString(),
+      };
+
+      if (!company_name) {
+        console.log(JSON.stringify({ ...auditBase, result: 'rejected', reason: 'missing_company_name' }));
+        return {
+          statusCode: 400,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: 'company_name is required for HIPAA tiers' }),
+        };
+      }
+
+      if (hipaa_baa_acknowledged !== true) {
+        console.log(JSON.stringify({ ...auditBase, result: 'rejected', reason: 'missing_baa' }));
+        return {
+          statusCode: 400,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: 'HIPAA BAA acknowledgment is required' }),
+        };
+      }
+
+      if (isPersonalEmail) {
+        console.log(JSON.stringify({ ...auditBase, result: 'rejected', reason: 'personal_email' }));
+        return {
+          statusCode: 400,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: 'A work email address is required for HIPAA tier enrollment' }),
+        };
+      }
+
+      console.log(JSON.stringify({ ...auditBase, result: 'accepted', reason: null }));
     }
 
     // Resolve Stripe Price ID exclusively from server env vars.
@@ -127,6 +193,14 @@ exports.handler = async (event) => {
         // Assessment SKUs signal the webhook to auto-enroll in the target subscription
         // tier with deferred billing and apply the assessment fee as a balance credit.
         ...(ASSESSMENT_UPGRADES[tier] || {}),
+        // HIPAA tiers carry BAA and PHI-handling signals for the webhook and audit trail.
+        // Stripe metadata values must be strings — boolean 'true' is intentional here.
+        ...(HIPAA_TIERS.has(tier) ? {
+          hipaa_baa_acknowledged: 'true',
+          phi_handling: 'true',
+          baa_required: 'true',
+          company_name: company_name,
+        } : {}),
       },
       success_url,
       cancel_url,
