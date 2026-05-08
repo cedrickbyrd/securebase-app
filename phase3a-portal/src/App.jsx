@@ -10,6 +10,7 @@ import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
 import HIPAADashboard from './components/HIPAADashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
@@ -83,6 +84,16 @@ function App() {
         <Route path="/fintech-portal" element={isAuthenticated ? <TexasExaminerPortal /> : <Navigate to="/login" />} />
         <Route path="/hipaa-dashboard" element={isAuthenticated ? <HIPAADashboard /> : <Navigate to="/login" />} />
         <Route path="/sre-dashboard" element={isAuthenticated ? <SREDashboardWrapper />   : <Navigate to="/login" />} />
+        <Route
+          path="/admin"
+          element={
+            isAuthenticated
+              ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin'
+                ? <AdminDashboard />
+                : <Navigate to="/dashboard" replace />)
+              : <Navigate to="/login" />
+          }
+        />
         <Route path="/alerts"        element={isAuthenticated ? <AlertManagement />: <Navigate to="/login" />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/checkout" element={<Checkout />} />
