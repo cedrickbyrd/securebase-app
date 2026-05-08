@@ -161,6 +161,17 @@ module "phase5_cost" {
   tags = var.tags
 }
 
+# ── Phase 5.3: SRE Metrics ───────────────────────────────────────────────────
+module "phase5_sre_metrics" {
+  source = "../../modules/phase5-sre-metrics"
+
+  environment     = var.environment
+  tags            = var.tags
+  lambda_zip_path = "../../../phase2-backend/deploy/sre_metrics.zip"
+  cors_origin     = "https://securebase.tximhotep.com"
+  alert_email     = var.alert_email
+}
+
 terraform {
   required_version = ">= 1.5.0"
 
