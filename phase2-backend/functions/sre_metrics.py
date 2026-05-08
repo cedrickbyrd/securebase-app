@@ -387,15 +387,16 @@ def get_errors(query_params: Dict) -> Dict[str, Any]:
             queryString='fields @timestamp, @message | filter @message like /ERROR/ | limit 10',
         )
         query_id = query_resp['queryId']
-        # Poll for results (max 5 seconds)
-        for _ in range(5):
+        # Poll for results with short initial delay + incremental back-off
+        delays = [0.1, 0.2, 0.5, 1.0, 2.0]
+        for delay in delays:
+            time.sleep(delay)
             result_resp = logs_client.get_query_results(queryId=query_id)
             if result_resp['status'] in ('Complete', 'Failed', 'Cancelled'):
                 for row in result_resp.get('results', []):
                     entry = {field['field']: field['value'] for field in row}
                     log_errors.append(entry)
                 break
-            time.sleep(1)
     except Exception as exc:
         logger.warning("Logs Insights error: %s", exc)
         errors.append(str(exc))
