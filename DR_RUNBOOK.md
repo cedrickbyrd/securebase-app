@@ -1,21 +1,34 @@
-# DR Runbook (On-Call Operations)
+# DR Runbook (On-Call Operations, Phase 5)
 
-## Severity and escalation
+## 1) Prerequisites & Tooling
 
-- **SEV-1:** Full production outage / major regional impairment
-- **SEV-2:** Partial outage / degraded regional health
-- **SEV-3:** Warning-level DR risk (replication lag, alarm noise)
+- AWS CLI v2 with production break-glass/OIDC role access
+- Access to CloudWatch dashboards and alarms
+- Access to Route53 hosted zone and health checks
+- Access to SSM Parameter Store (`/securebase/dr/*`)
+- Access to Lambda functions:
+  - `securebase-prod-failover-orchestrator`
+  - `securebase-prod-health-check-aggregator`
+  - `securebase-prod-failback-orchestrator`
 
-Escalation path: On-call SRE → Platform Lead → VP Engineering.
+## 2) Severity Levels & Escalation
 
-## Automated failover (preferred)
+- **SEV-1:** Full production outage / regional impairment
+- **SEV-2:** Partial outage / significant degradation
+- **SEV-3:** DR risk warning (replication lag, noisy alarms)
 
-1. Confirm failover guard (`/securebase/dr/failover_enabled`) is true.
-2. Invoke `securebase-prod-failover-orchestrator`.
-3. Confirm Aurora promotion and active-region SSM update.
-4. Confirm Route 53 now routes to standby endpoint.
-5. Validate API and DB health in us-west-2.
+Escalation: **On-call SRE → Platform Lead → Security/Compliance Lead → Engineering Director**.
 
+## 3) Automated Failover Procedure (Preferred)
+
+### Preconditions
+1. Confirm failover guard is enabled in SSM:
+```bash
+aws ssm get-parameter --name /securebase/dr/failover_enabled
+```
+2. Confirm incident command has approved failover.
+
+### Execute
 ```bash
 aws lambda invoke \
   --function-name securebase-prod-failover-orchestrator \
@@ -25,33 +38,68 @@ aws lambda invoke \
 cat /tmp/failover_result.json
 ```
 
-## Manual override procedures
+### Automation IDs
+- Lambda automation entrypoint: `securebase-prod-failover-orchestrator`
+- Health aggregation: `securebase-prod-health-check-aggregator`
+- Failback entrypoint: `securebase-prod-failback-orchestrator`
 
-Use manual override only when automation is blocked or misfiring.
+## 4) Manual Failover Procedure (Fallback)
 
-1. Manually promote Aurora secondary cluster.
-2. Manually update Route 53 weighted records.
-3. Manually update active-region indicator in SSM.
-4. Announce status in incident channels.
+Use only if automated orchestration fails.
 
-## Communication templates
+1. Promote Aurora secondary cluster to writer.
+2. Validate DynamoDB global table health in secondary region.
+3. Update Route53 failover records to secondary endpoint.
+4. Update active-region SSM parameter.
+5. Validate API, auth, billing, and reporting endpoints.
+6. Communicate failover complete in incident channels.
 
-**Initial incident notice**
+## 5) Rollback / Failback Procedure
 
+1. Confirm primary region health fully restored.
+2. Run controlled failback:
+```bash
+aws lambda invoke \
+  --function-name securebase-prod-failback-orchestrator \
+  --payload '{}' \
+  --cli-binary-format raw-in-base64-out \
+  /tmp/failback_result.json
+cat /tmp/failback_result.json
+```
+3. Verify Route53 now resolves to primary.
+4. Verify Aurora global topology healthy.
+5. Close incident only after 30+ minutes stable metrics.
+
+## 6) Scheduled DR Drill Checklist
+
+- [ ] Trigger synthetic outage scenario in approved window
+- [ ] Run automated failover and measure elapsed time
+- [ ] Validate RTO < 15 minutes
+- [ ] Validate RPO targets and replication integrity
+- [ ] Run automated failback and verify restoration
+- [ ] Archive drill evidence (CloudWatch, CloudTrail, incident timeline)
+
+### Pass/Fail Criteria
+
+- **PASS:** All critical services recovered within RTO, replication healthy, no data integrity issues
+- **FAIL:** Any critical service exceeds RTO, unresolved replication errors, or failed validation checks
+
+## 7) Monitoring Validation After Recovery
+
+- [ ] API Gateway p95 latency and 5xx error alarms clear
+- [ ] Lambda error/throttle alarms clear
+- [ ] Aurora DB connection and replica lag metrics healthy
+- [ ] DynamoDB throttles/replication lag healthy
+- [ ] S3 CRR lag alarm not in ALARM state
+- [ ] Alert routing (PagerDuty/Opsgenie) functioning
+
+## 8) Communication Templates
+
+**Initial notice**
 > SecureBase is investigating a regional service degradation. DR procedures are in progress. Next update in 10 minutes.
 
 **Failover complete**
-
 > SecureBase failover complete. Traffic is now served from us-west-2. Monitoring continues.
 
 **Failback complete**
-
 > SecureBase traffic has been restored to us-east-1 primary. Incident is resolved; post-incident review in progress.
-
-## Post-incident actions
-
-- [ ] Confirm all workloads stable in active region
-- [ ] Validate replication restored and healthy
-- [ ] Export CloudWatch/CloudTrail evidence
-- [ ] Complete post-mortem with corrective actions
-- [ ] Schedule follow-up DR drill for regression prevention
