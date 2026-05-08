@@ -1285,3 +1285,669 @@ module "cors_compliance_baa_expiring" {
   resource_id = aws_api_gateway_resource.compliance_baa_expiring.id
 }
 
+# ============================================================================
+# API Resources - Phase 5.3 SRE Metrics (/sre/*)
+# All resources/methods/integrations are conditional on sre_metrics_lambda_invoke_arn
+# being set, so existing deployments are unaffected.
+# ============================================================================
+
+locals {
+  sre_enabled = var.sre_metrics_lambda_invoke_arn != null
+}
+
+# /sre parent resource
+resource "aws_api_gateway_resource" "sre" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "sre"
+}
+
+# /sre/infrastructure
+resource "aws_api_gateway_resource" "sre_infrastructure" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "infrastructure"
+}
+
+# /sre/deployments
+resource "aws_api_gateway_resource" "sre_deployments" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "deployments"
+}
+
+# /sre/scaling
+resource "aws_api_gateway_resource" "sre_scaling" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "scaling"
+}
+
+# /sre/database
+resource "aws_api_gateway_resource" "sre_database" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "database"
+}
+
+# /sre/cache
+resource "aws_api_gateway_resource" "sre_cache" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "cache"
+}
+
+# /sre/errors
+resource "aws_api_gateway_resource" "sre_errors" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "errors"
+}
+
+# /sre/lambda
+resource "aws_api_gateway_resource" "sre_lambda" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "lambda"
+}
+
+# /sre/costs
+resource "aws_api_gateway_resource" "sre_costs" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "costs"
+}
+
+# /sre/health
+resource "aws_api_gateway_resource" "sre_health" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.sre[0].id
+  path_part   = "health"
+}
+
+# ---- GET methods ----
+
+resource "aws_api_gateway_method" "sre_infrastructure_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_deployments_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_deployments[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_scaling_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_scaling[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_database_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_database[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_cache_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_cache[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_errors_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_errors[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_lambda_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_lambda[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_costs_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_costs[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "sre_health_get" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_health[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+# ---- Lambda proxy integrations ----
+
+resource "aws_api_gateway_integration" "sre_infrastructure_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method             = aws_api_gateway_method.sre_infrastructure_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_deployments_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_deployments[0].id
+  http_method             = aws_api_gateway_method.sre_deployments_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_scaling_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_scaling[0].id
+  http_method             = aws_api_gateway_method.sre_scaling_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_database_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_database[0].id
+  http_method             = aws_api_gateway_method.sre_database_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_cache_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_cache[0].id
+  http_method             = aws_api_gateway_method.sre_cache_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_errors_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_errors[0].id
+  http_method             = aws_api_gateway_method.sre_errors_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_lambda_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_lambda[0].id
+  http_method             = aws_api_gateway_method.sre_lambda_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_costs_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_costs[0].id
+  http_method             = aws_api_gateway_method.sre_costs_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sre_health_lambda" {
+  count                   = local.sre_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.sre_health[0].id
+  http_method             = aws_api_gateway_method.sre_health_get[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.sre_metrics_lambda_invoke_arn
+}
+
+# ---- OPTIONS preflight (MOCK) for each SRE endpoint ----
+
+resource "aws_api_gateway_method" "sre_infrastructure_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_infrastructure_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method = aws_api_gateway_method.sre_infrastructure_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_infrastructure_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method = aws_api_gateway_method.sre_infrastructure_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_infrastructure_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_infrastructure[0].id
+  http_method = aws_api_gateway_method.sre_infrastructure_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_infrastructure_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_infrastructure_options]
+}
+
+resource "aws_api_gateway_method" "sre_deployments_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_deployments[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_deployments_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_deployments[0].id
+  http_method = aws_api_gateway_method.sre_deployments_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_deployments_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_deployments[0].id
+  http_method = aws_api_gateway_method.sre_deployments_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_deployments_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_deployments[0].id
+  http_method = aws_api_gateway_method.sre_deployments_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_deployments_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_deployments_options]
+}
+
+resource "aws_api_gateway_method" "sre_scaling_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_scaling[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_scaling_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_scaling[0].id
+  http_method = aws_api_gateway_method.sre_scaling_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_scaling_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_scaling[0].id
+  http_method = aws_api_gateway_method.sre_scaling_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_scaling_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_scaling[0].id
+  http_method = aws_api_gateway_method.sre_scaling_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_scaling_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_scaling_options]
+}
+
+resource "aws_api_gateway_method" "sre_database_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_database[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_database_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_database[0].id
+  http_method = aws_api_gateway_method.sre_database_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_database_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_database[0].id
+  http_method = aws_api_gateway_method.sre_database_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_database_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_database[0].id
+  http_method = aws_api_gateway_method.sre_database_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_database_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_database_options]
+}
+
+resource "aws_api_gateway_method" "sre_cache_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_cache[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_cache_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_cache[0].id
+  http_method = aws_api_gateway_method.sre_cache_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_cache_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_cache[0].id
+  http_method = aws_api_gateway_method.sre_cache_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_cache_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_cache[0].id
+  http_method = aws_api_gateway_method.sre_cache_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_cache_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_cache_options]
+}
+
+resource "aws_api_gateway_method" "sre_errors_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_errors[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_errors_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_errors[0].id
+  http_method = aws_api_gateway_method.sre_errors_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_errors_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_errors[0].id
+  http_method = aws_api_gateway_method.sre_errors_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_errors_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_errors[0].id
+  http_method = aws_api_gateway_method.sre_errors_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_errors_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_errors_options]
+}
+
+resource "aws_api_gateway_method" "sre_lambda_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_lambda[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_lambda_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_lambda[0].id
+  http_method = aws_api_gateway_method.sre_lambda_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_lambda_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_lambda[0].id
+  http_method = aws_api_gateway_method.sre_lambda_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_lambda_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_lambda[0].id
+  http_method = aws_api_gateway_method.sre_lambda_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_lambda_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_lambda_options]
+}
+
+resource "aws_api_gateway_method" "sre_costs_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_costs[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_costs_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_costs[0].id
+  http_method = aws_api_gateway_method.sre_costs_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_costs_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_costs[0].id
+  http_method = aws_api_gateway_method.sre_costs_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_costs_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_costs[0].id
+  http_method = aws_api_gateway_method.sre_costs_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_costs_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_costs_options]
+}
+
+resource "aws_api_gateway_method" "sre_health_options" {
+  count         = local.sre_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.sre_health[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sre_health_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_health[0].id
+  http_method = aws_api_gateway_method.sre_health_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = "{\"statusCode\": 200}" }
+}
+
+resource "aws_api_gateway_method_response" "sre_health_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_health[0].id
+  http_method = aws_api_gateway_method.sre_health_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "sre_health_options" {
+  count       = local.sre_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  resource_id = aws_api_gateway_resource.sre_health[0].id
+  http_method = aws_api_gateway_method.sre_health_options[0].http_method
+  status_code = aws_api_gateway_method_response.sre_health_options[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://securebase.tximhotep.com'"
+  }
+  depends_on = [aws_api_gateway_integration.sre_health_options]
+}
+
+# ---- Lambda permission for API Gateway to invoke SRE metrics function ----
+
+resource "aws_lambda_permission" "sre_metrics_api_gateway" {
+  count         = local.sre_enabled ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvokeSREMetrics"
+  action        = "lambda:InvokeFunction"
+  function_name = var.sre_metrics_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
+}
+
+

@@ -279,3 +279,19 @@ variable "vendor_risk_lambda_name" {
   type    = string
   default = null
 }
+
+# ============================================================================
+# Phase 5.3 SRE Metrics Lambda — optional; wires /sre/* routes when provided
+# ============================================================================
+
+variable "sre_metrics_lambda_invoke_arn" {
+  description = "Invoke ARN of the SRE metrics Lambda function (used in /sre/* API Gateway integrations). Set to null to skip SRE routes — existing deployments are unaffected."
+  type        = string
+  default     = null
+}
+
+variable "sre_metrics_lambda_name" {
+  description = "Name of the SRE metrics Lambda function (used for Lambda permission resource). Required when sre_metrics_lambda_invoke_arn is set."
+  type        = string
+  default     = null
+}

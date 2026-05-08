@@ -138,6 +138,13 @@
   status = 200
   force = true
 
+# SRE METRICS API - Phase 5.3
+[[redirects]]
+  from = "/api/sre/*"
+  to = "https://api.securebase.tximhotep.com/sre/:splat"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
