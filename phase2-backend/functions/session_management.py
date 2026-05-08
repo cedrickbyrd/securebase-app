@@ -23,7 +23,6 @@ import sys
 import json
 import logging
 import hashlib
-import hmac
 import secrets
 import base64
 from typing import Dict, Optional, Tuple
@@ -802,12 +801,19 @@ def get_cors_headers(event: Dict) -> Dict:
 
 def generate_csrf_token(session_token: str) -> str:
     """Generate CSRF token bound to the session token."""
-    csrf_secret = os.environ.get('CSRF_SECRET') or os.environ.get('JWT_SECRET')
+    csrf_secret = os.environ.get('CSRF_SECRET')
     if not csrf_secret:
         csrf_secret = get_jwt_secret()
     if not csrf_secret:
         raise AuthenticationError('CSRF secret is not configured')
-    return hmac.new(csrf_secret.encode(), session_token.encode(), hashlib.sha256).hexdigest()
+    return hashlib.scrypt(
+        session_token.encode(),
+        salt=csrf_secret.encode(),
+        n=2**14,
+        r=8,
+        p=1,
+        dklen=32
+    ).hex()
 
 
 def validate_csrf_token(session_token: str, provided_token: str, cookie_token: str) -> bool:
