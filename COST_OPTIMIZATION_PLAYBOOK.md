@@ -23,7 +23,7 @@ Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered
 - Right-size memory and timeout based on p95 duration profiling.
 
 ### DynamoDB
-- Use auto scaling on provisioned tables with 70% utilization target.
+- Use auto scaling on provisioned tables with 70–80% utilization target (start at 70%, tune upward as workload stabilizes).
 - Keep tables on on-demand when average utilization stays below ~10 RCU / 10 WCU or <1M requests/month.
 - Monitor throttles and replication metrics for global tables.
 
