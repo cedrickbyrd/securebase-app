@@ -1,223 +1,148 @@
-# 💰 SecureBase Pricing
+# 💼 SecureBase Platform Options
 
-**Production-ready, compliant AWS infrastructure starting at $2,000/month**
+**Executive risk intelligence and governance operations for regulated institutions**
 
-Choose your tier based on your compliance needs. All tiers include multi-tenant AWS Organization, dedicated customer accounts, centralized logging, IAM Identity Center (SSO), and customer portal access.
+Choose the SecureBase tier that aligns with your governance complexity, regulatory exposure, and executive reporting requirements. All tiers include unified governance visibility, evidentiary integrity workflows, and institutional-grade reporting foundations.
 
-[🚀 Start Free Trial (30 Days)](https://securebase.tximhotep.com/signup) | [📞 Book Demo](https://securebase.tximhotep.com/contact) | [💬 Contact Sales](mailto:sales@securebase.tximhotep.com)
+[📞 Request Executive Briefing](https://securebase.tximhotep.com/contact) | [💬 Contact Sales](mailto:sales@securebase.tximhotep.com) | [❓ View FAQ](./FAQ.md)
 
 ---
 
-## 🎯 Pricing Tiers
+## 🎯 Platform Tiers
 
 ### Standard Tier - $2,000/month
 
-**Best for:** Startups, MVPs, early-stage companies  
-**Compliance Framework:** CIS AWS Foundations Benchmark
+**Best for:** Emerging companies building initial governance maturity  
+**Governance Focus:** Foundational control visibility and operational defensibility
 
 #### What's Included:
-✅ **Multi-tenant AWS Organization** - Dedicated AWS account per customer  
-✅ **CIS Foundations compliance** - 100+ automated controls  
-✅ **Centralized logging** - CloudTrail, Config, GuardDuty (1-year retention)  
-✅ **IAM Identity Center (SSO)** - Multi-factor authentication (MFA) enforced  
-✅ **Customer portal** - Dashboard, invoices, API key management  
-✅ **Monthly compliance reports** - Automated security posture summaries  
+✅ **Unified governance baseline** - Core visibility into organizational control posture  
+✅ **CIS-aligned monitoring** - Foundational benchmark intelligence  
+✅ **Centralized evidence capture** - CloudTrail, Config, GuardDuty (1-year retention)  
+✅ **Identity governance foundation** - IAM Identity Center (SSO) with MFA enforcement  
+✅ **Executive portal access** - Dashboard, reporting, and posture review  
+✅ **Monthly governance summaries** - Leadership-ready posture reporting  
 ✅ **Email support** - 24-hour response time  
-✅ **99.5% uptime SLA** - Production-ready infrastructure  
-✅ **Up to 10 customer environments** - Scalable multi-tenant architecture
-
-#### Compliance Coverage:
-- CIS AWS Foundations Benchmark v1.4.0
-- 1-year audit retention
-- Automated security controls
-
-#### Support:
-- Email support (24-hour response)
-- Monthly compliance reports
-- Knowledge base access
+✅ **99.5% uptime SLA** - Production-grade operational reliability  
+✅ **Up to 10 customer environments** - Scalable governance footprint
 
 #### Best For:
 - Seed-stage startups
-- MVP validation
-- Pre-SOC 2 companies
-- Teams needing production AWS infrastructure fast
+- Pre-SOC 2 organizations
+- Teams building first-line governance discipline
+- Companies needing defensible infrastructure foundations fast
 
 ---
 
 ### Fintech Tier - $8,000/month
 
-**Best for:** SaaS companies, AI/ML platforms, fintech startups  
-**Compliance Framework:** SOC 2 Type II
+**Best for:** SaaS platforms, fintech firms, and data-sensitive enterprises  
+**Governance Focus:** Board-ready risk intelligence and audit defensibility
 
 #### Everything in Standard, plus:
-✅ **SOC 2 Type II controls** - 200+ automated compliance checks  
-✅ **Advanced security monitoring** - Security Hub with real-time alerts  
-✅ **Quarterly compliance reports** - Detailed audit-ready documentation  
-🚀 **Advanced analytics dashboard** - Usage metrics, cost breakdowns *(Deploying Feb 2026)*  
-🚀 **Custom reports** - CSV, PDF, Excel, JSON export formats *(Deploying Feb 2026)*  
+✅ **SOC 2 governance intelligence** - Control posture across all 5 Trust Services Criteria  
+✅ **Advanced risk monitoring** - Security Hub with real-time alerting and evidence aggregation  
+✅ **Quarterly audit-ready reporting** - Defensible governance narratives for audit stakeholders  
+✅ **Board-level visualization layer** - Exposure, trajectory, and remediation insight  
+✅ **Custom risk reporting** - Structured exports for diligence, audit, and regulator review  
 ✅ **Priority Slack support** - 4-hour response time  
-✅ **99.8% uptime SLA** - Enhanced reliability guarantees  
-✅ **Up to 50 customer environments** - Scale to hundreds of customers
-
-#### Upcoming Q1 2026:
-🔜 **Team collaboration (RBAC)** - Target completion: Feb 28, 2026
-
-#### Compliance Coverage:
-- SOC 2 all 5 Trust Service Criteria (TSCs)
-- 3-year audit retention
-- Quarterly compliance reporting
-
-#### Support:
-- Priority email + Slack (4-hour response)
-- Monthly check-ins with support team
-- Quarterly compliance reviews
+✅ **99.8% uptime SLA** - Enhanced operational guarantees  
+✅ **Up to 50 customer environments** - Scale institutional oversight with growth
 
 #### Best For:
 - Series A/B SaaS companies
 - SOC 2 preparation and audits
 - AI/ML platforms handling customer data
-- Teams scaling to 100+ customers
+- Teams scaling toward formal governance review
 
 ---
 
 ### Healthcare Tier - $15,000/month
 
-**Best for:** Health tech, telemedicine, PHI data handling  
-**Compliance Framework:** HIPAA
+**Best for:** Health tech, telemedicine, and PHI-sensitive operators  
+**Governance Focus:** Privacy risk, evidentiary integrity, and executive attestation support
 
 #### Everything in Fintech, plus:
-✅ **HIPAA compliance controls** - 300+ automated security checks  
+✅ **HIPAA governance controls** - Expanded visibility into security and privacy posture  
 ✅ **Business Associate Agreement (BAA)** - Included at no additional cost  
-✅ **PHI encryption** - At rest and in transit (AES-256, TLS 1.2+)  
-✅ **Enhanced audit logging** - 7-year retention for HIPAA compliance  
-✅ **VPC isolation and lockdown** - Network-level security controls  
-✅ **Automatic backup and DR** - Point-in-time recovery, multi-region  
-✅ **Monthly + quarterly compliance reports** - Audit-ready documentation  
+✅ **PHI protection intelligence** - Encryption, retention, and access governance oversight  
+✅ **Enhanced audit defensibility** - 7-year evidence retention and posture reconstruction  
+✅ **Operational resilience controls** - Backup, recovery, and protected environment baselines  
+✅ **Monthly + quarterly executive reporting** - Cross-functional governance updates  
 ✅ **Phone + email + Slack support** - 2-hour response time  
 ✅ **99.9% uptime SLA** - Mission-critical reliability  
-✅ **Up to 100 customer environments** - Enterprise-scale deployment
-
-#### Upcoming Q1 2026:
-🔜 **Team collaboration (RBAC)** - Target completion: Feb 28, 2026  
-🔜 **White-label branding** - Target completion: Mar 7, 2026
-
-#### Compliance Coverage:
-- HIPAA Security Rule
-- HIPAA Privacy Rule
-- HITECH Act
-- 7-year audit retention
-
-#### Support:
-- Priority phone/email/Slack (2-hour response)
-- Dedicated account manager
-- Quarterly business reviews
-- Annual compliance audit support
+✅ **Up to 100 customer environments** - Enterprise-scale governance operations
 
 #### Best For:
 - Digital health companies
 - Telemedicine platforms
-- Electronic health records (EHR)
-- Any company handling Protected Health Information (PHI)
+- EHR and PHI-heavy workflows
+- Institutions needing defensible privacy and compliance operations
 
 ---
 
 ### Government Tier - $25,000/month
 
-**Best for:** Federal contractors, government agencies, defense industry  
-**Compliance Framework:** FedRAMP Low Baseline (partial alignment)
+**Best for:** Federal contractors, public-sector suppliers, and highly regulated enterprises  
+**Governance Focus:** Institutional accountability, continuous oversight, and regulator-facing posture management
 
 #### Everything in Healthcare, plus:
-✅ **FedRAMP Low baseline controls** - 400+ automated security checks  
-✅ **Enhanced logging and monitoring** - Continuous monitoring and alerting  
-✅ **Dedicated infrastructure options** - Isolated compute and storage  
-✅ **FIPS 140-2 validated encryption** - Government-grade cryptography  
-✅ **Weekly compliance reports** - Real-time security posture monitoring  
-🔜 **SSO/SAML integration** - Okta, Azure AD, Google Workspace - *Available Q1 2026 (Mar 10)*  
-🔜 **IP whitelisting and geo-restrictions** - Network access controls - *Available Q1 2026 (Mar 10)*  
-🔜 **Unlimited users** - No per-user charges - *Available Q1 2026*  
+✅ **FedRAMP-informed governance visibility** - Expanded NIST 800-53 control alignment  
+✅ **Continuous oversight reporting** - High-frequency posture monitoring and evidence review  
+✅ **Dedicated infrastructure options** - Isolated operational environments  
+✅ **FIPS 140-2 validated encryption** - Government-grade cryptographic controls  
+✅ **Executive review cadence** - Leadership-level oversight and governance tracking  
 ✅ **24/7 phone support** - 1-hour critical issue response  
-🚀 **99.95% uptime SLA** - Maximum availability *(Available Q2 2026 with Phase 5)*  
-✅ **Unlimited customer environments** - No scaling limits
-
-#### Compliance Coverage:
-- FedRAMP Low (200+ NIST 800-53 controls)
-- NIST 800-53 Rev 5
-- FISMA
-- 10-year audit retention
-
-#### Support:
-- 24/7 phone/email/Slack support
-- Technical account manager (TAM)
-- Monthly executive reviews
-- Annual penetration testing
-- Security posture assessments
+✅ **99.95% uptime roadmap** - Maximum availability orientation  
+✅ **Unlimited customer environments** - No scaling limits on oversight scope
 
 #### Best For:
 - Federal contractors and subcontractors
 - Defense industry suppliers
 - State and local government agencies
-- Companies pursuing FedRAMP authorization
+- Companies pursuing high-assurance governance maturity
 
 ---
 
-## 📊 Feature Comparison Table
+## 📊 Governance Comparison
 
-| Feature | Standard | Fintech | Healthcare | Government |
-|---------|----------|---------|------------|------------|
+| Capability | Standard | Fintech | Healthcare | Government |
+|------------|----------|---------|------------|------------|
 | **Price/Month** | $2,000 | $8,000 | $15,000 | $25,000 |
-| **Compliance Framework** | CIS | SOC 2 Type II | HIPAA | FedRAMP Low |
+| **Primary Governance Lens** | Foundational controls | Board-ready risk | Privacy & attestation | Regulator-grade oversight |
 | **Customer Environments** | 10 | 50 | 100 | Unlimited |
-| **Multi-Tenant AWS Org** | ✅ | ✅ | ✅ | ✅ |
-| **IAM Identity Center (SSO)** | ✅ | ✅ | ✅ | ✅ |
-| **MFA Enforcement** | ✅ | ✅ | ✅ | ✅ |
-| **Customer Portal** | ✅ | ✅ | ✅ | ✅ |
-| **Automated Billing** | ✅ | ✅ | ✅ | ✅ |
-| **CloudTrail Logging** | ✅ | ✅ | ✅ | ✅ |
-| **AWS Config** | ✅ | ✅ | ✅ | ✅ |
-| **GuardDuty** | ✅ | ✅ | ✅ | ✅ |
-| **Security Hub** | ❌ | ✅ | ✅ | ✅ |
-| **Advanced Analytics** | ❌ | 🚀 Feb 2026 | 🚀 Feb 2026 | 🚀 Feb 2026 |
-| **Team Collaboration (RBAC)** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
-| **Real-Time Notifications** | ❌ | ✅ | ✅ | ✅ |
-| **Custom Reports** | ❌ | 🚀 Feb 2026 | 🚀 Feb 2026 | 🚀 Feb 2026 |
-| **Export Formats** | CSV | CSV, JSON | CSV, JSON, PDF, Excel | CSV, JSON, PDF, Excel |
-| **White-Label Branding** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
-| **Custom Domain** | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 | 🔜 Q1 2026 |
-| **SSO/SAML Integration** | ❌ | ❌ | ❌ | 🔜 Q1 2026 (Okta, Azure AD, Google) |
-| **IP Whitelisting** | ❌ | ❌ | ❌ | 🔜 Q1 2026 |
+| **Executive Portal** | ✅ | ✅ | ✅ | ✅ |
+| **Identity Governance** | ✅ | ✅ | ✅ | ✅ |
+| **Centralized Evidence Capture** | ✅ | ✅ | ✅ | ✅ |
+| **Board-Ready Visualization** | Limited | ✅ | ✅ | ✅ |
+| **Quarterly Audit Reporting** | ❌ | ✅ | ✅ | ✅ |
+| **Privacy Risk Posture** | ❌ | Limited | ✅ | ✅ |
+| **Continuous Oversight Cadence** | ❌ | ✅ | ✅ | ✅ |
 | **Audit Retention** | 1 year | 3 years | 7 years | 10 years |
-| **Compliance Reports** | Monthly | Quarterly | Monthly + Quarterly | Weekly |
-| **Uptime SLA** | 99.5% | 99.8% | 99.9% | 🚀 Q2 2026 (99.95%) |
 | **Support Response Time** | 24 hours | 4 hours | 2 hours | 1 hour (critical) |
 | **Support Channels** | Email | Email, Slack | Phone, Email, Slack | 24/7 Phone, Email, Slack |
-| **Account Manager** | ❌ | ❌ | ✅ | ✅ (TAM) |
-| **Onboarding Hours** | 2 hours | 4 hours | 8 hours | 16 hours |
-| **Business Reviews** | ❌ | ❌ | Quarterly | Monthly (exec-level) |
-
-* **Advanced Analytics & Custom Reports**: Code complete and deployment-ready. Production deployment scheduled for February 2026. Early adopters will receive complimentary onboarding when the feature launches.
-* **Team Collaboration & RBAC**: Currently in development (5% complete) with planned launch on February 28, 2026. Includes user management, role-based access control, and audit logging. Early adopters will receive complimentary onboarding and training when the feature launches.
-* **99.95% Uptime SLA**: Requires Phase 5 multi-region deployment (May-June 2026). Current SLA is 99.9% with multi-AZ infrastructure in us-east-1.
+| **Executive Reviews** | ❌ | Quarterly | Quarterly | Monthly |
 
 ---
 
-## 🎁 Pilot Program (Limited Time)
+## 🎁 Executive Access Program
 
-### Available Until: March 31, 2026
+### Active for a Limited Time
 
-Join our pilot program and get **50% off for the first 6 months** plus exclusive benefits:
+Join the SecureBase executive access program and receive **50% off for the first 6 months** plus strategic onboarding benefits.
 
-#### Pilot Benefits:
+#### Included Benefits:
 ✅ **50% discount** for first 6 months  
-✅ **30-day free trial** - No credit card required  
-✅ **Dedicated Slack channel** - Direct access to engineering team  
-✅ **Priority feature requests** - Influence product roadmap  
-✅ **Early access** - Phase 4 & 5 features before general availability  
-✅ **Optional case study** - Showcase your success story
+✅ **Executive briefing and onboarding**  
+✅ **Direct access to product leadership**  
+✅ **Priority roadmap feedback loop**  
+✅ **Early access to governance visualization enhancements**  
+✅ **Optional co-developed case study**
 
 #### Pilot Pricing:
 
-| Tier | Regular Price | Pilot Price (6 months) | Total Savings |
-|------|--------------|------------------------|---------------|
+| Tier | Regular Price | Executive Access Price (6 months) | Total Savings |
+|------|---------------|-----------------------------------|---------------|
 | **Standard** | $2,000/mo | **$1,000/mo** | **Save $6,000** |
 | **Fintech** | $8,000/mo | **$4,000/mo** | **Save $24,000** |
 | **Healthcare** | $15,000/mo | **$7,500/mo** | **Save $45,000** |
@@ -225,300 +150,92 @@ Join our pilot program and get **50% off for the first 6 months** plus exclusive
 
 *After 6 months, standard pricing applies. Cancel anytime with 30-day notice.*
 
-#### Eligibility Requirements:
-- Deploy before March 31, 2026
-- Willing to provide product feedback
-- Optional: Serve as reference customer or case study participant
-- 6-month minimum commitment
-
-#### Limited Availability:
-- **Total spots:** 20 companies
-- **Filled:** 12 companies
-- **Remaining:** 8 spots (as of January 30, 2026)
-
-[🎯 Apply for Pilot Program Now →](https://portal.securebase.tximhotep.com/pilot)
-
 ---
 
-## 💳 Payment Terms
+## 💳 Commercial Terms
 
 ### Billing Options
 
-**Monthly Billing** (Default)
+**Monthly Billing**
 - Billed monthly in advance
 - Cancel anytime with 30-day notice
 - No long-term contracts required
 
-**Annual Billing** (Save 15%)
-- Pay annually and save 15%
-- Billed once per year
+**Annual Billing**
+- Save 15% with annual commitment
 - Net 30 payment terms available
+- Executive review planning included for larger deployments
 
-#### Annual Discount Pricing:
+### Payment Methods
+- Credit Card
+- ACH (US only)
+- Wire Transfer
+- Net 30 Terms for annual contracts
 
-| Tier | Monthly × 12 | Annual Price (15% off) | Annual Savings |
-|------|--------------|------------------------|----------------|
-| **Standard** | $24,000/year | **$20,400/year** | **Save $3,600** |
-| **Fintech** | $96,000/year | **$81,600/year** | **Save $14,400** |
-| **Healthcare** | $180,000/year | **$153,000/year** | **Save $27,000** |
-| **Government** | $300,000/year | **$255,000/year** | **Save $45,000** |
-
-### Payment Methods:
-- **Credit Card** - Visa, Mastercard, American Express
-- **ACH** - Direct bank transfer (US only)
-- **Wire Transfer** - International payments accepted
-- **Net 30 Terms** - Available for annual contracts
-
-### Cancellation Policy:
-- **Monthly plans:** Cancel anytime, 30-day notice required
-- **Annual plans:** Cancel anytime, 30-day notice, no refunds after 30 days
+### Cancellation Policy
+- **Monthly plans:** Cancel anytime with 30-day notice
+- **Annual plans:** Cancel anytime with 30-day notice; no refunds after 30 days
 - **No cancellation fees**
-- **Export your infrastructure** - Keep your Terraform configuration on exit
+- **Infrastructure export support** available during transition
 
 ---
 
-## 📈 Usage-Based Add-Ons
+## 🧮 Strategic ROI Framing
 
-All tiers include generous base infrastructure. Scale beyond limits with usage-based add-ons:
+### Traditional Approach Costs
 
-### Additional Customer Environments
+Organizations often spend significant time and capital assembling governance evidence manually:
+- 6-12 weeks of engineering setup
+- external compliance consulting
+- fragmented reporting workflows
+- delayed executive visibility into risk posture
 
-Need more than your tier's included environments?
+### SecureBase Outcome
 
-| Tier | Included | Per Additional Environment |
-|------|----------|----------------------------|
-| **Standard** | 10 | $100/mo per environment |
-| **Fintech** | 50 | $80/mo per environment |
-| **Healthcare** | 100 | $60/mo per environment |
-| **Government** | Unlimited | N/A (unlimited included) |
-
-### Additional Storage
-
-Audit logs and compliance data storage:
-
-| Storage Tier | Price |
-|--------------|-------|
-| **First 100 GB** | Included in all tiers |
-| **101-500 GB** | $0.50/GB/month |
-| **501-1000 GB** | $0.40/GB/month |
-| **1000+ GB** | $0.30/GB/month |
-
-### Additional Users (RBAC)
-
-**Coming Q1 2026** - Team collaboration feature (target completion: Feb 28, 2026)
-
-Planned pricing for team collaboration beyond included users:
-
-| Tier | Planned Included Users | Planned Per Additional User |
-|------|----------------|---------------------|
-| **Standard** | N/A | Upgrade to Fintech required |
-| **Fintech** | 25 users *(Q1 2026)* | $50/user/month |
-| **Healthcare** | 100 users *(Q1 2026)* | $40/user/month |
-| **Government** | Unlimited *(Q1 2026)* | Included |
-
-*Note: RBAC and team collaboration features are currently in development (5% complete) with planned launch on February 28, 2026. Pricing and user limits are subject to change based on beta feedback.*
-
-### Additional API Calls
-
-Portal and API usage beyond base limits:
-
-| API Call Tier | Price |
-|---------------|-------|
-| **First 1M requests/month** | Included in all tiers |
-| **1M-10M requests** | $3 per 1M requests |
-| **10M+ requests** | $2 per 1M requests |
-
-### White-Label Branding
-
-**Coming Q1 2026** - White-label branding feature (target completion: Mar 7, 2026)
-
-Planned custom branding and domains:
-
-| Tier | Planned White-Label Status |
-|------|-------------------|
-| **Standard** | Not available |
-| **Fintech** | **Add-on: $2,000/month** *(Q1 2026)* |
-| **Healthcare** | Included *(Q1 2026)* |
-| **Government** | Included *(Q1 2026)* |
-
-**Planned white-label features:** Custom domain, logo, color scheme, favicon, email templates
+SecureBase compresses time to governance visibility by delivering:
+- centralized evidence collection
+- leadership-ready reporting
+- faster audit preparation
+- clearer remediation prioritization
+- stronger institutional defensibility
 
 ---
 
-## 🎯 Volume Discounts
+## 🤝 Enterprise Custom Engagements
 
-Deploying multiple customer environments? Save with volume pricing:
+Need a more tailored governance model? We support organizations requiring:
 
-| Environments | Discount |
-|--------------|----------|
-| **5-20 environments** | 10% off base tier price |
-| **21-50 environments** | 15% off base tier price |
-| **51-100 environments** | 20% off base tier price |
-| **100+ environments** | Custom enterprise pricing |
+✅ 100+ customer environments  
+✅ Multi-year contracts  
+✅ Custom compliance frameworks  
+✅ Dedicated infrastructure  
+✅ Custom SLA requirements  
+✅ Air-gapped or future high-isolation planning
 
-### Enterprise Features (100+ environments):
-- Dedicated infrastructure
-- Custom SLA requirements (up to 99.99%)
-- Volume-based per-environment pricing
-- Multi-year contract discounts
-- Dedicated technical account manager
-
-**Contact:** [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com)
-
----
-
-## 🧮 ROI Calculator - How Much Can You Save?
-
-### DIY AWS Setup Costs:
-
-**Initial Setup:**
-- Engineering time: 6-12 weeks × 2 engineers × $150/hour = **$72,000-$144,000**
-- AWS architect consulting: **$10,000-$30,000**
-- Compliance consulting: **$20,000-$50,000**
-
-**Ongoing Costs (Year 1):**
-- Maintenance: 1 FTE × $150,000/year = **$150,000/year**
-- Compliance audits and updates: **$20,000/year**
-
-**Total DIY Year 1 Cost: $272,000-$394,000**
-
----
-
-### SecureBase Costs (Fintech Example):
-
-**Setup:**
-- Setup fees: **$0**
-- Deployment time: **<10 minutes**
-
-**Annual Cost:**
-- Fintech tier: $8,000/mo × 12 = **$96,000/year**
-- No maintenance overhead
-- Compliance included
-
-**Total SecureBase Year 1 Cost: $96,000**
-
----
-
-### Your Savings:
-
-💰 **Year 1 Savings: $176,000-$298,000**
-
-⏱️ **Time Savings:**
-- DIY: 6-12 weeks of engineering time
-- SecureBase: <10 minutes to deploy
-- **Time to market: 6-12 weeks faster**
-
-🎯 **Interactive ROI Calculator:**  
-Calculate your exact savings: [https://docs.google.com/spreadsheets/d/ROI-CALCULATOR](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR)  
-*(Coming February 11, 2026)*
-
----
-
-## 🤝 Enterprise Custom Pricing
-
-Need a custom solution? We work with enterprises requiring:
-
-✅ **100+ customer environments**  
-✅ **Multi-year contracts** (3+ years, additional discounts available)  
-✅ **Custom compliance frameworks** (ISO 27001, PCI-DSS, custom controls)  
-✅ **Dedicated infrastructure** (single-tenant deployment)  
-✅ **Custom SLA requirements** (99.99%+ uptime)  
-✅ **On-premise deployment** (future roadmap)  
-✅ **Air-gapped environments** (isolated deployments)
-
-### Contact Enterprise Sales:
+### Contact Enterprise Sales
 - **Email:** [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com)
 - **Schedule Call:** [https://securebase.tximhotep.com/contact](https://securebase.tximhotep.com/contact)
 - **Response Time:** <2 hours (business hours)
 
 ---
 
-## ❓ Pricing FAQs
+## 🚀 Ready to Engage?
 
-### 1. **Q: Is there a free trial?**
-**A:** Yes! We offer a 30-day free trial with access to all features in your selected tier. No credit card required to start. Cancel anytime during the trial period.
+**[📞 Request an Executive Briefing](https://securebase.tximhotep.com/contact)**
 
-### 2. **Q: Can I change tiers?**
-**A:** Absolutely! You can upgrade or downgrade your tier at any time. Changes take effect at the start of the next billing cycle. Contact support to initiate a tier change.
+**[💬 Contact Sales](mailto:sales@securebase.tximhotep.com)**
 
-### 3. **Q: What if I go over my environment limit?**
-**A:** We'll notify you when you reach 80% of your environment capacity. Overage charges apply automatically based on your tier ($40-100/environment). You can also upgrade to a higher tier for better per-environment pricing.
-
-### 4. **Q: Do you offer refunds?**
-**A:** Yes, we offer a 30-day money-back guarantee on your first month (excludes pilot program pricing). If you're not satisfied, we'll refund your payment in full.
-
-### 5. **Q: Can I pay annually?**
-**A:** Yes! Annual billing saves you 15% compared to monthly billing. We also offer Net 30 payment terms for annual contracts and accept wire transfers for international customers.
-
-### 6. **Q: What payment methods do you accept?**
-**A:** We accept credit cards (Visa, Mastercard, Amex), ACH direct debit (US only), and wire transfers (international). Annual contracts qualify for Net 30 invoice terms.
-
-### 7. **Q: Are there setup fees?**
-**A:** No setup fees. Ever. Your monthly or annual subscription includes everything you need to get started, including onboarding assistance.
-
-### 8. **Q: What happens if I cancel?**
-**A:** You can export your complete Terraform configuration and keep your AWS infrastructure running independently. We provide 30 days of support during your transition. No lock-in, no penalties.
-
-### 9. **Q: Do you offer discounts for startups?**
-**A:** Yes! Our Pilot Program offers 50% off for the first 6 months (ends March 31, 2026). The Standard tier ($2,000/mo) is also designed specifically for seed-stage startups and MVPs.
-
-### 10. **Q: Do you offer discounts for nonprofits or educational institutions?**
-**A:** Yes, we offer a 25% discount for verified nonprofit organizations and educational institutions. Contact [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com) with your verification documents.
-
-### 11. **Q: Is support included in all tiers?**
-**A:** Yes, all tiers include support. Response times vary by tier: Standard (24h email), Fintech (4h email/Slack), Healthcare (2h phone/email/Slack), Government (1h 24/7 support).
-
-### 12. **Q: Can I get a custom quote?**
-**A:** Yes! Contact [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com) for custom pricing on enterprise deployments, multi-year contracts, volume discounts, or custom compliance requirements.
-
----
-
-## 🚀 Ready to Get Started?
-
-### Choose Your Tier and Start Your Free Trial:
-
-<div style="text-align: center; margin: 40px 0;">
-
-**[🚀 Start Free Trial - Standard ($2K)](https://securebase.tximhotep.com/signup?tier=standard)**
-
-**[🚀 Start Free Trial - Fintech ($8K)](https://securebase.tximhotep.com/signup?tier=fintech)**
-
-**[🚀 Start Free Trial - Healthcare ($15K)](https://securebase.tximhotep.com/signup?tier=healthcare)**
-
-**[🚀 Start Free Trial - Government ($25K)](https://securebase.tximhotep.com/signup?tier=government)**
-
-</div>
-
----
-
-### Or Talk to Our Team:
-
-**[📞 Book a Demo](https://securebase.tximhotep.com/contact)** - See SecureBase in action (30 minutes)
-
-**[💬 Contact Sales](mailto:sales@securebase.tximhotep.com)** - Get custom pricing and answers
-
-**[🎯 Apply for Pilot](https://portal.securebase.tximhotep.com/pilot)** - Save 50% for 6 months (8 spots left)
+**[🎯 Request Executive Access](https://portal.securebase.tximhotep.com/pilot)**
 
 ---
 
 ## 📚 Additional Resources
 
-- **[Feature Comparison](./README.md)** - SecureBase vs DIY vs Competitors
-- **[FAQ](./FAQ.md)** - 42 common questions answered
-- **[ROI Calculator](https://docs.google.com/spreadsheets/d/ROI-CALCULATOR)** - Calculate your savings
-- **[Compliance Guides](./docs/)** - HIPAA, SOC 2, FedRAMP implementation details
+- **[FAQ](./FAQ.md)** - Common questions about governance, pricing, and implementation
+- **[Product Overview](./README.md)** - SecureBase platform narrative and architecture
+- **[Docs](./docs/)** - Additional implementation and platform materials
 
 ---
 
-## 📞 Contact Us
-
-**Questions about pricing?**
-
-- **Email:** [sales@securebase.tximhotep.com](mailto:sales@securebase.tximhotep.com)
-- **Response Time:** <2 hours (business hours)
-- **Enterprise Sales:** [enterprise@securebase.tximhotep.com](mailto:enterprise@securebase.tximhotep.com)
-
----
-
-*Last Updated: January 30, 2026*  
-*Pricing subject to change with 30 days notice to existing customers*
+*Last Updated: May 8, 2026*  
+*Commercial terms subject to change with notice to existing customers*
