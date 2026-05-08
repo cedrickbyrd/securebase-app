@@ -24,9 +24,13 @@ Escalation: **On-call SRE → Platform Lead → Security/Compliance Lead → Eng
 ### Preconditions
 1. Confirm failover guard is enabled in SSM:
 ```bash
-aws ssm get-parameter --name /securebase/dr/failover_enabled
+aws ssm get-parameter \
+  --name /securebase/dr/failover_enabled \
+  --query 'Parameter.Value' \
+  --output text
 ```
 2. Confirm incident command has approved failover.
+   - Expected value: `true`
 
 ### Execute
 ```bash

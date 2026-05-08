@@ -29,7 +29,7 @@
 | Aurora PostgreSQL | < 15 min | < 1 min | Aurora Global Database |
 | DynamoDB | < 15 min | < 1 min | Global Tables replication |
 | S3 (audit/reporting artifacts) | < 15 min | < 5 min | S3 Cross-Region Replication |
-| DNS Routing | < 15 min (with low TTL) | N/A | Route53 health checks + failover policy (TTL 60s recommended) |
+| DNS Routing | < 15 min (includes TTL + detection + routing switch) | N/A | Route53 health checks + failover policy (TTL 30–60s recommended) |
 
 ## 3) Failover Decision Tree (Automated vs Manual)
 
