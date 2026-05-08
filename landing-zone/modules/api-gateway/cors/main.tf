@@ -14,19 +14,31 @@ variable "resource_id" {
 variable "allowed_origins" {
   description = "List of allowed CORS origins"
   type        = list(string)
-  default     = ["https://portal.securebase.com", "https://www.securebase.com"]
+  default     = [
+    "https://securebase.tximhotep.com",
+    "https://www.securebase.tximhotep.com",
+    "https://demo.securebase.tximhotep.com",
+    "http://localhost:3000",
+    "http://localhost:5173"
+  ]
+}
+
+variable "allowed_origin" {
+  description = "Single allowed origin for CORS (must be specific when using credentials)"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
 }
 
 variable "allowed_methods" {
   description = "List of allowed HTTP methods"
   type        = list(string)
-  default     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  default     = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
 }
 
 variable "allowed_headers" {
   description = "List of allowed request headers"
   type        = list(string)
-  default     = ["Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key", "X-Amz-Security-Token"]
+  default     = ["Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key", "X-Amz-Security-Token", "X-CSRF-Token"]
 }
 
 # OPTIONS method for CORS preflight
@@ -76,10 +88,9 @@ resource "aws_api_gateway_integration_response" "options" {
   status_code = aws_api_gateway_method_response.options.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT,DELETE'"
-    # Change the line below from join() to a single origin or '*'
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Headers" = "'${join(",", var.allowed_headers)}'"
+    "method.response.header.Access-Control-Allow-Methods" = "'${join(",", var.allowed_methods)}'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.allowed_origin}'"
     "method.response.header.Access-Control-Max-Age"       = "'7200'"
   }
 
