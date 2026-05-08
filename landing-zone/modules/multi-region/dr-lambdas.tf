@@ -139,3 +139,39 @@ resource "aws_cloudwatch_metric_alarm" "primary_region_unhealthy" {
 
   tags = local.dr_tags
 }
+
+# ── Automated failover invocation glue ──────────────────────────────────────────
+# When the primary-region health alarm enters ALARM, invoke the failover
+# orchestrator. The Lambda's own SSM guard rail still controls whether it
+# proceeds, so this event path is safe to keep wired in all environments.
+resource "aws_cloudwatch_event_rule" "primary_region_unhealthy_alarm" {
+  name        = "securebase-${var.environment}-primary-region-unhealthy-alarm"
+  description = "Invoke failover orchestrator when the primary region health alarm fires"
+
+  event_pattern = jsonencode({
+    source      = ["aws.cloudwatch"]
+    detail-type = ["CloudWatch Alarm State Change"]
+    detail = {
+      alarmName = [aws_cloudwatch_metric_alarm.primary_region_unhealthy.alarm_name]
+      state = {
+        value = ["ALARM"]
+      }
+    }
+  })
+
+  tags = local.dr_tags
+}
+
+resource "aws_cloudwatch_event_target" "primary_region_unhealthy_failover" {
+  rule      = aws_cloudwatch_event_rule.primary_region_unhealthy_alarm.name
+  target_id = "failover-orchestrator"
+  arn       = aws_lambda_function.failover_orchestrator.arn
+}
+
+resource "aws_lambda_permission" "failover_eventbridge" {
+  statement_id  = "AllowPrimaryRegionAlarmInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.failover_orchestrator.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.primary_region_unhealthy_alarm.arn
+}
