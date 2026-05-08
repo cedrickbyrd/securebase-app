@@ -565,7 +565,7 @@ export const sreService = {
   async getCostMetrics() {
     if (isDemoMode()) return getMockCostMetrics();
 
-    const response = await fetch('/api/sre/cost', buildFetchOptions());
+    const response = await fetch('/api/sre/costs', buildFetchOptions());
     if (!response.ok) throw new Error(`Cost metrics failed: ${response.status}`);
     return response.json();
   },
