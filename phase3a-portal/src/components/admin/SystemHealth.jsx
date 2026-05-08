@@ -71,15 +71,15 @@ const SystemHealth = ({ refreshKey = 0 }) => {
             const rawStatus = (service.status || 'unknown').toLowerCase();
             const status = statusStyles[rawStatus] ? rawStatus : 'unknown';
             return (
-              <div
-                key={service.name}
-                className={`border rounded-lg px-4 py-3 flex items-center justify-between ${cardStyles[status] || cardStyles.down}`}
-              >
+                <div
+                  key={service.name}
+                  className={`border rounded-lg px-4 py-3 flex items-center justify-between ${cardStyles[status] || cardStyles.unknown}`}
+                >
                 <span className="text-sm font-medium text-gray-900">{service.name}</span>
                 <div className="flex items-center gap-2">
                   <span
                     data-testid={`status-indicator-${service.name}`}
-                    className={`inline-flex w-3 h-3 rounded-full ${statusStyles[status] || statusStyles.down}`}
+                    className={`inline-flex w-3 h-3 rounded-full ${statusStyles[status] || statusStyles.unknown}`}
                     aria-label={`${service.name} status ${status}`}
                   />
                   <span className="text-xs font-semibold uppercase text-gray-700">{status}</span>

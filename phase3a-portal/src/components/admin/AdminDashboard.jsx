@@ -35,7 +35,7 @@ const AdminDashboard = () => {
     delayRef.current = refreshDelay;
   }, [refreshDelay]);
 
-  const loadDashboard = useCallback(async (isManual = false) => {
+  const loadDashboard = useCallback(async () => {
     if (!hasLoadedRef.current) {
       setIsInitialLoading(true);
     } else {
@@ -70,9 +70,7 @@ const AdminDashboard = () => {
     } catch (fetchError) {
       setError(fetchError);
       setRefreshDelay((currentDelay) => Math.min(currentDelay * 2, MAX_DELAY_MS));
-      if (isManual) {
-        setLastUpdated(new Date());
-      }
+      setLastUpdated(new Date());
     } finally {
       setIsInitialLoading(false);
       setIsRefreshing(false);
@@ -99,7 +97,7 @@ const AdminDashboard = () => {
   }, [loadDashboard]);
 
   const handleManualRefresh = () => {
-    loadDashboard(true);
+    loadDashboard();
   };
 
   const mrrTrend = useMemo(() => {
