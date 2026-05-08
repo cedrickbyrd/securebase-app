@@ -13,9 +13,9 @@
 
 ## 2) Severity Levels & Escalation
 
-- **SEV-1:** Full production outage / regional impairment
-- **SEV-2:** Partial outage / significant degradation
-- **SEV-3:** DR risk warning (replication lag, noisy alarms)
+- **SEV-1:** >80% of customers impacted or full regional outage lasting >5 minutes
+- **SEV-2:** 20–80% customer impact, or sustained p95 latency >2s / error rate >5% for >10 minutes
+- **SEV-3:** Elevated DR risk only (replication lag, noisy alarms, transient degradation with <20% impact)
 
 Escalation: **On-call SRE → Platform Lead → Security/Compliance Lead → Engineering Director**.
 

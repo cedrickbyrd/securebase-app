@@ -29,7 +29,7 @@
 | Aurora PostgreSQL | < 15 min | < 1 min | Aurora Global Database |
 | DynamoDB | < 15 min | < 1 min | Global Tables replication |
 | S3 (audit/reporting artifacts) | < 15 min | < 5 min | S3 Cross-Region Replication |
-| DNS Routing | < 5 min | N/A | Route53 health checks + failover policy |
+| DNS Routing | < 15 min (with low TTL) | N/A | Route53 health checks + failover policy (TTL 60s recommended) |
 
 ## 3) Failover Decision Tree (Automated vs Manual)
 
@@ -85,7 +85,7 @@
 | Security/Compliance Lead | Slack + email | 15 minutes |
 | Engineering Director | Phone + incident bridge | 20 minutes |
 
-Escalation path: **On-Call SRE → Platform Lead → Security/Compliance Lead → Engineering Director**.
+Escalation path: **On-Call SRE (immediate) → Platform Lead (10 min) → Security/Compliance Lead (15 min) → Engineering Director (20 min)**.
 
 ## 7) References
 

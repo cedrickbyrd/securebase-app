@@ -2,6 +2,8 @@
 
 ## 1) Current Cost Baseline (Fill with live monthly values)
 
+Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered by `Project=securebase` tag (last 30 days), then update this table during monthly FinOps review.
+
 | Service | Current Spend (USD) | Baseline Target (USD) | Notes |
 |---|---:|---:|---|
 | Lambda | TBD | TBD | Include invocations, duration, provisioned concurrency |
@@ -22,7 +24,7 @@
 
 ### DynamoDB
 - Use auto scaling on provisioned tables with 70% utilization target.
-- Keep low-traffic tables on on-demand when cheaper.
+- Keep tables on on-demand when average utilization stays below ~10 RCU / 10 WCU or <1M requests/month.
 - Monitor throttles and replication metrics for global tables.
 
 ### Aurora
