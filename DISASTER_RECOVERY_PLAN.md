@@ -29,9 +29,11 @@
 | Aurora PostgreSQL | < 15 min | < 1 min | Aurora Global Database |
 | DynamoDB | < 15 min | < 1 min | Global Tables replication |
 | S3 (audit/reporting artifacts) | < 15 min | < 5 min | S3 Cross-Region Replication |
-| DNS Routing | < 15 min (includes TTL + detection + routing switch) | N/A | Route53 health checks + failover policy (TTL 30–60s recommended) |
+| DNS Routing | < 15 min (includes TTL + detection + routing switch) | N/A | Route53 health checks + failover policy (TTL 30s recommended for prod failover paths) |
 
 ## 3) Failover Decision Tree (Automated vs Manual)
+
+DNS trade-off note: lower TTL improves failover convergence but increases DNS query volume. For production failover records, prefer 30s TTL to align with the RTO target.
 
 1. **CloudWatch + Route53 health alarms fire**
 2. If health check failures persist past threshold:
