@@ -194,6 +194,7 @@ exports.handler = async (event) => {
         // tier with deferred billing and apply the assessment fee as a balance credit.
         ...(ASSESSMENT_UPGRADES[tier] || {}),
         // HIPAA tiers carry BAA and PHI-handling signals for the webhook and audit trail.
+        // Stripe metadata values must be strings — boolean 'true' is intentional here.
         ...(HIPAA_TIERS.has(tier) ? {
           hipaa_baa_acknowledged: 'true',
           phi_handling: 'true',
