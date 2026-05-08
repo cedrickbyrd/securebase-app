@@ -12,7 +12,7 @@ resource "aws_iam_policy" "alert_router" {
         Effect = "Allow"
         Action = ["ssm:GetParameter"]
         Resource = [
-          "arn:aws:ssm:${var.aws_region}:*:parameter${var.alert_webhook_ssm_param}"
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.alert_webhook_ssm_param}"
         ]
       },
       {
@@ -58,7 +58,7 @@ resource "aws_ssm_parameter" "webhook_url" {
 
   name        = var.alert_webhook_ssm_param
   type        = "SecureString"
-  value       = var.initial_webhook_url != "" ? var.initial_webhook_url : "https://example.invalid/replace-me"
+  value       = var.initial_webhook_url != "" ? var.initial_webhook_url : "REPLACE_WITH_ACTUAL_WEBHOOK_URL"
   description = "PagerDuty/Opsgenie/Slack webhook URL for SecureBase ${var.environment} alerts"
   overwrite   = false
 

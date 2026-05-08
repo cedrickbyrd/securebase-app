@@ -102,7 +102,7 @@ resource "aws_cloudwatch_metric_alarm" "aurora_freeable_memory" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Minimum"
-  threshold           = 268435456
+  threshold           = 268435456 # 256MB in bytes
   treat_missing_data  = "notBreaching"
 
   dimensions = { DBClusterIdentifier = var.aurora_cluster_id }
@@ -123,7 +123,7 @@ resource "aws_cloudwatch_metric_alarm" "aurora_storage_pct" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Minimum"
-  threshold           = 5368709120
+  threshold           = 5368709120 # 5GB in bytes
   treat_missing_data  = "notBreaching"
 
   dimensions = { DBClusterIdentifier = var.aurora_cluster_id }
