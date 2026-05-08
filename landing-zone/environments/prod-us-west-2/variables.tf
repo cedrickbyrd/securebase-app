@@ -59,6 +59,12 @@ variable "secondary_api_endpoint" {
   default     = ""
 }
 
+variable "secondary_api_gateway_id" {
+  description = "Secondary region API Gateway ID used by DR health checks"
+  type        = string
+  default     = ""
+}
+
 variable "api_gateway_id" {
   description = "API Gateway ID for alarm and logging resources"
   type        = string

@@ -243,6 +243,12 @@ variable "secondary_api_endpoint" {
   default     = ""
 }
 
+variable "secondary_api_gateway_id" {
+  description = "Secondary region API Gateway ID used by DR health checks"
+  type        = string
+  default     = ""
+}
+
 variable "s3_cost_tiering_buckets" {
   description = "S3 bucket names to enable Intelligent-Tiering on"
   type        = set(string)

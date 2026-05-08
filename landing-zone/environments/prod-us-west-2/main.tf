@@ -89,6 +89,7 @@ module "multi_region" {
   route53_hosted_zone_id = var.route53_hosted_zone_id
   primary_api_endpoint   = var.primary_api_endpoint
   secondary_api_endpoint = var.secondary_api_endpoint
+  secondary_api_gateway_id = var.secondary_api_gateway_id
 
   alert_sns_arn = module.phase5_alerting.sns_topic_arn
 
