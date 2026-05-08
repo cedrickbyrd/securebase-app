@@ -27,6 +27,23 @@ const PLAN_LABELS = {
   hipaa_assessment: 'HIPAA Readiness Assessment',
 };
 
+// Tiers that require company name, BAA acknowledgment, and a work email.
+const HIPAA_TIERS = new Set(['healthcare', 'hipaa_assessment']);
+
+// Consumer / free e-mail domains rejected for HIPAA-tier enrollment.
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com',
+  'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',
+  'hotmail.com', 'hotmail.co.uk',
+  'outlook.com', 'live.com', 'msn.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'aol.com',
+  'protonmail.com', 'proton.me',
+  'yandex.com', 'yandex.ru',
+  'mail.com', 'inbox.com',
+  'zoho.com',
+]);
+
 const CHECKOUT_SUPPORTED_PLANS = new Set(Object.keys(PLAN_LABELS));
 
 const SALES_ONLY_PLANS = {
@@ -71,6 +88,8 @@ export default function Checkout() {
   const [searchParams] = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [hipaaConsent, setHipaaConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -147,6 +166,15 @@ export default function Checkout() {
 
   const billingType = PLAN_BILLING_TYPE[plan] || 'subscription';
 
+  // Whether the selected plan triggers HIPAA-specific requirements.
+  const isHipaa = HIPAA_TIERS.has(plan);
+
+  // Returns true if the e-mail domain is a known free/consumer provider.
+  const isPersonalEmail = (addr) => {
+    const domain = (addr || '').split('@')[1]?.toLowerCase() || '';
+    return FREE_EMAIL_DOMAINS.has(domain);
+  };
+
   // Fire GA4 view_item once when the checkout page loads for a specific plan.
   // Intentionally fires only on mount: the plan is resolved from URL params at
   // render time and never changes mid-session on this page.
@@ -160,6 +188,25 @@ export default function Checkout() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // HIPAA pre-flight checks — fast client-side feedback before the round-trip.
+    if (isHipaa) {
+      if (isPersonalEmail(email)) {
+        setError('A work email address is required for HIPAA enrollment. Please use your organization email.');
+        setLoading(false);
+        return;
+      }
+      if (!hipaaConsent) {
+        setError('You must acknowledge the HIPAA BAA to continue.');
+        setLoading(false);
+        return;
+      }
+      if (!company.trim()) {
+        setError('Organization name is required for HIPAA enrollment.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // Fire GA4 begin_checkout right before the POST — not on page load.
     const displayPrice = isPilot ? resolvedPilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
@@ -178,6 +225,8 @@ export default function Checkout() {
           name,
           tier: plan,
           use_pilot_coupon: isPilot,
+          company_name: company,
+          hipaa_baa_acknowledged: hipaaConsent,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
@@ -310,6 +359,26 @@ export default function Checkout() {
                 />
               </div>
 
+              {isHipaa && (
+                <div>
+                  <label
+                    htmlFor="checkout-company"
+                    className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1"
+                  >
+                    Company / Organization Name
+                  </label>
+                  <input
+                    id="checkout-company"
+                    type="text"
+                    placeholder="Acme Health LLC"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    required
+                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+                  />
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="checkout-email"
@@ -327,6 +396,22 @@ export default function Checkout() {
                   className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
                 />
               </div>
+
+              {isHipaa && (
+                <div className="flex items-start gap-3 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                  <input
+                    id="checkout-hipaa-baa"
+                    type="checkbox"
+                    checked={hipaaConsent}
+                    onChange={(e) => setHipaaConsent(e.target.checked)}
+                    required
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <label htmlFor="checkout-hipaa-baa" className="text-xs text-teal-800 leading-relaxed">
+                    I acknowledge that by proceeding I am entering into SecureBase's Business Associate Agreement (BAA) and confirm that my organization handles Protected Health Information (PHI) subject to HIPAA.
+                  </label>
+                </div>
+              )}
 
               {error && (
                 <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
@@ -360,6 +445,16 @@ export default function Checkout() {
                   ? [
                       'Secured by Stripe — PCI DSS Level 1',
                       'Auto-enrolled in Healthcare tier — 30-day trial, $1,995 credited',
+                      'HIPAA BAA included — PHI handling compliant',
+                      'Business Associate Agreement executed on enrollment',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                  : plan === 'healthcare'
+                  ? [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      '14-day free trial, cancel anytime',
+                      'HIPAA BAA included — PHI handling compliant',
+                      'Business Associate Agreement executed on enrollment',
                       'SOC 2 Type II certified infrastructure',
                     ]
                   : billingType === 'payment'
