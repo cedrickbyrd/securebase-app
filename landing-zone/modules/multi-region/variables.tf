@@ -124,6 +124,12 @@ variable "secondary_api_endpoint" {
   default     = ""
 }
 
+variable "secondary_api_gateway_id" {
+  description = "Secondary region API Gateway REST API ID used by DR health checks"
+  type        = string
+  default     = ""
+}
+
 variable "api_dns_name" {
   description = "DNS record name for the API endpoint"
   type        = string

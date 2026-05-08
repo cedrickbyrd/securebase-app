@@ -96,6 +96,23 @@ def test_handler_no_webhook():
     mock_post.assert_not_called()
 
 
+def test_handler_updates_maintenance_mode():
+    mock_ssm = MagicMock()
+    with patch.object(alert_router, "ssm", mock_ssm):
+        response = alert_router.handler({"maintenance_mode": "true"}, None)
+
+    assert response["statusCode"] == 200
+    mock_ssm.put_parameter.assert_called_once()
+
+
+def test_handler_suppresses_alerts_during_maintenance():
+    with patch.object(alert_router, "_is_maintenance_mode", return_value=True), patch.object(alert_router, "_post") as mock_post:
+        response = alert_router.handler(_sns_event(), None)
+
+    assert response["statusCode"] == 200
+    mock_post.assert_not_called()
+
+
 def test_handler_routes_pagerduty():
     with patch.object(alert_router, "_get_webhook_url", return_value="https://events.pagerduty.com/v2/enqueue"), patch.object(alert_router, "_post") as mock_post:
         response = alert_router.handler(_sns_event("ALARM"), None)

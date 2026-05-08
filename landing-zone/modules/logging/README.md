@@ -1,5 +1,9 @@
 # Audit Log Storage Module
 
+> **Deprecated (Phase 5.3):** This module is deprecated.  
+> Canonical module: `landing-zone/modules/phase5-logging/`  
+> No new environments should reference `landing-zone/modules/logging/`.
+
 ## Overview
 
 This Terraform module provisions SOC 2 Type II compliant audit log storage infrastructure for SecureBase. It creates an S3 bucket with comprehensive security controls to ensure audit logs are protected, immutable, and available for compliance attestation.

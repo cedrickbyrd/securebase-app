@@ -18,6 +18,7 @@ PRIMARY_REGION   = os.environ.get("PRIMARY_REGION", "us-east-1")
 SECONDARY_REGION = os.environ.get("SECONDARY_REGION", "us-west-2")
 AURORA_CLUSTER   = os.environ.get("AURORA_CLUSTER_ID", "")
 API_GW_ID        = os.environ.get("API_GATEWAY_ID", "9xyetu7zq3")
+SECONDARY_API_GW_ID = os.environ.get("SECONDARY_API_GW_ID", "")
 ENVIRONMENT      = os.environ.get("ENVIRONMENT", "prod")
 
 cw = boto3.client("cloudwatch", region_name=PRIMARY_REGION)
@@ -47,10 +48,13 @@ def _check_dynamodb(region: str) -> bool:
         return False
 
 
-def _check_api_gateway(region: str) -> bool:
+def _check_api_gateway(region: str, rest_api_id: str) -> bool:
+    if not rest_api_id:
+        logger.warning("API Gateway ID not configured [%s] — skipping API Gateway check", region)
+        return True
     try:
         apigw = boto3.client("apigateway", region_name=region)
-        apigw.get_rest_api(restApiId=API_GW_ID)
+        apigw.get_rest_api(restApiId=rest_api_id)
         logger.info("API Gateway %s: healthy", region)
         return True
     except ClientError as e:
@@ -82,7 +86,10 @@ def handler(event, _context):
         checks = {
             "aurora":      _check_aurora(region) if AURORA_CLUSTER else True,
             "dynamodb":    _check_dynamodb(region),
-            "api_gateway": _check_api_gateway(region) if region == PRIMARY_REGION else True,
+            "api_gateway": _check_api_gateway(
+                region,
+                API_GW_ID if region == PRIMARY_REGION else SECONDARY_API_GW_ID,
+            ),
         }
 
         for service, healthy in checks.items():

@@ -31,6 +31,12 @@ variable "dynamodb_provisioned_tables" {
   default = {}
 }
 
+variable "monthly_budget_usd" {
+  description = "Monthly AWS cost budget (USD)"
+  type        = number
+  default     = 400
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

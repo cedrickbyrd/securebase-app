@@ -119,16 +119,16 @@ _Documentation:_
 
 ## Success Criteria
 
-- [ ] Aurora Global Database failover completes in < 15 minutes (99% of automated tests)
-- [ ] Zero data loss during failover (RPO < 1 min)
-- [ ] Automated failover success rate > 95%
-- [ ] Manual failback completes in < 30 minutes
-- [ ] Monthly DR drill passes (no critical issues)
-- [ ] Dashboard load time < 2 seconds (p95)
-- [ ] Alert noise < 5% false positives
-- [ ] X-Ray traces capture > 99% of requests
-- [ ] Log retention policies enforced
-- [ ] Infrastructure costs within budget ($250–$400/month)
+- [x] Aurora Global Database failover completes in < 15 minutes (99% of automated tests)
+- [x] Zero data loss during failover (RPO < 1 min)
+- [x] Automated failover success rate > 95%
+- [x] Manual failback completes in < 30 minutes
+- [x] Monthly DR drill passes (no critical issues)
+- [x] Dashboard load time < 2 seconds (p95)
+- [x] Alert noise < 5% false positives
+- [x] X-Ray traces capture > 99% of requests
+- [x] Log retention policies enforced
+- [x] Infrastructure costs within budget ($250–$400/month)
 
 ---
 

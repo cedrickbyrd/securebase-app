@@ -27,7 +27,7 @@ variable "kms_key_deletion_days" {
 }
 
 variable "xray_sampling_rate" {
-  description = "X-Ray fixed-rate sampling (0.0–1.0). Default 1 %."
+  description = "X-Ray trace sampling rate (0.0–1.0). Default 1% for cost optimization."
   type        = number
   default     = 0.01
 }

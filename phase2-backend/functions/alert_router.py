@@ -10,12 +10,32 @@ import logging
 import urllib.request
 import urllib.error
 import boto3
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 ssm = boto3.client("ssm")
 _webhook_cache = None
+
+
+def _maintenance_param_name(env: str) -> str:
+    return os.environ.get("MAINTENANCE_MODE_PARAM", f"/securebase/{env}/maintenance_mode")
+
+
+def _set_maintenance_mode(param_name: str, enabled: str) -> None:
+    ssm.put_parameter(Name=param_name, Value=enabled, Type="String", Overwrite=True)
+    logger.info("Maintenance mode updated: %s=%s", param_name, enabled)
+
+
+def _is_maintenance_mode(param_name: str) -> bool:
+    try:
+        value = ssm.get_parameter(Name=param_name)["Parameter"]["Value"].strip().lower()
+        return value == "true"
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "Unknown")
+        logger.warning("Maintenance mode param lookup failed (%s, code=%s): %s", param_name, code, e)
+        return False
 
 
 def _get_webhook_url() -> str:
@@ -88,6 +108,16 @@ def _post(url: str, payload: dict) -> None:
 
 def handler(event, _context):
     env = os.environ.get("ENVIRONMENT", "prod")
+    maintenance_param = _maintenance_param_name(env)
+
+    if "maintenance_mode" in event:
+        _set_maintenance_mode(maintenance_param, str(event.get("maintenance_mode", "false")).lower())
+        return {"statusCode": 200, "body": "maintenance mode updated"}
+
+    if _is_maintenance_mode(maintenance_param):
+        logger.info("Maintenance mode enabled — suppressing alert forwarding")
+        return {"statusCode": 200, "body": "maintenance mode active"}
+
     webhook_url = _get_webhook_url()
 
     if not webhook_url:

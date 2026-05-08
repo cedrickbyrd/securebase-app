@@ -141,6 +141,7 @@ module "multi_region" {
   route53_hosted_zone_id = var.route53_hosted_zone_id
   primary_api_endpoint   = var.primary_api_endpoint
   secondary_api_endpoint = var.secondary_api_endpoint
+  secondary_api_gateway_id = var.secondary_api_gateway_id
 
   tags = var.tags
 }
@@ -167,7 +168,7 @@ module "phase5_sre_metrics" {
 
   environment     = var.environment
   tags            = var.tags
-  lambda_zip_path = "../../../phase2-backend/deploy/sre_metrics.zip"
+  lambda_zip_path = var.sre_metrics_lambda_zip_path
   cors_origin     = "https://securebase.tximhotep.com"
   alert_email     = var.alert_email
 }
