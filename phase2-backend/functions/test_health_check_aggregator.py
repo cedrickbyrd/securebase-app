@@ -36,11 +36,18 @@ class TestHealthCheckAggregator(unittest.TestCase):
     def test_threshold_signal_for_failover_alarm(self, *_):
         get_handler(module)({}, None)
 
-        overall_metrics = [
-            call for call in self.cw.put_metric_data.call_args_list
-            if call.kwargs["MetricData"][0]["Dimensions"][1]["Value"] == "overall"
-        ]
-        self.assertTrue(any(m.kwargs["MetricData"][0]["Value"] == 0.0 for m in overall_metrics))
+        overall_metrics = []
+        for metric_call in self.cw.put_metric_data.call_args_list:
+            metric_data = metric_call.kwargs.get("MetricData", [])
+            if not metric_data:
+                continue
+            dimensions = metric_data[0].get("Dimensions", [])
+            if len(dimensions) < 2:
+                continue
+            if dimensions[1].get("Value") == "overall":
+                overall_metrics.append(metric_data[0].get("Value"))
+
+        self.assertIn(0.0, overall_metrics)
 
     @patch("health_check_aggregator.boto3.client")
     def test_aws_health_response_mocking(self, mock_boto_client):
