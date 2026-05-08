@@ -19,7 +19,7 @@
 ## Automated DR test script invocations
 
 ```bash
-cd /home/runner/work/securebase-app/securebase-app/phase2-backend/functions
+cd phase2-backend/functions
 python -m unittest -q test_dr_integration.py
 python -m unittest -q test_failover_orchestrator.py
 python -m unittest -q test_failback_orchestrator.py
@@ -44,7 +44,7 @@ Each scenario must log start/end timestamps, observed RTO/RPO, and remediation a
 ## How to run `test_dr_integration.py`
 
 ```bash
-cd /home/runner/work/securebase-app/securebase-app/phase2-backend/functions
+cd phase2-backend/functions
 python -m unittest -q test_dr_integration.py
 ```
 
