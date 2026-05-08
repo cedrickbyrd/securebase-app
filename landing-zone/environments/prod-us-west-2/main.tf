@@ -100,7 +100,7 @@ module "phase5_cost" {
   source = "../../modules/phase5-cost"
 
   environment               = var.environment
-  alert_sns_arn             = module.phase5_alerting.alert_sns_arn
+  alert_sns_arn             = module.phase5_alerting.sns_topic_arn
   anomaly_threshold_percent = var.anomaly_threshold_percent
 
   s3_bucket_names = var.s3_cost_tiering_buckets
