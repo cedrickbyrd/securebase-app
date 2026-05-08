@@ -1,0 +1,134 @@
+{
+  "framework": "HIPAA",
+  "standard": "45 CFR Part 164 — Security Rule (Technical Safeguards)",
+  "description": "Mapping of HIPAA Technical Safeguard requirements to AWS GuardDuty finding types and AWS Config managed rule names.",
+  "last_updated": "2026-05-08",
+  "controls": [
+    {
+      "control_id": "HIPAA-164.312(a)(1)",
+      "control_name": "Access Control — Unique User Identification",
+      "description": "Assign a unique name and/or number for identifying and tracking user identity.",
+      "severity": "CRITICAL",
+      "config_rule": "iam-root-access-key-check",
+      "guardduty_finding_types": [
+        "Policy:IAMUser/RootCredentialUsage"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(a)(2)(i)",
+      "control_name": "Access Control — Emergency Access Procedure",
+      "description": "Establish and implement procedures for obtaining necessary ePHI during an emergency.",
+      "severity": "HIGH",
+      "config_rule": "mfa-enabled-for-iam-console-access",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(a)(2)(iv)",
+      "control_name": "Access Control — Encryption and Decryption",
+      "description": "Implement a mechanism to encrypt and decrypt ePHI.",
+      "severity": "CRITICAL",
+      "config_rule": "rds-storage-encrypted",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(b)",
+      "control_name": "Audit Controls",
+      "description": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in information systems that contain or use ePHI.",
+      "severity": "CRITICAL",
+      "config_rule": "cloudtrail-enabled",
+      "guardduty_finding_types": [
+        "Stealth:IAMUser/CloudTrailLoggingDisabled",
+        "Stealth:IAMUser/LoggingConfigurationModified"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(c)(1)",
+      "control_name": "Integrity — Authenticate ePHI",
+      "description": "Implement policies and procedures to protect ePHI from improper alteration or destruction.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-versioning-enabled",
+      "guardduty_finding_types": [
+        "Impact:S3/ObjectDelete.Unusual"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(c)(2)",
+      "control_name": "Integrity — Mechanism to Authenticate ePHI",
+      "description": "Implement electronic mechanisms to corroborate that ePHI has not been altered or destroyed in an unauthorized manner.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-ssl-requests-only",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(d)",
+      "control_name": "Person or Entity Authentication",
+      "description": "Implement procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
+      "severity": "CRITICAL",
+      "config_rule": "root-account-mfa-enabled",
+      "guardduty_finding_types": [
+        "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(e)(1)",
+      "control_name": "Transmission Security — Protect ePHI in Transit",
+      "description": "Implement technical security measures to guard against unauthorized access to ePHI that is being transmitted over an electronic communications network.",
+      "severity": "CRITICAL",
+      "config_rule": "api-gw-ssl-enabled",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/apigateway-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(e)(2)(i)",
+      "control_name": "Transmission Security — Integrity Controls",
+      "description": "Implement security measures to ensure that electronically transmitted ePHI is not improperly modified without detection.",
+      "severity": "HIGH",
+      "config_rule": "vpc-flow-logs-enabled",
+      "guardduty_finding_types": [
+        "Trojan:EC2/DNSDataExfiltration",
+        "UnauthorizedAccess:EC2/MetadataDNSRebind"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.312(e)(2)(ii)",
+      "control_name": "Transmission Security — Encryption",
+      "description": "Implement a mechanism to encrypt ePHI whenever deemed appropriate.",
+      "severity": "CRITICAL",
+      "config_rule": "encrypted-volumes",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "HIPAA-164.308(a)(1)",
+      "control_name": "Security Management — Risk Analysis",
+      "description": "Conduct an accurate and thorough assessment of the potential risks and vulnerabilities to the confidentiality, integrity, and availability of ePHI.",
+      "severity": "HIGH",
+      "config_rule": "guardduty-enabled-centralized",
+      "guardduty_finding_types": [
+        "Recon:IAMUser/NetworkPermissions",
+        "Recon:IAMUser/ResourcePermissions"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+    },
+    {
+      "control_id": "HIPAA-164.308(a)(5)",
+      "control_name": "Security Management — Malware Protection",
+      "description": "Procedures for guarding against, detecting, and reporting malicious software.",
+      "severity": "HIGH",
+      "config_rule": "ec2-imdsv2-check",
+      "guardduty_finding_types": [
+        "Trojan:EC2/BlackholeTraffic",
+        "Backdoor:EC2/C&CActivity.B"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    }
+  ]
+}

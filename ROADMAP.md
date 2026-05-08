@@ -24,7 +24,7 @@ This document is the single source of truth for what has been built, what is in 
 | [Phase 3b](#phase-3b--advanced-features) | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | [Phase 4](#phase-4--enterprise-features) | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
 | [Phase 5](#phase-5--observability--multi-region-dr) | Observability, Monitoring & Multi-Region DR | 🔄 In Progress | ~60% |
-| [Phase 6](#phase-6--compliance--operations-scale) | Compliance Automation & Operations Scale | 📅 Planned | 0% |
+| [Phase 6](#phase-6--compliance--operations-scale) | Compliance Automation & Operations Scale | 🔨 In Progress | 15% |
 
 ---
 
@@ -238,39 +238,43 @@ A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming
 
 ## Phase 6 — Compliance Automation & Operations Scale
 
-**Status:** 📅 Planned (Starts after Phase 5)  
-**Theme:** Make compliance a product feature, not an afterthought.
+**Status:** 🔨 In Progress  
+**Started:** May 2026  
+**Theme:** Make compliance a product feature, not an afterthought.  
+**Scope:** See [PHASE6_SCOPE.md](PHASE6_SCOPE.md) | **Tasks:** See [TODO_PHASE6.md](TODO_PHASE6.md)
 
-### Planned Work
+### In Progress
 
-#### 6.1 Immutable Audit Logging at Scale
-- Full "Compliance Mode" S3 Object Lock (7-year retention, WORM)
-- Automated evidence packaging for SOC 2 Type II and HIPAA audits
-- AWS Macie scanning for accidental PII exposure in logs
+#### 6.1 Immutable Audit Logging at Scale (scaffolded)
+- `landing-zone/modules/phase6-audit-logging/` — S3 Object Lock (COMPLIANCE mode, 7-year), Macie, KMS
+- `phase6-backend/functions/audit_log_packager.py` — evidence packaging Lambda
+- `phase6-backend/functions/audit_evidence_api.py` — REST API for evidence management
+- `phase6-backend/database/migrations/001_audit_evidence_tables.sql`
 
-#### 6.2 Compliance Automation (50+ AWS Config Rules)
-- Automated mapping: SOC 2 CC controls → AWS Config rules
-- HIPAA technical safeguards mapped to GuardDuty findings
-- FedRAMP Rev 5 baseline mapped to Security Hub standards
-- Daily compliance score recalculation with trend history
+#### 6.2 Compliance Automation (50+ AWS Config Rules) (scaffolded)
+- `landing-zone/modules/phase6-compliance/` — 25+ Config rules, HIPAA/NIST conformance packs
+- `phase6-backend/compliance/soc2_mapping.json` — 16 SOC 2 CC controls
+- `phase6-backend/compliance/hipaa_mapping.json` — 12 HIPAA safeguards
+- `phase6-backend/compliance/fedramp_mapping.json` — 15 FedRAMP Rev 5 controls
+- `phase6-backend/functions/compliance_score_recalculator.py` — daily cron Lambda
+- `phase6-backend/database/migrations/002_compliance_score_history.sql`
 
-#### 6.3 Scalability to 10,000+ Concurrent Users
-- Aurora Serverless v2 auto-scaling tuning
-- Lambda provisioned concurrency for latency-sensitive paths
-- API Gateway caching with per-customer cache keys
-- DynamoDB on-demand billing with GSI optimization
+#### 6.3 Scalability to 10,000+ Concurrent Users (planned)
+- Lambda provisioned concurrency (auth_v2, metrics, analytics_query)
+- API Gateway stage-level caching with per-customer cache keys
+- DynamoDB on-demand billing + GSI optimization
+- Aurora ACU tuning (min=2, max=128)
 
-#### 6.4 Build Debt Cleanup
-- Remove `--legacy-peer-deps` from all npm installs (align peer versions)
-- Migrate mock data services (`mockApiService.js`) to integration test fixtures
-- Consolidate ~200 root-level markdown files into `docs/` structure
-- Retire standalone shell scripts in favor of GitHub Actions workflows
+#### 6.4 Build Debt Cleanup (planned)
+- Remove `--legacy-peer-deps` from all npm installs
+- Migrate mock data to `tests/fixtures/`
+- Consolidate root-level markdown into `docs/`
 
-#### 6.5 Developer Experience
-- One-command local dev setup (`docker compose up`)
-- Storybook component library for portal UI
-- OpenAPI spec generated from Lambda function signatures
-- End-to-end test suite covering all critical user journeys
+#### 6.5 Developer Experience (planned)
+- `docker-compose.yml` — one-command local dev
+- Storybook for portal components
+- OpenAPI spec (`docs/api/openapi.yaml`)
+- Playwright E2E test suite
 
 ---
 
