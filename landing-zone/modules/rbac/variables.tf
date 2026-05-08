@@ -29,3 +29,9 @@ variable "jwt_secret_arn" {
   description = "ARN of Secrets Manager secret containing JWT signing key"
   type        = string
 }
+
+variable "cookie_domain" {
+  description = "Cookie domain used by session management Lambda for cross-domain auth cookies"
+  type        = string
+  default     = ".tximhotep.com"
+}
