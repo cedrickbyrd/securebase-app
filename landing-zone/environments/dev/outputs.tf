@@ -118,21 +118,26 @@ output "phase5_logging_xray_sampling_rule" {
 }
 
 output "phase5_alerting_sns_topics" {
-  description = "Phase 5.3 alerting SNS topic ARNs by severity"
-  value       = try(module.phase5_alerting.sns_topic_arns, null)
+  description = "Phase 5.3 primary alerting SNS topic ARN"
+  value       = try(module.phase5_alerting.sns_topic_arn, null)
 }
 
-output "phase5_alerting_dashboard" {
-  description = "Phase 5.3 alerting CloudWatch dashboard name"
-  value       = try(module.phase5_alerting.alerting_dashboard_name, null)
+output "phase5_alerting_router_lambda_arn" {
+  description = "Phase 5.3 alert router Lambda ARN"
+  value       = try(module.phase5_alerting.alert_router_lambda_arn, null)
 }
 
 output "phase5_cost_anomaly_monitor_arn" {
   description = "Phase 5.3 AWS Cost Anomaly Detection monitor ARN"
-  value       = try(module.phase5_cost_optimization.cost_anomaly_monitor_arn, null)
+  value       = try(module.phase5_cost.anomaly_monitor_arn, null)
 }
 
-output "phase5_cost_dashboard" {
-  description = "Phase 5.3 cost optimization CloudWatch dashboard name"
-  value       = try(module.phase5_cost_optimization.cost_dashboard_name, null)
+output "phase5_cost_anomaly_subscription_arn" {
+  description = "Phase 5.3 AWS Cost Anomaly Detection subscription ARN"
+  value       = try(module.phase5_cost.anomaly_subscription_arn, null)
+}
+
+output "phase5_sre_metrics_lambda_arn" {
+  description = "Phase 5.3 SRE metrics Lambda ARN"
+  value       = try(module.phase5_sre_metrics.sre_metrics_lambda_arn, null)
 }

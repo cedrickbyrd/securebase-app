@@ -211,6 +211,8 @@ module "api_gateway" {
   demo_auth_lambda_arn        = module.lambda_functions.demo_auth_arn
   demo_auth_lambda_invoke_arn = module.lambda_functions.demo_auth_invoke_arn
   demo_auth_lambda_name       = module.lambda_functions.demo_auth_name
+  sre_metrics_lambda_invoke_arn = var.sre_metrics_lambda_invoke_arn
+  sre_metrics_lambda_name       = var.sre_metrics_lambda_name
   tags = merge(var.tags, { Phase = "Phase3-API" })
   depends_on = [module.lambda_functions]
 }

@@ -65,6 +65,8 @@ module "securebase" {
   max_aurora_capacity  = var.max_aurora_capacity
   min_aurora_capacity  = var.min_aurora_capacity
   rds_backup_retention = var.rds_backup_retention
+  sre_metrics_lambda_invoke_arn = module.phase5_sre_metrics.sre_metrics_lambda_invoke_arn
+  sre_metrics_lambda_name       = module.phase5_sre_metrics.sre_metrics_lambda_name
 }
 
 # Phase 4: Advanced Analytics & Reporting Module
