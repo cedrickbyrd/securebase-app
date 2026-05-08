@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TF_VERSION: "1.5.7"
+
 jobs:
   validate-multi-region:
     runs-on: ubuntu-latest
@@ -23,7 +26,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.5.7"
+          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Terraform init (no backend)
         run: terraform init -backend=false
@@ -33,7 +36,7 @@ jobs:
 
       - name: Setup TFLint
         if: ${{ hashFiles('landing-zone/modules/multi-region/.tflint.hcl') != '' }}
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@6e87008f9dd1fe3e34e66aca6c97b4a69f72a7f4
         with:
           tflint_version: latest
 
