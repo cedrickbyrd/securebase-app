@@ -1,0 +1,33 @@
+environment   = "prod"
+target_region = "us-west-2"
+source_region = "us-east-1"
+
+# Existing Aurora cluster identifier used by DR orchestration
+# (writer in us-east-1 during normal operations)
+aurora_cluster_id = "securebase-prod-cluster"
+
+# DR networking and endpoint values
+route53_hosted_zone_id = "Z1234567890ABC"
+primary_api_endpoint   = "api.securebase.tximhotep.com"
+secondary_api_endpoint = "api-dr.securebase.tximhotep.com"
+api_gateway_id         = "abc123def4"
+
+# Alerting configuration (set via TF_VAR in CI for production)
+alert_email           = "oncall@securebase.tximhotep.com"
+oncall_email          = "platform-oncall@securebase.tximhotep.com"
+# pagerduty_routing_key = "pd_xxxxx"  # set through secrets manager / CI variables
+
+# Cost optimization targets
+anomaly_threshold_percent = 20
+s3_cost_tiering_buckets = [
+  "securebase-prod-audit-logs",
+  "securebase-prod-report-exports"
+]
+
+tags = {
+  Project             = "SecureBase"
+  ManagedBy           = "Terraform"
+  Environment         = "prod-us-west-2"
+  ComplianceFramework = "SOC2,FedRAMP,HIPAA"
+  DataClassification  = "sensitive"
+}
