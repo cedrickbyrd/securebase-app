@@ -80,6 +80,12 @@ variable "alert_webhook_ssm_param" {
   default     = "/securebase/alerts/webhook_url"
 }
 
+variable "alert_webhook_kms_key_arn" {
+  description = "KMS key ARN used to encrypt the alert webhook SSM parameter"
+  type        = string
+  default     = ""
+}
+
 variable "create_webhook_ssm_param" {
   description = "Whether to create the SSM parameter placeholder for the webhook URL"
   type        = bool

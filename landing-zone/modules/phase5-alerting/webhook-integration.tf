@@ -19,7 +19,9 @@ resource "aws_iam_policy" "alert_router" {
         Sid    = "DecryptSSMKMS"
         Effect = "Allow"
         Action = ["kms:Decrypt"]
-        Resource = ["*"]
+        Resource = [
+          var.alert_webhook_kms_key_arn != "" ? var.alert_webhook_kms_key_arn : "arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alias/aws/ssm"
+        ]
         Condition = {
           StringEquals = {
             "kms:ViaService" = "ssm.${var.aws_region}.amazonaws.com"
