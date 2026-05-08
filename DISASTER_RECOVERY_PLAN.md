@@ -31,9 +31,11 @@
 | S3 (audit/reporting artifacts) | < 15 min | < 5 min | S3 Cross-Region Replication |
 | DNS Routing | < 15 min (includes TTL + detection + routing switch) | N/A | Route53 health checks + failover policy (TTL 30s recommended for prod failover paths) |
 
-## 3) Failover Decision Tree (Automated vs Manual)
+### DNS Configuration Note
 
-DNS trade-off note: lower TTL improves failover convergence but increases DNS query volume. For production failover records, prefer 30s TTL to align with the RTO target.
+Lower TTL improves failover convergence but increases DNS query volume. For production failover records, use 30s TTL to align with RTO goals.
+
+## 3) Failover Decision Tree (Automated vs Manual)
 
 1. **CloudWatch + Route53 health alarms fire**
 2. If health check failures persist past threshold:

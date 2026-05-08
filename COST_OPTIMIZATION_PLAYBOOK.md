@@ -24,6 +24,8 @@ Populate monthly values from AWS Cost Explorer grouped by `SERVICE` and filtered
 
 ### DynamoDB
 - Use auto scaling on provisioned tables with a 70–80% utilization target, tuned based on observed throttling risk and cost/performance trade-offs.
+  - Prefer **70%** for unpredictable bursty workloads and stricter latency SLOs.
+  - Prefer **80%** for steady predictable workloads where higher utilization improves cost efficiency.
 - Keep tables on on-demand when average utilization stays below ~10 RCU / 10 WCU or <1M requests/month.
 - Monitor throttles and replication metrics for global tables.
 
