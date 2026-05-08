@@ -215,7 +215,9 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
   test('healthcare tier uses STRIPE_PRICE_HEALTHCARE env var', async () => {
     const response = await handler(makeEvent({
       tier: 'healthcare',
-      email: 'test@example.com',
+      email: 'test@hospitalcorp.com',
+      company_name: 'Hospital Corp',
+      hipaa_baa_acknowledged: true,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
     }));
@@ -312,8 +314,10 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
   test('hipaa_assessment tier uses payment mode and sets assessment-upgrade metadata', async () => {
     const response = await handler(makeEvent({
       tier: 'hipaa_assessment',
-      email: 'hipaa@example.com',
+      email: 'hipaa@hospitalcorp.com',
       name: 'HIPAA Assessment',
+      company_name: 'Hospital Corp',
+      hipaa_baa_acknowledged: true,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
     }));
@@ -391,5 +395,107 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     assert.equal(response.statusCode, 402);
     const body = JSON.parse(response.body);
     assert.match(body.error, /invalid price/i);
+  });
+
+  // ─── HIPAA-tier tests ────────────────────────────────────────────────────────
+
+  test('hipaa_assessment rejects personal email domains', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'user@gmail.com',
+      hipaa_baa_acknowledged: true,
+      company_name: 'Acme Health',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /work email/i);
+  });
+
+  test('hipaa_assessment rejects missing company_name', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'user@acmehealth.com',
+      hipaa_baa_acknowledged: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /company_name is required/i);
+  });
+
+  test('hipaa_assessment rejects missing BAA acknowledgment', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'user@acmehealth.com',
+      company_name: 'Acme Health',
+      hipaa_baa_acknowledged: false,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /BAA acknowledgment/i);
+  });
+
+  test('hipaa_assessment with valid work email, company, and BAA succeeds and sets hipaa metadata', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'ciso@acmehealth.com',
+      company_name: 'Acme Health LLC',
+      hipaa_baa_acknowledged: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200, `Expected 200 but got ${response.statusCode}: ${response.body}`);
+    assert.equal(capturedSessionParams.metadata.hipaa_baa_acknowledged, 'true');
+    assert.equal(capturedSessionParams.metadata.baa_required, 'true');
+    assert.equal(capturedSessionParams.metadata.phi_handling, 'true');
+  });
+
+  test('healthcare rejects personal email domains', async () => {
+    const response = await handler(makeEvent({
+      tier: 'healthcare',
+      email: 'user@outlook.com',
+      hipaa_baa_acknowledged: true,
+      company_name: 'Acme Health',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.match(body.error, /work email/i);
+  });
+
+  test('healthcare with valid inputs succeeds', async () => {
+    const response = await handler(makeEvent({
+      tier: 'healthcare',
+      email: 'ciso@hospitalcorp.com',
+      company_name: 'Hospital Corp',
+      hipaa_baa_acknowledged: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200, `Expected 200 but got ${response.statusCode}: ${response.body}`);
+    assert.equal(capturedSessionParams.metadata.hipaa_baa_acknowledged, 'true');
+  });
+
+  test('standard tier does NOT require company_name or BAA', async () => {
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'user@gmail.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200, `Standard tier should not require BAA or company: ${response.body}`);
   });
 });
