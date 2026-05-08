@@ -23,6 +23,7 @@ import sys
 import json
 import logging
 import hashlib
+import hmac
 import secrets
 import base64
 from typing import Dict, Optional, Tuple
@@ -105,14 +106,14 @@ def lambda_handler(event, context):
             return logout(body, event)
 
         elif http_method == 'GET' and path == '/auth/session':
-            auth_header = headers.get('Authorization', headers.get('authorization', ''))
+            auth_header = get_header_value(headers, 'Authorization')
             # Also check cookie-based session
-            cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+            cookie_header = get_header_value(headers, 'Cookie')
             return get_session_info(auth_header, event, cookie_header)
 
         elif http_method == 'GET' and path == '/auth/session/validate':
-            auth_header = headers.get('Authorization', headers.get('authorization', ''))
-            cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+            auth_header = get_header_value(headers, 'Authorization')
+            cookie_header = get_header_value(headers, 'Cookie')
             return get_session_info(auth_header, event, cookie_header)
 
         else:
@@ -449,12 +450,12 @@ def setup_mfa(data: Dict, event: Dict) -> Dict:
 def refresh_session(data: Dict, source_ip: str, user_agent: str, event: Dict) -> Dict:
     """Refresh session using refresh token (body or cookie)."""
     headers = event.get('headers', {})
-    cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+    cookie_header = get_header_value(headers, 'Cookie')
 
     # Enforce CSRF token validation for cookie-based refresh requests
     cookie_session_token = extract_cookie(cookie_header, COOKIE_NAME)
     if cookie_session_token:
-        csrf_header = headers.get(CSRF_HEADER_NAME, headers.get(CSRF_HEADER_NAME.lower(), ''))
+        csrf_header = get_header_value(headers, CSRF_HEADER_NAME)
         csrf_cookie = extract_cookie(cookie_header, CSRF_COOKIE_NAME)
         if not validate_csrf_token(cookie_session_token, csrf_header, csrf_cookie):
             return error_response(403, 'Invalid CSRF token', event)
@@ -556,7 +557,7 @@ def logout(data: Dict, event: Dict) -> Dict:
     """Logout and invalidate session. Clears httpOnly cookies."""
     session_token = data.get('session_token', '')
     headers = event.get('headers', {})
-    cookie_header = headers.get('Cookie', headers.get('cookie', ''))
+    cookie_header = get_header_value(headers, 'Cookie')
 
     # Also check cookie if no token in body
     if not session_token:
@@ -564,7 +565,7 @@ def logout(data: Dict, event: Dict) -> Dict:
 
     # Enforce CSRF token validation for cookie-based logout requests
     if cookie_header and extract_cookie(cookie_header, COOKIE_NAME):
-        csrf_header = headers.get(CSRF_HEADER_NAME, headers.get(CSRF_HEADER_NAME.lower(), ''))
+        csrf_header = get_header_value(headers, CSRF_HEADER_NAME)
         csrf_cookie = extract_cookie(cookie_header, CSRF_COOKIE_NAME)
         if not validate_csrf_token(session_token, csrf_header, csrf_cookie):
             return error_response(403, 'Invalid CSRF token', event)
@@ -801,18 +802,26 @@ def get_cors_headers(event: Dict) -> Dict:
 
 def generate_csrf_token(session_token: str) -> str:
     """Generate CSRF token bound to the session token."""
-    csrf_secret = os.environ.get('CSRF_SECRET') or os.environ.get('JWT_SECRET') or 'securebase-csrf-secret'
-    return hashlib.sha256(f'{session_token}:{csrf_secret}'.encode()).hexdigest()[:32]
+    csrf_secret = os.environ.get('CSRF_SECRET') or os.environ.get('JWT_SECRET')
+    if not csrf_secret:
+        csrf_secret = get_jwt_secret()
+    if not csrf_secret:
+        raise AuthenticationError('CSRF secret is not configured')
+    return hmac.new(csrf_secret.encode(), session_token.encode(), hashlib.sha256).hexdigest()
 
 
 def validate_csrf_token(session_token: str, provided_token: str, cookie_token: str) -> bool:
     """Validate CSRF token from request header against cookie and expected value."""
     if not session_token or not provided_token or not cookie_token:
         return False
-    if not secrets.compare_digest(provided_token, cookie_token):
+    try:
+        expected_token = generate_csrf_token(session_token)
+    except Exception:
         return False
-    expected_token = generate_csrf_token(session_token)
-    return secrets.compare_digest(expected_token, cookie_token)
+    return (
+        secrets.compare_digest(provided_token, cookie_token) and
+        secrets.compare_digest(expected_token, cookie_token)
+    )
 
 
 def build_session_cookies(session_token: str, refresh_token: str, expires_at: datetime, csrf_token: str = '') -> Dict:
@@ -888,6 +897,13 @@ def extract_cookie(cookie_header: str, cookie_name: str) -> Optional[str]:
         if name.strip() == cookie_name:
             return value.strip()
     return None
+
+
+def get_header_value(headers: Dict, header_name: str) -> str:
+    """Get header value with case-insensitive lookup."""
+    if not headers:
+        return ''
+    return headers.get(header_name, headers.get(header_name.lower(), ''))
 
 
 def success_response(data: Dict, event: Dict = None, additional_headers: Dict = None) -> Dict:
