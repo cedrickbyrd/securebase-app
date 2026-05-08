@@ -5,6 +5,10 @@ resource "aws_ssm_parameter" "maintenance_mode" {
   overwrite   = true
   description = "Alert suppression flag for planned maintenance windows"
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   tags = local.common_tags
 }
 

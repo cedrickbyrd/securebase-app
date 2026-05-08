@@ -25,7 +25,7 @@ resource "aws_lambda_function" "health_check_aggregator" {
       SECONDARY_REGION = var.secondary_region
       AURORA_CLUSTER_ID = var.aurora_cluster_id
       API_GATEWAY_ID   = "9xyetu7zq3"
-      SECONDARY_API_GW_ID = var.secondary_api_endpoint != "" ? split(".", var.secondary_api_endpoint)[0] : ""
+      SECONDARY_API_GW_ID = var.secondary_api_gateway_id
       ENVIRONMENT      = var.environment
     }
   }
