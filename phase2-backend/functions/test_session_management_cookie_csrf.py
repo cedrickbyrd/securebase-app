@@ -52,7 +52,8 @@ class TestSessionManagementCookieCsrf(unittest.TestCase):
             csrf_token='csrf-token-123'
         )['multiValueHeaders']['Set-Cookie']
 
-        csrf_cookie = [c for c in cookies if c.startswith('securebase_csrf=')][0]
+        csrf_cookie = next((c for c in cookies if c.startswith('securebase_csrf=')), None)
+        self.assertIsNotNone(csrf_cookie, 'Expected securebase_csrf cookie to be present')
         self.assertIn('securebase_csrf=csrf-token-123', csrf_cookie)
         self.assertNotIn('HttpOnly', csrf_cookie)
         self.assertIn('Secure', csrf_cookie)
