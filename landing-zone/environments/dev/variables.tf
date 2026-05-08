@@ -243,8 +243,20 @@ variable "secondary_api_endpoint" {
   default     = ""
 }
 
+variable "secondary_api_gateway_id" {
+  description = "Secondary region API Gateway ID used by DR health checks"
+  type        = string
+  default     = ""
+}
+
 variable "s3_cost_tiering_buckets" {
   description = "S3 bucket names to enable Intelligent-Tiering on"
   type        = set(string)
   default     = []
+}
+
+variable "sre_metrics_lambda_zip_path" {
+  description = "Path to the sre_metrics Lambda deployment zip"
+  type        = string
+  default     = "../../../phase2-backend/deploy/sre_metrics.zip"
 }

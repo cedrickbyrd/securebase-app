@@ -59,6 +59,12 @@ variable "secondary_api_endpoint" {
   default     = ""
 }
 
+variable "secondary_api_gateway_id" {
+  description = "Secondary region API Gateway ID used by DR health checks"
+  type        = string
+  default     = ""
+}
+
 variable "api_gateway_id" {
   description = "API Gateway ID for alarm and logging resources"
   type        = string
@@ -69,6 +75,18 @@ variable "alert_email" {
   description = "Fallback email destination for alerts"
   type        = string
   default     = ""
+}
+
+variable "sre_metrics_lambda_zip_path" {
+  description = "Path to the sre_metrics Lambda deployment zip"
+  type        = string
+  default     = "../../../phase2-backend/deploy/sre_metrics.zip"
+}
+
+variable "sre_metrics_cors_origin" {
+  description = "CORS allowed origin for SRE metrics endpoints"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
 }
 
 variable "pagerduty_routing_key" {

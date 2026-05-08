@@ -1,3 +1,6 @@
+# DEPRECATED: As of Phase 5.3, this module is deprecated and not the canonical
+# cost module. Use landing-zone/modules/phase5-cost for active deployments.
+#
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string

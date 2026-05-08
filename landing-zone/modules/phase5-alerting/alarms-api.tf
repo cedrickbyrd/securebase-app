@@ -125,3 +125,27 @@ resource "aws_cloudwatch_metric_alarm" "api_latency_integration" {
 
   tags = local.common_tags
 }
+
+resource "aws_cloudwatch_metric_alarm" "cloudfront_cache_hit_rate" {
+  count = var.cloudfront_distribution_id != "" ? 1 : 0
+
+  alarm_name          = "securebase-${var.environment}-cloudfront-cache-hit-rate-low"
+  alarm_description   = "CloudFront cache hit rate below 80%"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 3
+  metric_name         = "CacheHitRate"
+  namespace           = "AWS/CloudFront"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 80
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DistributionId = var.cloudfront_distribution_id
+    Region         = "Global"
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+
+  tags = local.common_tags
+}

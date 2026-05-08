@@ -89,6 +89,7 @@ module "multi_region" {
   route53_hosted_zone_id = var.route53_hosted_zone_id
   primary_api_endpoint   = var.primary_api_endpoint
   secondary_api_endpoint = var.secondary_api_endpoint
+  secondary_api_gateway_id = var.secondary_api_gateway_id
 
   alert_sns_arn = module.phase5_alerting.sns_topic_arn
 
@@ -106,6 +107,17 @@ module "phase5_cost" {
   s3_bucket_names = var.s3_cost_tiering_buckets
 
   tags = var.tags
+}
+
+# ── Phase 5.3: SRE Metrics (standby region) ───────────────────────────────────
+module "phase5_sre_metrics" {
+  source = "../../modules/phase5-sre-metrics"
+
+  environment     = var.environment
+  tags            = var.tags
+  lambda_zip_path = var.sre_metrics_lambda_zip_path
+  cors_origin     = var.sre_metrics_cors_origin
+  alert_email     = var.alert_email
 }
 
 terraform {
