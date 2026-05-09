@@ -267,7 +267,7 @@ export default function Compliance({ isPublic = false }) {
             <div>
               <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
               <p className="text-purple-200 text-sm mt-1">
-                Answer 5 questions to benchmark audit defensibility and receive a prioritized remediation path.
+                Answer 5 questions to benchmark audit defensibility and get an instant readiness score.
               </p>
             </div>
             {!showAssessmentForm && (
