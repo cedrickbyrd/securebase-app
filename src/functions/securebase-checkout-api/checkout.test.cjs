@@ -501,7 +501,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
 
   // ─── Backwards-compatibility / alias tier tests ───────────────────────────
 
-  test('pilot tier (standalone backwards-compat) uses STRIPE_PRICE_PILOT and subscription mode', async () => {
+  test('accepts legacy pilot tier alias and maps to STRIPE_PRICE_PILOT (backwards-compat)', async () => {
     const response = await handler(makeEvent({
       tier: 'pilot',
       email: 'test@example.com',
