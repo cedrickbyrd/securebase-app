@@ -102,6 +102,9 @@ export default function Checkout() {
   const planName = searchParams.get('planName') || tierConfig.name || plan;
   const planPrice = tierConfig.price ?? null;
   const billingType = tierConfig.billingType || 'payment';
+  const isPilot = billingType === 'subscription' && !!tierConfig.pilotPrice;
+  const displayPrice = isPilot ? tierConfig.pilotPrice : planPrice;
+  const fullPrice = planPrice;
 
   const isHipaa = HIPAA_TIERS.has(plan);
 
@@ -129,6 +132,10 @@ export default function Checkout() {
           name,
           ...(isHipaa && { company_name: company, hipaa_baa_acknowledged: hipaaConsent }),
           tier: plan,
+          // Apply the pilot coupon for subscription tiers that have a pilotPrice.
+          // Without this, the Lambda defaults to a 14-day trial with no discount,
+          // causing Stripe to show the full price.
+          use_pilot_coupon: isPilot,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
@@ -189,10 +196,18 @@ export default function Checkout() {
                 <p className="text-purple-200 text-xs uppercase tracking-widest font-bold mb-1">Selected Plan</p>
                 <p className="text-xl font-bold">{planName}</p>
               </div>
-              {planPrice !== null && (
+              {displayPrice !== null && (
                 <div className="text-right">
-                  <p className="text-3xl font-black">${planPrice.toLocaleString()}</p>
+                  <p className="text-3xl font-black">${displayPrice.toLocaleString()}</p>
+                  {isPilot && (
+                    <p className="text-purple-200 text-xs line-through">${fullPrice.toLocaleString()}</p>
+                  )}
                   <p className="text-purple-200 text-xs">{billingType === 'payment' ? 'one-time' : '/month'}</p>
+                  {isPilot && (
+                    <p className="text-yellow-300 text-xs font-bold">
+                      {Math.round((1 - tierConfig.pilotPrice / tierConfig.price) * 100)}% pilot discount
+                    </p>
+                  )}
                 </div>
               )}
             </div>

@@ -531,4 +531,57 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     assert.equal(capturedSessionParams.mode, 'payment',
       'hipaa_assessment uses one-time payment mode');
   });
+
+  // ─── Portal checkout regression: use_pilot_coupon must be sent ────────────
+  // When the portal Checkout.jsx form is submitted for a subscription tier that
+  // has a pilotPrice (standard, fintech, healthcare, government), the POST body
+  // must include use_pilot_coupon:true so the Lambda applies the pilot coupon
+  // instead of falling back to the 14-day trial.  Without this, Stripe shows
+  // the full price with no discount — the root cause of the "full price, no
+  // discount" bug reported alongside the No-such-price error.
+
+  test('portal checkout applies pilot coupon when use_pilot_coupon is true', async () => {
+    // Simulates the corrected portal Checkout.jsx POST body for a standard subscription.
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'user@acmecorp.com',
+      name: 'Acme User',
+      use_pilot_coupon: true,
+      successUrl: 'https://portal.securebase.tximhotep.com/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=standard&value=2000',
+      cancelUrl: 'https://portal.securebase.tximhotep.com/pricing',
+    }));
+
+    assert.equal(response.statusCode, 200, `Standard + use_pilot_coupon:true should succeed: ${response.body}`);
+    assert.deepEqual(
+      capturedSessionParams.discounts,
+      [{ coupon: 'pilot_50_off' }],
+      'Portal checkout with use_pilot_coupon:true must apply the pilot coupon',
+    );
+    assert.equal(
+      capturedSessionParams.subscription_data,
+      undefined,
+      'use_pilot_coupon:true must not set trial_period_days (Stripe restriction)',
+    );
+  });
+
+  test('portal checkout falls back to 14-day trial when use_pilot_coupon is absent', async () => {
+    // Simulates an older portal Checkout.jsx POST body that omits use_pilot_coupon.
+    // The Lambda must default to the trial (no coupon), not error out.
+    const response = await handler(makeEvent({
+      tier: 'standard',
+      email: 'user@acmecorp.com',
+      name: 'Acme User',
+      // use_pilot_coupon intentionally omitted
+      successUrl: 'https://portal.securebase.tximhotep.com/thank-you?session_id={CHECKOUT_SESSION_ID}',
+      cancelUrl: 'https://portal.securebase.tximhotep.com/pricing',
+    }));
+
+    assert.equal(response.statusCode, 200, `Standard without use_pilot_coupon should succeed: ${response.body}`);
+    assert.equal(capturedSessionParams.discounts, undefined, 'No coupon when use_pilot_coupon is absent');
+    assert.equal(
+      capturedSessionParams.subscription_data?.trial_period_days,
+      14,
+      'Absent use_pilot_coupon must fall back to 14-day trial',
+    );
+  });
 });
