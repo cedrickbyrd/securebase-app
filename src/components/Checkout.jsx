@@ -93,9 +93,11 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Resolve plan — prefer URL params, fall back to attribution-based pilot pricing.
+  // Resolve plan — prefer URL params and normalize legacy aliases.
   const pilotPricing = getPilotPricing();
-  const rawPlan = searchParams.get('plan') || (pilotPricing ? 'pilot' : 'standard');
+  const requestedPlan = searchParams.get('plan') || 'standard';
+  // Legacy alias: `plan=pilot` should behave like Standard with pilot discounting.
+  const rawPlan = requestedPlan === 'pilot' ? 'standard' : requestedPlan;
 
   if (SALES_ONLY_PLANS[rawPlan]) {
     const salesPlan = SALES_ONLY_PLANS[rawPlan];
