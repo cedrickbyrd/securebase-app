@@ -22,6 +22,17 @@ import { trackCheckoutStarted } from '../utils/analytics';
 
 const KNOWN_PLANS = Object.keys(PRICING_TIERS);
 
+const HIPAA_TIERS = new Set(['healthcare', 'hipaa_assessment']);
+
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com',
+  'outlook.com', 'live.com', 'icloud.com', 'me.com', 'aol.com',
+  'protonmail.com', 'proton.me', 'mail.com', 'zoho.com',
+]);
+
+const isPersonalEmail = (addr) =>
+  FREE_EMAIL_DOMAINS.has((addr || '').split('@')[1]?.toLowerCase() || '');
+
 // Map known URL aliases → canonical tier keys accepted by /api/checkout.
 // Handles stale marketing links, legacy plan names, and third-party integrations.
 const TIER_ALIASES = {
@@ -36,6 +47,8 @@ export default function Checkout() {
   const [searchParams] = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [hipaaConsent, setHipaaConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -90,10 +103,18 @@ export default function Checkout() {
   const planPrice = tierConfig.price ?? null;
   const billingType = tierConfig.billingType || 'payment';
 
+  const isHipaa = HIPAA_TIERS.has(plan);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (isHipaa) {
+      if (!company.trim()) { setError('Organization name is required.'); setLoading(false); return; }
+      if (isPersonalEmail(email)) { setError('A work email is required for HIPAA enrollment.'); setLoading(false); return; }
+      if (!hipaaConsent) { setError('You must acknowledge the HIPAA BAA.'); setLoading(false); return; }
+    }
 
     trackCheckoutStarted({ tier: plan, ...(planPrice !== null && { value: planPrice }), method: 'form' });
 
@@ -106,6 +127,7 @@ export default function Checkout() {
         body: JSON.stringify({
           email,
           name,
+          ...(isHipaa && { company_name: company, hipaa_baa_acknowledged: hipaaConsent }),
           tier: plan,
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
@@ -221,6 +243,31 @@ export default function Checkout() {
                   className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
                 />
               </div>
+
+              {isHipaa && (
+                <div>
+                  <label htmlFor="checkout-company" className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 ml-1">
+                    Company / Organization Name
+                  </label>
+                  <input id="checkout-company" type="text" placeholder="Acme Health LLC"
+                    value={company} onChange={(e) => setCompany(e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#667eea] outline-none transition-all text-slate-900"
+                  />
+                </div>
+              )}
+
+              {isHipaa && (
+                <div className="flex items-start gap-3 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                  <input id="checkout-hipaa-baa" type="checkbox" checked={hipaaConsent}
+                    onChange={(e) => setHipaaConsent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-teal-600"
+                  />
+                  <label htmlFor="checkout-hipaa-baa" className="text-xs text-teal-800 leading-relaxed">
+                    I acknowledge that by proceeding I am entering into SecureBase's Business Associate Agreement (BAA)
+                    and confirm that my organization handles Protected Health Information (PHI) subject to HIPAA.
+                  </label>
+                </div>
+              )}
 
               {error && (
                 <p className="text-red-600 text-sm font-semibold bg-red-50 border border-red-100 p-3 rounded-lg">
