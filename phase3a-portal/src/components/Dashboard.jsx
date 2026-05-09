@@ -6,6 +6,7 @@ import { logoutDemo } from '../services/jwtService';
 import NotificationBell from './NotificationBell';
 import { ToastContainer } from './NotificationToast';
 import BRANDING from '../config/branding';
+import { PORTAL_NARRATIVE } from '../content/portalNarrative';
 import { useDemoCustomer } from '../hooks/useDemoCustomer';
 import DemoCustomerIndicator from './DemoCustomerIndicator';
 import { CUSTOMER_TIERS } from '../config/customerTiers';
@@ -131,8 +132,8 @@ function Dashboard() {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <h1>Dashboard</h1>
-            <p>Welcome back to {BRANDING.productShortName}</p>
+            <h1>{PORTAL_NARRATIVE.dashboardHeadline}</h1>
+            <p>Welcome back to {BRANDING.productShortName} · {PORTAL_NARRATIVE.platformTitle}</p>
           </div>
           <div className="header-right">
             <NotificationBell onCriticalAlert={handleCriticalAlert} />
@@ -145,6 +146,10 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="dashboard-main">
+        <section className="narrative-banner">
+          <p className="narrative-banner__eyebrow">{PORTAL_NARRATIVE.platformTitle}</p>
+          <h2>{PORTAL_NARRATIVE.dashboardSubheadline}</h2>
+        </section>
         {/* Demo Customer Indicator */}
         {isDemoMode && customer && customerIndex !== null && (
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />

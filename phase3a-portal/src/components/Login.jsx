@@ -4,6 +4,7 @@ import { apiService } from '../services/apiService';
 import { loginDemo } from '../services/jwtService';
 import BRANDING from '../config/branding';
 import { trackPageView, trackDemoLogin, incrementPagesViewed } from '../utils/analytics';
+import { PORTAL_NARRATIVE } from '../content/portalNarrative';
 import './Login.css';
 
 const DEMO_EMAIL = 'demo@securebase.tximhotep.com';
@@ -207,10 +208,10 @@ function Login({ setAuth }) {
                 margin: '0 0 0.6rem 0',
                 lineHeight: '1.2',
               }}>
-                🛡️ See Your AWS Compliance Score<br />in 60 Seconds
+                🛡️ {PORTAL_NARRATIVE.platformTitle}
               </h1>
               <p style={{ fontSize: '1rem', color: '#6b7280', margin: 0 }}>
-                Interactive demo with real SOC 2 &amp; HIPAA data — no account needed
+                {PORTAL_NARRATIVE.demoPromise}
               </p>
             </div>
 
@@ -612,7 +613,7 @@ function Login({ setAuth }) {
               </svg>
             </div>
             <h1>{BRANDING.productName}</h1>
-            <p className="subtitle">{isDemo ? '🎯 Demo Environment' : 'Customer Portal'}</p>
+            <p className="subtitle">{isDemo ? `🎯 ${PORTAL_NARRATIVE.platformTitle}` : PORTAL_NARRATIVE.platformTagline}</p>
           </div>
 
           {step === 'credentials' && (
