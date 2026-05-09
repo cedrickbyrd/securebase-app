@@ -497,7 +497,7 @@ jobs:
             echo "   Got: ${HTTP_BODY}"
             exit 1
           fi
-          if ! echo "${HTTP_ERROR}" | grep -qi "tier is required\|valid tiers"; then
+          if ! echo "${HTTP_ERROR}" | grep -qiE "tier is required|valid tiers"; then
             echo "❌ Response error field does not match expected tier validation semantics"
             echo "   Got error: ${HTTP_ERROR}"
             exit 1
@@ -510,12 +510,16 @@ jobs:
         run: |
           set -e
           ENDPOINT="${CHECKOUT_ENDPOINT_URL}"
+          PROBE_NAME="HIPAA E2E Probe"
+          PROBE_COMPANY="Acme Health"
           PERSONAL_DOMAINS=(gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com)
           for domain in "${PERSONAL_DOMAINS[@]}"; do
             echo "── POST ${ENDPOINT} for HIPAA tier with personal email domain ${domain} (expect 400) ──"
             PAYLOAD=$(jq -nc \
               --arg email "hipaa-test@${domain}" \
-              '{tier:"hipaa_assessment",email:$email,name:"HIPAA E2E Probe",company_name:"Acme Health",hipaa_baa_acknowledged:true}')
+              --arg name "${PROBE_NAME}" \
+              --arg company "${PROBE_COMPANY}" \
+              '{tier:"hipaa_assessment",email:$email,name:$name,company_name:$company,hipaa_baa_acknowledged:true}')
             HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
               -X POST "${ENDPOINT}" \
               -H "Content-Type: application/json" \
@@ -546,7 +550,9 @@ jobs:
 
           echo "── POST ${ENDPOINT} for HIPAA tier without BAA acknowledgment (expect 400) ──"
           BAA_PAYLOAD=$(jq -nc \
-            '{tier:"hipaa_assessment",email:"hipaa-test@acmehealth.com",name:"HIPAA E2E Probe",company_name:"Acme Health",hipaa_baa_acknowledged:false}')
+            --arg name "${PROBE_NAME}" \
+            --arg company "${PROBE_COMPANY}" \
+            '{tier:"hipaa_assessment",email:"hipaa-test@acmehealth.com",name:$name,company_name:$company,hipaa_baa_acknowledged:false}')
           BAA_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
             -X POST "${ENDPOINT}" \
             -H "Content-Type: application/json" \
