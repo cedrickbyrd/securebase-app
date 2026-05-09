@@ -68,6 +68,30 @@
   padding: 2rem;
 }
 
+.narrative-banner {
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  color: #f8fafc;
+}
+
+.narrative-banner__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.narrative-banner h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
