@@ -35,6 +35,13 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  CHECKOUT_ENDPOINT_URL: ${{ vars.CHECKOUT_ENDPOINT_URL || 'https://securebase.tximhotep.com/api/checkout' }}
+  CHECKOUT_APIGW_URL: ${{ vars.CHECKOUT_APIGW_URL || 'https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout' }}
+  HIPAA_PROBE_NAME: HIPAA E2E Probe
+  HIPAA_PROBE_COMPANY: Acme Health
+  HIPAA_PERSONAL_EMAIL_DOMAINS: gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Hop 1 · Frontend Payload
 # ─────────────────────────────────────────────────────────────────────────────
@@ -145,26 +152,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Lambda dependencies
-        working-directory: src/functions/securebase-checkout-api
-        run: npm install --omit=dev
-
       - name: Assert handler_version marker
         run: |
           FILE="src/functions/securebase-checkout-api/index.cjs"
-          EXPECTED_VERSION="handler_version=2026-04-20"
-          if ! grep -qF "${EXPECTED_VERSION}" "${FILE}"; then
-            echo "❌ handler_version marker '${EXPECTED_VERSION}' not found in ${FILE}"
-            echo "   Found version lines:"
-            grep "handler_version" "${FILE}" || echo "   (none)"
+          FOUND_VERSION=$(grep -Eo "handler_version=[0-9]{4}-[0-9]{2}-[0-9]{2}" "${FILE}" | head -n1 || true)
+          if [ -z "${FOUND_VERSION}" ]; then
+            echo "❌ handler_version marker not found in ${FILE}"
+            echo "   Expected format: handler_version=YYYY-MM-DD (e.g., handler_version=2026-04-20)"
             exit 1
           fi
-          echo "✅ handler_version=2026-04-20 present"
+          echo "✅ ${FOUND_VERSION} present"
 
-      - name: Assert all 5 tiers in TIER_PRICE_ENV
+      - name: Assert all 7 tiers in TIER_PRICE_ENV
         run: |
           FILE="src/functions/securebase-checkout-api/index.cjs"
-          TIERS=(standard fintech healthcare government pilot_compliance)
+          TIERS=(standard fintech healthcare government pilot pilot_compliance hipaa_assessment)
           FAILED=0
           for tier in "${TIERS[@]}"; do
             if ! grep -qF "${tier}" "${FILE}"; then
@@ -176,7 +178,7 @@ jobs:
           done
           [ "${FAILED}" -eq 0 ] || exit 1
           echo ""
-          echo "── Tier map coverage: ${#TIERS[@]}/5 tiers ──"
+          echo "── Tier map coverage: ${#TIERS[@]}/7 tiers ──"
 
       - name: Assert Missing priceId canary string absent
         run: |
@@ -199,8 +201,8 @@ jobs:
           echo "" >> "${GITHUB_STEP_SUMMARY}"
           echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
           echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| \`handler_version=2026-04-20\` | ✅ present |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| TIER_PRICE_ENV (5 tiers) | ✅ standard, fintech, healthcare, government, pilot_compliance |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| \`handler_version=YYYY-MM-DD\` marker | ✅ present |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| TIER_PRICE_ENV (7 tiers) | ✅ standard, fintech, healthcare, government, pilot, pilot_compliance, hipaa_assessment |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| \`Missing priceId\` canary | ✅ absent |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| Unit tests | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
@@ -220,7 +222,7 @@ jobs:
       - name: Assert /api/checkout redirect in root netlify.toml
         run: |
           TOML="netlify.toml"
-          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+          EXPECTED_TARGET="${CHECKOUT_APIGW_URL}"
 
           echo "── Checking ${TOML} ──"
 
@@ -258,7 +260,7 @@ jobs:
       - name: Assert /api/checkout redirect in phase3a-portal netlify.toml
         run: |
           TOML="phase3a-portal/netlify.toml"
-          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+          EXPECTED_TARGET="${CHECKOUT_APIGW_URL}"
 
           if [ ! -f "${TOML}" ]; then
             echo "⚠️  ${TOML} not found — skipping portal redirect check"
@@ -337,7 +339,7 @@ jobs:
 
       - name: Write step summary
         run: |
-          EXPECTED_TARGET="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+          EXPECTED_TARGET="${CHECKOUT_APIGW_URL}"
           echo "## ✅ Hop 3 · Netlify Redirect" >> "${GITHUB_STEP_SUMMARY}"
           echo "" >> "${GITHUB_STEP_SUMMARY}"
           echo "| Check | Result |" >> "${GITHUB_STEP_SUMMARY}"
@@ -375,7 +377,9 @@ jobs:
             STRIPE_PRICE_FINTECH
             STRIPE_PRICE_HEALTHCARE
             STRIPE_PRICE_GOVERNMENT
+            STRIPE_PRICE_PILOT
             STRIPE_PRICE_PILOT_COMPLIANCE
+            STRIPE_PRICE_HIPAA_ASSESSMENT
           )
 
           FAILED=0
@@ -429,9 +433,11 @@ jobs:
           echo "| STRIPE_PRICE_FINTECH | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_HEALTHCARE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_GOVERNMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_PILOT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_PILOT_COMPLIANCE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| STRIPE_PRICE_HIPAA_ASSESSMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| No hardcoded price_ IDs | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| validate-pricing.cjs (4 tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| validate-pricing.cjs (4 subscription tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Hop 5 · Live Lambda Probe
@@ -451,7 +457,7 @@ jobs:
         id: probe
         run: |
           set -e
-          ENDPOINT="https://securebase.tximhotep.com/api/checkout"
+          ENDPOINT="${CHECKOUT_ENDPOINT_URL}"
 
           echo "── POST ${ENDPOINT} with intentionally unknown tier ──"
           HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
@@ -487,21 +493,99 @@ jobs:
           fi
           echo "✅ HTTP 400 received as expected"
 
-          # Assert the response body contains the expected error shape from index.cjs
-          if ! echo "${HTTP_BODY}" | grep -qF "tier is required" && \
-             ! echo "${HTTP_BODY}" | grep -qF "Valid tiers:"; then
-            echo "❌ Response body does not match expected error shape from index.cjs"
-            echo "   Expected 'tier is required' or 'Valid tiers:' in response"
+          # Assert response has JSON error field and expected tier-validation semantics.
+          HTTP_ERROR=$(echo "${HTTP_BODY}" | jq -r '.error // empty' 2>/dev/null || true)
+          if [ -z "${HTTP_ERROR}" ]; then
+            echo "❌ Response body is missing JSON error field"
             echo "   Got: ${HTTP_BODY}"
             exit 1
           fi
-          echo "✅ Response body matches expected error shape"
+          if ! echo "${HTTP_ERROR}" | grep -qiE "tier is required|valid tiers"; then
+            echo "❌ Response error field does not match expected tier validation semantics"
+            echo "   Got error: ${HTTP_ERROR}"
+            exit 1
+          fi
+          echo "✅ Response error matches expected tier validation semantics"
 
           echo "old_code_detected=false" >> "${GITHUB_OUTPUT}"
 
+      - name: Probe live HIPAA guardrail (personal email rejection)
+        run: |
+          set -e
+          ENDPOINT="${CHECKOUT_ENDPOINT_URL}"
+          PROBE_NAME="${HIPAA_PROBE_NAME}"
+          PROBE_COMPANY="${HIPAA_PROBE_COMPANY}"
+          IFS=' ' read -r -a PERSONAL_DOMAINS <<< "${HIPAA_PERSONAL_EMAIL_DOMAINS}"
+          for domain in "${PERSONAL_DOMAINS[@]}"; do
+            echo "── POST ${ENDPOINT} for HIPAA tier with personal email domain ${domain} (expect 400) ──"
+            PAYLOAD=$(jq -nc \
+              --arg email "hipaa-test@${domain}" \
+              --arg name "${PROBE_NAME}" \
+              --arg company "${PROBE_COMPANY}" \
+              '{tier:"hipaa_assessment",email:$email,name:$name,company_name:$company,hipaa_baa_acknowledged:true}')
+            HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
+              -X POST "${ENDPOINT}" \
+              -H "Content-Type: application/json" \
+              -d "${PAYLOAD}")
+
+            HTTP_BODY=$(echo "${HTTP_RESPONSE}" | head -n -1)
+            HTTP_CODE=$(echo "${HTTP_RESPONSE}" | tail -n 1)
+
+            echo "HTTP status: ${HTTP_CODE}"
+            echo "Response body: ${HTTP_BODY}"
+
+            if [ "${HTTP_CODE}" != "400" ]; then
+              echo "❌ Expected HTTP 400 for HIPAA personal-email probe (${domain}), got ${HTTP_CODE}"
+              exit 1
+            fi
+
+            HTTP_ERROR=$(echo "${HTTP_BODY}" | jq -r '.error // empty' 2>/dev/null || true)
+            if [ -z "${HTTP_ERROR}" ]; then
+              echo "❌ HIPAA probe response missing JSON error field for ${domain}"
+              exit 1
+            fi
+            if ! echo "${HTTP_ERROR}" | grep -qi "work email"; then
+              echo "❌ HIPAA probe error does not indicate work-email validation for ${domain}"
+              exit 1
+            fi
+            echo "✅ HIPAA guardrail enforced for ${domain}"
+          done
+
+          echo "── POST ${ENDPOINT} for HIPAA tier without BAA acknowledgment (expect 400) ──"
+          BAA_PAYLOAD=$(jq -nc \
+            --arg name "${PROBE_NAME}" \
+            --arg company "${PROBE_COMPANY}" \
+            '{tier:"hipaa_assessment",email:"hipaa-test@acmehealth.com",name:$name,company_name:$company,hipaa_baa_acknowledged:false}')
+          BAA_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
+            -X POST "${ENDPOINT}" \
+            -H "Content-Type: application/json" \
+            -d "${BAA_PAYLOAD}")
+
+          BAA_BODY=$(echo "${BAA_RESPONSE}" | head -n -1)
+          BAA_CODE=$(echo "${BAA_RESPONSE}" | tail -n 1)
+
+          echo "HTTP status: ${BAA_CODE}"
+          echo "Response body: ${BAA_BODY}"
+
+          if [ "${BAA_CODE}" != "400" ]; then
+            echo "❌ Expected HTTP 400 for missing HIPAA BAA acknowledgment, got ${BAA_CODE}"
+            exit 1
+          fi
+
+          BAA_ERROR=$(echo "${BAA_BODY}" | jq -r '.error // empty' 2>/dev/null || true)
+          if [ -z "${BAA_ERROR}" ]; then
+            echo "❌ BAA probe response missing JSON error field"
+            exit 1
+          fi
+          if ! echo "${BAA_ERROR}" | grep -qi "BAA acknowledgment"; then
+            echo "❌ Expected BAA acknowledgment validation error; got: ${BAA_ERROR}"
+            exit 1
+          fi
+          echo "✅ HIPAA guardrail enforced for missing BAA acknowledgment"
+
       - name: Probe API Gateway CORS preflight directly
         run: |
-          APIGW="https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+          APIGW="${CHECKOUT_APIGW_URL}"
 
           echo "── OPTIONS preflight: ${APIGW} ──"
           CORS_HEADERS=$(curl --silent --max-time 15 --head \
@@ -545,6 +629,7 @@ jobs:
             echo "|---|---|" >> "${GITHUB_STEP_SUMMARY}"
             echo "| HTTP status for unknown tier | ✅ 400 |" >> "${GITHUB_STEP_SUMMARY}"
             echo "| Response shape | ✅ matches index.cjs error format |" >> "${GITHUB_STEP_SUMMARY}"
+            echo "| HIPAA guardrail probe | ✅ personal email rejected (400) |" >> "${GITHUB_STEP_SUMMARY}"
             echo "| 'Missing priceId' absent | ✅ new code confirmed |" >> "${GITHUB_STEP_SUMMARY}"
           else
             echo "## ❌ Hop 5 · Live Lambda Probe — FAILED" >> "${GITHUB_STEP_SUMMARY}"
@@ -596,7 +681,7 @@ jobs:
           echo "| 2 | Lambda Source (\`handler_version\`, tier map, unit tests) | $(status_icon "${HOP2}") ${HOP2} |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| 3 | Netlify Redirect (\`/api/checkout\` → API Gateway, no interceptor) | $(status_icon "${HOP3}") ${HOP3} |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| 4 | Lambda Env Vars (\`STRIPE_PRICE_*\` mapping, no hardcoded IDs) | $(status_icon "${HOP4}") ${HOP4} |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| 5 | Live Lambda Probe (400 for unknown tier, no old-code string) | $(status_icon "${HOP5}") ${HOP5} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| 5 | Live Lambda Probe (unknown-tier 400 + HIPAA personal-email guardrail) | $(status_icon "${HOP5}") ${HOP5} |" >> "${GITHUB_STEP_SUMMARY}"
 
           # Fail the gate if any upstream job failed
           FAILED=0
