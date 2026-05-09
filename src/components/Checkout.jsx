@@ -102,10 +102,11 @@ export default function Checkout() {
 
   // Resolve plan — prefer URL params, normalize via alias table, default to standard.
   const pilotPricing = getPilotPricing();
-  const requestedPlan = searchParams.get('plan') || 'standard';
-  if (!searchParams.get('plan')) {
+  const planParam = searchParams.get('plan');
+  if (!planParam) {
     console.warn('[Checkout] No plan param in URL; defaulting to "standard".');
   }
+  const requestedPlan = planParam || 'standard';
   const rawPlan = TIER_ALIASES[requestedPlan] ?? requestedPlan;
 
   if (SALES_ONLY_PLANS[rawPlan]) {
