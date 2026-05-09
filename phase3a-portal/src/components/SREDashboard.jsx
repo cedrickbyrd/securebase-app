@@ -1207,8 +1207,8 @@ const SREDashboard = () => {
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-3">
               <div className="text-sm font-medium text-blue-900 mb-1">Selected Query Context</div>
               <ul className="text-xs text-blue-800 space-y-1">
-                {queryResults.map((result, index) => (
-                  <li key={index}>• {result}</li>
+                {queryResults.map((result) => (
+                  <li key={result}>• {result}</li>
                 ))}
               </ul>
             </div>
