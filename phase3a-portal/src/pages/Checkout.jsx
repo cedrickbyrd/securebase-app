@@ -22,6 +22,13 @@ import { trackCheckoutStarted } from '../utils/analytics';
 
 const KNOWN_PLANS = Object.keys(PRICING_TIERS);
 
+// Map known URL aliases → canonical tier keys accepted by /api/checkout.
+// Handles stale marketing links, legacy plan names, and third-party integrations.
+const TIER_ALIASES = {
+  pilot: 'pilot_compliance',  // legacy "Pilot Program" links → Compliance Jumpstart
+  hipaa: 'hipaa_assessment',  // shorthand alias
+};
+
 export default function Checkout() {
   // All hooks must be declared unconditionally before any early returns.
   const navigate = useNavigate();
@@ -32,9 +39,14 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params
+  // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params.
+  // Apply alias normalization so stale links reach a canonical tier key.
   const locationState = location.state || {};
-  const rawPlan = locationState.tier || searchParams.get('plan') || searchParams.get('tier') || 'standard';
+  const requestedPlan = locationState.tier || searchParams.get('plan') || searchParams.get('tier') || 'standard';
+  if (!(locationState.tier || searchParams.get('plan') || searchParams.get('tier'))) {
+    console.warn('[Checkout] No plan/tier provided; defaulting to "standard".');
+  }
+  const rawPlan = TIER_ALIASES[requestedPlan] ?? requestedPlan;
 
   // Compute once at render time; isDemoMode reads env/localStorage/URL which are
   // stable for the lifetime of the page, so this value won't change after mount.

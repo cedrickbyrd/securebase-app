@@ -498,4 +498,37 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
 
     assert.equal(response.statusCode, 200, `Standard tier should not require BAA or company: ${response.body}`);
   });
+
+  // ─── Backwards-compatibility / alias tier tests ───────────────────────────
+
+  test('pilot tier (standalone backwards-compat) uses STRIPE_PRICE_PILOT and subscription mode', async () => {
+    const response = await handler(makeEvent({
+      tier: 'pilot',
+      email: 'test@example.com',
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200, `Standalone pilot tier should succeed: ${response.body}`);
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_pilot',
+      'Standalone pilot tier must use STRIPE_PRICE_PILOT, not the pilot_compliance price');
+    assert.equal(capturedSessionParams.mode, 'subscription',
+      'Standalone pilot tier uses subscription billing');
+  });
+
+  test('hipaa_assessment tier is accepted by the backend', async () => {
+    const response = await handler(makeEvent({
+      tier: 'hipaa_assessment',
+      email: 'doctor@hospital.com',
+      company_name: 'General Hospital',
+      hipaa_baa_acknowledged: true,
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+    }));
+
+    assert.equal(response.statusCode, 200, `hipaa_assessment tier should succeed: ${response.body}`);
+    assert.equal(capturedSessionParams.line_items[0].price, 'price_test_hipaa_assessment');
+    assert.equal(capturedSessionParams.mode, 'payment',
+      'hipaa_assessment uses one-time payment mode');
+  });
 });
