@@ -496,7 +496,7 @@ const SREDashboard = () => {
   };
 
   const queuesWithMessages = dlqMetrics.filter((metric) => metric.depth > 0).length;
-  const selectedRunbook = RUNBOOKS.find((runbook) => runbook.id === activeRunbook) || RUNBOOKS[0];
+  const selectedRunbook = RUNBOOKS.find((runbook) => runbook.id === activeRunbook);
 
   if (loading && !infrastructureMetrics.cpu.current) {
     return (
@@ -1208,7 +1208,7 @@ const SREDashboard = () => {
               <div className="text-sm font-medium text-blue-900 mb-1">Selected Query Context</div>
               <ul className="text-xs text-blue-800 space-y-1">
                 {queryResults.map((result, index) => (
-                  <li key={`${result}-${index}`}>• {result}</li>
+                  <li key={index}>• {result}</li>
                 ))}
               </ul>
             </div>
@@ -1277,7 +1277,7 @@ const SREDashboard = () => {
                   setRunbookStep(0);
                 }}
                 className={`w-full text-left p-3 rounded border ${
-                  selectedRunbook.id === runbook.id
+                  activeRunbook === runbook.id
                     ? 'bg-purple-50 border-purple-300'
                     : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                 }`}
@@ -1293,44 +1293,52 @@ const SREDashboard = () => {
             ))}
           </div>
           <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">{selectedRunbook.title}</h3>
-              <div className="text-xs text-gray-600">
-                Step {Math.min(runbookStep + 1, selectedRunbook.steps.length)} of {selectedRunbook.steps.length}
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">Trigger: {selectedRunbook.trigger}</p>
-            <div className="space-y-2 mb-4">
-              {selectedRunbook.steps.map((step, index) => (
-                <div
-                  key={`${selectedRunbook.id}-step-${index}`}
-                  className={`p-3 rounded border text-sm ${
-                    index === runbookStep
-                      ? 'bg-purple-50 border-purple-300 text-purple-900'
-                      : 'bg-gray-50 border-gray-200 text-gray-700'
-                  }`}
-                >
-                  <span className="font-semibold mr-2">{index + 1}.</span>
-                  {step}
+            {selectedRunbook ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedRunbook.title}</h3>
+                  <div className="text-xs text-gray-600">
+                    Step {runbookStep + 1} of {selectedRunbook.steps.length}
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setRunbookStep((current) => Math.max(0, current - 1))}
-                disabled={runbookStep === 0}
-                className="px-3 py-2 text-sm rounded bg-gray-100 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous Step
-              </button>
-              <button
-                onClick={() => setRunbookStep((current) => Math.min(selectedRunbook.steps.length - 1, current + 1))}
-                disabled={runbookStep >= selectedRunbook.steps.length - 1}
-                className="px-3 py-2 text-sm rounded bg-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next Step
-              </button>
-            </div>
+                <p className="text-sm text-gray-600 mb-4">Trigger: {selectedRunbook.trigger}</p>
+                <div className="space-y-2 mb-4">
+                  {selectedRunbook.steps.map((step, index) => (
+                    <div
+                      key={`${selectedRunbook.id}-step-${index}`}
+                      className={`p-3 rounded border text-sm ${
+                        index === runbookStep
+                          ? 'bg-purple-50 border-purple-300 text-purple-900'
+                          : 'bg-gray-50 border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      <span className="font-semibold mr-2">{index + 1}.</span>
+                      {step}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setRunbookStep((current) => Math.max(0, current - 1))}
+                    disabled={runbookStep === 0}
+                    className="px-3 py-2 text-sm rounded bg-gray-100 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous Step
+                  </button>
+                  <button
+                    onClick={() => setRunbookStep((current) => Math.min(selectedRunbook.steps.length - 1, current + 1))}
+                    disabled={runbookStep >= selectedRunbook.steps.length - 1}
+                    className="px-3 py-2 text-sm rounded bg-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next Step
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="h-full min-h-[320px] flex items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-600">
+                Select a runbook to begin guided incident response.
+              </div>
+            )}
           </div>
         </div>
       </div>
