@@ -131,7 +131,7 @@ export const CTA_VARIANTS = {
     title: 'Ready for Your Real Infrastructure?',
     message: 'Get the same compliance automation for your AWS account.',
     buttons: [
-      { text: 'Start 30-Day Free Trial', style: 'primary', href: '/checkout', track: 'demo_cta_trial' },
+      { text: 'Start 30-Day Free Trial', style: 'primary', href: '/checkout?plan=standard', track: 'demo_cta_trial' },
       { text: 'Talk to Sales', style: 'secondary', href: '/pricing', track: 'demo_cta_sales' },
     ],
   },
