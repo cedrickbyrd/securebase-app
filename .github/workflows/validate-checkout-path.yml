@@ -430,7 +430,7 @@ jobs:
           echo "| STRIPE_PRICE_PILOT_COMPLIANCE | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| STRIPE_PRICE_HIPAA_ASSESSMENT | ✅ mapped |" >> "${GITHUB_STEP_SUMMARY}"
           echo "| No hardcoded price_ IDs | ✅ |" >> "${GITHUB_STEP_SUMMARY}"
-          echo "| validate-pricing.cjs (4 tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| validate-pricing.cjs (4 subscription tiers) | ✅ passed |" >> "${GITHUB_STEP_SUMMARY}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Hop 5 · Live Lambda Probe
@@ -502,29 +502,31 @@ jobs:
         run: |
           set -e
           ENDPOINT="https://securebase.tximhotep.com/api/checkout"
+          PERSONAL_DOMAINS=(gmail.com yahoo.com hotmail.com)
+          for domain in "${PERSONAL_DOMAINS[@]}"; do
+            echo "── POST ${ENDPOINT} for HIPAA tier with personal email domain ${domain} (expect 400) ──"
+            HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
+              -X POST "${ENDPOINT}" \
+              -H "Content-Type: application/json" \
+              -d "{\"tier\":\"hipaa_assessment\",\"email\":\"hipaa-test@${domain}\",\"name\":\"HIPAA E2E Probe\",\"company_name\":\"Acme Health\",\"hipaa_baa_acknowledged\":true}")
 
-          echo "── POST ${ENDPOINT} for HIPAA tier with personal email (expect 400) ──"
-          HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
-            -X POST "${ENDPOINT}" \
-            -H "Content-Type: application/json" \
-            -d '{"tier":"hipaa_assessment","email":"hipaa-test@gmail.com","name":"HIPAA E2E Probe","company_name":"Acme Health","hipaa_baa_acknowledged":true}')
+            HTTP_BODY=$(echo "${HTTP_RESPONSE}" | head -n -1)
+            HTTP_CODE=$(echo "${HTTP_RESPONSE}" | tail -n 1)
 
-          HTTP_BODY=$(echo "${HTTP_RESPONSE}" | head -n -1)
-          HTTP_CODE=$(echo "${HTTP_RESPONSE}" | tail -n 1)
+            echo "HTTP status: ${HTTP_CODE}"
+            echo "Response body: ${HTTP_BODY}"
 
-          echo "HTTP status: ${HTTP_CODE}"
-          echo "Response body: ${HTTP_BODY}"
+            if [ "${HTTP_CODE}" != "400" ]; then
+              echo "❌ Expected HTTP 400 for HIPAA personal-email probe (${domain}), got ${HTTP_CODE}"
+              exit 1
+            fi
 
-          if [ "${HTTP_CODE}" != "400" ]; then
-            echo "❌ Expected HTTP 400 for HIPAA personal-email probe, got ${HTTP_CODE}"
-            exit 1
-          fi
-
-          if ! echo "${HTTP_BODY}" | grep -qi "work email"; then
-            echo "❌ HIPAA probe response missing expected work-email validation message"
-            exit 1
-          fi
-          echo "✅ HIPAA guardrail enforced: personal e-mail rejected"
+            if ! echo "${HTTP_BODY}" | grep -qi "work email"; then
+              echo "❌ HIPAA probe response missing expected work-email validation message for ${domain}"
+              exit 1
+            fi
+            echo "✅ HIPAA guardrail enforced for ${domain}"
+          done
 
       - name: Probe API Gateway CORS preflight directly
         run: |
