@@ -151,7 +151,7 @@ jobs:
           FOUND_VERSION=$(grep -Eo "handler_version=[0-9]{4}-[0-9]{2}-[0-9]{2}" "${FILE}" | head -n1 || true)
           if [ -z "${FOUND_VERSION}" ]; then
             echo "❌ handler_version marker not found in ${FILE}"
-            echo "   Expected format: handler_version=YYYY-MM-DD"
+            echo "   Expected format: handler_version=YYYY-MM-DD (e.g., handler_version=2026-04-20)"
             exit 1
           fi
           echo "✅ ${FOUND_VERSION} present"
@@ -502,7 +502,7 @@ jobs:
         run: |
           set -e
           ENDPOINT="https://securebase.tximhotep.com/api/checkout"
-          PERSONAL_DOMAINS=(gmail.com yahoo.com hotmail.com)
+          PERSONAL_DOMAINS=(gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com)
           for domain in "${PERSONAL_DOMAINS[@]}"; do
             echo "── POST ${ENDPOINT} for HIPAA tier with personal email domain ${domain} (expect 400) ──"
             HTTP_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
@@ -527,6 +527,29 @@ jobs:
             fi
             echo "✅ HIPAA guardrail enforced for ${domain}"
           done
+
+          echo "── POST ${ENDPOINT} for HIPAA tier without BAA acknowledgment (expect 400) ──"
+          BAA_RESPONSE=$(curl --silent --max-time 30 --write-out "\n%{http_code}" \
+            -X POST "${ENDPOINT}" \
+            -H "Content-Type: application/json" \
+            -d '{"tier":"hipaa_assessment","email":"hipaa-test@acmehealth.com","name":"HIPAA E2E Probe","company_name":"Acme Health","hipaa_baa_acknowledged":false}')
+
+          BAA_BODY=$(echo "${BAA_RESPONSE}" | head -n -1)
+          BAA_CODE=$(echo "${BAA_RESPONSE}" | tail -n 1)
+
+          echo "HTTP status: ${BAA_CODE}"
+          echo "Response body: ${BAA_BODY}"
+
+          if [ "${BAA_CODE}" != "400" ]; then
+            echo "❌ Expected HTTP 400 for missing HIPAA BAA acknowledgment, got ${BAA_CODE}"
+            exit 1
+          fi
+
+          if ! echo "${BAA_BODY}" | grep -qi "BAA acknowledgment"; then
+            echo "❌ Expected BAA acknowledgment validation error"
+            exit 1
+          fi
+          echo "✅ HIPAA guardrail enforced for missing BAA acknowledgment"
 
       - name: Probe API Gateway CORS preflight directly
         run: |
