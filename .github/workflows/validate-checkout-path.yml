@@ -36,8 +36,11 @@ permissions:
   pull-requests: write
 
 env:
-  CHECKOUT_ENDPOINT_URL: https://securebase.tximhotep.com/api/checkout
-  CHECKOUT_APIGW_URL: https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout
+  CHECKOUT_ENDPOINT_URL: ${{ vars.CHECKOUT_ENDPOINT_URL || 'https://securebase.tximhotep.com/api/checkout' }}
+  CHECKOUT_APIGW_URL: ${{ vars.CHECKOUT_APIGW_URL || 'https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout' }}
+  HIPAA_PROBE_NAME: HIPAA E2E Probe
+  HIPAA_PROBE_COMPANY: Acme Health
+  HIPAA_PERSONAL_EMAIL_DOMAINS: gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Hop 1 · Frontend Payload
@@ -510,9 +513,9 @@ jobs:
         run: |
           set -e
           ENDPOINT="${CHECKOUT_ENDPOINT_URL}"
-          PROBE_NAME="HIPAA E2E Probe"
-          PROBE_COMPANY="Acme Health"
-          PERSONAL_DOMAINS=(gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com)
+          PROBE_NAME="${HIPAA_PROBE_NAME}"
+          PROBE_COMPANY="${HIPAA_PROBE_COMPANY}"
+          IFS=' ' read -r -a PERSONAL_DOMAINS <<< "${HIPAA_PERSONAL_EMAIL_DOMAINS}"
           for domain in "${PERSONAL_DOMAINS[@]}"; do
             echo "── POST ${ENDPOINT} for HIPAA tier with personal email domain ${domain} (expect 400) ──"
             PAYLOAD=$(jq -nc \
