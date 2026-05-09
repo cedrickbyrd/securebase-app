@@ -42,10 +42,11 @@ export default function Checkout() {
   // Prefer location.state (set by Pricing.jsx navigate) then fall back to query params.
   // Apply alias normalization so stale links reach a canonical tier key.
   const locationState = location.state || {};
-  const requestedPlan = locationState.tier || searchParams.get('plan') || searchParams.get('tier') || 'standard';
-  if (!(locationState.tier || searchParams.get('plan') || searchParams.get('tier'))) {
+  const planSource = locationState.tier || searchParams.get('plan') || searchParams.get('tier');
+  if (!planSource) {
     console.warn('[Checkout] No plan/tier provided; defaulting to "standard".');
   }
+  const requestedPlan = planSource || 'standard';
   const rawPlan = TIER_ALIASES[requestedPlan] ?? requestedPlan;
 
   // Compute once at render time; isDemoMode reads env/localStorage/URL which are
