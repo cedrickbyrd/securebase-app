@@ -16,6 +16,12 @@ permissions:
   contents: read
   actions: write
 
+env:
+  FUNCTION_NAME: securebase-checkout-api
+  REST_API_ID: 4f0i48ueak
+  STAGE_NAME: prod
+  CHECKOUT_RESOURCE_ID: 0zibo7
+
 jobs:
   deploy-lambda:
     name: 'Deploy · Checkout Lambda'
@@ -62,23 +68,177 @@ jobs:
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-code \
-            --function-name securebase-checkout-api \
+            --function-name "$FUNCTION_NAME" \
             --zip-file fileb://lambda-checkout.zip
           echo "Lambda code updated"
           aws lambda wait function-updated \
-            --function-name securebase-checkout-api
+            --function-name "$FUNCTION_NAME"
           echo "Lambda update complete"
+
+      - name: Verify $LATEST
+        id: verify_latest
+        run: |
+          VERSION=$(aws lambda get-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --query 'Version' \
+            --output text)
+          echo "Lambda Version: ${VERSION}"
+          if [ "$VERSION" != "\$LATEST" ]; then
+            echo "verify_latest=FAIL" >> "$GITHUB_ENV"
+            echo "::error::Lambda is not at \$LATEST (got '${VERSION}'). Ensure update-function-code targets the unpublished \$LATEST alias."
+            exit 1
+          fi
+          echo "verify_latest=PASS" >> "$GITHUB_ENV"
+          echo "Lambda is at \$LATEST"
+
+      - name: Verify environment variables
+        id: verify_env_vars
+        run: |
+          REQUIRED_VARS=(
+            STRIPE_PRICE_STANDARD
+            STRIPE_PRICE_FINTECH
+            STRIPE_PRICE_HEALTHCARE
+            STRIPE_PRICE_GOVERNMENT
+            STRIPE_PRICE_PILOT_COMPLIANCE
+            STRIPE_PRICE_HIPAA_ASSESSMENT
+            STRIPE_PILOT_COUPON_ID
+            STRIPE_SECRET_KEY
+          )
+
+          ENV_JSON=$(aws lambda get-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --query 'Environment.Variables' \
+            --output json)
+          echo "Lambda environment variables retrieved"
+
+          MISSING=()
+          for VAR in "${REQUIRED_VARS[@]}"; do
+            VALUE=$(echo "$ENV_JSON" | jq -r --arg key "$VAR" '.[$key] // empty')
+            if [ -z "$VALUE" ]; then
+              MISSING+=("$VAR")
+            fi
+          done
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "verify_env_vars=FAIL" >> "$GITHUB_ENV"
+            echo "missing_vars=${MISSING[*]}" >> "$GITHUB_ENV"
+            echo "::error::Missing required Lambda environment variables: ${MISSING[*]}"
+            exit 1
+          fi
+
+          echo "verify_env_vars=PASS" >> "$GITHUB_ENV"
+          echo "All required environment variables are set"
+
+      - name: Verify API Gateway integration
+        id: verify_apigw
+        run: |
+          INTEGRATION_URI=$(aws apigateway get-integration \
+            --rest-api-id "$REST_API_ID" \
+            --resource-id "$CHECKOUT_RESOURCE_ID" \
+            --http-method POST \
+            --query 'uri' \
+            --output text)
+          echo "Current integration URI: ${INTEGRATION_URI}"
+
+          REDEPLOYED=false
+          NEEDS_EXIT=false
+
+          # Check if URI references the correct function
+          if [[ "$INTEGRATION_URI" != *"$FUNCTION_NAME"* ]]; then
+            echo "::error::API Gateway POST /checkout does not point to '${FUNCTION_NAME}'. Current URI: ${INTEGRATION_URI}"
+            echo "Auto-fixing integration URI..."
+            CORRECT_URI="arn:aws:apigateway:${{ secrets.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:function:${FUNCTION_NAME}/invocations"
+            aws apigateway put-integration \
+              --rest-api-id "$REST_API_ID" \
+              --resource-id "$CHECKOUT_RESOURCE_ID" \
+              --http-method POST \
+              --type AWS_PROXY \
+              --integration-http-method POST \
+              --uri "$CORRECT_URI"
+            echo "Integration URI corrected"
+            REDEPLOYED=true
+            NEEDS_EXIT=true
+          fi
+
+          # Check if URI has a version qualifier (e.g. :123/invocations)
+          if [[ "$INTEGRATION_URI" =~ :[0-9]+/invocations$ ]]; then
+            echo "::warning::API Gateway integration URI contains a version qualifier. Auto-fixing to \$LATEST..."
+            FIXED_URI=$(echo "$INTEGRATION_URI" | sed 's/:[0-9]*\/invocations$/\/invocations/')
+            aws apigateway put-integration \
+              --rest-api-id "$REST_API_ID" \
+              --resource-id "$CHECKOUT_RESOURCE_ID" \
+              --http-method POST \
+              --type AWS_PROXY \
+              --integration-http-method POST \
+              --uri "$FIXED_URI"
+            echo "Version qualifier removed from integration URI"
+            REDEPLOYED=true
+          fi
+
+          # Redeploy if any fix was applied
+          if [ "$REDEPLOYED" = "true" ]; then
+            echo "Redeploying API Gateway stage '${STAGE_NAME}'..."
+            aws apigateway create-deployment \
+              --rest-api-id "$REST_API_ID" \
+              --stage-name "$STAGE_NAME" \
+              --description "Auto-fix: corrected checkout Lambda integration URI"
+            echo "API Gateway redeployed"
+          fi
+
+          if [ "$NEEDS_EXIT" = "true" ]; then
+            echo "verify_apigw=FAIL (auto-fixed)" >> "$GITHUB_ENV"
+            echo "::error::API Gateway integration was incorrect and has been auto-fixed. Review the integration and re-run this workflow."
+            exit 1
+          fi
+
+          echo "verify_apigw=PASS" >> "$GITHUB_ENV"
+          echo "API Gateway integration URI is correct"
+
+      - name: Smoke test checkout endpoint
+        id: smoke_test
+        run: |
+          BASE_URL="https://securebase.tximhotep.com/api/checkout"
+          TIERS=(standard fintech pilot_compliance hipaa_assessment)
+          FAILED=()
+
+          for TIER in "${TIERS[@]}"; do
+            echo "--- Smoke test: tier=${TIER} ---"
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL" \
+              -H "Content-Type: application/json" \
+              -d "{\"plan\":\"${TIER}\",\"company_name\":\"CI Smoke Test\",\"hipaa_baa_acknowledged\":true}" \
+              --max-time 30)
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+
+            echo "Tier '${TIER}': HTTP ${HTTP_CODE}"
+            echo "Response body (truncated): ${BODY:0:300}"
+
+            if echo "$BODY" | grep -q "tier is required"; then
+              echo "::error::Smoke test FAILED for tier '${TIER}': response contains 'tier is required'"
+              FAILED+=("$TIER")
+            fi
+          done
+
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "smoke_test=FAIL (${FAILED[*]})" >> "$GITHUB_ENV"
+            echo "::error::Smoke test failed for tiers: ${FAILED[*]}"
+            exit 1
+          fi
+
+          echo "smoke_test=PASS" >> "$GITHUB_ENV"
+          echo "All smoke tests passed"
 
       - name: Verify deployed version
         run: |
           DEPLOYED=$(aws lambda get-function-configuration \
-            --function-name securebase-checkout-api \
+            --function-name "$FUNCTION_NAME" \
             --query 'LastModified' \
             --output text)
           echo "Lambda last modified: ${DEPLOYED}"
 
           QUALIFIER=$(aws lambda get-function-configuration \
-            --function-name securebase-checkout-api \
+            --function-name "$FUNCTION_NAME" \
             --query 'FunctionArn' \
             --output text | grep -oP ':\d+$' || echo "none")
           if [ "$QUALIFIER" != "none" ] && [ -n "$QUALIFIER" ]; then
@@ -102,12 +262,24 @@ jobs:
           retention-days: 7
 
       - name: Write job summary
+        if: always()
         run: |
           echo "# Checkout Lambda Deploy" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Handler version: ${{ env.handler_version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Function: securebase-checkout-api" >> "$GITHUB_STEP_SUMMARY"
-          echo "Triggered by: ${{ github.event_name }} on ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Handler version | \`${{ env.handler_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Function | \`${FUNCTION_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Triggered by | \`${{ github.event_name }}\` on \`${{ github.ref_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Integration Check Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Verify \$LATEST | ${verify_latest:-SKIPPED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Verify env vars | ${verify_env_vars:-SKIPPED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Verify API Gateway integration | ${verify_apigw:-SKIPPED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Smoke test (4 tiers) | ${smoke_test:-SKIPPED} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "validate-checkout-path triggered — check Actions tab for Hop 5 result." >> "$GITHUB_STEP_SUMMARY"
