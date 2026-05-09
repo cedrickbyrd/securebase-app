@@ -540,7 +540,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
   // the full price with no discount — the root cause of the "full price, no
   // discount" bug reported alongside the No-such-price error.
 
-  test('portal checkout: use_pilot_coupon:true on standard applies coupon, not trial', async () => {
+  test('portal checkout applies pilot coupon when use_pilot_coupon is true', async () => {
     // Simulates the corrected portal Checkout.jsx POST body for a standard subscription.
     const response = await handler(makeEvent({
       tier: 'standard',
@@ -564,7 +564,7 @@ describe('securebase-checkout-api price-ID server-side resolution', () => {
     );
   });
 
-  test('portal checkout: absent use_pilot_coupon (legacy portal) falls back to 14-day trial', async () => {
+  test('portal checkout falls back to 14-day trial when use_pilot_coupon is absent', async () => {
     // Simulates an older portal Checkout.jsx POST body that omits use_pilot_coupon.
     // The Lambda must default to the trial (no coupon), not error out.
     const response = await handler(makeEvent({
