@@ -61,6 +61,12 @@ const Pricing = () => {
       return;
     }
 
+    if (plan.key === 'fintech') {
+      trackCTAClick('pricing', plan.key);
+      navigate(`/checkout?plan=fintech`, { state: { tier: 'fintech' } });
+      return;
+    }
+
     // Enterprise tiers → Contact Sales
     if (plan.isEnterprise) {
       trackCTAClick('pricing', plan.key);
