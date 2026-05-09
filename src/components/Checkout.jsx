@@ -93,11 +93,20 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Resolve plan — prefer URL params and normalize legacy aliases.
+  // Map known URL aliases → canonical tier keys accepted by /api/checkout.
+  // Handles stale marketing links, legacy plan names, and third-party integrations.
+  const TIER_ALIASES = {
+    pilot: 'pilot_compliance',  // legacy "Pilot Program" links → Compliance Jumpstart
+    hipaa: 'hipaa_assessment',  // shorthand alias
+  };
+
+  // Resolve plan — prefer URL params, normalize via alias table, default to standard.
   const pilotPricing = getPilotPricing();
   const requestedPlan = searchParams.get('plan') || 'standard';
-  // Legacy alias: `plan=pilot` should behave like Standard with pilot discounting.
-  const rawPlan = requestedPlan === 'pilot' ? 'standard' : requestedPlan;
+  if (!searchParams.get('plan')) {
+    console.warn('[Checkout] No plan param in URL; defaulting to "standard".');
+  }
+  const rawPlan = TIER_ALIASES[requestedPlan] ?? requestedPlan;
 
   if (SALES_ONLY_PLANS[rawPlan]) {
     const salesPlan = SALES_ONLY_PLANS[rawPlan];
