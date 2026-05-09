@@ -11,6 +11,7 @@ import SocialProof from './SocialProof';
 import SignatureBadge from './SignatureBadge';
 import FFIECCATDashboard from './FFIECCATDashboard';
 import FFIECControlMapping from './compliance/FFIECControlMapping';
+import { PORTAL_NARRATIVE } from '../content/portalNarrative';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
 const FFIEC_TIERS = new Set(['fintech_elite']);
@@ -246,8 +247,8 @@ export default function Compliance({ isPublic = false }) {
 
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">SOC 2 Compliance</h1>
-          <p className="text-gray-600">Trust Service Criteria Status</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{PORTAL_NARRATIVE.complianceHeadline}</h1>
+          <p className="text-gray-600">{PORTAL_NARRATIVE.complianceSubheadline}</p>
         </div>
         {!isPublic && (
           <button
@@ -266,7 +267,7 @@ export default function Compliance({ isPublic = false }) {
             <div>
               <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
               <p className="text-purple-200 text-sm mt-1">
-                Answer 5 questions and get an instant audit readiness score sent to your inbox.
+                Answer 5 questions to benchmark audit defensibility and get an instant readiness score sent to your inbox.
               </p>
             </div>
             {!showAssessmentForm && (
@@ -555,4 +556,3 @@ export default function Compliance({ isPublic = false }) {
     </div>
   );
 }
-
