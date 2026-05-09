@@ -133,7 +133,7 @@ function Dashboard() {
         <div className="header-content">
           <div className="header-left">
             <h1>{PORTAL_NARRATIVE.dashboardHeadline}</h1>
-            <p>Welcome back to {BRANDING.productShortName} ({PORTAL_NARRATIVE.platformTitle})</p>
+            <p>Welcome back to {BRANDING.productShortName}</p>
           </div>
           <div className="header-right">
             <NotificationBell onCriticalAlert={handleCriticalAlert} />
