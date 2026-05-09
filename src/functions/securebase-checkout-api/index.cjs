@@ -51,15 +51,29 @@ const TIER_PRICE_ENV = {
   hipaa_assessment: 'STRIPE_PRICE_HIPAA_ASSESSMENT',
 };
 
-const CORS_HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': 'https://securebase.tximhotep.com',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+const ALLOWED_ORIGINS = new Set([
+  'https://securebase.tximhotep.com',
+  'https://demo.securebase.tximhotep.com',
+]);
+
+function getCorsHeaders(requestOrigin) {
+  const origin = ALLOWED_ORIGINS.has(requestOrigin)
+    ? requestOrigin
+    : 'https://securebase.tximhotep.com';
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
+  };
+}
 
 exports.handler = async (event) => {
-  console.log('handler_version=2026-05-08');
+  console.log('handler_version=2026-05-09');
+
+  const requestOrigin = (event.headers?.['origin'] || event.headers?.['Origin']) || '';
+  const CORS_HEADERS = getCorsHeaders(requestOrigin);
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
