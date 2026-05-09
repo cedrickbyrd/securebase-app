@@ -129,6 +129,10 @@ export default function Checkout() {
           name,
           ...(isHipaa && { company_name: company, hipaa_baa_acknowledged: hipaaConsent }),
           tier: plan,
+          // Apply the pilot coupon for subscription tiers that have a pilotPrice.
+          // Without this, the Lambda defaults to a 14-day trial with no discount,
+          // causing Stripe to show the full price.
+          use_pilot_coupon: !!(tierConfig.pilotPrice && tierConfig.billingType === 'subscription'),
           successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${planPrice || 0}`,
           cancelUrl: `${origin}/pricing`,
         }),
