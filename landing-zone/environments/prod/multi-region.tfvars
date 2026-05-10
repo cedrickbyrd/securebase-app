@@ -1,7 +1,7 @@
 # =============================================================================
 # Phase 5.4 Multi-Region DR — Production
 # Verified against live AWS environment: 2026-05-10
-# Apply complete: 48/48 resources created
+# Apply complete: 49/49 resources
 # =============================================================================
 
 environment      = "prod"
@@ -25,7 +25,6 @@ dynamodb_table_names = [
 primary_vpc_id   = "vpc-003c9d5b0f9f1a02b"
 primary_vpc_cidr = "10.0.0.0/16"
 
-# Secondary VPC not yet created — secondary Aurora skipped (no VPC/subnets)
 secondary_vpc_id     = ""
 secondary_vpc_cidr   = ""
 secondary_subnet_ids = []
@@ -37,9 +36,10 @@ primary_api_endpoint   = ""
 secondary_api_endpoint = ""
 
 # ── CloudFront failover ───────────────────────────────────────────────────────
-# ACM cert covers tximhotep.com (us-east-1, required for CloudFront)
+# Primary origin: API Gateway custom domain (accepts api.securebase.tximhotep.com host header)
+# Previously: 9xyetu7zq3.execute-api.us-east-1.amazonaws.com (returned 403 ForbiddenException)
 acm_certificate_arn = "arn:aws:acm:us-east-1:731184206915:certificate/109a7267-8b0e-438b-acf6-15ddbe5206d5"
-primary_api_fqdn    = "9xyetu7zq3.execute-api.us-east-1.amazonaws.com"
+primary_api_fqdn    = "d-ky35u7ca93.execute-api.us-east-1.amazonaws.com"
 secondary_api_fqdn  = "bi8ixc75nl.execute-api.us-west-2.amazonaws.com"
 cloudfront_aliases  = ["api.securebase.tximhotep.com"]
 
