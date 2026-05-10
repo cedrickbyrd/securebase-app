@@ -1,5 +1,4 @@
 # ── multi-region module variables ────────────────────────────────────────────
-# Merged from HEAD (networking/CloudFront vars) and feat/phase5.3 (DR service vars)
 
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
@@ -23,18 +22,19 @@ variable "secondary_region" {
 variable "aurora_cluster_id" {
   description = "Existing Aurora cluster identifier in the primary region"
   type        = string
+  default     = ""
 }
 
 variable "aurora_engine_version" {
-  description = "Aurora MySQL engine version"
+  description = "Aurora PostgreSQL engine version"
   type        = string
-  default     = "8.0.mysql_aurora.3.04.0"
+  default     = "15.15"
 }
 
 variable "aurora_instance_class" {
   description = "Instance class for the secondary Aurora reader instance"
   type        = string
-  default     = "db.serverless"
+  default     = "db.r6g.large"
 }
 
 # ── DynamoDB ──────────────────────────────────────────────────────────────────
@@ -42,26 +42,25 @@ variable "aurora_instance_class" {
 variable "dynamodb_table_names" {
   description = "DynamoDB tables to add us-west-2 replicas to"
   type        = list(string)
-  default = [
-    "securebase-users",
-    "securebase-cache-dev",
-    "securebase-dev-notifications",
-    "securebase-dev-support-tickets",
-    "securebase-dev-reports",
-    "securebase-dev-metrics",
-  ]
+  default     = []
 }
 
 # ── S3 replication ────────────────────────────────────────────────────────────
 
+variable "audit_log_bucket_name" {
+  description = "Source S3 bucket name for audit log cross-region replication"
+  type        = string
+  default     = ""
+}
+
 variable "s3_replication_buckets" {
-  description = "Map of source bucket name → replica bucket name for cross-region replication"
+  description = "Map of source bucket name to replica bucket name for CRR"
   type        = map(string)
   default     = {}
 }
 
 variable "primary_kms_key_arn" {
-  description = "ARN of the primary region KMS key used to encrypt DynamoDB tables and S3 buckets"
+  description = "ARN of the primary region KMS key"
   type        = string
   default     = ""
 }
@@ -78,7 +77,19 @@ variable "secondary_bucket_arns" {
   default     = []
 }
 
-# ── Networking (secondary region) ─────────────────────────────────────────────
+# ── Networking ────────────────────────────────────────────────────────────────
+
+variable "primary_vpc_id" {
+  description = "VPC ID in the primary region"
+  type        = string
+  default     = ""
+}
+
+variable "primary_vpc_cidr" {
+  description = "CIDR block of the primary region VPC"
+  type        = string
+  default     = ""
+}
 
 variable "secondary_vpc_id" {
   description = "VPC ID in the secondary region"
@@ -89,7 +100,7 @@ variable "secondary_vpc_id" {
 variable "secondary_vpc_cidr" {
   description = "CIDR block of the secondary region VPC"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.1.0.0/16"
 }
 
 variable "secondary_subnet_ids" {
@@ -101,31 +112,31 @@ variable "secondary_subnet_ids" {
 # ── API Gateway / Route53 ─────────────────────────────────────────────────────
 
 variable "primary_api_fqdn" {
-  description = "FQDN of the primary region API Gateway custom domain"
+  description = "FQDN of the primary region API Gateway"
   type        = string
   default     = ""
 }
 
 variable "secondary_api_fqdn" {
-  description = "FQDN of the secondary region API Gateway custom domain"
+  description = "FQDN of the secondary region API Gateway"
   type        = string
   default     = ""
 }
 
 variable "primary_api_endpoint" {
-  description = "Primary region API Gateway invoke URL (used for Route53 health check target)"
+  description = "Primary API Gateway invoke URL for Route53 health check"
   type        = string
   default     = ""
 }
 
 variable "secondary_api_endpoint" {
-  description = "Secondary region API Gateway invoke URL (used for Route53 failover record)"
+  description = "Secondary API Gateway invoke URL for Route53 failover"
   type        = string
   default     = ""
 }
 
 variable "secondary_api_gateway_id" {
-  description = "Secondary region API Gateway REST API ID used by DR health checks"
+  description = "Secondary region API Gateway REST API ID"
   type        = string
   default     = ""
 }
@@ -133,17 +144,17 @@ variable "secondary_api_gateway_id" {
 variable "api_dns_name" {
   description = "DNS record name for the API endpoint"
   type        = string
-  default     = "api.securebase.tximhotep.com"
+  default     = ""
 }
 
 variable "hosted_zone_id" {
-  description = "Route 53 hosted zone ID for the API DNS records"
+  description = "Route53 hosted zone ID"
   type        = string
   default     = ""
 }
 
 variable "route53_hosted_zone_id" {
-  description = "Alias for hosted_zone_id — kept for backwards compatibility"
+  description = "Alias for hosted_zone_id"
   type        = string
   default     = ""
 }
@@ -165,7 +176,7 @@ variable "acm_certificate_arn" {
 # ── Alerting ──────────────────────────────────────────────────────────────────
 
 variable "alert_sns_arn" {
-  description = "SNS topic ARN for DR alerts (from phase5-alerting output)"
+  description = "SNS topic ARN for DR alerts"
   type        = string
   default     = ""
 }
