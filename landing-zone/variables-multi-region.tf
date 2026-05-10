@@ -84,3 +84,15 @@ variable "audit_log_bucket_name" {
   type        = string
   default     = ""
 }
+
+variable "secondary_region" {
+  description = "Secondary AWS region for DR"
+  type        = string
+  default     = "us-west-2"
+}
+
+variable "route53_hosted_zone_id" {
+  description = "Route53 hosted zone ID (disabled — DNS in Netlify)"
+  type        = string
+  default     = ""
+}

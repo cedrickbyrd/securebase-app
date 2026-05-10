@@ -1,31 +1,30 @@
 # =============================================================================
-# Phase 5.3 – Component 6: Multi-Region DR
-# CloudFront Multi-Origin Failover
+# Phase 5.4 – CloudFront Multi-Origin Failover
+# DNS remains in Netlify. CloudFront sits in front of both API Gateway
+# endpoints and automatically retries against the secondary on 5xx.
+# Guard: only created when acm_certificate_arn and both FQDNs are set.
 # =============================================================================
 
-resource "aws_cloudfront_origin_group" "api" {
-  origin_id = "securebase-${var.environment}-api-failover-group"
-
-  failover_criteria {
-    status_codes = [500, 502, 503, 504]
-  }
-
-  member {
-    origin_id = "primary"
-  }
-
-  member {
-    origin_id = "secondary"
-  }
+locals {
+  enable_cloudfront = (
+    var.acm_certificate_arn != "" &&
+    var.primary_api_fqdn    != "" &&
+    var.secondary_api_fqdn  != ""
+  )
 }
 
+# CloudFront does not support aws_cloudfront_origin_group as a standalone
+# resource in all provider versions. Origin failover is configured inline
+# inside the distribution using origin_group blocks.
+
 resource "aws_cloudfront_distribution" "api" {
+  count   = local.enable_cloudfront ? 1 : 0
   enabled         = true
   is_ipv6_enabled = true
   comment         = "SecureBase ${var.environment} API — multi-origin failover"
-  price_class     = "PriceClass_100"  # US, Canada, Europe
+  price_class     = "PriceClass_100"
 
-  aliases = var.cloudfront_aliases
+  aliases = length(var.cloudfront_aliases) > 0 ? var.cloudfront_aliases : null
 
   origin {
     origin_id   = "primary"
@@ -61,30 +60,40 @@ resource "aws_cloudfront_distribution" "api" {
     }
   }
 
+  origin_group {
+    origin_id = "api-failover-group"
+
+    failover_criteria {
+      status_codes = [500, 502, 503, 504]
+    }
+
+    member {
+      origin_id = "primary"
+    }
+
+    member {
+      origin_id = "secondary"
+    }
+  }
+
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id       = aws_cloudfront_origin_group.api.origin_id
+    target_origin_id       = "api-failover-group"
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
 
     forwarded_values {
       query_string = true
       headers      = ["Authorization", "Content-Type", "X-API-Key", "X-Requested-With"]
-
       cookies {
         forward = "none"
       }
     }
 
     min_ttl     = 0
-    default_ttl = 0   # API responses are not cached by default
+    default_ttl = 0
     max_ttl     = 60
-
-    function_association {
-      event_type   = "viewer-request"
-      function_arn = aws_cloudfront_function.security_headers.arn
-    }
   }
 
   restrictions {
@@ -99,28 +108,5 @@ resource "aws_cloudfront_distribution" "api" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  tags = merge(var.tags, {
-    Name        = "securebase-${var.environment}-api-cdn"
-    Environment = var.environment
-    Phase       = "5.3"
-  })
-}
-
-# Security headers CloudFront Function
-resource "aws_cloudfront_function" "security_headers" {
-  name    = "securebase-${var.environment}-security-headers"
-  runtime = "cloudfront-js-2.0"
-  publish = true
-
-  code = <<-JS
-    function handler(event) {
-      var request = event.request;
-      var headers = request.headers;
-
-      // Strip internal headers before forwarding
-      delete headers['x-origin-region'];
-
-      return request;
-    }
-  JS
+  tags = local.dr_tags
 }
