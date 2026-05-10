@@ -1,14 +1,9 @@
 # =============================================================================
-# Phase 5.3 – Component 6: Multi-Region DR
-# S3 Cross-Region Replication
-# =============================================================================
-# Replicates compliance evidence, audit logs, and report exports from
-# us-east-1 (primary) to us-west-2 (secondary) for disaster recovery.
-
-# =============================================================================
-# IAM Role for S3 CRR
+# Phase 5.4 – S3 Cross-Region Replication
+# Replicates audit logs from us-east-1 to us-west-2 DR bucket.
 # =============================================================================
 
+# ── IAM Role for S3 CRR ─────────────────────────────────────────────────────────
 resource "aws_iam_role" "s3_replication" {
   name = "securebase-${var.environment}-s3-replication"
 
@@ -24,7 +19,7 @@ resource "aws_iam_role" "s3_replication" {
   tags = merge(var.tags, {
     Name        = "securebase-${var.environment}-s3-replication"
     Environment = var.environment
-    Phase       = "5.3"
+    Phase       = "5.4"
   })
 }
 
@@ -32,6 +27,9 @@ resource "aws_iam_role_policy" "s3_replication" {
   name = "securebase-${var.environment}-s3-replication-policy"
   role = aws_iam_role.s3_replication.id
 
+  # Build the source bucket ARN from the audit_log_bucket_name variable so
+  # the policy always has at least one resource, even when primary_bucket_arns
+  # is not explicitly provided.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -41,7 +39,9 @@ resource "aws_iam_role_policy" "s3_replication" {
           "s3:GetReplicationConfiguration",
           "s3:ListBucket",
         ]
-        Resource = var.primary_bucket_arns
+        Resource = [
+          "arn:aws:s3:::${var.audit_log_bucket_name}"
+        ]
       },
       {
         Effect = "Allow"
@@ -50,7 +50,9 @@ resource "aws_iam_role_policy" "s3_replication" {
           "s3:GetObjectVersionAcl",
           "s3:GetObjectVersionTagging",
         ]
-        Resource = [for arn in var.primary_bucket_arns : "${arn}/*"]
+        Resource = [
+          "arn:aws:s3:::${var.audit_log_bucket_name}/*"
+        ]
       },
       {
         Effect = "Allow"
@@ -59,25 +61,13 @@ resource "aws_iam_role_policy" "s3_replication" {
           "s3:ReplicateDelete",
           "s3:ReplicateTags",
         ]
-        Resource = [for arn in var.secondary_bucket_arns : "${arn}/*"]
+        Resource = [
+          "${aws_s3_bucket.audit_logs_secondary.arn}/*"
+        ]
       },
       {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt",
-        ]
-        Resource = var.primary_kms_key_arn != "" ? [var.primary_kms_key_arn] : []
-        Condition = {
-          StringLike = {
-            "kms:ViaService" = "s3.${var.primary_region}.amazonaws.com"
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:GenerateDataKey",
-        ]
+        Effect   = "Allow"
+        Action   = ["kms:GenerateDataKey"]
         Resource = [aws_kms_key.secondary.arn]
         Condition = {
           StringLike = {
@@ -89,10 +79,7 @@ resource "aws_iam_role_policy" "s3_replication" {
   })
 }
 
-# =============================================================================
-# Secondary Region S3 Buckets
-# =============================================================================
-
+# ── Secondary Region S3 Buckets ────────────────────────────────────────────────
 resource "aws_s3_bucket" "audit_logs_secondary" {
   provider = aws.secondary
   bucket   = "securebase-audit-logs-${var.environment}-dr"
@@ -115,16 +102,12 @@ resource "aws_s3_bucket" "audit_logs_secondary" {
 resource "aws_s3_bucket_versioning" "audit_logs_secondary" {
   provider = aws.secondary
   bucket   = aws_s3_bucket.audit_logs_secondary.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
+  versioning_configuration { status = "Enabled" }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "audit_logs_secondary" {
   provider = aws.secondary
   bucket   = aws_s3_bucket.audit_logs_secondary.id
-
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
@@ -134,9 +117,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "audit_logs_second
 }
 
 resource "aws_s3_bucket_public_access_block" "audit_logs_secondary" {
-  provider = aws.secondary
-  bucket   = aws_s3_bucket.audit_logs_secondary.id
-
+  provider                = aws.secondary
+  bucket                  = aws_s3_bucket.audit_logs_secondary.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -144,9 +126,8 @@ resource "aws_s3_bucket_public_access_block" "audit_logs_secondary" {
 }
 
 resource "aws_s3_bucket" "reports_secondary" {
-  provider = aws.secondary
-  bucket   = "securebase-reports-${var.environment}-dr"
-
+  provider      = aws.secondary
+  bucket        = "securebase-reports-${var.environment}-dr"
   force_destroy = var.environment != "prod"
 
   tags = merge(var.tags, {
@@ -161,16 +142,12 @@ resource "aws_s3_bucket" "reports_secondary" {
 resource "aws_s3_bucket_versioning" "reports_secondary" {
   provider = aws.secondary
   bucket   = aws_s3_bucket.reports_secondary.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
+  versioning_configuration { status = "Enabled" }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "reports_secondary" {
   provider = aws.secondary
   bucket   = aws_s3_bucket.reports_secondary.id
-
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
@@ -180,23 +157,18 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "reports_secondary
 }
 
 resource "aws_s3_bucket_public_access_block" "reports_secondary" {
-  provider = aws.secondary
-  bucket   = aws_s3_bucket.reports_secondary.id
-
+  provider                = aws.secondary
+  bucket                  = aws_s3_bucket.reports_secondary.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-# =============================================================================
-# CRR Rules on the Primary Audit Logs Bucket
-# (assumes primary bucket name follows naming convention)
-# =============================================================================
-
+# ── CRR rule on the primary audit logs bucket ───────────────────────────────────
 resource "aws_s3_bucket_replication_configuration" "audit_logs" {
   role   = aws_iam_role.s3_replication.arn
-  bucket = "securebase-audit-logs-${var.environment}"
+  bucket = var.audit_log_bucket_name
 
   rule {
     id     = "replicate-all-audit-logs"
@@ -212,18 +184,19 @@ resource "aws_s3_bucket_replication_configuration" "audit_logs" {
         replica_kms_key_id = aws_kms_key.secondary.arn
       }
 
+      # SseKmsEncryptedObjects is required when encryption_configuration is set
+      sse_kms_encrypted_objects {
+        status = "Enabled"
+      }
+
       replication_time {
         status = "Enabled"
-        time {
-          minutes = 15
-        }
+        time { minutes = 15 }
       }
 
       metrics {
         status = "Enabled"
-        event_threshold {
-          minutes = 15
-        }
+        event_threshold { minutes = 15 }
       }
     }
 
@@ -232,12 +205,10 @@ resource "aws_s3_bucket_replication_configuration" "audit_logs" {
     }
   }
 
-  depends_on = [
-    aws_s3_bucket_versioning.audit_logs_secondary,
-  ]
+  depends_on = [aws_s3_bucket_versioning.audit_logs_secondary]
 }
 
-# CloudWatch alarm: S3 replication lag > 5 minutes
+# ── CloudWatch alarm: replication lag ───────────────────────────────────────────
 resource "aws_cloudwatch_metric_alarm" "s3_crr_lag" {
   alarm_name          = "securebase-${var.environment}-s3-crr-replication-lag"
   alarm_description   = "S3 audit logs cross-region replication lag exceeded 5 minutes"
@@ -251,7 +222,7 @@ resource "aws_cloudwatch_metric_alarm" "s3_crr_lag" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    SourceBucket      = "securebase-audit-logs-${var.environment}"
+    SourceBucket      = var.audit_log_bucket_name
     DestinationBucket = aws_s3_bucket.audit_logs_secondary.bucket
     RuleId            = "replicate-all-audit-logs"
   }
