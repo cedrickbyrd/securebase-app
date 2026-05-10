@@ -43,8 +43,12 @@ check "Route53 primary health check healthy" \
 HEALTH_URL=$(aws apigatewayv2 get-apis --region $SECONDARY_REGION \
   --query "Items[?contains(Name,\`health-secondary\`)].[ApiEndpoint]" \
   --output text 2>/dev/null | head -1)
-check "Secondary /health endpoint reachable" \
-  "curl -sf --max-time 5 ${HEALTH_URL}/health | grep -q healthy"
+if [[ -z "$HEALTH_URL" ]]; then
+  echo "❌ Secondary /health endpoint reachable (could not retrieve URL from API Gateway)"; ((FAIL++))
+else
+  check "Secondary /health endpoint reachable" \
+    "curl -sf --max-time 5 ${HEALTH_URL}/health | grep -q healthy"
+fi
 
 # 7. Lambda function exists in secondary region
 check "Health Lambda deployed to us-west-2" \
