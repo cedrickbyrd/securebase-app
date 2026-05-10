@@ -38,6 +38,13 @@ data "archive_file" "metric_aggregator_zip" {
 }
 
 provider "aws" { region = var.target_region }
+
+# Secondary provider for multi-region DR (us-west-2)
+provider "aws" {
+  alias  = "secondary"
+  region = "us-west-2"
+}
+
 provider "netlify" {
   token             = var.netlify_api_token
   default_team_slug = "cedrickbyrd"
@@ -153,7 +160,7 @@ resource "aws_organizations_organization" "this" {
     "cloudtrail.amazonaws.com",
     "config.amazonaws.com",
     "guardduty.amazonaws.com",
-    "iam.amazonaws.com",        # Re-enables IAM service access
+    "iam.amazonaws.com",
     "securityhub.amazonaws.com",
     "sso.amazonaws.com"
   ]
@@ -227,7 +234,6 @@ module "phase5_admin_metrics" {
   aws_region  = var.target_region
   tags        = merge(var.tags, { Phase = "5.1" })
   
-  # Wire to existing API Gateway
   api_gateway_id                = module.api_gateway.api_gateway_id
   api_gateway_root_resource_id  = module.api_gateway.root_resource_id
   api_gateway_execution_arn     = module.api_gateway.api_gateway_execution_arn
@@ -238,23 +244,59 @@ module "phase5_admin_metrics" {
 }
 
 # ============================================================================
+# Phase 5.4: Multi-Region DR
+# Aurora Global Cluster, DynamoDB Global Tables, S3 CRR,
+# Health Lambda in us-west-2, CloudFront origin failover.
+# DNS remains in Netlify; Route53 failover is disabled (leave route53
+# variables blank in tfvars to skip those resources).
+#
+# APPLY: terraform apply -target=module.multi_region \
+#          -var-file=./environments/prod/multi-region.tfvars
+# ============================================================================
+
+module "multi_region" {
+  source = "./modules/multi-region"
+
+  providers = {
+    aws           = aws
+    aws.secondary = aws.secondary
+  }
+
+  environment      = var.environment
+  primary_region   = var.target_region
+  secondary_region = "us-west-2"
+
+  aurora_cluster_id     = var.aurora_cluster_id
+  aurora_engine_version = var.aurora_engine_version
+  aurora_instance_class = var.aurora_instance_class
+
+  dynamodb_table_names = var.dynamodb_table_names
+
+  primary_vpc_id       = var.primary_vpc_id
+  primary_vpc_cidr     = var.primary_vpc_cidr
+  secondary_vpc_id     = var.secondary_vpc_id
+  secondary_vpc_cidr   = var.secondary_vpc_cidr
+  secondary_subnet_ids = var.secondary_subnet_ids
+
+  # Route53 disabled — DNS in Netlify
+  route53_hosted_zone_id = ""
+  api_dns_name           = ""
+  primary_api_endpoint   = ""
+  secondary_api_endpoint = ""
+
+  # CloudFront failover
+  acm_certificate_arn = var.acm_certificate_arn
+  primary_api_fqdn    = var.primary_api_fqdn
+  secondary_api_fqdn  = var.secondary_api_fqdn
+  cloudfront_aliases  = var.cloudfront_aliases
+
+  audit_log_bucket_name = var.audit_log_bucket_name
+
+  tags = var.tags
+}
+
+# ============================================================================
 # Organizational Units (Tier OUs)
-# FIX: These blocks were missing from main.tf after a failed merge. They were
-# restored by cross-referencing the terraform.tfstate backup file, where each
-# OU already existed. The parent_id references aws_organizations_organization
-# "this" (the resource name used in THIS root module — not "main", which is
-# only the label inside modules/org/main.tf).
-#
-# ⚠️  IMPORTANT — IMPORT BEFORE APPLY:
-#   Because these OUs already exist in AWS, Terraform will attempt to CREATE
-#   new OUs (causing duplication or an error) if you do not import them first.
-#   Run the following terraform import commands using the OU IDs from your
-#   state backup / AWS console before running terraform plan/apply:
-#
-#     terraform import 'aws_organizations_organizational_unit.customer_healthcare[0]' <OU_ID_healthcare>
-#     terraform import 'aws_organizations_organizational_unit.customer_fintech[0]'    <OU_ID_fintech>
-#     terraform import 'aws_organizations_organizational_unit.customer_govfed[0]'     <OU_ID_govfed>
-#     terraform import 'aws_organizations_organizational_unit.customer_standard[0]'   <OU_ID_standard>
 # ============================================================================
 
 resource "aws_organizations_organizational_unit" "customer_healthcare" {
@@ -285,8 +327,6 @@ resource "aws_organizations_organizational_unit" "customer_standard" {
   tags      = merge(var.tags, { Tier = "standard" })
 }
 
-# Sales OU — dedicated to self-service demo environments for the sales team.
-# Accounts placed here receive the golden dataset and demo RBAC roles.
 resource "aws_organizations_organizational_unit" "customer_sales" {
   count     = 1
   name      = "Customers-Sales"
@@ -294,20 +334,12 @@ resource "aws_organizations_organizational_unit" "customer_sales" {
   tags      = merge(var.tags, { Tier = "sales", Purpose = "demo" })
 }
 
-# Demo sales account — pre-provisioned for self-serve sales demos.
-# Use scripts/onboard-demo-sales.sh to load golden data and assign roles.
 resource "aws_organizations_account" "demo_sales" {
   name      = "securebase-demo-sales"
   email     = "demo.sales@securebase.io"
   parent_id = aws_organizations_organizational_unit.customer_sales[0].id
-
-  # Shared demo infrastructure — do not delete during Terraform operations.
   lifecycle { prevent_destroy = true }
-
-  tags = merge(var.tags, {
-    Tier    = "sales"
-    Purpose = "demo"
-  })
+  tags = merge(var.tags, { Tier = "sales", Purpose = "demo" })
 }
 
 locals {
