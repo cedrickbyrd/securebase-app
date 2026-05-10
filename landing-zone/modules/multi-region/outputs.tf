@@ -50,5 +50,5 @@ output "dr_validation_script" {
 
 output "secondary_health_endpoint" {
   description = "URL of the secondary region /health endpoint for Route53 health checks"
-  value       = "${aws_apigatewayv2_api.health_secondary.api_endpoint}/health"
+  value       = try("${aws_apigatewayv2_api.health_secondary.api_endpoint}/health", "")
 }
