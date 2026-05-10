@@ -1,0 +1,35 @@
+name: Validate DR Stack
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # daily at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: DR Stack Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Run DR validation
+        run: |
+          chmod +x landing-zone/modules/multi-region/dr-validation.sh
+          landing-zone/modules/multi-region/dr-validation.sh prod
+
+      - name: Write summary
+        if: always()
+        run: |
+          echo "# Phase 5.4 DR Validation" >> $GITHUB_STEP_SUMMARY
+          echo "Run: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "Primary region: us-east-1" >> $GITHUB_STEP_SUMMARY
+          echo "Secondary region: us-west-2" >> $GITHUB_STEP_SUMMARY
