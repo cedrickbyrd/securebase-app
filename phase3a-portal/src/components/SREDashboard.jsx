@@ -111,6 +111,116 @@ const SREDashboard = () => {
     trend: { direction: 'up', percentage: 0 },
     forecast: 0
   });
+  const [activeQuery, setActiveQuery] = useState(null);
+  const [queryResults, setQueryResults] = useState([]);
+  const [copiedQueryId, setCopiedQueryId] = useState(null);
+  const [dlqMetrics, setDlqMetrics] = useState([]);
+  const [activeRunbook, setActiveRunbook] = useState(null);
+  const [runbookStep, setRunbookStep] = useState(0);
+
+  const CW_QUERIES = [
+    {
+      id: 'lambda-errors',
+      name: 'Lambda Errors (Last 1h)',
+      logGroup: '/aws/lambda',
+      query: `filter @type = "REPORT"\n| filter @duration > 3000\n| stats count(*) as slowInvocations, avg(@duration) as avgDuration by @logStream\n| sort slowInvocations desc\n| limit 20`,
+      description: 'Find slow Lambda invocations over 3s'
+    },
+    {
+      id: 'api-5xx',
+      name: 'API Gateway 5xx Errors',
+      logGroup: 'API-Gateway-Execution-Logs',
+      query: `filter status = 5*\n| stats count(*) as errorCount by resourcePath, status\n| sort errorCount desc`,
+      description: 'Surface all 5xx errors grouped by route'
+    },
+    {
+      id: 'cold-starts',
+      name: 'Cold Start Analysis',
+      logGroup: '/aws/lambda',
+      query: `filter @message like /Init Duration/\n| parse @message "Init Duration: * ms" as initDuration\n| stats count(*) as coldStarts, avg(initDuration) as avgInitMs, max(initDuration) as maxInitMs by @logStream\n| sort coldStarts desc`,
+      description: 'Track cold start frequency and duration by function'
+    },
+    {
+      id: 'dlq-depth',
+      name: 'DLQ Message Depth',
+      logGroup: '/aws/sqs',
+      query: `filter eventName = "SendMessage"\n| stats count(*) as dlqMessages by queueName\n| sort dlqMessages desc`,
+      description: 'Monitor dead letter queue accumulation'
+    },
+    {
+      id: 'aurora-slow',
+      name: 'Aurora Slow Queries',
+      logGroup: '/aws/rds/cluster/securebase',
+      query: `filter @message like /Query_time/\n| parse @message "Query_time: *" as queryTime\n| filter queryTime > 1\n| stats count(*) as slowQueries, avg(queryTime) as avgSec by @logStream\n| sort slowQueries desc`,
+      description: 'Identify Aurora queries over 1 second'
+    },
+    {
+      id: 'auth-failures',
+      name: 'Auth Failure Spike',
+      logGroup: '/aws/lambda/auth-v2',
+      query: `filter @message like /AuthError/ or @message like /Unauthorized/\n| stats count(*) as authFailures by bin(5m)\n| sort @timestamp desc`,
+      description: 'Detect authentication failure bursts'
+    }
+  ];
+
+  const RUNBOOKS = [
+    {
+      id: 'high-error-rate',
+      title: 'High Error Rate Response',
+      trigger: 'Error rate > 1% for 5 minutes',
+      severity: 'P1',
+      steps: [
+        'Check CloudWatch Insights: API 5xx Errors query for affected routes',
+        'Review Lambda error logs in /aws/lambda for stack traces',
+        'Verify Aurora connection pool — check replication lag < 5s',
+        'Check DLQ depth — if billing-worker-dlq > 10, pause billing jobs',
+        'Notify #oncall-engineering with incident summary',
+        'If unresolved in 15 min, escalate to on-call lead via PagerDuty'
+      ]
+    },
+    {
+      id: 'lambda-cold-start',
+      title: 'Lambda Cold Start Spike',
+      trigger: 'Cold start % > 10% over 10 minutes',
+      severity: 'P2',
+      steps: [
+        'Identify affected functions using Cold Start Analysis query',
+        'Check if recent deployment changed memory/timeout settings',
+        'Enable provisioned concurrency for top 3 coldest functions',
+        'Verify VPC configuration — cold starts are 10x slower in VPC',
+        'Review Lambda layer sizes — bundles > 50MB increase init time',
+        'Monitor for 30 minutes post-fix before closing incident'
+      ]
+    },
+    {
+      id: 'db-connection-exhaustion',
+      title: 'Aurora Connection Exhaustion',
+      trigger: 'Connection utilization > 80%',
+      severity: 'P1',
+      steps: [
+        'Check Aurora connection count in Database Performance panel',
+        'Identify top connection consumers with Aurora slow query log',
+        'Kill idle connections: SELECT pg_terminate_backend(pid)',
+        'Enable RDS Proxy if not already active for Lambda connections',
+        'Scale Aurora instance if persistent > 90%',
+        'Review Lambda concurrency limits to cap connection growth'
+      ]
+    },
+    {
+      id: 'dlq-overflow',
+      title: 'DLQ Overflow Response',
+      trigger: 'Any DLQ depth > 10 messages',
+      severity: 'P2',
+      steps: [
+        'Identify affected queue in DLQ Depth panel above',
+        'Check source Lambda logs for repeated failure pattern',
+        'Review message payload for schema changes or invalid data',
+        'Move messages to replay queue after fix: aws sqs send-message',
+        'Reprocess in controlled batches and monitor error metrics',
+        'Document root cause and add guardrail alert for recurrence'
+      ]
+    }
+  ];
 
   // All existing fetch functions remain the same...
   const fetchDashboardData = async () => {
@@ -125,7 +235,8 @@ const SREDashboard = () => {
         fetchCacheMetrics(),
         fetchErrorMetrics(),
         fetchLambdaMetrics(),
-        fetchCostMetrics()
+        fetchCostMetrics(),
+        fetchDlqMetrics()
       ]);
 
       setLastRefresh(new Date());
@@ -255,6 +366,16 @@ const SREDashboard = () => {
     });
   };
 
+  const fetchDlqMetrics = async () => {
+    setDlqMetrics([
+      { queue: 'billing-worker-dlq', depth: 3, lastMessage: '2m ago', trend: 'up' },
+      { queue: 'report-engine-dlq', depth: 0, lastMessage: 'None', trend: 'stable' },
+      { queue: 'webhook-delivery-dlq', depth: 12, lastMessage: '8m ago', trend: 'up' },
+      { queue: 'compliance-scanner-dlq', depth: 0, lastMessage: 'None', trend: 'stable' },
+      { queue: 'stripe-webhook-dlq', depth: 1, lastMessage: '45m ago', trend: 'down' }
+    ]);
+  };
+
   useEffect(() => {
     trackPageView('SRE Dashboard', '/sre-dashboard');
     trackSREDashboardView();
@@ -284,6 +405,34 @@ const SREDashboard = () => {
     if (trend === 'up') return <TrendingUp className="w-4 h-4 text-red-500" />;
     if (trend === 'down') return <TrendingDown className="w-4 h-4 text-green-500" />;
     return <Activity className="w-4 h-4 text-gray-500" />;
+  };
+
+  const handleCopyQuery = async (queryId, query) => {
+    try {
+      await navigator.clipboard.writeText(query);
+      setCopiedQueryId(queryId);
+      setTimeout(() => {
+        setCopiedQueryId((current) => (current === queryId ? null : current));
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy query:', error);
+    }
+  };
+
+  const handleToggleQuery = (query) => {
+    setActiveQuery((current) => {
+      const next = current === query.id ? null : query.id;
+      setQueryResults(
+        next
+          ? [
+              `Log group: ${query.logGroup}`,
+              `Window: ${timeRange}`,
+              'Paste query into CloudWatch Logs Insights and execute'
+            ]
+          : []
+      );
+      return next;
+    });
   };
 
   // Chart configurations (keeping existing ones)
@@ -345,6 +494,9 @@ const SREDashboard = () => {
       y: { beginAtZero: true }
     }
   };
+
+  const queuesWithMessages = dlqMetrics.filter((metric) => metric.depth > 0).length;
+  const selectedRunbook = RUNBOOKS.find((runbook) => runbook.id === activeRunbook);
 
   if (loading && !infrastructureMetrics.cpu.current) {
     return (
@@ -1008,6 +1160,185 @@ const SREDashboard = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CloudWatch Insights Queries Panel */}
+      <div className="bg-white rounded-lg shadow mt-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <BarChart3 className="w-5 h-5 mr-2" />
+            CloudWatch Insights Queries
+          </h2>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {CW_QUERIES.map((cwQuery) => (
+              <div key={cwQuery.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{cwQuery.name}</h3>
+                    <p className="text-sm text-gray-600">{cwQuery.description}</p>
+                  </div>
+                  <button
+                    onClick={() => handleCopyQuery(cwQuery.id, cwQuery.query)}
+                    className="text-xs px-3 py-1.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    {copiedQueryId === cwQuery.id ? '✓ Copied' : 'Copy Query'}
+                  </button>
+                </div>
+                <div className="text-xs text-gray-500 mb-2">Log group: {cwQuery.logGroup}</div>
+                <button
+                  onClick={() => handleToggleQuery(cwQuery)}
+                  className="w-full text-left text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded"
+                >
+                  Query {activeQuery === cwQuery.id ? '(click to collapse)' : '(click to expand)'}
+                </button>
+                {activeQuery === cwQuery.id && (
+                  <pre className="mt-2 p-3 rounded bg-gray-900 text-green-400 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
+                    {cwQuery.query}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+          {queryResults.length > 0 && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-3">
+              <div className="text-sm font-medium text-blue-900 mb-1">Selected Query Context</div>
+              <ul className="text-xs text-blue-800 space-y-1">
+                {queryResults.map((result) => (
+                  <li key={result}>• {result}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* DLQ Depth Monitoring */}
+      <div className="bg-white rounded-lg shadow mt-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Layers className="w-5 h-5 mr-2" />
+            Dead Letter Queue Depth
+          </h2>
+        </div>
+        <div className="p-6">
+          {queuesWithMessages > 0 && (
+            <div className="mb-4 px-4 py-3 rounded bg-yellow-50 text-yellow-800 border border-yellow-200 text-sm">
+              ⚠ {queuesWithMessages} queues have messages — investigate before SLA breach
+            </div>
+          )}
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-600 border-b border-gray-200">
+                  <th className="py-2 pr-4">Queue</th>
+                  <th className="py-2 pr-4">Depth</th>
+                  <th className="py-2 pr-4">Last Message</th>
+                  <th className="py-2">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dlqMetrics.map((metric) => (
+                  <tr key={metric.queue} className="border-b border-gray-100">
+                    <td className="py-3 pr-4 font-medium text-gray-800">{metric.queue}</td>
+                    <td className="py-3 pr-4">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${metric.depth > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {metric.depth}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-gray-600">{metric.lastMessage}</td>
+                    <td className="py-3">{getTrendIcon(metric.trend)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* On-Call Runbook Integration */}
+      <div className="bg-white rounded-lg shadow mt-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <CheckSquare className="w-5 h-5 mr-2" />
+            On-Call Runbook Integration
+          </h2>
+        </div>
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            {RUNBOOKS.map((runbook) => (
+              <button
+                key={runbook.id}
+                onClick={() => {
+                  setActiveRunbook(runbook.id);
+                  setRunbookStep(0);
+                }}
+                className={`w-full text-left p-3 rounded border ${
+                  activeRunbook === runbook.id
+                    ? 'bg-purple-50 border-purple-300'
+                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <div className="font-medium text-gray-900">{runbook.title}</div>
+                <div className="text-xs text-gray-600 mt-1">{runbook.trigger}</div>
+                <div className={`inline-block mt-2 px-2 py-1 rounded text-xs font-semibold ${
+                  runbook.severity === 'P1' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {runbook.severity}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="lg:col-span-2">
+            {selectedRunbook ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedRunbook.title}</h3>
+                  <div className="text-xs text-gray-600">
+                    Step {runbookStep + 1} of {selectedRunbook.steps.length}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">Trigger: {selectedRunbook.trigger}</p>
+                <div className="space-y-2 mb-4">
+                  {selectedRunbook.steps.map((step, index) => (
+                    <div
+                      key={`${selectedRunbook.id}-step-${index}`}
+                      className={`p-3 rounded border text-sm ${
+                        index === runbookStep
+                          ? 'bg-purple-50 border-purple-300 text-purple-900'
+                          : 'bg-gray-50 border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      <span className="font-semibold mr-2">{index + 1}.</span>
+                      {step}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setRunbookStep((current) => Math.max(0, current - 1))}
+                    disabled={runbookStep === 0}
+                    className="px-3 py-2 text-sm rounded bg-gray-100 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous Step
+                  </button>
+                  <button
+                    onClick={() => setRunbookStep((current) => Math.min(selectedRunbook.steps.length - 1, current + 1))}
+                    disabled={runbookStep >= selectedRunbook.steps.length - 1}
+                    className="px-3 py-2 text-sm rounded bg-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next Step
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="h-full min-h-[320px] flex items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-600">
+                Select a runbook to begin guided incident response.
+              </div>
+            )}
           </div>
         </div>
       </div>
