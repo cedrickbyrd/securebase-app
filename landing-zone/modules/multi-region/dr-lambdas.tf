@@ -5,7 +5,7 @@ data "aws_iam_role" "lambda_exec" {
 # ── Health Check Aggregator (runs every 60s) ──────────────────────────────────
 data "archive_file" "health_check_aggregator" {
   type        = "zip"
-  source_file = "${path.module}/../../../../phase2-backend/functions/health_check_aggregator.py"
+  source_file = "${path.root}/../phase2-backend/functions/health_check_aggregator.py"
   output_path = "${path.module}/health_check_aggregator.zip"
 }
 
@@ -57,7 +57,7 @@ resource "aws_lambda_permission" "health_check_eventbridge" {
 # ── Failover Orchestrator (alarm-triggered) ───────────────────────────────────
 data "archive_file" "failover_orchestrator" {
   type        = "zip"
-  source_file = "${path.module}/../../../../phase2-backend/functions/failover_orchestrator.py"
+  source_file = "${path.root}/../phase2-backend/functions/failover_orchestrator.py"
   output_path = "${path.module}/failover_orchestrator.zip"
 }
 
@@ -88,7 +88,7 @@ resource "aws_lambda_function" "failover_orchestrator" {
 # ── Failback Orchestrator (manual trigger via API) ────────────────────────────
 data "archive_file" "failback_orchestrator" {
   type        = "zip"
-  source_file = "${path.module}/../../../../phase2-backend/functions/failback_orchestrator.py"
+  source_file = "${path.root}/../phase2-backend/functions/failback_orchestrator.py"
   output_path = "${path.module}/failback_orchestrator.zip"
 }
 
