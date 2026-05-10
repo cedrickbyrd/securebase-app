@@ -21,12 +21,12 @@ resource "aws_lambda_function" "health_check_aggregator" {
 
   environment {
     variables = {
-      PRIMARY_REGION   = var.primary_region
-      SECONDARY_REGION = var.secondary_region
-      AURORA_CLUSTER_ID = var.aurora_cluster_id
-      API_GATEWAY_ID   = "9xyetu7zq3"
+      PRIMARY_REGION      = var.primary_region
+      SECONDARY_REGION    = var.secondary_region
+      AURORA_CLUSTER_ID   = var.aurora_cluster_id
+      API_GATEWAY_ID      = "9xyetu7zq3"
       SECONDARY_API_GW_ID = var.secondary_api_gateway_id
-      ENVIRONMENT      = var.environment
+      ENVIRONMENT         = var.environment
     }
   }
 
@@ -73,12 +73,12 @@ resource "aws_lambda_function" "failover_orchestrator" {
 
   environment {
     variables = {
-      PRIMARY_REGION              = var.primary_region
-      SECONDARY_REGION            = var.secondary_region
-      AURORA_GLOBAL_CLUSTER_ID    = "securebase-${var.environment}-global"
-      SECONDARY_AURORA_CLUSTER_ARN = try(aws_rds_cluster.secondary.arn, "")
-      ALERT_SNS_ARN               = var.alert_sns_arn
-      ENVIRONMENT                 = var.environment
+      PRIMARY_REGION               = var.primary_region
+      SECONDARY_REGION             = var.secondary_region
+      AURORA_GLOBAL_CLUSTER_ID     = "securebase-${var.environment}-global"
+      SECONDARY_AURORA_CLUSTER_ARN = try(aws_rds_cluster.secondary[0].arn, "")
+      ALERT_SNS_ARN                = var.alert_sns_arn
+      ENVIRONMENT                  = var.environment
     }
   }
 
@@ -104,12 +104,12 @@ resource "aws_lambda_function" "failback_orchestrator" {
 
   environment {
     variables = {
-      PRIMARY_REGION        = var.primary_region
-      SECONDARY_REGION      = var.secondary_region
+      PRIMARY_REGION               = var.primary_region
+      SECONDARY_REGION             = var.secondary_region
       PRIMARY_AURORA_CLUSTER_ARN   = "arn:aws:rds:${var.primary_region}:${data.aws_caller_identity.current.account_id}:cluster:${var.aurora_cluster_id}"
-      SECONDARY_AURORA_CLUSTER_ARN = try(aws_rds_cluster.secondary.arn, "")
-      ALERT_SNS_ARN         = var.alert_sns_arn
-      ENVIRONMENT           = var.environment
+      SECONDARY_AURORA_CLUSTER_ARN = try(aws_rds_cluster.secondary[0].arn, "")
+      ALERT_SNS_ARN                = var.alert_sns_arn
+      ENVIRONMENT                  = var.environment
     }
   }
 
@@ -136,15 +136,9 @@ resource "aws_cloudwatch_metric_alarm" "primary_region_unhealthy" {
   }
 
   alarm_actions = var.alert_sns_arn != "" ? [var.alert_sns_arn] : []
-
-  tags = local.dr_tags
+  tags          = local.dr_tags
 }
 
-# ── Automated failover invocation glue ──────────────────────────────────────────
-# When the primary-region health alarm enters ALARM, invoke the failover
-# orchestrator. Execution is still gated inside the Lambda by the
-# /securebase/dr/failover_enabled SSM parameter, so operators can disable
-# automated failover without removing this EventBridge wiring.
 resource "aws_cloudwatch_event_rule" "primary_region_unhealthy_alarm" {
   name        = "securebase-${var.environment}-primary-region-unhealthy-alarm"
   description = "Invoke failover orchestrator when the primary region health alarm fires"
