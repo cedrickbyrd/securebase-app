@@ -23,8 +23,11 @@ This document is the single source of truth for what has been built, what is in 
 | [Phase 3a](#phase-3a--customer-portal) | Customer Portal (React) | ✅ Complete | 100% |
 | [Phase 3b](#phase-3b--advanced-features) | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | [Phase 4](#phase-4--enterprise-features) | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
-| [Phase 5](#phase-5--observability--multi-region-dr) | Observability, Monitoring & Multi-Region DR | 🔄 In Progress | ~60% |
-| [Phase 6](#phase-6--compliance--operations-scale) | Compliance Automation & Operations Scale | 🔨 In Progress | 15% |
+| [Phase 5.1](#phase-51--executiveadmin-dashboard) | Executive/Admin Dashboard | ✅ Complete | 100% |
+| [Phase 5.2](#phase-52--tenantcustomer-dashboard) | Tenant/Customer Dashboard & Compliance Drift | ✅ Complete | 100% |
+| [Phase 5.3](#phase-53--logging-alerting--sre-dashboard) | Logging, Alerting & SRE Dashboard | ✅ Complete | 100% |
+| [Phase 5.4](#phase-54--multi-region-dr-production-wiring) | Multi-Region DR Production Wiring | ✅ Complete — validation gates open | 90% |
+| [Phase 6](#phase-6--compliance-automation--operations-scale) | Compliance Automation & Operations Scale | 🔨 In Progress | 15% |
 
 ---
 
@@ -43,21 +46,6 @@ This document is the single source of truth for what has been built, what is in 
 - Break-glass emergency IAM role with MFA enforcement
 - Full Terraform IaC — deployable from `landing-zone/environments/dev`
 
-### Customer Tiers Supported
-| Tier | Framework | Key Controls |
-|------|-----------|--------------|
-| Healthcare | HIPAA | 2,555-day retention, PHI tagging, VPC endpoints enforced |
-| Fintech | SOC 2 | Immutable logs, MFA required, region restrictions |
-| Government | FedRAMP | GovCloud-ready, FIPS encryption |
-| Standard | CIS | Baseline hardening, GuardDuty, Config rules |
-
-### Key Files
-- `landing-zone/environments/dev/main.tf` — Environment entry point
-- `landing-zone/modules/org/main.tf` — Organizations, OUs, SCPs
-- `landing-zone/modules/iam/` — Identity Center
-- `landing-zone/modules/logging/` — CloudTrail, S3
-- `landing-zone/modules/security/` — GuardDuty, Config, Security Hub
-
 ---
 
 ## Phase 2 — Serverless Backend
@@ -66,37 +54,13 @@ This document is the single source of truth for what has been built, what is in 
 **Location:** `phase2-backend/`
 
 ### What Was Built
-- **Aurora Serverless v2** (PostgreSQL 15.4) with Row-Level Security (RLS) enforcing per-tenant data isolation
+- **Aurora Serverless v2** (PostgreSQL 15.4) with Row-Level Security (RLS)
 - **15+ database tables**: customers, invoices, api_keys, usage_metrics, audit_logs, support_tickets, webhooks, and more
 - **Lambda functions** (Python 3.11) for all API operations
 - **API Gateway** REST API with API key authentication
 - **DynamoDB** tables for caching, metrics, and session state
 - **RDS Proxy** for connection pooling
 - **Secrets Manager** for credential rotation
-
-### Lambda Functions
-| Function | Purpose |
-|----------|---------|
-| `auth_v2.py` | API key validation and session management |
-| `billing_worker.py` | Monthly invoice generation (EventBridge cron) |
-| `metrics.py` | Usage aggregation |
-| `support_tickets.py` | Support ticket CRUD |
-| `webhook_manager.py` | Webhook dispatch and retry logic |
-| `cost_forecasting.py` | ML-based cost projections |
-| `user_management.py` | User CRUD and role assignments |
-| `audit_logging.py` | Immutable audit trail writes |
-| `rbac_engine.py` | Role-based access control enforcement |
-| `analytics_aggregator.py` | Hourly metrics aggregation from CloudWatch / Cost Explorer |
-| `analytics_query.py` | Real-time analytics API with caching |
-| `analytics_reporter.py` | Multi-format report export (CSV, JSON, PDF, Excel) |
-| `notification_worker.py` | SQS-based multi-channel notification dispatch |
-| `notification_api.py` | Notification preferences and history API |
-| `metrics_aggregation.py` | Admin dashboard metrics from CloudWatch / Security Hub |
-
-### Key Files
-- `phase2-backend/database/schema.sql` — Full schema with RLS policies
-- `phase2-backend/lambda_layer/python/db_utils.py` — 50+ shared DB utilities
-- `phase2-backend/functions/requirements.txt` — Python dependencies
 
 ---
 
@@ -106,133 +70,120 @@ This document is the single source of truth for what has been built, what is in 
 **Location:** `phase3a-portal/`
 
 ### What Was Built
-A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming all Phase 2 API endpoints.
-
-### Components
-| Component | Purpose |
-|-----------|---------|
-| `Login.jsx` | Email + API key authentication |
-| `Dashboard.jsx` | Metrics summary, cost trends, compliance score |
-| `Invoices.jsx` | Invoice list, PDF download, payment status |
-| `ApiKeys.jsx` | API key creation, revocation, rotation |
-| `Compliance.jsx` | Security Hub findings, Config rule violations |
-| `SupportTickets.jsx` | Ticket submission and tracking |
-| `Forecasting.jsx` | Cost forecasting with trend visualizations |
-| `Webhooks.jsx` | Webhook endpoint management |
-| `Signup.jsx` / `SignupForm.jsx` | New customer self-service signup |
-| `OnboardingProgress.jsx` | Post-signup onboarding workflow |
-
-### Key Files
-- `phase3a-portal/src/services/apiService.js` — API client (reads `VITE_API_BASE_URL`)
-- `phase3a-portal/vite.config.js` — Build config
-- `netlify.toml` — Netlify proxy rules (`/api/*` → `https://api.securebase.com/v1/:splat`)
+A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming all Phase 2 API endpoints. Full routing via `App.jsx` including: Dashboard, Login, Compliance, TexasExaminerPortal, SREDashboard, AlertManagement, HIPAADashboard, AdminDashboard, Pricing, Checkout, ContactSales, ComplianceJumpstart, HIPAAReadiness, Setup, DemoDashboard.
 
 ---
 
 ## Phase 3b — Advanced Features
 
-**Status:** ✅ Complete (Q4 2025)  
-**Location:** `phase3a-portal/src/components/`, `phase2-backend/functions/`
+**Status:** ✅ Complete (Q4 2025)
 
 ### What Was Built
 - Support ticket system with SLA tracking
 - Webhook management with HMAC signature verification and retry logic
-- Cost forecasting engine with ML-based projections and trend charts
+- Cost forecasting engine with ML-based projections
 - Real-time in-app notification infrastructure
 
 ---
 
 ## Phase 4 — Enterprise Features
 
-**Status:** ✅ Complete (March 2026)  
-**Location:** `phase3a-portal/src/components/`, `phase2-backend/functions/`
+**Status:** ✅ Complete (March 2026)
 
 ### Components Delivered
-
-#### 1. Advanced Analytics
-- Historical metrics aggregation via CloudWatch, Cost Explorer, and Security Hub
-- Interactive charts (react-chartjs-2) with time-range selectors
-- Multi-format report export: CSV, JSON, PDF, Excel
-- EventBridge scheduled aggregation with DynamoDB caching
-
-#### 2. Team Collaboration & RBAC
-- Role definitions: `admin`, `manager`, `editor`, `viewer`
-- `TeamManagement.jsx` for user invite, role assignment, deactivation
-- `rbac_engine.py` Lambda with JWT-based role enforcement
-- Per-resource permission policies with audit trail
-
-#### 3. Notification Center
-- Multi-channel delivery: In-app, Email (SES), SMS (SNS), Webhook
-- `NotificationCenter.jsx` with real-time polling
-- `NotificationSettings.jsx` preference matrix
-- SQS + DLQ worker with 3-retry policy
-
-#### 4. White-Label / Branding
-- Tenant-configurable logo, color scheme, and domain
-- `SSOConfiguration.jsx` for SAML/OIDC SSO setup per tenant
-
-#### 5. Enterprise Security
-- MFA enforcement policies per role
-- IP whitelist management (`IPWhitelistManagement.jsx`)
-- Advanced audit log viewer (`AuditLog.jsx`)
-- Security event feed (`SecurityEvents.jsx`)
-
-#### 6. Admin Dashboard (Phase 5.1 — delivered early)
-- `AdminDashboard.jsx` — platform-wide health, MRR, customer KPIs
-- `SystemHealth.jsx` — real-time Lambda, API Gateway, DB metrics
-- `adminService.js` — API client aggregating CloudWatch + Cost Explorer
+- Advanced analytics with historical metrics and multi-format export
+- Team collaboration and RBAC (`admin`, `manager`, `editor`, `viewer`)
+- Multi-channel notification center (in-app, Email/SES, SMS/SNS, Webhook)
+- White-label / branding and SSO (SAML/OIDC) per tenant
+- Enterprise security: MFA enforcement, IP whitelist, advanced audit logs, security event feed
+- Admin Dashboard (delivered early as Phase 5.1 preview)
 
 ---
 
-## Phase 5 — Observability & Multi-Region DR
+## Phase 5.1 — Executive/Admin Dashboard
 
-**Status:** 🔄 In Progress (~60%)  
-**Target Duration:** 6 weeks from start  
-**Budget:** $75,000–$135,000  
-**SLA Target:** 99.95% uptime, <15 min RTO, <1 min RPO
+**Status:** ✅ Complete  
+**See:** `PHASE5.1_FINAL_DELIVERY_REPORT.md`
 
-### Goals
-1. Production-grade observability across all infrastructure layers
-2. Multi-region active/passive deployment (us-east-1 primary, us-west-2 failover)
-3. Automated alerting and incident response integration
-4. Distributed tracing across all Lambda → Aurora call paths
-5. Cost optimization with auto-scaling policies
+- `AdminDashboard.jsx` — 7 sections, exponential back-off auto-refresh
+- `SystemHealth.jsx` — real-time Lambda, API Gateway, DB metrics
+- `metrics_aggregation.py` — CloudWatch + Cost Explorer Lambda
+- 7 API endpoints at `/admin/*`
 
-### Components
+---
 
-#### 5.1 Executive/Admin Dashboard ✅ Complete
-- `AdminDashboard.jsx` (542 lines) — 7 sections, exponential back-off auto-refresh
-- `SystemHealth.jsx` (256 lines) — real-time Lambda, API Gateway, DB metrics
-- `metrics_aggregation.py` (539 lines) — CloudWatch + Cost Explorer Lambda
-- 7 API endpoints at `/admin/*` — wired to live CloudWatch + DynamoDB
-- **See:** [PHASE5.1_FINAL_DELIVERY_REPORT.md](PHASE5.1_FINAL_DELIVERY_REPORT.md)
+## Phase 5.2 — Tenant/Customer Dashboard
 
-#### 5.2 Tenant/Customer Dashboard & Compliance Drift ✅ Complete
+**Status:** ✅ Complete  
+**See:** `PHASE5.2_IMPLEMENTATION_COMPLETE.md`
+
 - `TenantDashboard.jsx` — compliance, usage, cost, alert panels
 - `ComplianceDrift.jsx` — 90-day drift timeline with MTTR analytics
-- `SREDashboard.jsx` — Lambda cold starts, DB IOPS, DLQ depth
+- `SREDashboard.jsx` (initial) — Lambda cold starts, DB IOPS, DLQ depth
 - `tenant_metrics.py` — 6 API endpoints with JWT auth
 - DynamoDB tables: `securebase-metrics-history`, `securebase-compliance-violations`, `securebase-audit-trail`
-- **See:** [PHASE5.2_IMPLEMENTATION_COMPLETE.md](PHASE5.2_IMPLEMENTATION_COMPLETE.md)
 
-#### 5.3 Multi-Region DR, Alerting & Cost Optimization 🔨 In Progress
-- **Component 4** — CloudWatch log groups per service + AWS X-Ray distributed tracing
-- **Component 5** — 40+ CloudWatch alarms, SNS, PagerDuty/Opsgenie integration
-- **Component 6** — Aurora Global Database, DynamoDB Global Tables, Route 53 failover
-  - Terraform modules in `landing-zone/modules/multi-region/`
-  - Secondary region environment: `landing-zone/environments/prod-us-west-2/`
-  - Lambda: `failover_orchestrator.py`, `health_check_aggregator.py`, `failback_orchestrator.py`
-- **Component 7** — Auto-scaling policies, Aurora ACU tuning, cost anomaly detection
-- **See:** [PHASE5.3_SCOPE.md](PHASE5.3_SCOPE.md)
+---
 
-### Acceptance Criteria
-- [ ] 99.95% uptime SLA capability
-- [ ] Automated failover success rate >95%
-- [ ] Alert response time <5 minutes
-- [ ] Dashboard load time <2 seconds (p95)
-- [ ] Zero data loss during regional failover
-- [ ] X-Ray traces capture >99% of requests
-- [ ] Alert noise <5% false positive rate
+## Phase 5.3 — Logging, Alerting & SRE Dashboard
+
+**Status:** ✅ Complete (May 2026)  
+**See:** `PHASE5.3_IMPLEMENTATION_COMPLETE.md`
+
+### What Was Built
+- **Component 4 — Logging & Distributed Tracing:** CloudWatch log groups (dev: 7 days, prod: 365 days), AWS X-Ray tracing, 20+ Logs Insights saved queries — `landing-zone/modules/phase5-logging/`
+- **Component 5 — Alerting & Incident Response:** 40+ CloudWatch alarms, SNS topics, PagerDuty/Opsgenie integration, escalation policies, maintenance window suppression — `landing-zone/modules/phase5-alerting/`
+- **Component 7 — Cost Optimization:** Auto-scaling policies, Aurora ACU tuning, cost anomaly detection, S3 Intelligent-Tiering — `landing-zone/modules/phase5-cost/`
+- **SRE Dashboard completion (PR #645):** CloudWatch Logs Insights query library, DLQ depth monitoring panel, on-call runbook panel — `phase3a-portal/src/components/SREDashboard.jsx` (58 KB)
+
+---
+
+## Phase 5.4 — Multi-Region DR Production Wiring
+
+**Status:** ✅ Complete — validation gates open (run `validate-dr.yml`)  
+**Apply Date:** 2026-05-10 — 49/49 Terraform resources applied  
+**See:** `PHASE5.4_IMPLEMENTATION_COMPLETE.md`
+
+### What Was Built
+
+#### Infrastructure (all in `landing-zone/modules/multi-region/`)
+
+| File | Purpose |
+|------|---------|
+| `aurora-global.tf` | Aurora Global Database — `securebase-phase2-dev` promoted; secondary in us-west-2 |
+| `dynamodb-global.tf` | Global Table replicas for 4 prod tables (streams enabled 2026-05-10) |
+| `s3-replication.tf` | CRR on `securebase-audit-logs-prod` → us-west-2, KMS-encrypted |
+| `cloudfront-failover.tf` | Origin group (GET/HEAD/OPTIONS) + direct `/api/*` behavior; alias `api.securebase.tximhotep.com` |
+| `lambda-replication.tf` | Failover + failback + health-check Lambdas in us-west-2 |
+| `health-endpoint.tf` | Node.js 20.x `/health` Lambda + API GWv2 in us-west-2 |
+| `dr-lambdas.tf` | DR orchestrator packaging from `phase2-backend/functions/` |
+| `route53-failover.tf` | Disabled — DNS in Netlify; CloudFront origin group provides failover |
+| `dr-validation.sh` | 7-check DR stack validation script |
+| `.github/workflows/validate-dr.yml` | Daily scheduled validation (OIDC auth) |
+
+#### Key AWS Resources Confirmed
+
+| Resource | Value |
+|----------|-------|
+| Primary API origin | `d-ky35u7ca93.execute-api.us-east-1.amazonaws.com` |
+| Secondary API origin | `bi8ixc75nl.execute-api.us-west-2.amazonaws.com` |
+| Primary VPC | `vpc-003c9d5b0f9f1a02b` (10.0.0.0/16) |
+| ACM certificate | `arn:aws:acm:us-east-1:731184206915:certificate/109a7267-...` |
+
+#### Validation Gates
+
+- ✅ 49/49 resources applied
+- ✅ DynamoDB streams enabled on all 4 prod tables
+- ✅ Daily DR validation workflow deployed (OIDC)
+- ⏳ CloudFront distribution health confirmed
+- ⏳ Aurora Global DB secondary cluster healthy
+- ⏳ DynamoDB replication lag < 1 min
+- ⏳ First DR drill passed (RTO < 15 min)
+
+**Next action:** Trigger `.github/workflows/validate-dr.yml` manually.
+
+### SLA Targets
+- **RTO:** < 15 minutes | **RPO:** < 1 minute | **Uptime:** 99.95%
 
 ---
 
@@ -243,7 +194,7 @@ A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming
 **Theme:** Make compliance a product feature, not an afterthought.  
 **Scope:** See [PHASE6_SCOPE.md](PHASE6_SCOPE.md) | **Tasks:** See [TODO_PHASE6.md](TODO_PHASE6.md)
 
-### In Progress
+### Components
 
 #### 6.1 Immutable Audit Logging at Scale (scaffolded)
 - `landing-zone/modules/phase6-audit-logging/` — S3 Object Lock (COMPLIANCE mode, 7-year), Macie, KMS
@@ -257,7 +208,6 @@ A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming
 - `phase6-backend/compliance/hipaa_mapping.json` — 12 HIPAA safeguards
 - `phase6-backend/compliance/fedramp_mapping.json` — 15 FedRAMP Rev 5 controls
 - `phase6-backend/functions/compliance_score_recalculator.py` — daily cron Lambda
-- `phase6-backend/database/migrations/002_compliance_score_history.sql`
 
 #### 6.3 Scalability to 10,000+ Concurrent Users (planned)
 - Lambda provisioned concurrency (auth_v2, metrics, analytics_query)
@@ -280,10 +230,9 @@ A React 18 + Vite customer-facing dashboard with Tailwind CSS styling, consuming
 
 ## Current Priorities (May 2026)
 
-1. **Complete Phase 5.3** — Multi-region DR (Aurora Global DB, Route 53 failover), alerting (CloudWatch + PagerDuty), distributed tracing (X-Ray), cost optimization
-2. **Phase 5.3 Component 6 is highest priority** — delivers the 99.95% uptime SLA commitment
-3. **Begin Phase 6 planning** — Compliance automation scoping, Config rules mapping
-4. **Documentation hygiene** — Consolidate root-level markdown files into `docs/`
+1. **Close Phase 5.4 validation gates** — run `validate-dr.yml`, conduct first DR drill
+2. **Begin Phase 6.1 + 6.2** — compliance automation and audit logging in parallel
+3. **Documentation hygiene** — consolidate root-level markdown files into `docs/`
 
 ---
 
@@ -296,13 +245,17 @@ Customer Browser
 Netlify CDN (phase3a-portal dist/)
       │  /api/* proxied to →
       ▼
-API Gateway (us-east-1)
+CloudFront (api.securebase.tximhotep.com)   ← Phase 5.4
+      │  origin group failover
+      ▼
+API Gateway (us-east-1)          API Gateway (us-west-2, standby)
       │
       ▼
 Lambda Functions (Python 3.11)
       │  set_customer_context(customer_id) → RLS
       ▼
-Aurora Serverless v2 (PostgreSQL 15.4)
+Aurora Global DB (PostgreSQL 15.15)  ──replicate──▶  Aurora Reader (us-west-2)
+DynamoDB Global Tables               ──replicate──▶  DynamoDB Replicas (us-west-2)
       │
       ▼
 AWS Organizations (Landing Zone)
@@ -312,11 +265,6 @@ AWS Organizations (Landing Zone)
  └── Standard OU (CIS)
 ```
 
-**Multi-Tenancy Enforcement:**
-- Every API call validates the API key → resolves `customer_id`
-- All Lambda functions call `set_customer_context(customer_id)` before queries
-- PostgreSQL RLS policies ensure queries return only that tenant's rows
-
 ---
 
 ## Key Documentation Index
@@ -325,37 +273,28 @@ AWS Organizations (Landing Zone)
 |----------|---------|
 | `README.md` | Project overview and quick start |
 | `GETTING_STARTED.md` | Step-by-step setup guide |
-| `API_REFERENCE.md` | Complete API endpoint reference |
-| `Securebase-ProductDefinition.md` | Product scope and boundaries |
-| `PHASE5_SCOPE.md` | Phase 5 detailed scope and success criteria |
+| `PHASE5.4_IMPLEMENTATION_COMPLETE.md` | Phase 5.4 delivery report (current) |
+| `PHASE5.3_IMPLEMENTATION_COMPLETE.md` | Phase 5.3 scaffold summary |
 | `DISASTER_RECOVERY_PLAN.md` | DR strategy, RTO/RPO, failover procedures |
 | `DR_RUNBOOK.md` | Step-by-step operational runbook |
+| `FAILBACK_PROCEDURE.md` | Return-to-primary procedure |
+| `MULTI_REGION_TESTING_GUIDE.md` | Monthly DR drill procedures |
+| `PHASE6_SCOPE.md` | Phase 6 detailed scope and success criteria |
 | `COST_OPTIMIZATION_PLAYBOOK.md` | Cost optimization strategies |
 | `SECURITY.md` | Security policies and responsible disclosure |
-| `docs/PAAS_ARCHITECTURE.md` | Full PaaS architecture specification |
 
 ---
 
 ## Tech Stack Reference
 
 | Layer | Technology |
-|-------|-----------|
+|-------|------------|
 | Frontend | React 18, Vite, Tailwind CSS, react-chartjs-2 |
 | Backend | Python 3.11, AWS Lambda, API Gateway |
-| Database | Aurora Serverless v2 (PostgreSQL 15.4), DynamoDB |
+| Database | Aurora Serverless v2 (PostgreSQL 15.15), DynamoDB |
 | IaC | Terraform ≥ 1.5.0, AWS Provider ~> 5.0 |
 | Auth | AWS IAM Identity Center (SSO), API Keys, JWT |
-| Observability | CloudWatch, X-Ray (Phase 5), PagerDuty (Phase 5) |
+| Observability | CloudWatch, X-Ray, PagerDuty (Phase 5.3 ✅) |
+| DR | CloudFront multi-origin, Aurora Global DB, DynamoDB Global Tables (Phase 5.4 ✅) |
 | Deployment | Netlify (frontend), AWS (backend + infra) |
 | CI/CD | GitHub Actions |
-
----
-
-## Deployment Hygiene & Consolidation (Ongoing)
-
-- Branch cleanup: delete all merged `copilot/*` branches
-- Migrate phase-specific deploy scripts to unified `scripts/deploy.sh`
-- Set up GitHub Environments for staging → production promotion
-- Complete multi-region DR acceptance criteria (see `docs/MULTI_REGION_EPIC.md`)
-- Establish feature-vertical release cadence (HIPAA v2, FFIEC v2, Core Platform)
-- Add PR labels: `hipaa`, `ffiec`, `core`, `ci`, `infra`, `docs`
