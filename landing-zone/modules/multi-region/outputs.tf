@@ -37,3 +37,18 @@ output "secondary_health_check_id" {
   description = "Route 53 health check ID for the secondary region"
   value       = length(aws_route53_health_check.secondary) > 0 ? aws_route53_health_check.secondary[0].id : ""
 }
+
+output "secondary_aurora_cluster_endpoint" {
+  description = "Writer endpoint of the secondary Aurora cluster (empty if secondary not deployed)"
+  value       = try(aws_rds_cluster.secondary[0].endpoint, "")
+}
+
+output "dr_validation_script" {
+  description = "Path to the DR validation script"
+  value       = "landing-zone/modules/multi-region/dr-validation.sh"
+}
+
+output "secondary_health_endpoint" {
+  description = "URL of the secondary region /health endpoint for Route53 health checks"
+  value       = try("${aws_apigatewayv2_api.health_secondary.api_endpoint}/health", "")
+}

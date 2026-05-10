@@ -1,0 +1,47 @@
+# =============================================================================
+# Phase 5.4 Multi-Region DR — Production Variable Values
+# =============================================================================
+# Fill in the placeholder values before running terraform apply.
+# Commands to retrieve each value are shown in the comments.
+# =============================================================================
+
+environment      = "prod"
+primary_region   = "us-east-1"
+secondary_region = "us-west-2"
+
+# ── Aurora ─────────────────────────────────────────────────────────────────
+# Retrieve with: aws rds describe-db-clusters --query 'DBClusters[].DBClusterIdentifier'
+
+aurora_cluster_id     = "securebase-prod"
+aurora_engine_version = "8.0.mysql_aurora.3.04.0"
+aurora_instance_class = "db.r6g.large"
+
+# ── DynamoDB ───────────────────────────────────────────────────────────────
+# Retrieve with: aws dynamodb list-tables --region us-east-1
+
+dynamodb_table_names = [
+  "securebase-prod-tenants",
+  "securebase-prod-metrics",
+  "securebase-prod-audit-log",
+]
+
+# ── VPC ────────────────────────────────────────────────────────────────────
+# Retrieve with: aws ec2 describe-vpcs --query 'Vpcs[].{Id:VpcId,CIDR:CidrBlock}'
+
+primary_vpc_id       = ""   # e.g. vpc-0abc123
+secondary_vpc_id     = ""   # e.g. vpc-0def456
+secondary_vpc_cidr   = ""   # e.g. 10.1.0.0/16
+secondary_subnet_ids = []   # e.g. ["subnet-0aaa", "subnet-0bbb"]
+
+# ── Route 53 ───────────────────────────────────────────────────────────────
+# Retrieve hosted zone ID with: aws route53 list-hosted-zones --query 'HostedZones[].{Id:Id,Name:Name}'
+
+route53_hosted_zone_id = ""  # e.g. Z1234567890ABC
+api_dns_name           = "api.securebase.tximhotep.com"
+primary_api_endpoint   = ""  # e.g. 4f0i48ueak.execute-api.us-east-1.amazonaws.com
+secondary_api_endpoint = ""  # Filled after health-endpoint.tf is applied (see outputs.tf: secondary_health_endpoint)
+
+# ── S3 audit log bucket ────────────────────────────────────────────────────
+# Retrieve with: aws s3api list-buckets --query 'Buckets[?contains(Name, `audit`)].Name'
+
+audit_log_bucket_name = "securebase-prod-audit-logs"
