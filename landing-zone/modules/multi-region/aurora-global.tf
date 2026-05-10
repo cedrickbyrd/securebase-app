@@ -3,7 +3,22 @@
 # and provisions a reader in us-west-2.
 # RTO < 15 min | RPO < 1 min
 #
-# APPLY ORDER: aurora-global.tf → route53-failover.tf
+# APPLY ORDER: aurora-global.tf → cloudfront-failover.tf
+#
+# ⚠️  PRE-APPLY REQUIREMENT:
+#     The primary cluster (securebase-phase2-dev) uses db.serverless which is
+#     incompatible with Aurora Global Clusters. A provisioned instance must
+#     exist in the cluster before running this module:
+#
+#     aws rds create-db-instance \
+#       --db-instance-identifier securebase-phase2-dev-provisioned \
+#       --db-cluster-identifier securebase-phase2-dev \
+#       --db-instance-class db.r6g.large \
+#       --engine aurora-postgresql \
+#       --region us-east-1
+#
+#     Wait for status: available (~5 min), then run terraform apply.
+#
 # NOTE: Promoting to a global cluster causes a ~30 s writer interruption.
 
 resource "aws_rds_global_cluster" "securebase" {
@@ -59,11 +74,11 @@ resource "aws_security_group" "secondary_aurora" {
   vpc_id      = var.secondary_vpc_id
 
   ingress {
-    from_port   = 3306
-    to_port     = 3306
+    from_port   = 5432
+    to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = [var.secondary_vpc_cidr]
-    description = "Aurora/MySQL from secondary VPC"
+    description = "Aurora PostgreSQL from secondary VPC"
   }
 
   egress {
@@ -82,7 +97,7 @@ resource "aws_rds_cluster" "secondary" {
 
   cluster_identifier        = "securebase-${var.environment}-secondary"
   global_cluster_identifier = aws_rds_global_cluster.securebase.id
-  engine                    = "aurora-mysql"
+  engine                    = "aurora-postgresql"
   engine_version            = var.aurora_engine_version
   engine_mode               = "provisioned"
 
@@ -107,7 +122,7 @@ resource "aws_rds_cluster_instance" "secondary" {
   identifier         = "securebase-${var.environment}-secondary-1"
   cluster_identifier = aws_rds_cluster.secondary[0].id
   instance_class     = var.aurora_instance_class
-  engine             = aws_rds_cluster.secondary[0].engine
+  engine             = "aurora-postgresql"
   engine_version     = aws_rds_cluster.secondary[0].engine_version
 
   tags = local.dr_tags
