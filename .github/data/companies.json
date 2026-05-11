@@ -534,10 +534,17 @@
     "framework": "FFIEC",
     "contact_title": "Chief Compliance Officer",
     "contact_first": "Lois",
-    "contact_last": "J.",
+    "contact_last": "Jenkins",
     "location": "Henderson, TX",
     "hunter_verified": true,
-    "outreach_note": "Contact identified via Hunter.io Discover — email pre-verified (green checkmark). CCO is the correct SecureBase persona for FFIEC compliance outreach. Regional community bank, East & Central TX. Founded 1930. Mexia branch at 405 E Milam St. HQ in Henderson, TX."
+    "email_primary": "lois.j@verabank.com",
+    "email_primary_confidence": "yellow",
+    "email_primary_pattern": "First.Initial@domain (1% secondary pattern — long-tenured/collision avoidance)",
+    "email_fallback": "ljenkins@verabank.com",
+    "email_fallback_pattern": "FLast@domain (91% primary pattern)",
+    "secondary_contact_name": "Ronald Nix",
+    "secondary_contact_title": "CTO",
+    "outreach_note": "VeraBank, $4.3B assets, 501-1000 employees, Henderson TX HQ. Founded 1930. Mexia branch at 405 E Milam St. Lead with TBA (Texas Bankers Association) associate membership as credibility wedge. Primary: lois.j@verabank.com (yellow — 1% pattern, pre-verified green checkmark in Hunter). Fallback on bounce: ljenkins@verabank.com (91% FLast pattern). Secondary contact: Ronald Nix, CTO — reference in opener to signal you've done homework. FFIEC exam scrutiny angle; compliance automation for operations teams during exam cycles."
   },
   {
     "batch": 3,
