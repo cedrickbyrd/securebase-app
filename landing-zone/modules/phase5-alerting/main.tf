@@ -1,15 +1,19 @@
-# ── Phase 5.3: Alerting & Incident Response ───────────────────────────────────
-# Delivers:
-#   - SNS alerts topic (KMS-encrypted)
-#   - Alert Router Lambda (routes to PagerDuty / email)
-#   - CloudWatch alarms: Lambda errors, throttles, concurrency
-#   - CloudWatch alarms: API Gateway 5xx, P99 latency
-#   - CloudWatch alarms: Aurora CPU
+# ── Phase 5.3: Alerting & Incident Response ────────────────────────────────────
+# Authoritative alarm definitions live in separate files:
+#   alarms-lambda.tf   — per-Lambda errors, throttles, duration, auth/provisioner
+#   alarms-api.tf      — API Gateway 5xx, 4xx, latency, CloudFront cache hit rate
+#   alarms-database.tf — Aurora, DynamoDB
+#   alarms-cache.tf    — ElastiCache
+#   alarms-composite.tf— composite alarms
+#
+# This file owns: SNS topic, alert router Lambda, lambda_concurrent alarm,
+# and Aurora CPU alarm. Do NOT add alarm resources here that already exist
+# in the dedicated alarm files — Terraform will reject duplicate resource names.
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-# ── SNS alert topic ───────────────────────────────────────────────────────────
+# ── SNS alert topic ────────────────────────────────────────────────────────────────────
 
 resource "aws_sns_topic" "alerts" {
   name              = "securebase-${var.environment}-alerts"
@@ -35,7 +39,7 @@ resource "aws_sns_topic_subscription" "oncall_email" {
   endpoint  = var.oncall_email
 }
 
-# ── Alert Router Lambda ───────────────────────────────────────────────────────
+# ── Alert Router Lambda ────────────────────────────────────────────────────────────
 
 data "aws_iam_role" "lambda_exec" {
   name = "securebase_lambda_exec_role"
@@ -59,11 +63,11 @@ resource "aws_lambda_function" "alert_router" {
 
   environment {
     variables = {
-      ENVIRONMENT           = var.environment
-      SNS_TOPIC_ARN         = aws_sns_topic.alerts.arn
-      ALERT_WEBHOOK_SSM     = var.alert_webhook_ssm_param
+      ENVIRONMENT            = var.environment
+      SNS_TOPIC_ARN          = aws_sns_topic.alerts.arn
+      ALERT_WEBHOOK_SSM      = var.alert_webhook_ssm_param
       MAINTENANCE_MODE_PARAM = aws_ssm_parameter.maintenance_mode.name
-      PAGERDUTY_ROUTING_KEY = var.pagerduty_routing_key
+      PAGERDUTY_ROUTING_KEY  = var.pagerduty_routing_key
     }
   }
 
@@ -84,50 +88,9 @@ resource "aws_sns_topic_subscription" "alert_router_lambda" {
   endpoint  = aws_lambda_function.alert_router.arn
 }
 
-# ── CloudWatch alarms: Lambda errors ─────────────────────────────────────────
-
-resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  for_each = toset(var.lambda_function_names)
-
-  alarm_name          = "securebase-${var.environment}-${each.key}-errors"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "Errors"
-  namespace           = "AWS/Lambda"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = var.lambda_error_threshold
-  alarm_description   = "Lambda ${each.key} error count >= ${var.lambda_error_threshold}"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = { FunctionName = each.key }
-
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
-
-  tags = merge(var.tags, { Phase = "5.3" })
-}
-
-resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
-  for_each = toset(var.lambda_function_names)
-
-  alarm_name          = "securebase-${var.environment}-${each.key}-throttles"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "Throttles"
-  namespace           = "AWS/Lambda"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 10
-  alarm_description   = "Lambda ${each.key} throttles"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = { FunctionName = each.key }
-
-  alarm_actions = [aws_sns_topic.alerts.arn]
-
-  tags = merge(var.tags, { Phase = "5.3" })
-}
+# ── CloudWatch alarm: account-wide Lambda concurrency ───────────────────────────
+# Per-function alarms (lambda_errors, lambda_throttles, lambda_duration) live
+# in alarms-lambda.tf — this is the one account-level concurrency alarm.
 
 resource "aws_cloudwatch_metric_alarm" "lambda_concurrent" {
   alarm_name          = "securebase-${var.environment}-lambda-concurrent-executions"
@@ -143,61 +106,12 @@ resource "aws_cloudwatch_metric_alarm" "lambda_concurrent" {
 
   alarm_actions = [aws_sns_topic.alerts.arn]
 
-  tags = merge(var.tags, { Phase = "5.3" })
+  tags = local.common_tags
 }
 
-# ── CloudWatch alarms: API Gateway ────────────────────────────────────────────
-
-resource "aws_cloudwatch_metric_alarm" "api_5xx" {
-  count = var.api_gateway_id != "" ? 1 : 0
-
-  alarm_name          = "securebase-${var.environment}-api-5xx-errors"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "5XXError"
-  namespace           = "AWS/ApiGateway"
-  period              = 300
-  statistic           = "Average"
-  threshold           = var.api_5xx_threshold_pct / 100
-  alarm_description   = "API Gateway 5xx error rate >= ${var.api_5xx_threshold_pct}%"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    ApiName = var.api_gateway_id
-    Stage   = var.api_gateway_stage
-  }
-
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
-
-  tags = merge(var.tags, { Phase = "5.3" })
-}
-
-resource "aws_cloudwatch_metric_alarm" "api_latency_p99" {
-  count = var.api_gateway_id != "" ? 1 : 0
-
-  alarm_name          = "securebase-${var.environment}-api-latency-p99"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "IntegrationLatency"
-  namespace           = "AWS/ApiGateway"
-  period              = 300
-  extended_statistic  = "p99"
-  threshold           = var.api_latency_p99_ms
-  alarm_description   = "API Gateway P99 latency >= ${var.api_latency_p99_ms} ms"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    ApiName = var.api_gateway_id
-    Stage   = var.api_gateway_stage
-  }
-
-  alarm_actions = [aws_sns_topic.alerts.arn]
-
-  tags = merge(var.tags, { Phase = "5.3" })
-}
-
-# ── CloudWatch alarms: Aurora ─────────────────────────────────────────────────
+# ── CloudWatch alarm: Aurora CPU ────────────────────────────────────────────────────────
+# Additional Aurora alarms (connections, replica lag, deadlocks, memory,
+# storage) live in alarms-database.tf.
 
 resource "aws_cloudwatch_metric_alarm" "aurora_cpu" {
   count = var.aurora_cluster_id != "" ? 1 : 0
@@ -217,5 +131,5 @@ resource "aws_cloudwatch_metric_alarm" "aurora_cpu" {
 
   alarm_actions = [aws_sns_topic.alerts.arn]
 
-  tags = merge(var.tags, { Phase = "5.3" })
+  tags = local.common_tags
 }
