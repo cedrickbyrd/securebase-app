@@ -118,7 +118,6 @@ module "phase5_alerting" {
 
   alert_email = var.alert_email
 
-  # Legacy alerting vars (kept for backward compatibility)
   pagerduty_routing_key        = var.pagerduty_routing_key
   oncall_email                 = var.oncall_email
   lambda_concurrency_threshold = var.lambda_concurrency_threshold
@@ -142,23 +141,18 @@ module "multi_region" {
   aurora_cluster_id = var.aurora_cluster_id
   alert_sns_arn     = module.phase5_alerting.sns_topic_arn
 
-  # VPC
   primary_vpc_id   = var.primary_vpc_id
   primary_vpc_cidr = var.primary_vpc_cidr
 
-  # DynamoDB tables to replicate
   dynamodb_table_names = var.dynamodb_table_names
 
-  # S3 replication
   audit_log_bucket_name = var.audit_log_bucket_name
 
-  # Route53 (disabled — DNS in Netlify)
   route53_hosted_zone_id   = var.route53_hosted_zone_id
   primary_api_endpoint     = var.primary_api_endpoint
   secondary_api_endpoint   = var.secondary_api_endpoint
   secondary_api_gateway_id = var.secondary_api_gateway_id
 
-  # CloudFront multi-origin failover
   acm_certificate_arn       = var.acm_certificate_arn
   primary_api_fqdn          = var.primary_api_fqdn
   secondary_api_fqdn        = var.secondary_api_fqdn
@@ -175,9 +169,6 @@ module "phase5_cost" {
   environment               = var.environment
   alert_sns_arn             = module.phase5_alerting.alert_sns_arn
   anomaly_threshold_percent = 20
-
-  aurora_off_peak_min_acu    = var.aurora_off_peak_min_acu
-  cost_anomaly_threshold_usd = var.cost_anomaly_threshold_usd
 
   s3_bucket_names = var.s3_cost_tiering_buckets
 
