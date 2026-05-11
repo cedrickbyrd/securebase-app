@@ -3,20 +3,29 @@
 # DNS in Netlify. CloudFront sits in front of both API Gateway endpoints
 # and retries against secondary on 5xx.
 #
-# NOTE: CloudFront origin groups only support GET/HEAD/OPTIONS in the
-# cached behavior (AWS limitation). POST/PUT/DELETE must use a separate
-# non-cached behavior that does NOT use an origin group.
-# The failover pattern here is: read traffic uses the origin group for
-# automatic failover; write traffic goes directly to primary with
-# very short TTL (effectively pass-through).
+# Origin layout:
+#   primary         — d-ky35u7ca93.execute-api.us-east-1.amazonaws.com
+#   secondary       — bi8ixc75nl.execute-api.us-west-2.amazonaws.com
+#   health-endpoint — secondary APIGWv2 /health Lambda (us-west-2)
+#
+# Behavior layout:
+#   /health         → health-endpoint (direct, no failover group needed)
+#   /api/*          → primary (direct, all HTTP methods, no caching)
+#   default /*      → api-failover-group (GET/HEAD/OPTIONS only, auto-failover)
+#
+# AWS restriction: CloudFront origin groups only support GET/HEAD/OPTIONS
+# in cached behaviors. POST/PUT/DELETE must use a separate behavior without
+# an origin group.
 # =============================================================================
 
 locals {
   enable_cloudfront = (
-    var.acm_certificate_arn != "" &&
-    var.primary_api_fqdn    != "" &&
-    var.secondary_api_fqdn  != ""
+    var.acm_certificate_arn       != "" &&
+    var.primary_api_fqdn          != "" &&
+    var.secondary_api_fqdn        != ""
   )
+  # Health origin is optional — skipped when secondary health API not yet provisioned
+  enable_health_origin = var.secondary_health_api_fqdn != ""
 }
 
 resource "aws_cloudfront_distribution" "api" {
@@ -27,6 +36,8 @@ resource "aws_cloudfront_distribution" "api" {
   price_class     = "PriceClass_100"
 
   aliases = length(var.cloudfront_aliases) > 0 ? var.cloudfront_aliases : null
+
+  # ---- Origins ----------------------------------------------------------------
 
   origin {
     origin_id   = "primary"
@@ -58,6 +69,29 @@ resource "aws_cloudfront_distribution" "api" {
     }
   }
 
+  # Secondary health Lambda (APIGWv2, us-west-2)
+  # Provides api.securebase.tximhotep.com/health without adding routes
+  # to the primary REST API.
+  dynamic "origin" {
+    for_each = local.enable_health_origin ? [1] : []
+    content {
+      origin_id   = "health-endpoint"
+      domain_name = var.secondary_health_api_fqdn
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+      custom_header {
+        name  = "X-Origin-Region"
+        value = "${var.secondary_region}-health"
+      }
+    }
+  }
+
+  # ---- Origin group (read traffic failover) -----------------------------------
+
   origin_group {
     origin_id = "api-failover-group"
     failover_criteria {
@@ -67,27 +101,31 @@ resource "aws_cloudfront_distribution" "api" {
     member { origin_id = "secondary" }
   }
 
-  # Read behavior — uses origin group for automatic failover
-  # CloudFront origin groups only allow GET/HEAD/OPTIONS
-  default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id       = "api-failover-group"
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 60
+  # ---- Cache behaviors --------------------------------------------------------
 
-    forwarded_values {
-      query_string = true
-      headers      = ["Authorization", "Content-Type", "X-API-Key", "X-Requested-With"]
-      cookies { forward = "none" }
+  # /health → secondary health Lambda (only when health origin configured)
+  dynamic "ordered_cache_behavior" {
+    for_each = local.enable_health_origin ? [1] : []
+    content {
+      path_pattern           = "/health"
+      allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+      cached_methods         = ["GET", "HEAD"]
+      target_origin_id       = "health-endpoint"
+      viewer_protocol_policy = "redirect-to-https"
+      compress               = true
+      min_ttl                = 0
+      default_ttl            = 0
+      max_ttl                = 10  # short TTL — health status should be near-live
+
+      forwarded_values {
+        query_string = false
+        headers      = []
+        cookies { forward = "none" }
+      }
     }
   }
 
-  # Write behavior — POST/PUT/PATCH/DELETE go directly to primary
-  # (origin groups not supported for write methods by AWS)
+  # /api/* → primary direct (all HTTP methods, no origin group, no caching)
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -102,6 +140,24 @@ resource "aws_cloudfront_distribution" "api" {
     forwarded_values {
       query_string = true
       headers      = ["Authorization", "Content-Type", "X-API-Key", "X-Requested-With", "Origin"]
+      cookies { forward = "none" }
+    }
+  }
+
+  # default /* → origin group (GET/HEAD/OPTIONS, auto-failover on 5xx)
+  default_cache_behavior {
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id       = "api-failover-group"
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 60
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Authorization", "Content-Type", "X-API-Key", "X-Requested-With"]
       cookies { forward = "none" }
     }
   }
