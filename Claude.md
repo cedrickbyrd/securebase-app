@@ -18,38 +18,33 @@ SecureBase is a security-first, multi-tenant AWS PaaS platform that has evolved 
 | Phase 3a | Customer Portal (React) | ✅ Complete |
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete |
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete |
-| Phase 5.1 | Executive/Admin Dashboard | ✅ Complete |
-| Phase 5.2 | Tenant/Customer Dashboard & Compliance Drift | ✅ Complete |
-| Phase 5.3 | SRE Dashboard Backend, Logging & Cost Optimization | ✅ Complete |
-| Phase 5.4 | Multi-Region DR Production Wiring (49/49 applied) | ✅ Complete — validation gates open |
-| Phase 5.5 | Alerting & Incident Response | ✅ Complete (delivered within 5.3 sprint) |
-| Phase 5.6 | Distributed Tracing (AWS X-Ray) | ✅ Complete (delivered within 5.3 sprint) |
+| Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete |
 | Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress |
 
-> **Phase 5 is complete.** All six sub-phases (5.1–5.6) are delivered. The only open item is the Phase 5.4 production validation gates — run `.github/workflows/validate-dr.yml` to close them, then conduct the first DR drill.
+> **Phase 5 is fully delivered.** All six sub-phases (5.1–5.6) are complete. The only outstanding item is the Phase 5.4 operator validation drill — run `docs/runbooks/PHASE5_DR_DRILL.md` to close the four remaining AWS verification gates.
 
-### Phase 5 Delivery Map
+### Phase 5 Sub-Phase Map
 
-Phases 5.5 and 5.6 were scoped as standalone phases in Sprint #2 (PR #475, April 9, 2026) but were delivered within the 5.3 sprint as `phase5-alerting/` and `phase5-logging/` Terraform modules respectively. See `PHASE5.5_5.6_COMPLETE.md` for the full delivery record.
+| Phase | Terraform Module | Key Deliverable | Status |
+|-------|-----------------|-----------------|--------|
+| 5.1 | `phase5-admin-metrics/` | AdminDashboard.jsx, 7 `/admin/*` endpoints | ✅ |
+| 5.2 | `phase5-tenant-metrics/` | TenantDashboard.jsx, ComplianceDrift.jsx | ✅ |
+| 5.3 | `phase5-sre-metrics/`, `phase5-cost/` | SREDashboard.jsx (58 KB), cost optimization | ✅ |
+| 5.4 | `multi-region/` | 49/49 AWS resources, CloudFront failover | ✅ |
+| 5.5 | `phase5-alerting/` | 40+ alarms, PagerDuty/Opsgenie, alert router | ✅ |
+| 5.6 | `phase5-logging/` | X-Ray tracing, 20+ Logs Insights queries | ✅ |
 
-| Phase | Terraform Module | Key Deliverable |
-|-------|------------------|-----------------|
-| 5.1 | `phase5-admin-metrics/` | AdminDashboard.jsx, 7 `/admin/*` endpoints |
-| 5.2 | `phase5-tenant-metrics/` | TenantDashboard.jsx, ComplianceDrift.jsx |
-| 5.3 | `phase5-sre-metrics/`, `phase5-cost/` | SREDashboard.jsx (58 KB), cost optimization |
-| 5.4 | `multi-region/` | 49/49 AWS resources, CloudFront failover |
-| 5.5 | `phase5-alerting/` | 40+ alarms, PagerDuty/Opsgenie, alert router |
-| 5.6 | `phase5-logging/` | X-Ray tracing, 20+ Logs Insights queries |
+> 5.5 and 5.6 were scoped as standalone phases in Sprint #2 (PR #475, April 9, 2026) but delivered within the 5.3 sprint. See `PHASE5.5_5.6_COMPLETE.md`.
 
 ### 🔨 Phase 6 — Active Sprint
 
-> See [`PHASE6_SCOPE.md`](PHASE6_SCOPE.md) for the full scope definition.
+> See [`PHASE6_SCOPE.md`](PHASE6_SCOPE.md) for full scope.
 
-- **6.1 Immutable Audit Logging** — S3 Object Lock (COMPLIANCE mode, 7-year), Macie, `audit_log_packager.py`
-- **6.2 Compliance Automation** — 50+ AWS Config rules, SOC 2/HIPAA/FedRAMP conformance packs, daily compliance scoring
-- **6.3 Scalability** — Lambda provisioned concurrency, API GW caching, Aurora ACU 2–128
-- **6.4 Build Debt** — remove `--legacy-peer-deps`, migrate mock data, consolidate root markdown
-- **6.5 Developer Experience** — `docker-compose.yml`, Storybook, OpenAPI spec, Playwright E2E
+- **6.1** Immutable Audit Logging — S3 Object Lock (COMPLIANCE, 7yr), Macie, evidence API
+- **6.2** Compliance Automation — 50+ Config rules, SOC2/HIPAA/FedRAMP scoring, daily cron
+- **6.3** Scalability — Lambda provisioned concurrency, API GW caching, Aurora ACU 2–128
+- **6.4** Build Debt — remove `--legacy-peer-deps`, migrate mocks to `tests/fixtures/`
+- **6.5** Developer Experience — docker-compose, Storybook, OpenAPI spec, Playwright E2E
 
 **Core Principles:**
 - Security by default, not by addition
@@ -70,26 +65,25 @@ npm install --legacy-peer-deps
 
 ### Lock File Policy
 
-The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/CD failures**. All deploy workflows use `npm ci`, which requires exact sync.
+The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/CD failures**. All deploy workflows use `npm ci`.
 
-- Always run `npm install` (not `npm ci`) locally when adding packages
-- Always commit updated `package-lock.json`
-- This repo has **two separate npm packages**: root `/` (React 19, Vite 6) and `phase3a-portal/` (React 18, Vite 5)
-- `@supabase/supabase-js` is root-only — do NOT add to `phase3a-portal/` (removed in PR #508)
+- Always run `npm install` locally when adding packages; commit the updated lock file
+- Two separate packages: root `/` (React 19, Vite 6) and `phase3a-portal/` (React 18, Vite 5)
+- `@supabase/supabase-js` is root-only — do NOT add to `phase3a-portal/` (PR #508)
 
 ### Technology Stack
-- **Frontend:** React 18+ / `.jsx` in portal, `.tsx` in marketing site
-- **Build Tool:** Vite | **Styling:** Tailwind CSS | **Charts:** react-chartjs-2 + chart.js
-- **PDF:** jspdf + html2canvas | **Analytics:** GA4 with privacy controls
-- **Backend/Auth:** Supabase (portal only) — marketing site uses Lambda JWT (PR #508)
-- **Runtime:** Node.js LTS (v20.x)
+- **Frontend:** React 18+ (portal `.jsx`, marketing site `.tsx`), Vite, Tailwind CSS
+- **Charts:** react-chartjs-2 + chart.js | **PDF:** jspdf + html2canvas
+- **Analytics:** GA4 (privacy-first, HIPAA-compliant, no PII/PHI)
+- **Backend/Auth:** Supabase (portal only) | Lambda JWT (marketing site, PR #508)
+- **Runtime:** Node.js LTS v20.x
 
 ### Auth Architecture
 
-| Context | Auth Method | Notes |
-|---|---|---|
-| Marketing site `/signup` | AWS Lambda (`/api/signup`) | Supabase auth removed in PR #508 |
-| Portal (`phase3a-portal`) | Supabase Auth | Still active |
+| Context | Auth Method |
+|---|---|
+| Marketing site `/signup` | AWS Lambda (`/api/signup`) — Supabase removed in PR #508 |
+| Portal (`phase3a-portal`) | Supabase Auth — still active |
 
 ### Environment Variables
 ```env
@@ -105,44 +99,34 @@ VITE_USE_MOCK_API=false
 
 ## 🛡 Compliance & Security Standards
 
-### Security Checklist for All Code Changes
+**SOC 2:** RBAC, audit logging all auth/data/config events, AES-256 at rest, TLS 1.3 in transit  
+**FedRAMP:** MFA required for all admin, 15-min idle / 8-hr absolute session, continuous monitoring  
+**HIPAA:** Never log PHI, hash/mask PHI in dev, log every PHI access with user + timestamp
 
+### Security Checklist for Every Commit
 - [ ] No hardcoded credentials, API keys, or secrets
-- [ ] PII/PHI never logged to console or error messages
-- [ ] GA4 tracking excludes all PII/PHI
-- [ ] Supabase RLS enforced
-- [ ] Input validation on all user-provided data
-- [ ] Dependencies scanned (`npm audit`)
+- [ ] PII/PHI never logged; GA4 events free of PII/PHI
+- [ ] Supabase RLS enforced; input validation on all user data
+- [ ] `npm audit --production` clean
+- [ ] New docs go in `docs/`, not repo root
 
 ---
 
 ## 📝 Code Style & Patterns
 
-### React Component Architecture
-
 ```typescript
-interface ComplianceCheckProps {
-  controlId: string;
-  status: 'passing' | 'failing' | 'pending';
-}
-
-export const ComplianceCheck: React.FC<ComplianceCheckProps> = ({ controlId, status }) => {
-  return <div className="p-4 border rounded-lg">{/* Tailwind */}</div>;
-};
+// Functional components with TypeScript, Tailwind utilities
+export const ComplianceCheck: React.FC<{ controlId: string; status: 'passing'|'failing'|'pending' }> = ({ controlId, status }) => (
+  <div className="p-4 border rounded-lg">{/* content */}</div>
+);
 ```
-
-### GA4 — Privacy-First (HIPAA)
-
-NEVER track: user emails, org names, audit findings, compliance scores, PHI.
-Always anonymize IP, disable ad signals, sanitize URL paths.
 
 ---
 
 ## 🚀 Git Workflow
 
-> **Documentation Policy:** New docs go in `docs/`. Do NOT create new `*.md` files in the repository root.
+> **Docs policy:** New files go in `docs/`. Never create `*.md` in the repo root.
 
-### Commit Messages (Conventional Commits)
 ```bash
 git commit -m "feat: add automated SOC 2 evidence collection"
 git commit -m "fix: resolve session timeout race condition"
@@ -154,103 +138,93 @@ git commit -m "security: update dependency to patch CVE"
 
 ## ⚙️ GitHub Actions & CI/CD
 
+Always use OIDC for AWS — never long-lived access keys:
 ```yaml
 permissions:
   contents: read
-  id-token: write  # OIDC for AWS — never use long-lived access keys
+  id-token: write
 ```
 
 ---
 
 ## 💰 Cost Optimization: Avoid Netlify Functions
 
-**Policy:** Do NOT introduce new Netlify Functions. Use AWS Lambda + API Gateway or direct Supabase client calls.
+Policy: Do NOT introduce new Netlify Functions. Use AWS Lambda + API Gateway or direct Supabase client calls.
 
 ```toml
 # netlify.toml — add new routes here instead of new Netlify functions
 [[redirects]]
-  from   = "/api/new-endpoint"
-  to     = "https://api.securebase.tximhotep.com/new-endpoint"
+  from = "/api/new-endpoint"
+  to   = "https://api.securebase.tximhotep.com/new-endpoint"
   status = 200
   force  = true
 ```
 
 ---
 
-## 🔭 Phase 5 Observability Architecture (Complete)
+## 🔭 Phase 5 Infrastructure Reference (Complete)
 
 ### Terraform Modules
-- `landing-zone/modules/phase5-admin-metrics/` — CloudWatch Lambda + 7 `/admin/*` endpoints
-- `landing-zone/modules/phase5-tenant-metrics/` — Per-tenant DynamoDB with KMS
-- `landing-zone/modules/phase5-logging/` — CloudWatch log groups, X-Ray tracing ✅ (5.6)
-- `landing-zone/modules/phase5-alerting/` — 40+ alarms, SNS, PagerDuty ✅ (5.5)
-- `landing-zone/modules/phase5-cost/` — Auto-scaling, Aurora ACU tuning, cost anomaly
-- `landing-zone/modules/multi-region/` — Aurora Global DB, DynamoDB Global Tables, CloudFront failover ✅ (5.4, 49/49 applied)
+| Module | Phase | Key Resources |
+|--------|-------|---------------|
+| `phase5-admin-metrics/` | 5.1 | CloudWatch Lambda, DynamoDB, 7 `/admin/*` routes |
+| `phase5-tenant-metrics/` | 5.2 | Per-tenant DynamoDB with KMS |
+| `phase5-sre-metrics/` | 5.3 | DynamoDB `sre_ops_metrics`, SNS, IAM |
+| `phase5-cost/` | 5.3 | Auto-scaling, Aurora ACU, cost anomaly, S3 Intelligent-Tiering |
+| `phase5-alerting/` | 5.5 | 40+ alarms, SNS, PagerDuty/Opsgenie, EventBridge, alert router |
+| `phase5-logging/` | 5.6 | X-Ray tracing, CloudWatch log groups, 20+ Insights queries, VPC Flow Logs |
+| `multi-region/` | 5.4 | Aurora Global DB, DynamoDB Global Tables, S3 CRR, CloudFront failover (49/49 applied) |
 
-### Lambda Functions (all deployed)
-- `metrics_aggregation.py` — CloudWatch + Cost Explorer for admin dashboard
-- `tenant_metrics.py` — Per-tenant metrics (6 endpoints, JWT auth)
-- `failover_orchestrator.py` ✅ — Automated us-east-1 → us-west-2 failover
-- `health_check_aggregator.py` ✅ — CloudFront health checks
-- `failback_orchestrator.py` ✅ — Controlled failback after recovery
-- `alert_router.py` ✅ — PagerDuty/Opsgenie dispatch with KMS-scoped decrypt
+### Lambda Functions
+- `metrics_aggregation.py` — CloudWatch + Cost Explorer (5.1)
+- `tenant_metrics.py` — 6 JWT endpoints (5.2)
+- `alert_router.py` — PagerDuty/Opsgenie dispatch (5.5)
+- `failover_orchestrator.py` — us-east-1 → us-west-2 (5.4)
+- `failback_orchestrator.py` — return to primary (5.4)
+- `health_check_aggregator.py` — CloudFront health checks (5.4)
 
-### Frontend Components
-- `phase3a-portal/src/components/admin/AdminDashboard.jsx`
-- `phase3a-portal/src/components/admin/SystemHealth.jsx`
-- `phase3a-portal/src/components/tenant/TenantDashboard.jsx`
-- `phase3a-portal/src/components/tenant/ComplianceDrift.jsx`
-- `phase3a-portal/src/components/SREDashboard.jsx` ✅ (58 KB, query library + DLQ + runbooks)
-- `phase3a-portal/src/components/AlertManagement.jsx`
-
-### SLA Targets (all active)
-- **RTO:** < 15 minutes | **RPO:** < 1 minute | **Uptime:** 99.95%
-- **Alert detection:** < 5 minutes | **False positives:** < 5%
+### Phase 5 SLA Commitments
+- **RTO:** < 15 min | **RPO:** < 1 min | **Uptime:** 99.95%
+- **Alert detection:** < 5 min | **False positives:** < 5%
 - **X-Ray coverage:** 100% of Lambda functions
+
+### CloudFront Wiring Note (5.4)
+Primary origin: `d-ky35u7ca93.execute-api.us-east-1.amazonaws.com` (API GW custom domain regional endpoint).  
+Do NOT use the raw execute-api URL — returns 403 when `Host: api.securebase.tximhotep.com`.  
+Route 53 disabled — DNS in Netlify; CloudFront origin group provides failover.
 
 ---
 
-## 🏗 Infrastructure as Code (Terraform)
+## 🏗 Terraform Deployment
 
 ```bash
-# ❌ WRONG
-cd landing-zone && terraform apply
-
-# ✅ CORRECT
-cd landing-zone/environments/dev && terraform apply
+# Always target a specific environment
 cd landing-zone/environments/prod && terraform apply
 
-# Phase 5.4 multi-region target
-cd landing-zone/environments/prod
+# Phase 5.4 multi-region only
 terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 ```
-
-**Phase 5.4 CloudFront note:** Primary origin must be `d-ky35u7ca93.execute-api.us-east-1.amazonaws.com` (the API GW custom domain regional endpoint). The raw execute-api URL returns 403 when the `Host` header is `api.securebase.tximhotep.com`. Route 53 is disabled — DNS lives in Netlify; CloudFront origin group provides failover.
 
 ---
 
 ## 🔍 AI Assistant Audit Checklist
 
-- [ ] No over-privileged IAM roles; GitHub Actions use OIDC not long-lived keys
-- [ ] `npm install` uses `--legacy-peer-deps` for chart.js
-- [ ] Cloud resources tagged: `Environment`, `ComplianceFramework`, `DataClassification`
+- [ ] IAM: least privilege, OIDC not long-lived keys, explicit `permissions:` in workflows
+- [ ] npm: `--legacy-peer-deps` for chart.js; committed lock file
+- [ ] Tagging: `Environment`, `ComplianceFramework`, `DataClassification` on all cloud resources
 - [ ] Encryption: AES-256 at rest, TLS 1.3 in transit
 - [ ] No PII/PHI in logs or GA4 events
 - [ ] No new Netlify Functions — use AWS Lambda + API Gateway
-- [ ] New docs go in `docs/`, not repo root
+- [ ] New docs in `docs/`, not repo root
 
 ---
 
-## 📚 Additional Resources
+## 📚 Resources
 
-- **Supabase Docs:** https://supabase.com/docs
-- **Tailwind CSS:** https://tailwindcss.com/docs
-- **SOC 2 Controls:** https://www.aicpa.org/soc4so
-- **FedRAMP Controls:** https://www.fedramp.gov
-- **HIPAA Security Rule:** https://www.hhs.gov/hipaa/for-professionals/security/index.html
+- Supabase: https://supabase.com/docs | Tailwind: https://tailwindcss.com/docs
+- SOC 2: https://www.aicpa.org/soc4so | FedRAMP: https://www.fedramp.gov
+- HIPAA: https://www.hhs.gov/hipaa/for-professionals/security/index.html
 
 ---
 
-**Last Updated:** 2026-05-10  
-**Maintained By:** Cedrick Byrd (cedrickbyrd)  
-**Questions?** Open an issue in the repository.
+**Last Updated:** 2026-05-10 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
