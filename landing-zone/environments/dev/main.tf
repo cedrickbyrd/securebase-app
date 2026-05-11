@@ -15,7 +15,6 @@ provider "aws" {
   }
 }
 
-# Netlify provider for managing Netlify deployments
 provider "netlify" {
   token = var.netlify_token
 }
@@ -40,13 +39,9 @@ locals {
 
 data "aws_ssoadmin_instances" "this" {}
 
-
-
-# Call the root module
 module "securebase" {
   source = "../.." 
-  sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]  # ← dynamic
-# sso_instance_arn = "arn:aws:sso:::instance/ssoins-7223295e77f4f12d"
+  sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
 
   org_name        = var.org_name
   target_region   = var.target_region
@@ -65,11 +60,12 @@ module "securebase" {
   max_aurora_capacity  = var.max_aurora_capacity
   min_aurora_capacity  = var.min_aurora_capacity
   rds_backup_retention = var.rds_backup_retention
+  demo_auth_password   = var.demo_auth_password
+  demo_auth_jwt_secret = var.demo_auth_jwt_secret
   sre_metrics_lambda_invoke_arn = module.phase5_sre_metrics.sre_metrics_lambda_invoke_arn
   sre_metrics_lambda_name       = module.phase5_sre_metrics.sre_metrics_lambda_name
 }
 
-# Phase 4: Advanced Analytics & Reporting Module
 module "analytics" {
   source = "../../modules/analytics"
 
@@ -78,7 +74,6 @@ module "analytics" {
   tags                = var.tags
 }
 
-# Netlify Sites Module - Manages marketing site and portal demo deployments
 module "netlify_sites" {
   source = "../../modules/netlify-sites"
 
@@ -90,7 +85,6 @@ module "netlify_sites" {
   tags               = var.tags
 }
 
-# ── Phase 5.3: Logging & Distributed Tracing ──────────────────────────────────
 module "phase5_logging" {
   source = "../../modules/phase5-logging"
 
@@ -103,7 +97,6 @@ module "phase5_logging" {
   tags           = var.tags
 }
 
-# ── Phase 5.3: Alerting & Incident Response ─────────────────────────────────
 module "phase5_alerting" {
   source = "../../modules/phase5-alerting"
 
@@ -126,7 +119,6 @@ module "phase5_alerting" {
   tags = var.tags
 }
 
-# ── Phase 5.4: Multi-Region DR ──────────────────────────────────────────────────
 module "multi_region" {
   source = "../../modules/multi-region"
 
@@ -162,7 +154,6 @@ module "multi_region" {
   tags = var.tags
 }
 
-# ── Phase 5.3: Cost Optimization ──────────────────────────────────────────────────
 module "phase5_cost" {
   source = "../../modules/phase5-cost"
 
@@ -175,7 +166,6 @@ module "phase5_cost" {
   tags = var.tags
 }
 
-# ── Phase 5.3: SRE Metrics ──────────────────────────────────────────────────────
 module "phase5_sre_metrics" {
   source = "../../modules/phase5-sre-metrics"
 
