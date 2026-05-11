@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-04T07:59:30.836756+00:00",
+  "generated": "2026-05-11T08:13:22.917385+00:00",
   "summary": {
     "total": 46,
     "enriched": 8,
@@ -16,25 +16,8 @@
       "contact_first": "Robert",
       "contact_last": "Ludecke",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Veritex Community Bank",
-        "emails_found": [
-          {
-            "value": "bburnett@veritexbank.com",
-            "confidence": 96
-          },
-          {
-            "value": "sepstein@veritexbank.com",
-            "confidence": 96
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "bludecke@veritexbank.com",
-        "score": 97,
-        "verification_status": "valid"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Veritex_Community_Bank",
       "linkedin_dm": "Hi Robert,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Veritex Community Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -49,16 +32,8 @@
       "contact_first": "Cynthia",
       "contact_last": "Suarez",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "First Financial Bank",
-        "emails_found": []
-      },
-      "hunter_email": {
-        "email": "csuarez@ffin.com",
-        "score": 97,
-        "verification_status": "valid"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {
         "linkedin_url": "",
         "job_title": "",
@@ -80,16 +55,8 @@
       "location": "Dallas, TX",
       "outreach_status": "following_linkedin",
       "outreach_date": "2026-05-02",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Southsidebank",
-        "emails_found": []
-      },
-      "hunter_email": {
-        "email": null,
-        "score": null,
-        "verification_status": null
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Southside_Bank",
       "linkedin_dm": "Hi Carlos,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Southside Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -105,11 +72,7 @@
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
       "outreach_note": "Newsweek 2026 Best Regional Banks \u2014 use recognition wedge in opener",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Dallas Capital Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Dallas_Capital_Bank",
@@ -125,29 +88,8 @@
       "contact_first": "Russ",
       "contact_last": "Murrell",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Texas Capital Bank",
-        "emails_found": [
-          {
-            "value": "jamie.brown@texascapitalbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "aaron.henry@texascapitalbank.com",
-            "confidence": 98
-          },
-          {
-            "value": "bill.murrell@texascapitalbank.com",
-            "confidence": 97
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "russ.murrell@texascapitalbank.com",
-        "score": 97,
-        "verification_status": "valid"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {
         "linkedin_url": "",
         "job_title": "",
@@ -167,24 +109,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "McKinney, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "First United Bank",
-        "emails_found": [
-          {
-            "value": "pcarcone@firstunitedbank.com",
-            "confidence": 92
-          },
-          {
-            "value": "mbryson@firstunitedbank.com",
-            "confidence": 99
-          },
-          {
-            "value": "djacobs@firstunitedbank.com",
-            "confidence": 98
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=First_United_Bank",
@@ -200,24 +125,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Comerica Bank",
-        "emails_found": [
-          {
-            "value": "rrechlin@comerica.com",
-            "confidence": 94
-          },
-          {
-            "value": "azhang@comerica.com",
-            "confidence": 94
-          },
-          {
-            "value": "mbrown@comerica.com",
-            "confidence": 94
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Comerica_Bank",
@@ -233,11 +141,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "PlainsCapital Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=PlainsCapital_Bank",
@@ -253,11 +157,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "El Campo, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Prosperity Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Prosperity_Bank",
@@ -273,11 +173,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Hilltop Holdings",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Hilltop_Holdings",
@@ -293,11 +189,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "McKinney, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Independent Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Independent_Bank_Group",
@@ -313,11 +205,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Longview, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Texas Bank and Trust",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Texas_Bank_and_Trust",
@@ -333,16 +221,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Mount Pleasant, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Guaranty Bank & Trust",
-        "emails_found": [
-          {
-            "value": "sshaik@gnty.com",
-            "confidence": 92
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Guaranty_Bancshares",
@@ -358,11 +237,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "El Paso, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "WestStar Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=WestStar_Bank",
@@ -378,11 +253,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Galveston, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Moody Bank",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Moody_National_Bank",
@@ -398,11 +269,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Waco, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Extraco Banks",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Extraco_Banks",
@@ -418,24 +285,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Sulphur Springs, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Alliance Bank",
-        "emails_found": [
-          {
-            "value": "bfreeman@alliancebank.com",
-            "confidence": 67
-          },
-          {
-            "value": "smoore@alliancebank.com",
-            "confidence": 94
-          },
-          {
-            "value": "dgrimal@alliancebank.com",
-            "confidence": 90
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Alliance_Bank",
@@ -451,11 +301,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}{l}",
-        "organization": null,
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=National_Western_Financial",
@@ -471,16 +317,8 @@
       "contact_first": "Kajeevan",
       "contact_last": "Rajanayagam",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}{last}",
-        "organization": "University Health System",
-        "emails_found": []
-      },
-      "hunter_email": {
-        "email": "kajeevanrajanayagam@universityhealthsystem.com",
-        "score": 74,
-        "verification_status": "accept_all"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=University_Health_Network",
       "linkedin_dm": "Hi Kajeevan,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like University Health Network, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -497,21 +335,8 @@
       "location": "Dallas, TX",
       "outreach_status": "following_linkedin",
       "outreach_date": "2026-05-02",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Kelsey-Seybold Clinic",
-        "emails_found": [
-          {
-            "value": "matthew.fillipps@kelsey-seybold.com",
-            "confidence": 94
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": null,
-        "score": null,
-        "verification_status": null
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Kelsey-Seybold_Clinic",
       "linkedin_dm": "Hi Martin,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Kelsey-Seybold Clinic, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -526,29 +351,8 @@
       "contact_first": "Aaron",
       "contact_last": "Wishon",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Cook Children's",
-        "emails_found": [
-          {
-            "value": "rode@cookchildrens.org",
-            "confidence": 86
-          },
-          {
-            "value": "danika.meyer@cookchildrens.org",
-            "confidence": 65
-          },
-          {
-            "value": "misty.hansen@cookchildrens.org",
-            "confidence": 91
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "aaron.wishon@cookchildrens.org",
-        "score": 99,
-        "verification_status": "accept_all"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
       "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -564,29 +368,8 @@
       "contact_last": "Reyes",
       "location": "Dallas, TX",
       "outreach_note": "Smart Healthcare Facilities Convention May 2026 \u2014 mention event when reaching out",
-      "hunter_domain": {
-        "email_pattern": "{first}{last}",
-        "organization": "AccentCare",
-        "emails_found": [
-          {
-            "value": "davidhahn@accentcare.com",
-            "confidence": 99
-          },
-          {
-            "value": "shannonberhalter@accentcare.com",
-            "confidence": 99
-          },
-          {
-            "value": "kietnguyen@accentcare.com",
-            "confidence": 99
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "paulreyes@accentcare.com",
-        "score": 98,
-        "verification_status": "valid"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=AccentCare",
       "linkedin_dm": "Hi Paul,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like AccentCare, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -602,11 +385,7 @@
       "contact_last": "FILL_IN",
       "location": "Fort Worth, TX",
       "outreach_note": "Newsweek 2026 Top 100 Hospital \u2014 only North Texas hospital to earn this designation",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": "Medical City Alliance",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Medical_City_Alliance",
@@ -622,11 +401,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Children's Health",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Childrens_Health",
@@ -642,11 +417,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}{l}",
-        "organization": "Parkland Health",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Parkland_Health",
@@ -662,24 +433,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Baylor Scott & White Health",
-        "emails_found": [
-          {
-            "value": "matthew.seale@bswhealth.com",
-            "confidence": 94
-          },
-          {
-            "value": "johnette.lee@bswhealth.com",
-            "confidence": 93
-          },
-          {
-            "value": "cortney.dalcour@bswhealth.com",
-            "confidence": 90
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Baylor_Scott_&_White_Health",
@@ -695,11 +449,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Trellis",
@@ -715,24 +465,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}",
-        "organization": "Strados Labs",
-        "emails_found": [
-          {
-            "value": "tom@stradoslabs.com",
-            "confidence": 99
-          },
-          {
-            "value": "tristan@stradoslabs.com",
-            "confidence": 98
-          },
-          {
-            "value": "callum@stradoslabs.com",
-            "confidence": 97
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Strados_Labs",
@@ -748,11 +481,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Plano, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}",
-        "organization": "Procare Solutions",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Procare_Solutions",
@@ -768,11 +497,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=MedStats",
@@ -788,20 +513,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "ParkHub",
-        "emails_found": [
-          {
-            "value": "greg.walters@parkhub.com",
-            "confidence": 94
-          },
-          {
-            "value": "colin.campbell@parkhub.com",
-            "confidence": 91
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=ParkHub",
@@ -817,24 +529,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Hypergiant",
-        "emails_found": [
-          {
-            "value": "nathaniel.tabit@hypergiant.com",
-            "confidence": 99
-          },
-          {
-            "value": "gustavo.espinoza@hypergiant.com",
-            "confidence": 98
-          },
-          {
-            "value": "ben.sumser@hypergiant.com",
-            "confidence": 97
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=ai_ml&framework=fedramp&company=Hypergiant",
@@ -850,11 +545,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": null,
-        "organization": null,
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Phunware",
@@ -870,24 +561,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Crossover Health",
-        "emails_found": [
-          {
-            "value": "maitreyi.gunye@crossoverhealth.com",
-            "confidence": 99
-          },
-          {
-            "value": "thomas.lochner@crossoverhealth.com",
-            "confidence": 99
-          },
-          {
-            "value": "ryan.donohue@crossoverhealth.com",
-            "confidence": 99
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Crossover_Health",
@@ -903,11 +577,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Vyopta",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Vyopta",
@@ -923,11 +593,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Austin, TX",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Amino",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Amino",
@@ -943,16 +609,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Phoenix, AZ",
-      "hunter_domain": {
-        "email_pattern": "{first}.{last}",
-        "organization": "Western Alliance Bank",
-        "emails_found": [
-          {
-            "value": "annika.robinson@westernalliancebank.com",
-            "confidence": 99
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Western_Alliance_Bank",
@@ -968,11 +625,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Kalispell, MT",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Glacier Ban",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Glacier_Bancorp",
@@ -988,24 +641,7 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dubuque, IA",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "HTLF",
-        "emails_found": [
-          {
-            "value": "tsteger@htlf.com",
-            "confidence": 90
-          },
-          {
-            "value": "aeva@htlf.com",
-            "confidence": 92
-          },
-          {
-            "value": "jrao@htlf.com",
-            "confidence": 90
-          }
-        ]
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Heartland_Financial",
