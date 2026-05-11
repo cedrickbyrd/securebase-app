@@ -532,11 +532,12 @@
     "domain": "verabank.com",
     "industry": "banking",
     "framework": "FFIEC",
-    "contact_title": "CISO",
-    "contact_first": "FILL_IN",
-    "contact_last": "FILL_IN",
+    "contact_title": "Chief Compliance Officer",
+    "contact_first": "Lois",
+    "contact_last": "J.",
     "location": "Henderson, TX",
-    "outreach_note": "Regional community bank, East & Central TX. Founded 1930. Mexia branch at 405 E Milam St. HQ in Henderson, TX — contact security/IT leadership there."
+    "hunter_verified": true,
+    "outreach_note": "Contact identified via Hunter.io Discover — email pre-verified (green checkmark). CCO is the correct SecureBase persona for FFIEC compliance outreach. Regional community bank, East & Central TX. Founded 1930. Mexia branch at 405 E Milam St. HQ in Henderson, TX."
   },
   {
     "batch": 3,
