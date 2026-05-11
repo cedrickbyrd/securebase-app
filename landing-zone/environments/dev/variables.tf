@@ -41,13 +41,13 @@ variable "tags" {
 variable "clients" {
   description = "Map of customer/client configurations for multi-tenant PaaS deployments"
   type = map(object({
-    tier         = string                # Customer service tier
-    account_id   = string                # AWS account ID (if bringing your own account)
-    prefix       = string                # Resource naming prefix
-    framework    = string                # Compliance framework (soc2, hipaa, fedramp, cis)
-    vpce_id      = optional(string)      # VPC endpoint ID (required for certain tiers)
-    audit_bucket = optional(string)      # Custom audit log bucket name
-    tags         = optional(map(string)) # Client-specific tags
+    tier         = string
+    account_id   = string
+    prefix       = string
+    framework    = string
+    vpce_id      = optional(string)
+    audit_bucket = optional(string)
+    tags         = optional(map(string))
   }))
   default = {}
 
@@ -68,14 +68,12 @@ variable "clients" {
   }
 }
 
-# Phase 4: Analytics Module Variables
 variable "reporting_layer_arn" {
   description = "ARN of Lambda layer containing ReportLab and openpyxl for Phase 4 Analytics"
   type        = string
   default     = null
 }
 
-# Netlify Module Variables
 variable "netlify_token" {
   description = "Netlify API token from AWS Secrets Manager or environment variable"
   type        = string
@@ -84,7 +82,7 @@ variable "netlify_token" {
 }
 
 variable "stripe_public_key" {
-  description = "The Stripe publishable key for frontend integration. Marked sensitive to prevent exposure in Terraform state and plan output."
+  description = "The Stripe publishable key for frontend integration."
   type        = string
   sensitive   = true
 }
@@ -151,7 +149,7 @@ variable "stripe_secret_key" {
   sensitive = true
 }
 
-# ── Phase 5.3 Variables ───────────────────────────────────────────────────────────────
+# ── Phase 5.3 Variables ─────────────────────────────────────────────────────────────────
 variable "aurora_cluster_id" {
   description = "Existing Aurora cluster ID for Phase 5.3 alerting and DR"
   type        = string
@@ -164,7 +162,6 @@ variable "alert_email" {
   default     = ""
 }
 
-# PagerDuty / on-call
 variable "pagerduty_routing_key" {
   description = "PagerDuty Events API v2 integration routing key"
   type        = string
@@ -190,9 +187,8 @@ variable "api_usage_spike_threshold" {
   default     = 100000
 }
 
-# Cost optimization
 variable "aurora_off_peak_min_acu" {
-  description = "Minimum Aurora Serverless v2 ACU during off-peak hours (nights/weekends)"
+  description = "Minimum Aurora Serverless v2 ACU during off-peak hours"
   type        = number
   default     = 0
 }
@@ -203,7 +199,6 @@ variable "cost_anomaly_threshold_usd" {
   default     = 50
 }
 
-# Demo auth
 variable "demo_auth_jwt_secret" {
   description = "JWT signing secret for the demo-auth Lambda"
   type        = string
@@ -224,9 +219,9 @@ variable "demo_auth_password" {
   default     = ""
 }
 
-# Route 53 / DR endpoints
+# ── Phase 5.4 Multi-Region DR Variables ───────────────────────────────────────────
 variable "route53_hosted_zone_id" {
-  description = "Route 53 hosted zone ID for api.securebase.tximhotep.com failover records"
+  description = "Route 53 hosted zone ID (disabled — DNS in Netlify)"
   type        = string
   default     = ""
 }
@@ -238,15 +233,70 @@ variable "primary_api_endpoint" {
 }
 
 variable "secondary_api_endpoint" {
-  description = "Secondary (us-west-2) API Gateway FQDN — set after DR environment is deployed"
+  description = "Secondary (us-west-2) API Gateway FQDN"
   type        = string
   default     = ""
 }
 
 variable "secondary_api_gateway_id" {
-  description = "Secondary region API Gateway ID used by DR health checks"
+  description = "Secondary region API Gateway ID"
   type        = string
   default     = ""
+}
+
+variable "primary_vpc_id" {
+  description = "VPC ID in the primary region"
+  type        = string
+  default     = ""
+}
+
+variable "primary_vpc_cidr" {
+  description = "CIDR block of the primary region VPC"
+  type        = string
+  default     = ""
+}
+
+variable "dynamodb_table_names" {
+  description = "DynamoDB table names to replicate to us-west-2"
+  type        = list(string)
+  default     = []
+}
+
+variable "audit_log_bucket_name" {
+  description = "Source S3 bucket name for audit log cross-region replication"
+  type        = string
+  default     = ""
+}
+
+# CloudFront multi-origin failover
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for CloudFront (must be in us-east-1)"
+  type        = string
+  default     = ""
+}
+
+variable "primary_api_fqdn" {
+  description = "FQDN of the primary API Gateway custom domain endpoint"
+  type        = string
+  default     = ""
+}
+
+variable "secondary_api_fqdn" {
+  description = "FQDN of the secondary region API Gateway"
+  type        = string
+  default     = ""
+}
+
+variable "secondary_health_api_fqdn" {
+  description = "FQDN of the secondary /health APIGWv2 endpoint. Serves api.securebase.tximhotep.com/health via CloudFront."
+  type        = string
+  default     = ""
+}
+
+variable "cloudfront_aliases" {
+  description = "Custom domain aliases for the CloudFront distribution"
+  type        = list(string)
+  default     = []
 }
 
 variable "s3_cost_tiering_buckets" {
