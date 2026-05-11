@@ -103,7 +103,7 @@ module "phase5_logging" {
   tags           = var.tags
 }
 
-# ── Phase 5.3: Alerting & Incident Response ──────────────────────────────────
+# ── Phase 5.3: Alerting & Incident Response ─────────────────────────────────
 module "phase5_alerting" {
   source = "../../modules/phase5-alerting"
 
@@ -127,7 +127,7 @@ module "phase5_alerting" {
   tags = var.tags
 }
 
-# ── Phase 5.3: Multi-Region DR ───────────────────────────────────────────────
+# ── Phase 5.4: Multi-Region DR ──────────────────────────────────────────────────
 module "multi_region" {
   source = "../../modules/multi-region"
 
@@ -137,18 +137,38 @@ module "multi_region" {
   }
 
   environment       = var.environment
+  primary_region    = var.target_region
+  secondary_region  = "us-west-2"
   aurora_cluster_id = var.aurora_cluster_id
   alert_sns_arn     = module.phase5_alerting.sns_topic_arn
 
-  route53_hosted_zone_id = var.route53_hosted_zone_id
-  primary_api_endpoint   = var.primary_api_endpoint
-  secondary_api_endpoint = var.secondary_api_endpoint
+  # VPC
+  primary_vpc_id   = var.primary_vpc_id
+  primary_vpc_cidr = var.primary_vpc_cidr
+
+  # DynamoDB tables to replicate
+  dynamodb_table_names = var.dynamodb_table_names
+
+  # S3 replication
+  audit_log_bucket_name = var.audit_log_bucket_name
+
+  # Route53 (disabled — DNS in Netlify)
+  route53_hosted_zone_id   = var.route53_hosted_zone_id
+  primary_api_endpoint     = var.primary_api_endpoint
+  secondary_api_endpoint   = var.secondary_api_endpoint
   secondary_api_gateway_id = var.secondary_api_gateway_id
+
+  # CloudFront multi-origin failover
+  acm_certificate_arn       = var.acm_certificate_arn
+  primary_api_fqdn          = var.primary_api_fqdn
+  secondary_api_fqdn        = var.secondary_api_fqdn
+  secondary_health_api_fqdn = var.secondary_health_api_fqdn
+  cloudfront_aliases        = var.cloudfront_aliases
 
   tags = var.tags
 }
 
-# ── Phase 5.3: Cost Optimization ─────────────────────────────────────────────────
+# ── Phase 5.3: Cost Optimization ──────────────────────────────────────────────────
 module "phase5_cost" {
   source = "../../modules/phase5-cost"
 
@@ -164,7 +184,7 @@ module "phase5_cost" {
   tags = var.tags
 }
 
-# ── Phase 5.3: SRE Metrics ───────────────────────────────────────────────────
+# ── Phase 5.3: SRE Metrics ──────────────────────────────────────────────────────
 module "phase5_sre_metrics" {
   source = "../../modules/phase5-sre-metrics"
 
