@@ -1,4 +1,4 @@
-# ── multi-region module variables ────────────────────────────────────────────
+# ── multi-region module variables ——————————————————————————————
 
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
@@ -17,7 +17,7 @@ variable "secondary_region" {
   default     = "us-west-2"
 }
 
-# ── Aurora ────────────────────────────────────────────────────────────────────
+# ── Aurora ─────────────────────────────────────────────────────────────────────────────
 
 variable "aurora_cluster_id" {
   description = "Existing Aurora cluster identifier in the primary region"
@@ -37,7 +37,7 @@ variable "aurora_instance_class" {
   default     = "db.r6g.large"
 }
 
-# ── DynamoDB ──────────────────────────────────────────────────────────────────
+# ── DynamoDB ──────────────────────────────────────────────────────────────────────────
 
 variable "dynamodb_table_names" {
   description = "DynamoDB tables to add us-west-2 replicas to"
@@ -45,7 +45,7 @@ variable "dynamodb_table_names" {
   default     = []
 }
 
-# ── S3 replication ────────────────────────────────────────────────────────────
+# ── S3 replication ────────────────────────────────────────────────────────────────────
 
 variable "audit_log_bucket_name" {
   description = "Source S3 bucket name for audit log cross-region replication"
@@ -77,7 +77,7 @@ variable "secondary_bucket_arns" {
   default     = []
 }
 
-# ── Networking ────────────────────────────────────────────────────────────────
+# ── Networking ──────────────────────────────────────────────────────────────────────
 
 variable "primary_vpc_id" {
   description = "VPC ID in the primary region"
@@ -109,16 +109,22 @@ variable "secondary_subnet_ids" {
   default     = []
 }
 
-# ── API Gateway / Route53 ─────────────────────────────────────────────────────
+# ── API Gateway / Route53 ─────────────────────────────────────────────────────────
 
 variable "primary_api_fqdn" {
-  description = "FQDN of the primary region API Gateway"
+  description = "FQDN of the primary region API Gateway custom domain endpoint"
   type        = string
   default     = ""
 }
 
 variable "secondary_api_fqdn" {
   description = "FQDN of the secondary region API Gateway"
+  type        = string
+  default     = ""
+}
+
+variable "secondary_health_api_fqdn" {
+  description = "FQDN of the secondary region /health APIGWv2 endpoint (without https:// or path). Used to serve api.securebase.tximhotep.com/health via CloudFront without adding routes to the primary REST API. Retrieve after first apply: aws apigatewayv2 get-apis --region us-west-2 --query \"Items[?contains(Name,'health-secondary')].ApiEndpoint\" --output text | sed 's|https://||'"
   type        = string
   default     = ""
 }
@@ -159,7 +165,7 @@ variable "route53_hosted_zone_id" {
   default     = ""
 }
 
-# ── CloudFront ────────────────────────────────────────────────────────────────
+# ── CloudFront ─────────────────────────────────────────────────────────────────────
 
 variable "cloudfront_aliases" {
   description = "Custom domain aliases for the CloudFront distribution"
@@ -173,7 +179,7 @@ variable "acm_certificate_arn" {
   default     = ""
 }
 
-# ── Alerting ──────────────────────────────────────────────────────────────────
+# ── Alerting ────────────────────────────────────────────────────────────────────────
 
 variable "alert_sns_arn" {
   description = "SNS topic ARN for DR alerts"
@@ -181,7 +187,7 @@ variable "alert_sns_arn" {
   default     = ""
 }
 
-# ── Tags ──────────────────────────────────────────────────────────────────────
+# ── Tags ──────────────────────────────────────────────────────────────────────────────
 
 variable "tags" {
   description = "Common tags to apply to all resources"
