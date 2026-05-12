@@ -176,6 +176,40 @@ module "phase5_sre_metrics" {
   alert_email     = var.alert_email
 }
 
+module "phase6_audit_logging" {
+  source = "../../modules/phase6-audit-logging"
+
+  environment               = var.environment
+  project_name              = "securebase"
+  evidence_bucket_name      = "securebase-evidence-${var.environment}"
+  audit_source_bucket_name  = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
+  object_lock_retention_days = 2555
+  macie_alert_email         = var.alert_email
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "1"
+  })
+}
+
+module "phase6_compliance" {
+  source = "../../modules/phase6-compliance"
+
+  environment                     = var.environment
+  project_name                    = "securebase"
+  config_delivery_bucket_name     = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
+  config_recorder_already_enabled = true
+  enable_hipaa_conformance_pack   = true
+  enable_nist_conformance_pack    = true
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "1"
+  })
+
+  depends_on = [module.phase6_audit_logging]
+}
+
 terraform {
   required_version = ">= 1.5.0"
 

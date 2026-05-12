@@ -24,7 +24,7 @@ This document is the single source of truth for what has been built, what is in 
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
 | Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete | 100% |
-| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | 15% |
+| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | 85% |
 
 ---
 
@@ -115,11 +115,11 @@ Phase 5 was executed as six sub-phases. Phases 5.5 and 5.6 were originally stand
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| 6.1 | Immutable Audit Logging (S3 Object Lock, Macie, evidence API) | Scaffolded |
-| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | Scaffolded |
-| 6.3 | Scalability to 10,000+ concurrent users | Planned |
-| 6.4 | Build debt cleanup (remove `--legacy-peer-deps`, mock migration) | Planned |
-| 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | Planned |
+| 6.1 | Immutable Audit Logging (S3 Object Lock, Macie, evidence API) | Merged (Operationalizing) |
+| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | Merged (Operationalizing) |
+| 6.3 | Scalability to 10,000+ concurrent users | In Progress |
+| 6.4 | Build debt cleanup (remove `--legacy-peer-deps`, mock migration) | In Progress |
+| 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | In Progress |
 
 ---
 
