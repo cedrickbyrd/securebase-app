@@ -4,18 +4,18 @@ class AdminService {
   constructor() {
     this.metricsCache = null;
     this.cacheTimestamp = 0;
-    this.cacheTtlMs = 30000;
+    this.cacheTtlMs = 60000;
     this.inFlightMetricsRequest = null;
   }
 
   async getMetricsSnapshot(forceRefresh = false) {
+    if (this.inFlightMetricsRequest) {
+      return this.inFlightMetricsRequest;
+    }
+
     const now = Date.now();
     if (!forceRefresh && this.metricsCache && (now - this.cacheTimestamp) < this.cacheTtlMs) {
       return this.metricsCache;
-    }
-
-    if (!forceRefresh && this.inFlightMetricsRequest) {
-      return this.inFlightMetricsRequest;
     }
 
     this.inFlightMetricsRequest = api.get('/admin/metrics')

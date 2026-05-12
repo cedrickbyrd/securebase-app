@@ -179,8 +179,9 @@ resource "aws_xray_sampling_rule" "slow_requests" {
   service_name   = "*"
   resource_arn   = "*"
   version        = 1
+  # duration threshold is in milliseconds (">1000" = requests slower than 1 second).
   attributes = {
-    duration = ">1"
+    duration = ">1000"
   }
 
   tags = merge(var.tags, { Phase = "5.3", RuleType = "slow-requests" })

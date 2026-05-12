@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
 
 import boto3
-import jwt
 from botocore.exceptions import BotoCoreError, ClientError
 
 try:
@@ -46,18 +45,13 @@ def _response(status_code: int, body: Any) -> Dict[str, Any]:
     return {"statusCode": status_code, "headers": _headers(), "body": json.dumps(body)}
 
 
-def _get_authorization_header(event: Dict[str, Any]) -> str:
-    headers = event.get("headers") or {}
-    return headers.get("Authorization") or headers.get("authorization") or ""
+def _require_admin_context(event: Dict[str, Any]) -> None:
+    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
+    claims = authorizer.get("claims") if isinstance(authorizer, dict) else None
+    claims = claims or authorizer
+    if not isinstance(claims, dict):
+        raise PermissionError("Missing authorizer context")
 
-
-def _require_admin_jwt(event: Dict[str, Any]) -> None:
-    auth_header = _get_authorization_header(event)
-    if not auth_header.startswith("Bearer "):
-        raise PermissionError("Missing or invalid Authorization header")
-
-    token = auth_header[7:]
-    claims = jwt.decode(token, options={"verify_signature": False}, algorithms=["HS256", "RS256"])
     role = str(claims.get("role") or claims.get("userRole") or claims.get("user_role") or "").lower()
     if role != "admin":
         raise PermissionError("Admin role required")
@@ -163,8 +157,8 @@ def _build_payload(metric_data: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     api_5xx = metric_data.get("api_5xx", {}).get("latest", 0.0)
 
     infra = {
-        "lambdaInvocations": int(lambda_invocations),
-        "apiRequestCount": int(api_requests),
+        "lambdaInvocations": round(lambda_invocations),
+        "apiRequestCount": round(api_requests),
         "apiLatency": {
             "p50": round(metric_data.get("lambda_duration_p50", {}).get("latest", 0.0), 2),
             "p95": round(metric_data.get("lambda_duration_p95", {}).get("latest", 0.0), 2),
@@ -208,7 +202,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return _response(404, {"error": "Not found"})
 
     try:
-        _require_admin_jwt(event)
+        # API Gateway CUSTOM authorizer must inject claims; this is a defense-in-depth check.
+        _require_admin_context(event)
         metric_data = _get_metric_data()
         return _response(200, _build_payload(metric_data))
     except PermissionError as exc:
