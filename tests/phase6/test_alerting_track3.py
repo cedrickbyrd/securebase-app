@@ -414,12 +414,15 @@ class TestChaosDrillMaintenanceMode:
         mock_lambda.delete_function_concurrency.return_value = {}
 
         with patch("chaos_drill.DRILL_DURATION_SECONDS", 0):
-            result = chaos_drill.handler({"action": "alarm_check"}, _make_context())
+            chaos_drill.handler({"action": "alarm_check"}, _make_context())
 
-        calls = [c[1].get("Value", c[0][1] if len(c[0]) > 1 else "") for c in mock_ssm.put_parameter.call_args_list]
-        values = [c for c in calls if c in ("true", "false")]
-        assert "true" in values
-        assert "false" in values
+        # Extract all 'Value' keyword arguments passed to put_parameter
+        put_values = [
+            call_args.kwargs.get("Value") or (call_args.args[1] if len(call_args.args) > 1 else None)
+            for call_args in mock_ssm.put_parameter.call_args_list
+        ]
+        assert "true" in put_values, "maintenance mode should have been enabled"
+        assert "false" in put_values, "maintenance mode should have been disabled on completion"
 
     @patch.dict(os.environ, {"ENVIRONMENT": "prod", "DRILL_RESULTS_BUCKET": ""})
     @patch("chaos_drill._lambda_client")
