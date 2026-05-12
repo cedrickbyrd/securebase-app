@@ -49,6 +49,7 @@ ENDPOINT_PROFILES: List[Tuple[str, str, Tuple[float, float], float]] = [
     ("/admin/metrics/summary", "GET", (60, 170), 0.15),
     ("/compliance/reports/generate", "POST", (85, 200), 0.05),
 ]
+SIMULATED_ERROR_RATE = 0.0005
 
 
 def choose_endpoint() -> Tuple[str, str, Tuple[float, float]]:
@@ -65,7 +66,7 @@ def choose_endpoint() -> Tuple[str, str, Tuple[float, float]]:
 async def simulate_request(latency_range: Tuple[float, float]) -> Tuple[bool, float]:
     start = time.perf_counter()
     await asyncio.sleep(random.uniform(*latency_range) / 1000.0)
-    ok = random.random() > 0.0005
+    ok = random.random() > SIMULATED_ERROR_RATE
     elapsed = (time.perf_counter() - start) * 1000
     return ok, elapsed
 

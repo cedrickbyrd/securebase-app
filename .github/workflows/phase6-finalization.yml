@@ -82,12 +82,18 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
+          import sys
+
           path = Path("ROADMAP.md")
           content = path.read_text()
-          content = content.replace(
-              "| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | 85% |",
-              "| Phase 6 | Compliance Automation & Operations Scale | ✅ Complete | 100% |",
-          )
+          pattern = r"^\| Phase 6 \| Compliance Automation & Operations Scale \| .* \| .* \|$"
+          replacement = "| Phase 6 | Compliance Automation & Operations Scale | ✅ Complete | 100% |"
+          updated, replacements = re.subn(pattern, replacement, content, flags=re.MULTILINE)
+          if replacements == 0:
+              print("ERROR: Phase 6 roadmap row was not found; aborting update.")
+              sys.exit(1)
+          content = updated
           path.write_text(content)
           PY
 

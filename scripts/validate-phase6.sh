@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-ROOT="/home/runner/work/securebase-app/securebase-app"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 FAILED=0
 
 declare -A GAPS=(

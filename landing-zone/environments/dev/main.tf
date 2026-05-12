@@ -35,6 +35,7 @@ locals {
     "securebase-${var.environment}-failover-orchestrator",
     "securebase-${var.environment}-failback-orchestrator",
   ]
+  phase6_audit_source_bucket = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
 }
 
 data "aws_ssoadmin_instances" "this" {}
@@ -182,7 +183,7 @@ module "phase6_audit_logging" {
   environment               = var.environment
   project_name              = "securebase"
   evidence_bucket_name      = "securebase-evidence-${var.environment}"
-  audit_source_bucket_name  = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
+  audit_source_bucket_name  = local.phase6_audit_source_bucket
   object_lock_retention_days = 2555
   macie_alert_email         = var.alert_email
 
@@ -197,7 +198,7 @@ module "phase6_compliance" {
 
   environment                     = var.environment
   project_name                    = "securebase"
-  config_delivery_bucket_name     = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
+  config_delivery_bucket_name     = local.phase6_audit_source_bucket
   config_recorder_already_enabled = true
   enable_hipaa_conformance_pack   = true
   enable_nist_conformance_pack    = true
