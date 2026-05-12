@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import SystemHealth from './SystemHealth';
+import AlertingDashboard from './AlertingDashboard';
 import { adminService } from '../../services/adminService';
 
 const INITIAL_DELAY_MS = 30000;
@@ -278,6 +279,10 @@ const AdminDashboard = () => {
       </section>
 
       <SystemHealth refreshKey={refreshKey} />
+
+      <section className="bg-white border border-gray-200 rounded-xl p-6">
+        <AlertingDashboard />
+      </section>
 
       {lastUpdated && (
         <p className="text-xs text-gray-500">Last updated: {lastUpdated.toLocaleString()}</p>

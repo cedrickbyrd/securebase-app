@@ -1,0 +1,57 @@
+{
+  "runbook_id": "high_lambda_error_rate",
+  "version": "1.0",
+  "description": "Automated response to elevated Lambda error rate alarms. Captures logs, notifies on-call, and optionally rolls back the last deployment.",
+  "severity": "P2",
+  "trigger_patterns": [
+    "*-error-rate",
+    "*-errors-critical",
+    "*-auth-errors-critical"
+  ],
+  "estimated_duration_minutes": 5,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "capture_lambda_logs",
+      "description": "Capture the last 30 minutes of ERROR-level log events from the affected Lambda function.",
+      "action": "capture_lambda_logs",
+      "params": {
+        "tail_minutes": 30
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 2,
+      "name": "notify_oncall",
+      "description": "Alert the on-call engineer with context about the alarm and captured logs.",
+      "action": "notify",
+      "params": {
+        "channel": "slack",
+        "message": "High Lambda error rate detected. Runbook triggered — captured 30 min of logs. Review CloudWatch Logs Insights for root cause."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 3,
+      "name": "notify_pagerduty",
+      "description": "Create a PagerDuty incident for tracking and escalation.",
+      "action": "notify",
+      "params": {
+        "channel": "pagerduty",
+        "message": "SecureBase: High Lambda error rate detected. Automated runbook steps executed. Manual review required."
+      },
+      "on_failure": "continue"
+    }
+  ],
+  "post_incident_actions": [
+    "Review CloudWatch Logs Insights: filter by ERROR level, last 1 hour",
+    "Check recent deployments in CodeDeploy or GitHub Actions",
+    "Review Lambda configuration changes in CloudTrail",
+    "If error rate exceeds 10%, consider rolling back the last deployment",
+    "Update post-mortem template: docs/runbooks/postmortem_template.md"
+  ],
+  "references": [
+    "https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html",
+    "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html"
+  ]
+}
