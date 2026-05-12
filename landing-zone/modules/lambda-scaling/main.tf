@@ -7,6 +7,13 @@ terraform {
   }
 }
 
+locals {
+  non_critical_function_keys = {
+    for function_name in var.non_critical_functions :
+    function_name => replace(function_name, "securebase-${var.environment}-", "")
+  }
+}
+
 resource "aws_lambda_alias" "high_traffic" {
   for_each = var.high_traffic_functions
 
@@ -96,9 +103,9 @@ resource "aws_cloudwatch_metric_alarm" "cold_start_init_duration" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "non_critical_concurrency_cap" {
-  for_each = toset(var.non_critical_functions)
+  for_each = local.non_critical_function_keys
 
-  alarm_name          = "securebase-${var.environment}-${replace(each.value, "securebase-${var.environment}-", "")}-concurrency-over-50"
+  alarm_name          = "securebase-${var.environment}-${each.value}-concurrency-over-50"
   alarm_description   = "Non-critical Lambda exceeded 50 concurrent executions (noisy-neighbor guardrail)"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
@@ -111,7 +118,7 @@ resource "aws_cloudwatch_metric_alarm" "non_critical_concurrency_cap" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = each.value
+    FunctionName = each.key
   }
 
   alarm_actions = var.alarm_actions

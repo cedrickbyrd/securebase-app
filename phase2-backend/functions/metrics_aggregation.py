@@ -176,6 +176,8 @@ def get_cost_metrics(params: Dict[str, str]) -> Dict[str, Any]:
     try:
         data = get_cost_metrics_data(time_range, tenant_id=tenant_id, start=start, end=end)
         return response(200, data)
+    except ValueError:
+        return response(400, {'error': 'Invalid date format; expected YYYY-MM-DD'})
     except Exception as e:
         logger.error(f"Error getting cost metrics: {str(e)}", exc_info=True)
         return response(500, {'error': str(e)})
@@ -417,10 +419,13 @@ def get_cost_metrics_data(
     end: str = None,
 ) -> Dict[str, Any]:
     """Query cost metrics from Cost Explorer"""
+    def _parse_date(value: str) -> datetime.date:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+
     try:
         table = dynamodb.Table(COST_PER_TENANT_TABLE)
-        end_date = datetime.strptime(end, "%Y-%m-%d").date() if end else datetime.utcnow().date()
-        start_date = datetime.strptime(start, "%Y-%m-%d").date() if start else (end_date - parse_time_range(time_range))
+        end_date = _parse_date(end) if end else datetime.utcnow().date()
+        start_date = _parse_date(start) if start else (end_date - parse_time_range(time_range))
 
         if tenant_id:
             rows = table.query(

@@ -326,8 +326,8 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {sortedTenantCosts.length > 0 ? (
-                  sortedTenantCosts.map((row, index) => (
-                    <tr key={`${row.tenant_id}-${row.date}-${index}`} className="border-t border-gray-100">
+                  sortedTenantCosts.map((row) => (
+                    <tr key={`${row.tenant_id}-${row.date}`} className="border-t border-gray-100">
                       <td className="px-3 py-2">{row.tenant_id}</td>
                       <td className="px-3 py-2">{row.date}</td>
                       <td className="px-3 py-2 text-right">${Number(row.totalCost || 0).toFixed(2)}</td>

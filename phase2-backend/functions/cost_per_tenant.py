@@ -138,7 +138,7 @@ def aggregate_daily_costs(target_date: date) -> Dict[str, Dict[str, Any]]:
 
 def put_daily_cost_records(tenant_costs: Dict[str, Dict[str, Any]], target_date: date) -> int:
     table = dynamodb.Table(COST_PER_TENANT_TABLE)
-    ttl = int((target_date + timedelta(days=400)).strftime("%s"))
+    ttl = int((datetime.combine(target_date + timedelta(days=400), datetime.min.time()) - datetime(1970, 1, 1)).total_seconds())
     stored = 0
 
     for tenant_id, payload in tenant_costs.items():
@@ -300,6 +300,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return get_tenant_costs(event)
             return response(404, {"error": "Not found"})
 
+        # Default to yesterday; EventBridge schedule runs at 1AM UTC for prior day.
         requested_date = event.get("date")
         target_date = parse_date(requested_date, date.today() - timedelta(days=1))
         return response(200, run_daily_aggregation(target_date))

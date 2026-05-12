@@ -114,7 +114,7 @@ class AdminService {
   async getCostManagement(params = {}) {
     if (USE_MOCK) return clone(mockData.costs);
     const query = new URLSearchParams(
-      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      Object.entries(params).filter(([, value]) => value != null && value !== '')
     );
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return api.get(`/admin/costs${suffix}`);
