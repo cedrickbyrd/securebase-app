@@ -442,6 +442,22 @@ def get_cost_metrics_data(tenant_id: str, time_range: str) -> Dict[str, Any]:
                 },
                 GroupBy=[{'Type': 'SERVICE', 'Key': 'SERVICE'}]
             )
+            if not ce_response.get('ResultsByTime'):
+                ce_response = ce.get_cost_and_usage(
+                    TimePeriod={
+                        'Start': start_date.strftime('%Y-%m-%d'),
+                        'End': end_date.strftime('%Y-%m-%d')
+                    },
+                    Granularity='MONTHLY',
+                    Metrics=['UnblendedCost'],
+                    Filter={
+                        'Tags': {
+                            'Key': 'TenantId',
+                            'Values': [tenant_id]
+                        }
+                    },
+                    GroupBy=[{'Type': 'SERVICE', 'Key': 'SERVICE'}]
+                )
             
             # Parse Cost Explorer response
             breakdown = {}

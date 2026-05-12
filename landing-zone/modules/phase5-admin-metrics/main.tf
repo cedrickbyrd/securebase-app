@@ -25,6 +25,7 @@ resource "aws_lambda_function" "admin_metrics" {
   function_name = "securebase-${var.environment}-admin-metrics"
   handler       = "metrics_aggregation.lambda_handler"
   runtime       = "python3.11"
+  # Publish immutable versions so lambda-scaling can attach aliases/provisioned concurrency.
   publish       = true
   timeout       = 30
   memory_size   = 256
@@ -233,6 +234,7 @@ resource "aws_lambda_function" "cost_per_tenant" {
   function_name = "securebase-${var.environment}-cost-per-tenant"
   handler       = "cost_per_tenant.lambda_handler"
   runtime       = "python3.11"
+  # Publish immutable versions for safe future alias rollout.
   publish       = true
   timeout       = 60
   memory_size   = 512

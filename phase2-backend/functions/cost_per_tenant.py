@@ -27,6 +27,7 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 TENANT_TAG_KEY = os.environ.get("TENANT_TAG_KEY", "tenant_id")
 ANOMALY_MULTIPLIER = float(os.environ.get("ANOMALY_MULTIPLIER", "1.5"))
+RETENTION_DAYS = int(os.environ.get("COST_HISTORY_RETENTION_DAYS", "400"))
 
 COST_PER_TENANT_TABLE = os.environ.get(
     "COST_PER_TENANT_TABLE", f"securebase-{ENVIRONMENT}-cost-per-tenant"
@@ -138,7 +139,8 @@ def aggregate_daily_costs(target_date: date) -> Dict[str, Dict[str, Any]]:
 
 def put_daily_cost_records(tenant_costs: Dict[str, Dict[str, Any]], target_date: date) -> int:
     table = dynamodb.Table(COST_PER_TENANT_TABLE)
-    ttl = int((datetime.combine(target_date + timedelta(days=400), datetime.min.time()) - datetime(1970, 1, 1)).total_seconds())
+    # Retain records long enough for monthly/quarterly trend reviews and anomaly baselines.
+    ttl = int((datetime.combine(target_date + timedelta(days=RETENTION_DAYS), datetime.min.time()) - datetime(1970, 1, 1)).total_seconds())
     stored = 0
 
     for tenant_id, payload in tenant_costs.items():
@@ -202,6 +204,7 @@ def run_daily_aggregation(target_date: date) -> Dict[str, Any]:
     for tenant_id, record in tenant_costs.items():
         baseline = get_prior_average(tenant_id, target_date)
         current = float(record["total_cost"])
+        # Alert when daily cost exceeds 150% (configurable) of the prior 7-day average.
         if baseline > 0 and current > (baseline * ANOMALY_MULTIPLIER):
             publish_anomaly(tenant_id, record["date"], current, baseline)
             anomalies += 1
@@ -222,11 +225,24 @@ def _query_tenant_history(tenant_id: str, start_date: date, end_date: date) -> L
     ).get("Items", [])
 
 
-def _scan_history(start_date: date, end_date: date) -> List[Dict[str, Any]]:
+def _scan_history(start_date: date, end_date: date, max_records: int = 500) -> List[Dict[str, Any]]:
     table = dynamodb.Table(COST_PER_TENANT_TABLE)
-    return table.scan(
-        FilterExpression=Attr("date").between(start_date.isoformat(), end_date.isoformat())
-    ).get("Items", [])
+    items: List[Dict[str, Any]] = []
+    last_key = None
+    while len(items) < max_records:
+        scan_kwargs = {
+            "FilterExpression": Attr("date").between(start_date.isoformat(), end_date.isoformat()),
+            "Limit": min(100, max_records - len(items)),
+        }
+        if last_key:
+            scan_kwargs["ExclusiveStartKey"] = last_key
+
+        response = table.scan(**scan_kwargs)
+        items.extend(response.get("Items", []))
+        last_key = response.get("LastEvaluatedKey")
+        if not last_key:
+            break
+    return items[:max_records]
 
 
 def get_admin_costs(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -234,8 +250,9 @@ def get_admin_costs(event: Dict[str, Any]) -> Dict[str, Any]:
     end_date = parse_date(query.get("end"), date.today())
     start_date = parse_date(query.get("start"), end_date - timedelta(days=30))
     tenant_id = query.get("tenant_id")
+    limit = int(query.get("limit", "500"))
 
-    rows = _query_tenant_history(tenant_id, start_date, end_date) if tenant_id else _scan_history(start_date, end_date)
+    rows = _query_tenant_history(tenant_id, start_date, end_date) if tenant_id else _scan_history(start_date, end_date, max_records=limit)
     rows = sorted(rows, key=lambda item: (item.get("tenant_id", ""), item.get("date", "")))
 
     totals = defaultdict(float)
