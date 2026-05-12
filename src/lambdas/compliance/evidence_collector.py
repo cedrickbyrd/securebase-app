@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 import boto3
 
 s3_client = boto3.client("s3")
+COMPLIANCE_RETENTION_DAYS = 2555
 
 
 @dataclass
@@ -53,16 +54,23 @@ def store_evidence(bucket: str, framework: str, records: List[EvidenceRecord]) -
 
     created_at = datetime.now(timezone.utc)
     key = f"evidence/{framework.lower()}/{created_at.strftime('%Y/%m/%d')}/{created_at.timestamp()}.json"
-    retention_until = created_at + timedelta(days=2555)
+    retention_until = created_at + timedelta(days=COMPLIANCE_RETENTION_DAYS)
+    kms_key_id = os.environ.get("COMPLIANCE_EVIDENCE_KMS_KEY_ID", "")
+
+    put_kwargs = {
+        "Bucket": bucket,
+        "Key": key,
+        "Body": json.dumps([asdict(record) for record in records]).encode("utf-8"),
+        "ContentType": "application/json",
+        "ObjectLockMode": "COMPLIANCE",
+        "ObjectLockRetainUntilDate": retention_until,
+        "ServerSideEncryption": "aws:kms",
+    }
+    if kms_key_id:
+        put_kwargs["SSEKMSKeyId"] = kms_key_id
 
     s3_client.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=json.dumps([asdict(record) for record in records]).encode("utf-8"),
-        ContentType="application/json",
-        ServerSideEncryption="AES256",
-        ObjectLockMode="COMPLIANCE",
-        ObjectLockRetainUntilDate=retention_until,
+        **put_kwargs,
     )
     return key
 
