@@ -25,17 +25,23 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Any
 import logging
+import calendar
+from collections import defaultdict
+
+from boto3.dynamodb.conditions import Key
 
 # Configure logging
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
+AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+
 # AWS clients
-cloudwatch = boto3.client('cloudwatch')
-dynamodb = boto3.resource('dynamodb')
-ce = boto3.client('ce')  # Cost Explorer
-securityhub = boto3.client('securityhub')
+cloudwatch = boto3.client('cloudwatch', region_name=AWS_REGION)
+dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+ce = boto3.client('ce', region_name='us-east-1')  # Cost Explorer
+securityhub = boto3.client('securityhub', region_name=AWS_REGION)
 
 # Environment variables
 CUSTOMERS_TABLE = os.environ.get('CUSTOMERS_TABLE', 'securebase-prod-customers')
@@ -43,6 +49,7 @@ METRICS_HISTORY_TABLE = os.environ.get('METRICS_HISTORY_TABLE', 'securebase-metr
 AUDIT_TRAIL_TABLE = os.environ.get('AUDIT_TRAIL_TABLE', 'securebase-audit-trail')
 COMPLIANCE_VIOLATIONS_TABLE = os.environ.get('COMPLIANCE_VIOLATIONS_TABLE', 'securebase-compliance-violations')
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'dev')
+COST_PER_TENANT_TABLE = os.environ.get('COST_PER_TENANT_TABLE', f'securebase-{ENVIRONMENT}-cost-per-tenant')
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -372,10 +379,52 @@ def get_cost_metrics(tenant_id: str, params: Dict[str, str]) -> Dict[str, Any]:
 def get_cost_metrics_data(tenant_id: str, time_range: str) -> Dict[str, Any]:
     """Internal function to get cost data"""
     try:
-        # In production, query AWS Cost Explorer with tenant-specific tags
+        table = dynamodb.Table(COST_PER_TENANT_TABLE)
         start_date = get_start_date(time_range)
         end_date = datetime.utcnow()
-        
+
+        try:
+            rows = table.query(
+                KeyConditionExpression=Key('tenant_id').eq(tenant_id) & Key('date').between(
+                    start_date.strftime('%Y-%m-%d'),
+                    end_date.strftime('%Y-%m-%d')
+                )
+            ).get('Items', [])
+        except Exception:
+            rows = []
+
+        if rows:
+            rows.sort(key=lambda item: item.get('date', ''))
+            breakdown_totals = defaultdict(float)
+            trend = []
+
+            for row in rows:
+                row_total = float(row.get('total_cost', 0))
+                trend.append(round(row_total, 2))
+                for service, amount in (row.get('breakdown') or {}).items():
+                    breakdown_totals[service] += float(amount)
+
+            current_month = sum(trend)
+            now = datetime.utcnow()
+            days_in_month = calendar.monthrange(now.year, now.month)[1]
+            avg_daily = (current_month / len(trend)) if trend else 0
+            forecasted = avg_daily * days_in_month
+
+            return {
+                'currentMonth': round(current_month, 2),
+                'forecasted': round(forecasted, 2),
+                'estimatedMonthlyCost': round(forecasted, 2),
+                'breakdown': {key: round(value, 2) for key, value in sorted(breakdown_totals.items())},
+                'planLimits': {
+                    'apiCalls': {'used': 45000, 'limit': 100000},
+                    'storageGB': {'used': 125, 'limit': 500},
+                    'userSeats': {'used': 8, 'limit': 10}
+                },
+                'trend': trend[-30:],
+                'history': rows[-30:],
+            }
+
+        # In production, query AWS Cost Explorer with tenant-specific tags
         try:
             # Attempt to get real cost data from Cost Explorer
             ce_response = ce.get_cost_and_usage(
@@ -387,7 +436,7 @@ def get_cost_metrics_data(tenant_id: str, time_range: str) -> Dict[str, Any]:
                 Metrics=['UnblendedCost'],
                 Filter={
                     'Tags': {
-                        'Key': 'TenantId',
+                        'Key': 'tenant_id',
                         'Values': [tenant_id]
                     }
                 },
@@ -424,6 +473,7 @@ def get_cost_metrics_data(tenant_id: str, time_range: str) -> Dict[str, Any]:
         costs = {
             'currentMonth': total_cost,
             'forecasted': forecasted,
+            'estimatedMonthlyCost': forecasted,
             'breakdown': breakdown,
             'planLimits': {
                 'apiCalls': {'used': 45000, 'limit': 100000},

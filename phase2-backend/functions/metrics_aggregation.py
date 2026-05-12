@@ -26,23 +26,29 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Any
 import logging
+from collections import defaultdict
+
+from boto3.dynamodb.conditions import Attr, Key
 
 # Configure logging
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 
+AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+
 # AWS clients
-cloudwatch = boto3.client('cloudwatch')
-dynamodb = boto3.resource('dynamodb')
-ce = boto3.client('ce')  # Cost Explorer
-securityhub = boto3.client('securityhub')
+cloudwatch = boto3.client('cloudwatch', region_name=AWS_REGION)
+dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+ce = boto3.client('ce', region_name='us-east-1')  # Cost Explorer
+securityhub = boto3.client('securityhub', region_name=AWS_REGION)
 
 # Environment variables
 CUSTOMERS_TABLE = os.environ.get('CUSTOMERS_TABLE', 'securebase-prod-customers')
 METRICS_TABLE = os.environ.get('METRICS_TABLE', 'securebase-dev-metrics')
 DEPLOYMENTS_TABLE = os.environ.get('DEPLOYMENTS_TABLE', 'securebase-prod-deployments')
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'dev')
+COST_PER_TENANT_TABLE = os.environ.get('COST_PER_TENANT_TABLE', f'securebase-{ENVIRONMENT}-cost-per-tenant')
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -163,9 +169,12 @@ def get_security_metrics() -> Dict[str, Any]:
 def get_cost_metrics(params: Dict[str, str]) -> Dict[str, Any]:
     """Get cost analytics"""
     time_range = params.get('timeRange', '30d')
+    tenant_id = params.get('tenant_id')
+    start = params.get('start')
+    end = params.get('end')
     
     try:
-        data = get_cost_metrics_data(time_range)
+        data = get_cost_metrics_data(time_range, tenant_id=tenant_id, start=start, end=end)
         return response(200, data)
     except Exception as e:
         logger.error(f"Error getting cost metrics: {str(e)}", exc_info=True)
@@ -401,8 +410,77 @@ def get_security_metrics_data() -> Dict[str, Any]:
         }
 
 
-def get_cost_metrics_data(time_range: str) -> Dict[str, Any]:
+def get_cost_metrics_data(
+    time_range: str,
+    tenant_id: str = None,
+    start: str = None,
+    end: str = None,
+) -> Dict[str, Any]:
     """Query cost metrics from Cost Explorer"""
+    try:
+        table = dynamodb.Table(COST_PER_TENANT_TABLE)
+        end_date = datetime.strptime(end, "%Y-%m-%d").date() if end else datetime.utcnow().date()
+        start_date = datetime.strptime(start, "%Y-%m-%d").date() if start else (end_date - parse_time_range(time_range))
+
+        if tenant_id:
+            rows = table.query(
+                KeyConditionExpression=Key('tenant_id').eq(tenant_id) & Key('date').between(
+                    start_date.isoformat(), end_date.isoformat()
+                )
+            ).get('Items', [])
+        else:
+            rows = table.scan(
+                FilterExpression=Attr('date').between(start_date.isoformat(), end_date.isoformat())
+            ).get('Items', [])
+
+        if rows:
+            by_service_totals = defaultdict(float)
+            tenant_totals = defaultdict(float)
+            trend = defaultdict(float)
+
+            for row in rows:
+                row_total = float(row.get('total_cost', 0))
+                tenant_totals[row.get('tenant_id', 'unknown')] += row_total
+                trend[row.get('date', '')] += row_total
+                for service, amount in (row.get('breakdown') or {}).items():
+                    by_service_totals[service] += float(amount)
+
+            total_cost = sum(tenant_totals.values())
+            days_elapsed = max((end_date - start_date).days, 1)
+            projected = (total_cost / days_elapsed) * 30
+
+            return {
+                'current': round(total_cost, 2),
+                'projected': round(projected, 2),
+                'byService': [
+                    {'name': service, 'cost': round(cost, 2)}
+                    for service, cost in sorted(by_service_totals.items(), key=lambda item: item[1], reverse=True)[:10]
+                ],
+                'trend': 0.0,
+                'tenantCostHistory': sorted(
+                    [
+                        {
+                            'tenant_id': row.get('tenant_id'),
+                            'date': row.get('date'),
+                            'totalCost': round(float(row.get('total_cost', 0)), 2),
+                            'breakdown': {k: round(float(v), 2) for k, v in (row.get('breakdown') or {}).items()},
+                        }
+                        for row in rows
+                    ],
+                    key=lambda row: (row.get('tenant_id', ''), row.get('date', '')),
+                ),
+                'totalsByTenant': [
+                    {'tenant_id': tenant, 'total': round(cost, 2)}
+                    for tenant, cost in sorted(tenant_totals.items(), key=lambda item: item[1], reverse=True)
+                ],
+                'dailyTotals': [
+                    {'date': d, 'total': round(v, 2)}
+                    for d, v in sorted(trend.items())
+                ],
+            }
+    except Exception as ddb_error:
+        logger.warning("Falling back to Cost Explorer for admin costs: %s", str(ddb_error))
+
     try:
         end_date = datetime.now().date()
         start_date = end_date - parse_time_range(time_range)

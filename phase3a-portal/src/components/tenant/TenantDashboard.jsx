@@ -100,6 +100,7 @@ const TenantDashboard = () => {
         costs: {
           currentMonth: 1245.67,
           forecasted: 1580.34,
+          estimatedMonthlyCost: 1580.34,
           breakdown: {
             apiGateway: 125.34,
             lambda: 456.78,
@@ -112,7 +113,7 @@ const TenantDashboard = () => {
             storageGB: { used: 125, limit: 500 },
             userSeats: { used: 8, limit: 10 }
           },
-          trend: [1150, 1180, 1200, 1220, 1245.67]
+          trend: [1095, 1120, 1145, 1178, 1150, 1180, 1200, 1220, 1245.67]
         },
         auditTrail: [
           {
@@ -581,20 +582,21 @@ const TenantDashboard = () => {
           {/* Current Month Spend */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Current Month Spend</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Your Estimated Monthly Cost</h3>
               <DollarSign className="w-6 h-6 text-green-600" />
             </div>
             <div className="text-4xl font-bold text-gray-900 mb-2">
-              {formatCurrency(costData?.currentMonth || 0)}
+              {formatCurrency(costData?.estimatedMonthlyCost || costData?.forecasted || 0)}
             </div>
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="w-4 h-4 text-green-600" />
               <span className="text-gray-600">
-                Forecasted: {formatCurrency(costData?.forecasted || 0)}
+                Current spend: {formatCurrency(costData?.currentMonth || 0)}
               </span>
             </div>
             {costTrendData && (
               <div className="mt-4">
+                <p className="text-xs text-gray-500 mb-2">30-day trend</p>
                 <Line 
                   data={costTrendData}
                   options={{
