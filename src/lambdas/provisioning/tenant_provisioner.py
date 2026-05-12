@@ -34,6 +34,9 @@ TENANTS_TABLE = os.getenv("TENANTS_TABLE", "securebase-tenants")
 WELCOME_FROM = os.getenv("WELCOME_FROM", "noreply@securebase.io")
 CODEBUILD_PROJECT = os.getenv("TENANT_TERRAFORM_PROJECT", "securebase-tenant-terraform-runner")
 DEFAULT_REGION = os.getenv("AWS_REGION", "us-east-1")
+POLLING_TIMEOUT_SECONDS = int(os.getenv("PROVISIONING_TIMEOUT_SECONDS", "600"))
+API_KEY_SUFFIX_LENGTH = int(os.getenv("API_KEY_SUFFIX_LENGTH", "8"))
+API_KEY_TOKEN_BYTES = int(os.getenv("API_KEY_TOKEN_BYTES", "24"))
 
 
 def _now() -> str:
@@ -62,8 +65,10 @@ def _put_status(tenant_id: str, status: str, detail: Dict[str, Any]) -> None:
 
 
 def _generate_api_key(tenant_id: str) -> Dict[str, str]:
-    suffix = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(8))
-    raw = f"sk_live_{tenant_id}_{suffix}_{secrets.token_hex(24)}"
+    suffix = "".join(
+        secrets.choice(string.ascii_lowercase + string.digits) for _ in range(API_KEY_SUFFIX_LENGTH)
+    )
+    raw = f"sk_live_{tenant_id}_{suffix}_{secrets.token_hex(API_KEY_TOKEN_BYTES)}"
     digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     return {"raw": raw, "hash": digest, "prefix": raw[:28]}
 
@@ -77,7 +82,7 @@ def _create_org_account(tenant_id: str, email: str, name: str) -> str:
     )
     request_id = create["CreateAccountStatus"]["Id"]
 
-    deadline = time.time() + 600
+    deadline = time.time() + POLLING_TIMEOUT_SECONDS
     while time.time() < deadline:
         status = orgs.describe_create_account_status(CreateAccountRequestId=request_id)["CreateAccountStatus"]
         state = status["State"]
@@ -105,7 +110,7 @@ def _run_tenant_terraform(tenant: Dict[str, Any], account_id: str) -> str:
     )
     build_id = response["build"]["id"]
 
-    deadline = time.time() + 600
+    deadline = time.time() + POLLING_TIMEOUT_SECONDS
     while time.time() < deadline:
         build = codebuild.batch_get_builds(ids=[build_id])["builds"][0]
         status = build["buildStatus"]
@@ -207,13 +212,30 @@ def provision_tenant(tenant: Dict[str, Any]) -> Dict[str, Any]:
             "aws_account_id": account_id,
             "provisioned_in": "<10m",
         }
-    except Exception as exc:  # noqa: BLE001
+    except (ClientError, RuntimeError, TimeoutError) as exc:
         logger.exception("Provisioning failed for tenant %s", tenant["tenant_id"])
         _put_status(
             tenant["tenant_id"],
             "failed",
             {
                 "error": str(exc),
+                "error_type": type(exc).__name__,
+                "failed_at": _now(),
+            },
+        )
+        raise
+    except Exception as exc:
+        logger.exception(
+            "Unexpected provisioning error for tenant %s (type=%s)",
+            tenant["tenant_id"],
+            type(exc).__name__,
+        )
+        _put_status(
+            tenant["tenant_id"],
+            "failed",
+            {
+                "error": str(exc),
+                "error_type": type(exc).__name__,
                 "failed_at": _now(),
             },
         )
@@ -236,5 +258,6 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
         return {"statusCode": 400, "body": json.dumps({"error": str(exc)})}
     except ClientError as exc:
         return {"statusCode": 502, "body": json.dumps({"error": str(exc)})}
-    except Exception as exc:  # noqa: BLE001
-        return {"statusCode": 500, "body": json.dumps({"error": str(exc)})}
+    except Exception as exc:
+        logger.exception("Unhandled tenant_provisioner error (type=%s)", type(exc).__name__)
+        return {"statusCode": 500, "body": json.dumps({"error": "Internal provisioning error"})}

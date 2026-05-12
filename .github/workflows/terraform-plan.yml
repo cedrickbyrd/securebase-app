@@ -15,6 +15,7 @@ permissions:
 
 env:
   TF_VERSION: '1.7.5'
+  PLAN_COMMENT_MAX_CHARS: '65000'
 
 jobs:
   terraform-plan:
@@ -103,7 +104,7 @@ jobs:
             const tfDir = process.env.TF_DIR;
             const planPath = `${process.env.GITHUB_WORKSPACE}/${tfDir}/${workspace}-plan.txt`;
             const fullPlan = fs.readFileSync(planPath, 'utf8');
-            const maxChars = 65000;
+            const maxChars = Number(process.env.PLAN_COMMENT_MAX_CHARS || '65000');
             const content = fullPlan.length > maxChars
               ? `${fullPlan.slice(0, maxChars)}\n\n...truncated, full output in workflow artifact...`
               : fullPlan;
@@ -112,5 +113,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## Terraform Plan (${workspace})\n\n\`\`\`hcl\n${content}\n\`\`\``
+              body: `## Terraform Plan (${workspace})\n\n\`\`\`terraform\n${content}\n\`\`\``
             });

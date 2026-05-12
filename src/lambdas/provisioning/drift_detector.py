@@ -6,12 +6,13 @@ import json
 import os
 import re
 import subprocess
+import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Dict, Tuple
 
 try:
     import boto3
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     boto3 = None
 
 DRIFT_TABLE = os.getenv("DRIFT_TABLE", "securebase-drift-history")
@@ -19,6 +20,9 @@ TERRAFORM_DIR = os.getenv("TERRAFORM_DIR", "/tmp/terraform")
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "cedrickbyrd/securebase-app")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 SNS_TOPIC_ARN = os.getenv("DRIFT_ALERT_TOPIC_ARN", "")
+P2_CHANGE_THRESHOLD = int(os.getenv("DRIFT_P2_CHANGE_THRESHOLD", "5"))
+GITHUB_ISSUE_MAX_CHARS = int(os.getenv("GITHUB_ISSUE_MAX_CHARS", "60000"))
+GITHUB_API_TIMEOUT_SECONDS = int(os.getenv("GITHUB_API_TIMEOUT_SECONDS", "10"))
 
 
 def _now() -> str:
@@ -29,13 +33,14 @@ def parse_plan_summary(plan_output: str) -> Tuple[int, int, int]:
     match = re.search(r"Plan:\s+(\d+) to add,\s+(\d+) to change,\s+(\d+) to destroy", plan_output)
     if not match:
         return (0, 0, 0)
-    return tuple(int(value) for value in match.groups())
+    add_raw, change_raw, destroy_raw = match.groups()
+    return (int(add_raw), int(change_raw), int(destroy_raw))
 
 
 def classify_drift(add: int, change: int, destroy: int) -> str:
     if destroy > 0:
         return "P1"
-    if change > 5:
+    if change > P2_CHANGE_THRESHOLD:
         return "P2"
     if add > 0 or change > 0:
         return "P3"
@@ -94,13 +99,11 @@ def _create_github_issue(record: Dict[str, Any]) -> None:
             f"- destroy: {record['destroy']}\n"
             f"- severity: {record['severity']}\n\n"
             "```\n"
-            f"{record['plan_output'][:60000]}\n"
+            f"{record['plan_output'][:GITHUB_ISSUE_MAX_CHARS]}\n"
             "```"
         ),
         "labels": ["infra", "drift"],
     }
-    import urllib.request
-
     req = urllib.request.Request(
         f"https://api.github.com/repos/{owner}/{repo}/issues",
         data=json.dumps(body).encode("utf-8"),
@@ -111,7 +114,7 @@ def _create_github_issue(record: Dict[str, Any]) -> None:
         },
         method="POST",
     )
-    urllib.request.urlopen(req, timeout=10)
+    urllib.request.urlopen(req, timeout=GITHUB_API_TIMEOUT_SECONDS)
 
 
 def _send_sns(record: Dict[str, Any]) -> None:
