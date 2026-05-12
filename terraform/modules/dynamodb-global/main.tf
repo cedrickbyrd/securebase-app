@@ -85,8 +85,13 @@ resource "aws_dynamodb_table_replica" "this" {
 
   global_table_arn = "arn:aws:dynamodb:${var.primary_region}:${data.aws_caller_identity.current.account_id}:table/${each.key}"
 
-  # Use the replica CMK when one was created; otherwise omit the key ARN and
-  # let DynamoDB use the same key type as the source (AWS-managed).
+  # Use the replica CMK when one was created; otherwise omit the key ARN so
+  # DynamoDB uses the same key type as the source table (AWS-managed key).
+  # NOTE: DynamoDB requires all replicas to use the same KMS key type as the
+  # primary. Omitting kms_key_arn here is only correct when the source table
+  # also uses an AWS-managed key. When primary_kms_key_arn is provided above,
+  # the replica CMK is created and referenced, satisfying the CMK consistency
+  # requirement across all regions.
   kms_key_arn = local.create_replica_kms ? aws_kms_replica_key.dynamodb_secondary[0].arn : null
 
   point_in_time_recovery = var.environment == "prod"

@@ -21,7 +21,7 @@ import os
 import time
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import boto3
 from botocore.exceptions import ClientError
@@ -111,19 +111,13 @@ def _get_aurora_replication_lag(cw) -> float:
     if not GLOBAL_CLUSTER_ID:
         return 0.0
     try:
+        now = datetime.now(timezone.utc)
         result = cw.get_metric_statistics(
             Namespace="AWS/RDS",
             MetricName="AuroraGlobalDBReplicationLag",
             Dimensions=[{"Name": "DBClusterIdentifier", "Value": GLOBAL_CLUSTER_ID}],
-            StartTime=datetime.now(timezone.utc).replace(second=0, microsecond=0).__class__(
-                year=datetime.now(timezone.utc).year,
-                month=datetime.now(timezone.utc).month,
-                day=datetime.now(timezone.utc).day,
-                hour=datetime.now(timezone.utc).hour,
-                minute=max(datetime.now(timezone.utc).minute - 5, 0),
-                tzinfo=timezone.utc,
-            ),
-            EndTime=datetime.now(timezone.utc),
+            StartTime=now - timedelta(minutes=5),
+            EndTime=now,
             Period=60,
             Statistics=["Maximum"],
         )

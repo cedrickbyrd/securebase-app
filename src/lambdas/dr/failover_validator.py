@@ -32,6 +32,7 @@ from typing import Dict, Any
 import boto3
 import urllib.request
 import urllib.error
+import socket
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
@@ -182,6 +183,9 @@ def check_secondary_health_endpoint() -> Dict[str, Any]:
     except urllib.error.HTTPError as exc:
         return {"check": "secondary_health_endpoint", "passed": False,
                 "http_status": exc.code, "url": url, "error": str(exc)}
+    except (urllib.error.URLError, socket.timeout) as exc:
+        return {"check": "secondary_health_endpoint", "passed": False,
+                "url": url, "error": f"Connection error: {exc}"}
     except Exception as exc:  # pylint: disable=broad-except
         return {"check": "secondary_health_endpoint", "passed": False,
                 "url": url, "error": str(exc)}

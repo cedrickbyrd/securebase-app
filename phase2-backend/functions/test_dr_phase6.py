@@ -164,18 +164,17 @@ class TestDrDrill(unittest.TestCase):
         mock_boto.side_effect = _client_factory
         m.handler({}, _ctx())
 
-        put_calls = [
-            c for c in clients["ssm"].put_parameter.call_args_list
-            if c.kwargs.get("Name") == m.DRILL_SUPPRESSION_PARAM
-            or (c.args and c.args[0] if c.args else False)
-            or "drill_in_progress" in str(c)
-        ]
-        # At least one put for suppression=true and one for suppression=false
-        values_set = [c.kwargs.get("Value") or (c[1].get("Value") if c[1] else None)
-                      for c in clients["ssm"].put_parameter.call_args_list]
-        # Should contain both 'true' and 'false'
-        self.assertIn("true", values_set)
-        self.assertIn("false", values_set)
+        # Collect all Values passed to put_parameter calls
+        values_set = []
+        for c in clients["ssm"].put_parameter.call_args_list:
+            # Support both positional and keyword argument styles
+            if c.kwargs.get("Name") == m.DRILL_SUPPRESSION_PARAM:
+                values_set.append(c.kwargs.get("Value"))
+            elif c[1].get("Name") == m.DRILL_SUPPRESSION_PARAM:
+                values_set.append(c[1].get("Value"))
+        # Drill must set suppression=true at start and false at finish
+        self.assertIn("true", values_set, "PagerDuty suppression should be set to 'true'")
+        self.assertIn("false", values_set, "PagerDuty suppression should be cleared to 'false'")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
