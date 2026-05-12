@@ -11,7 +11,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_rate" {
   alarm_description   = "Lambda ${each.value} error rate > 1% — potential service impact"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
-  threshold           = 0
+  threshold           = 1
   treat_missing_data  = "notBreaching"
 
   metric_query {
@@ -121,7 +121,7 @@ resource "aws_cloudwatch_metric_alarm" "apigw_5xx_rate" {
   alarm_description   = "API Gateway 5xx error rate > 0.5%"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
-  threshold           = 0
+  threshold           = 0.5
   treat_missing_data  = "notBreaching"
 
   metric_query {
@@ -788,22 +788,18 @@ resource "aws_cloudwatch_metric_alarm" "evidence_collection_failure" {
 }
 
 # ── Composite Alarms: reduce noise ────────────────────────────────────────────
+# Only created when both API GW and at least one Lambda function are configured
 
 resource "aws_cloudwatch_composite_alarm" "full_service_outage" {
+  count = (var.api_gateway_id != "" && length(var.lambda_function_names) > 0) ? 1 : 0
+
   alarm_name        = "securebase-${var.environment}-FULL-SERVICE-OUTAGE"
   alarm_description = "API Gateway 5xx + Lambda errors — full service outage"
 
-  alarm_rule = join(" AND ", compact([
-    var.api_gateway_id != "" ? "ALARM(\"${aws_cloudwatch_metric_alarm.apigw_5xx_rate[0].alarm_name}\")" : "",
-    length(var.lambda_function_names) > 0 ? "ALARM(\"${aws_cloudwatch_metric_alarm.lambda_error_rate[var.lambda_function_names[0]].alarm_name}\")" : "",
-  ]))
+  alarm_rule = "ALARM(\"${aws_cloudwatch_metric_alarm.apigw_5xx_rate[0].alarm_name}\") AND ALARM(\"${aws_cloudwatch_metric_alarm.lambda_error_rate[var.lambda_function_names[0]].alarm_name}\")"
 
   alarm_actions = [aws_sns_topic.p1_critical.arn]
   ok_actions    = [aws_sns_topic.p1_critical.arn]
 
   tags = merge(local.common_tags, { Severity = "P1", AlarmCategory = "composite" })
-
-  lifecycle {
-    ignore_changes = [alarm_rule]
-  }
 }

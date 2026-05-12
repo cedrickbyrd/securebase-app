@@ -107,7 +107,19 @@ def _match_runbook(alarm_name: str, runbooks: list[tuple[str, dict]]) -> dict | 
 
 def _step_capture_lambda_logs(alarm_name: str, params: dict) -> dict:
     """Capture recent CloudWatch logs for the Lambda function named in the alarm."""
-    function_name = params.get("function_name") or alarm_name.split("-errors")[0].split("-error-rate")[0]
+    # Prefer explicit function_name param; fall back to extracting from alarm name
+    function_name = params.get("function_name", "")
+    if not function_name:
+        # Alarm names follow the pattern: securebase-{env}-{function}-{alarm_type}
+        # Extract function name by stripping known prefixes/suffixes
+        parts = alarm_name.split("-")
+        # Skip "securebase" and environment prefix (first 2 parts), drop last part (alarm type)
+        if len(parts) >= 4:
+            function_name = "-".join(parts[2:-1])
+            logger.debug("Extracted function name '%s' from alarm '%s'", function_name, alarm_name)
+        else:
+            logger.warning("Cannot extract function name from alarm '%s' — using full alarm name", alarm_name)
+            function_name = alarm_name
     tail_minutes = params.get("tail_minutes", 30)
     log_group = f"/aws/lambda/{function_name}"
     logs_client = boto3.client("logs")

@@ -95,10 +95,14 @@ def _store_alarm_event(alarm_name: str, state: str, severity: str, alarm_data: d
             )
             records = response.get("Items", [])
             if records:
-                last_alarm_time = datetime.fromisoformat(records[0]["triggered_at"])
+                last_alarm_str = records[0]["triggered_at"]
+                last_alarm_time = datetime.fromisoformat(last_alarm_str)
+                # Ensure timezone-aware for subtraction
+                if last_alarm_time.tzinfo is None:
+                    last_alarm_time = last_alarm_time.replace(tzinfo=timezone.utc)
                 mttr = int((datetime.now(timezone.utc) - last_alarm_time).total_seconds())
-                item["mttr_seconds"] = mttr
-                logger.info("MTTR for %s: %ds", alarm_name, mttr)
+                item["mttr_seconds"] = max(0, mttr)
+                logger.info("MTTR for %s: %ds", alarm_name, item["mttr_seconds"])
         except ClientError as exc:
             logger.warning("Failed to calculate MTTR for %s: %s", alarm_name, exc)
 
