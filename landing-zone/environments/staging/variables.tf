@@ -1,6 +1,7 @@
 variable "org_name" {
   description = "The name of the AWS Organization"
   type        = string
+  default     = "securebase-staging"
 }
 
 variable "target_region" {
@@ -12,6 +13,7 @@ variable "target_region" {
 variable "environment" {
   description = "Environment name (e.g., prod, security, dev)"
   type        = string
+  default     = "staging"
 }
 
 variable "accounts" {

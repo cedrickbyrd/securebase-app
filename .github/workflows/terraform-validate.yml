@@ -44,8 +44,8 @@ jobs:
             skip_credentials_validation = true
             skip_requesting_account_id  = true
             skip_metadata_api_check     = true
-            access_key                  = "mock_ci_access_key"
-            secret_key                  = "mock_ci_secret_key"
+            access_key                  = "MOCK_ACCESS_KEY_NOT_USED"
+            secret_key                  = "MOCK_SECRET_KEY_NOT_USED"
           }
           EOF
 
