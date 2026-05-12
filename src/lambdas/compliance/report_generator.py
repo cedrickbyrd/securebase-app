@@ -12,6 +12,7 @@ from typing import Any, Dict
 import boto3
 
 s3_client = boto3.client("s3")
+PRESIGNED_URL_EXPIRATION_SECONDS = 24 * 60 * 60
 
 
 REQUIRED_FIELDS = {"tenant_id", "framework", "date_range"}
@@ -62,7 +63,10 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
 
     bucket = os.environ.get("COMPLIANCE_REPORTS_BUCKET", "")
     if not bucket:
-        return {"statusCode": 500, "body": json.dumps({"error": "COMPLIANCE_REPORTS_BUCKET is not configured"})}
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": "Report generation service is not properly configured"}),
+        }
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     tenant_id = body["tenant_id"]
@@ -74,7 +78,7 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     s3_client.put_object(Bucket=bucket, Key=pdf_key, Body=_pdf_bytes(body), ContentType="application/pdf")
     s3_client.put_object(Bucket=bucket, Key=csv_key, Body=_csv_bytes(body), ContentType="text/csv")
 
-    expires_in = 24 * 60 * 60
+    expires_in = PRESIGNED_URL_EXPIRATION_SECONDS
     pdf_url = s3_client.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": pdf_key}, ExpiresIn=expires_in)
     csv_url = s3_client.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": csv_key}, ExpiresIn=expires_in)
 

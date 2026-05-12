@@ -22,3 +22,15 @@ variable "tags" {
     ComplianceFramework = "SOC2,HIPAA,FedRAMP"
   }
 }
+
+variable "evidence_retention_days" {
+  description = "Default Object Lock retention in days"
+  type        = number
+  default     = 2555
+}
+
+variable "queue_retention_seconds" {
+  description = "SQS message retention in seconds"
+  type        = number
+  default     = 14 * 24 * 60 * 60
+}

@@ -13,6 +13,11 @@ output "compliance_alerts_topic_arn" {
   description = "SNS topic ARN for compliance alerts"
 }
 
+output "compliance_kms_key_arn" {
+  value       = aws_kms_key.compliance.arn
+  description = "KMS key ARN for compliance evidence and table encryption"
+}
+
 output "on_demand_collection_queue_url" {
   value       = aws_sqs_queue.on_demand_collection.url
   description = "SQS queue URL for on-demand collection"
