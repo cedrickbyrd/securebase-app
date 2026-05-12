@@ -26,6 +26,11 @@ variable "api_gateway_execution_arn" {
   type        = string
 }
 
+variable "jwt_authorizer_id" {
+  description = "API Gateway CUSTOM authorizer ID for admin endpoints"
+  type        = string
+}
+
 variable "aws_region" {
   description = "AWS region for API Gateway integration"
   type        = string

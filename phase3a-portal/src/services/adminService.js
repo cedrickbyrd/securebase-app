@@ -1,14 +1,17 @@
 import api from './api';
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
+class AdminService {
+  constructor() {
+    this.metricsCache = null;
+    this.cacheTimestamp = 0;
+    this.cacheTtlMs = 60000;
+    this.inFlightMetricsRequest = null;
+  }
 
-const mockServicesByCost = [
-  { name: 'Aurora PostgreSQL', cost: 6240 },
-  { name: 'Lambda', cost: 2810 },
-  { name: 'API Gateway', cost: 1495 },
-  { name: 'CloudFront', cost: 920 },
-  { name: 'S3', cost: 740 },
-];
+  async getMetricsSnapshot(forceRefresh = false) {
+    if (this.inFlightMetricsRequest) {
+      return this.inFlightMetricsRequest;
+    }
 
 // ── Mock data: alerting dashboard (Phase 6 / Track 3) ─────────────────────────
 
@@ -176,27 +179,32 @@ const mockData = {
   },
 };
 
-const clone = (value) => JSON.parse(JSON.stringify(value));
+    this.inFlightMetricsRequest = api.get('/admin/metrics')
+      .then((payload) => {
+        this.metricsCache = payload || {};
+        this.cacheTimestamp = Date.now();
+        return this.metricsCache;
+      })
+      .finally(() => {
+        this.inFlightMetricsRequest = null;
+      });
 
-class AdminService {
-  async getSystemOverview() {
-    if (USE_MOCK) return clone(mockData.overview);
-    return api.get('/admin/overview');
+    return this.inFlightMetricsRequest;
   }
 
-  async getInfrastructureHealth() {
-    if (USE_MOCK) return clone(mockData.infrastructure);
-    return api.get('/admin/infrastructure');
+  async getSystemOverview(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.overview || {};
   }
 
-  async getSecurityMetrics() {
-    if (USE_MOCK) return clone(mockData.security);
-    return api.get('/admin/security');
+  async getInfrastructureHealth(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.infrastructure || {};
   }
 
-  async getCustomerAnalytics() {
-    if (USE_MOCK) return clone(mockData.customers);
-    return api.get('/admin/customers');
+  async getSecurityMetrics(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.security || {};
   }
 
   async getCostManagement(params = {}) {
@@ -208,19 +216,19 @@ class AdminService {
     return api.get(`/admin/costs${suffix}`);
   }
 
-  async getOperationsStatus() {
-    if (USE_MOCK) return clone(mockData.operations);
-    return api.get('/admin/operations');
+  async getCostManagement(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.costs || {};
   }
 
-  async getRecentAlerts() {
-    if (USE_MOCK) return clone(mockData.alerts);
-    return api.get('/admin/alerts');
+  async getOperationsStatus(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.operations || {};
   }
 
-  async getSystemHealth() {
-    if (USE_MOCK) return clone(mockData.health);
-    return api.get('/admin/health');
+  async getRecentAlerts(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.alerts || [];
   }
 
   async getAlarmSummary() {

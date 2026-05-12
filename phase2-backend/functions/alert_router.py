@@ -12,6 +12,12 @@ import urllib.error
 import boto3
 from botocore.exceptions import ClientError
 
+try:
+    from aws_xray_sdk.core import patch_all
+    patch_all()
+except Exception:
+    pass
+
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 

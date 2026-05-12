@@ -5,8 +5,7 @@ import SystemHealth from './SystemHealth';
 import AlertingDashboard from './AlertingDashboard';
 import { adminService } from '../../services/adminService';
 
-const INITIAL_DELAY_MS = 30000;
-const MAX_DELAY_MS = 300000;
+const INITIAL_DELAY_MS = 60000;
 
 const defaultMetrics = {
   overview: null,
@@ -90,7 +89,7 @@ const AdminDashboard = () => {
       hasLoadedRef.current = true;
       return INITIAL_DELAY_MS;
     } catch (fetchError) {
-      const nextDelay = Math.min(delayRef.current * 2, MAX_DELAY_MS);
+      const nextDelay = INITIAL_DELAY_MS;
       delayRef.current = nextDelay;
       if (isMountedRef.current) {
         setError(fetchError);

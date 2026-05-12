@@ -24,6 +24,20 @@ output "application_log_group_name" {
 }
 
 output "xray_group_arn" {
-  description = "ARN of the X-Ray group"
-  value       = aws_xray_group.securebase.arn
+  description = "ARN of the admin X-Ray group"
+  value       = aws_xray_group.admin.arn
+}
+
+output "xray_group_arns" {
+  description = "ARNs of X-Ray groups by service"
+  value = {
+    admin         = aws_xray_group.admin.arn
+    tenant_metrics = aws_xray_group.tenant_metrics.arn
+    compliance    = aws_xray_group.compliance.arn
+  }
+}
+
+output "xray_sampling_rule_name" {
+  description = "Name of the baseline X-Ray sampling rule"
+  value       = aws_xray_sampling_rule.baseline.rule_name
 }

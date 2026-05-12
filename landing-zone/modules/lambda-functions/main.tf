@@ -118,6 +118,14 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/securebase-${var.environment}-*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -137,6 +145,9 @@ resource "aws_lambda_function" "auth_v2" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 512
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -167,6 +178,9 @@ resource "aws_lambda_function" "health_check" {
   runtime         = "python3.11"
   timeout         = 10
   memory_size     = 256
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -196,6 +210,9 @@ resource "aws_lambda_function" "webhook_manager" {
   runtime         = "python3.11"
   timeout         = 60
   memory_size     = 512
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -225,6 +242,9 @@ resource "aws_lambda_function" "billing_worker" {
   runtime         = "python3.11"
   timeout         = 60
   memory_size     = 1024
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -254,6 +274,9 @@ resource "aws_lambda_function" "support_tickets" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 512
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -283,6 +306,9 @@ resource "aws_lambda_function" "cost_forecasting" {
   runtime         = "python3.11"
   timeout         = 60
   memory_size     = 1024
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -356,6 +382,9 @@ resource "aws_lambda_function" "submit_lead" {
   runtime          = "python3.11"
   timeout          = 10
   memory_size      = 256
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -390,6 +419,9 @@ resource "aws_lambda_function" "demo_auth" {
   runtime          = "python3.11"
   timeout          = 10
   memory_size      = 256
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
