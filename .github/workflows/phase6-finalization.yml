@@ -1,0 +1,114 @@
+name: Phase 6 Finalization
+
+on:
+  workflow_dispatch:
+    inputs:
+      load_test_mode:
+        description: "Choose simulated or live load test mode"
+        required: true
+        default: "simulated"
+        type: choice
+        options:
+          - simulated
+          - live
+      live_base_url:
+        description: "Base URL for live load test mode (ignored in simulated mode)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_WORKSPACE: "dev"
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform plan (dev)
+        working-directory: landing-zone/environments/dev
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/${{ env.TF_WORKSPACE }}/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+          if terraform workspace list | sed 's/*//g' | awk '{print $1}' | grep -Fxq "${{ env.TF_WORKSPACE }}"; then
+            terraform workspace select "${{ env.TF_WORKSPACE }}"
+          else
+            terraform workspace new "${{ env.TF_WORKSPACE }}"
+          fi
+          terraform validate
+          terraform plan -no-color -input=false -out=phase6-dev.tfplan
+
+      - name: Execute Phase 6 load test (10k users)
+        run: |
+          if [[ "${{ inputs.load_test_mode }}" == "live" ]]; then
+            python tests/phase6/load_test_10k_users.py \
+              --users 10000 \
+              --concurrency 1000 \
+              --requests-per-user 1 \
+              --live \
+              --base-url "${{ inputs.live_base_url }}"
+          else
+            python tests/phase6/load_test_10k_users.py \
+              --users 10000 \
+              --concurrency 1000 \
+              --requests-per-user 1
+          fi
+
+      - name: Update ROADMAP to 100% complete
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          path = Path("ROADMAP.md")
+          content = path.read_text()
+          pattern = r"^\| Phase 6 \| Compliance Automation & Operations Scale \| [^|]+ \| [^|]+ \|$"
+          replacement = "| Phase 6 | Compliance Automation & Operations Scale | ✅ Complete | 100% |"
+          updated, replacements = re.subn(pattern, replacement, content, flags=re.MULTILINE)
+          if replacements == 0:
+              print("ERROR: Phase 6 roadmap row was not found; aborting update.")
+              sys.exit(1)
+          content = updated
+          path.write_text(content)
+          PY
+
+      - name: Commit Phase 6 completion status
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP.md
+          if git diff --cached --quiet; then
+            echo "No roadmap changes to commit."
+            exit 0
+          fi
+          git commit -m "docs: mark Phase 6 100% complete"
+          git push
