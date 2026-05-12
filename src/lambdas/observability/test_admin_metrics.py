@@ -4,8 +4,6 @@ import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import jwt
-
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 
 import admin_metrics
@@ -22,9 +20,11 @@ class TestAdminMetrics(unittest.TestCase):
         self.event = {
             "httpMethod": "GET",
             "path": "/admin/metrics",
-            "headers": {
-                "Authorization": "Bearer "
-                + jwt.encode({"role": "admin"}, "test-secret", algorithm="HS256")
+            "headers": {"Authorization": "Bearer test-token"},
+            "requestContext": {
+                "authorizer": {
+                    "claims": {"role": "admin"}
+                }
             },
         }
 
@@ -69,7 +69,7 @@ class TestAdminMetrics(unittest.TestCase):
         self.assertEqual(body["infrastructure"]["apiRequestCount"], 1000)
 
     def test_requires_admin_token(self):
-        event = {"httpMethod": "GET", "path": "/admin/metrics", "headers": {}}
+        event = {"httpMethod": "GET", "path": "/admin/metrics", "headers": {}, "requestContext": {}}
         response = admin_metrics.lambda_handler(event, None)
         self.assertEqual(response["statusCode"], 401)
 

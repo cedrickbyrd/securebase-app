@@ -23,7 +23,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_lambda_function" "admin_metrics" {
   filename      = "${path.module}/lambda/metrics_aggregation.zip"
   function_name = "securebase-${var.environment}-admin-metrics"
-  handler       = "metrics_aggregation.lambda_handler"
+  handler       = "admin_metrics.lambda_handler"
   runtime       = "python3.11"
   timeout       = 30
   memory_size   = 256
