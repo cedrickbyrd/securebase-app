@@ -86,20 +86,21 @@ describe('TenantDashboard Component', () => {
     });
   });
 
-  it('should display current month spend', async () => {
+  it('should display estimated monthly cost card', async () => {
     render(<TenantDashboard />);
     
     await waitFor(() => {
-      expect(screen.getByText(/current month spend/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$1,245.67/i)).toBeInTheDocument();
+      expect(screen.getByText(/your estimated monthly cost/i)).toBeInTheDocument();
+      expect(screen.getByText(/\$1,580.34/i)).toBeInTheDocument();
     });
   });
 
-  it('should show forecasted costs', async () => {
+  it('should show current spend and 30-day trend label', async () => {
     render(<TenantDashboard />);
     
     await waitFor(() => {
-      expect(screen.getByText(/forecasted: \$1,580.34/i)).toBeInTheDocument();
+      expect(screen.getByText(/current spend: \$1,245.67/i)).toBeInTheDocument();
+      expect(screen.getByText(/30-day trend/i)).toBeInTheDocument();
     });
   });
 

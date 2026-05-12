@@ -131,6 +131,13 @@ const mockData = {
     costPerTenant: 85.95,
     savingsVsOnDemand: 27.1,
     topServicesByCost: mockServicesByCost,
+    tenantCostHistory: [
+      { tenant_id: 'tenant_a', date: '2026-05-10', totalCost: 325.12 },
+      { tenant_id: 'tenant_b', date: '2026-05-10', totalCost: 214.09 },
+      { tenant_id: 'tenant_c', date: '2026-05-10', totalCost: 186.77 },
+      { tenant_id: 'tenant_a', date: '2026-05-11', totalCost: 331.04 },
+      { tenant_id: 'tenant_b', date: '2026-05-11', totalCost: 220.88 },
+    ],
   },
   operations: {
     activeDeployments: 2,
@@ -192,9 +199,13 @@ class AdminService {
     return api.get('/admin/customers');
   }
 
-  async getCostManagement() {
+  async getCostManagement(params = {}) {
     if (USE_MOCK) return clone(mockData.costs);
-    return api.get('/admin/costs');
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== '')
+    );
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return api.get(`/admin/costs${suffix}`);
   }
 
   async getOperationsStatus() {

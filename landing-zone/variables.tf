@@ -148,3 +148,22 @@ variable "sre_metrics_lambda_name" {
   type        = string
   default     = null
 }
+
+# --- Phase 6 Track 5 Lambda Scaling ---
+variable "tenant_metrics_function_version" {
+  description = "Published version for securebase-<env>-tenant-metrics used by provisioned concurrency alias"
+  type        = string
+  default     = "1"
+}
+
+variable "evidence_collector_function_version" {
+  description = "Published version for securebase-<env>-evidence-collector used by provisioned concurrency alias"
+  type        = string
+  default     = "1"
+}
+
+variable "lambda_scaling_alarm_actions" {
+  description = "SNS alarm action ARNs for lambda-scaling cold start and concurrency alarms"
+  type        = list(string)
+  default     = []
+}

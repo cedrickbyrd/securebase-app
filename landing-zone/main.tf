@@ -244,6 +244,56 @@ module "phase5_admin_metrics" {
 }
 
 # ============================================================================
+# Phase 6 / Track 5: Lambda scaling and provisioned concurrency
+# ============================================================================
+module "lambda_scaling" {
+  source      = "./modules/lambda-scaling"
+  environment = var.environment
+  tags        = merge(var.tags, { Phase = "6", Track = "5" })
+  alarm_actions = var.lambda_scaling_alarm_actions
+
+  non_critical_functions = [
+    "securebase-${var.environment}-auth-v2",
+    "securebase-${var.environment}-webhook-manager",
+    "securebase-${var.environment}-billing-worker",
+    "securebase-${var.environment}-support-tickets",
+    "securebase-${var.environment}-cost-forecasting",
+    "securebase-${var.environment}-health-check",
+    "securebase-${var.environment}-submit-lead",
+    "securebase-${var.environment}-cost-per-tenant",
+  ]
+
+  high_traffic_functions = {
+    tenant_metrics = {
+      function_name      = "securebase-${var.environment}-tenant-metrics"
+      function_version   = var.tenant_metrics_function_version
+      alias              = "live"
+      provisioned_min    = 2
+      provisioned_max    = 20
+      target_utilization = 0.7
+    }
+    evidence_collector = {
+      function_name      = "securebase-${var.environment}-evidence-collector"
+      function_version   = var.evidence_collector_function_version
+      alias              = "live"
+      provisioned_min    = 2
+      provisioned_max    = 20
+      target_utilization = 0.7
+    }
+    admin_metrics = {
+      function_name      = module.phase5_admin_metrics.lambda_function_name
+      function_version   = module.phase5_admin_metrics.lambda_function_version
+      alias              = "live"
+      provisioned_min    = 2
+      provisioned_max    = 20
+      target_utilization = 0.7
+    }
+  }
+
+  depends_on = [module.phase5_admin_metrics]
+}
+
+# ============================================================================
 # Phase 5.4: Multi-Region DR
 # Aurora Global Cluster, DynamoDB Global Tables, S3 CRR,
 # Health Lambda in us-west-2, CloudFront origin failover.

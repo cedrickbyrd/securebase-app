@@ -25,6 +25,8 @@ resource "aws_lambda_function" "admin_metrics" {
   function_name = "securebase-${var.environment}-admin-metrics"
   handler       = "metrics_aggregation.lambda_handler"
   runtime       = "python3.11"
+  # Publish immutable versions so lambda-scaling can attach aliases/provisioned concurrency.
+  publish       = true
   timeout       = 30
   memory_size   = 256
   role          = aws_iam_role.admin_metrics_lambda.arn
@@ -36,6 +38,7 @@ resource "aws_lambda_function" "admin_metrics" {
       CUSTOMERS_TABLE   = "securebase-${var.environment}-customers"
       METRICS_TABLE     = "securebase-${var.environment}-metrics"
       DEPLOYMENTS_TABLE = "securebase-${var.environment}-deployments"
+      COST_PER_TENANT_TABLE = aws_dynamodb_table.cost_per_tenant.name
       ENVIRONMENT       = var.environment
       LOG_LEVEL         = "INFO"
     }
@@ -45,6 +48,44 @@ resource "aws_lambda_function" "admin_metrics" {
     Name        = "securebase-${var.environment}-admin-metrics"
     Environment = var.environment
     Phase       = "5.1"
+  })
+}
+
+resource "aws_dynamodb_table" "cost_per_tenant" {
+  name         = "securebase-${var.environment}-cost-per-tenant"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "tenant_id"
+  range_key    = "date"
+
+  attribute {
+    name = "tenant_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "date"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = var.environment == "prod" ? true : false
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = merge(var.tags, {
+    Name        = "securebase-${var.environment}-cost-per-tenant"
+    Environment = var.environment
+    Phase       = "6"
+    Track       = "5"
+    Purpose     = "Daily tenant cost history"
   })
 }
 
@@ -116,11 +157,132 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
         Resource = [
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-customers",
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-metrics",
-          "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-deployments"
+          "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-deployments",
+          aws_dynamodb_table.cost_per_tenant.arn
         ]
       }
     ]
   })
+}
+
+# ============================================================================
+# Phase 6 / Track 5 - Cost-per-tenant scheduled aggregation Lambda
+# ============================================================================
+
+resource "aws_iam_role" "cost_per_tenant_lambda" {
+  name = "securebase-${var.environment}-cost-per-tenant-lambda"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = merge(var.tags, {
+    Name  = "securebase-${var.environment}-cost-per-tenant-lambda"
+    Phase = "6"
+    Track = "5"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "cost_per_tenant_basic_execution" {
+  role       = aws_iam_role.cost_per_tenant_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "cost_per_tenant_cost_explorer_readonly" {
+  role       = aws_iam_role.cost_per_tenant_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSBillingReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy" "cost_per_tenant_custom" {
+  name = "securebase-${var.environment}-cost-per-tenant-custom"
+  role = aws_iam_role.cost_per_tenant_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [aws_dynamodb_table.cost_per_tenant.arn]
+      },
+      {
+        Effect = "Allow"
+        Action = ["sns:Publish"]
+        Resource = [
+          "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:securebase-compliance-alerts",
+          "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:securebase-${var.environment}-*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_function" "cost_per_tenant" {
+  filename      = "${path.module}/lambda/cost_per_tenant.zip"
+  function_name = "securebase-${var.environment}-cost-per-tenant"
+  handler       = "cost_per_tenant.lambda_handler"
+  runtime       = "python3.11"
+  # Publish immutable versions for safe future alias rollout.
+  publish       = true
+  timeout       = 60
+  memory_size   = 512
+  role          = aws_iam_role.cost_per_tenant_lambda.arn
+
+  source_code_hash = fileexists("${path.module}/lambda/cost_per_tenant.zip") ? filebase64sha256("${path.module}/lambda/cost_per_tenant.zip") : null
+
+  environment {
+    variables = {
+      ENVIRONMENT           = var.environment
+      COST_PER_TENANT_TABLE = aws_dynamodb_table.cost_per_tenant.name
+      ALERT_TOPIC_ARN       = "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:securebase-compliance-alerts"
+      TENANT_TAG_KEY        = "tenant_id"
+      LOG_LEVEL             = "INFO"
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name        = "securebase-${var.environment}-cost-per-tenant"
+    Environment = var.environment
+    Phase       = "6"
+    Track       = "5"
+  })
+}
+
+resource "aws_cloudwatch_event_rule" "cost_per_tenant_daily" {
+  name                = "securebase-${var.environment}-cost-per-tenant-daily"
+  description         = "Run daily cost-per-tenant aggregation at 1 AM UTC"
+  schedule_expression = "cron(0 1 * * ? *)"
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "5"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "cost_per_tenant_daily" {
+  rule      = aws_cloudwatch_event_rule.cost_per_tenant_daily.name
+  target_id = "cost-per-tenant-lambda"
+  arn       = aws_lambda_function.cost_per_tenant.arn
+}
+
+resource "aws_lambda_permission" "allow_cost_per_tenant_schedule" {
+  statement_id  = "AllowEventBridgeInvokeCostPerTenant"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.cost_per_tenant.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.cost_per_tenant_daily.arn
 }
 
 # ============================================================================
