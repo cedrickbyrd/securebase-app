@@ -31,6 +31,24 @@ jobs:
       - name: Terraform init (no backend)
         run: terraform init -backend=false
 
+      - name: Stub aws.secondary provider for standalone validate
+        run: |
+          # Create a CI-only concrete provider config for aws.secondary so that
+          # terraform validate can resolve the provider alias when this module
+          # is validated directly (not called from a parent module).
+          # The stub uses dummy credentials; it is NOT used during real deployments.
+          cat > ci_provider_stub.tf << 'EOF'
+          provider "aws" {
+            alias                       = "secondary"
+            region                      = "us-west-2"
+            skip_credentials_validation = true
+            skip_requesting_account_id  = true
+            skip_metadata_api_check     = true
+            access_key                  = "MOCK_ACCESS_KEY_NOT_USED"
+            secret_key                  = "MOCK_SECRET_KEY_NOT_USED"
+          }
+          EOF
+
       - name: Terraform validate
         run: terraform validate
 

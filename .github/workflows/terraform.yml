@@ -98,18 +98,35 @@ jobs:
           aws-region: us-east-1
           audience: sts.amazonaws.com
 
+      - name: Check backend configuration
+        id: backend_check
+        run: |
+          if [ -z "$TF_BACKEND_BUCKET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TF_BACKEND_BUCKET secret is not set. Backend-dependent steps will be skipped (syntax/validate only)."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+
       - name: Terraform init
         run: |
-          terraform init -reconfigure \
-            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
-            -backend-config="key=landing-zone/dev/terraform.tfstate" \
-            -backend-config="region=us-east-1" \
-            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+          if [ "${{ steps.backend_check.outputs.configured }}" = "true" ]; then
+            terraform init -reconfigure \
+              -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+              -backend-config="key=landing-zone/dev/terraform.tfstate" \
+              -backend-config="region=us-east-1" \
+              -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+          else
+            terraform init -backend=false
+          fi
 
       - name: Terraform validate
         run: terraform validate
 
       - name: Terraform plan
+        if: steps.backend_check.outputs.configured == 'true'
         id: plan
         env:
           TF_VAR_netlify_api_token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -121,6 +138,7 @@ jobs:
           sha256sum tfplan.binary > tfplan.sha256
 
       - name: Upload plan artifact
+        if: steps.backend_check.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-${{ github.run_id }}
@@ -131,7 +149,7 @@ jobs:
           retention-days: 7
 
       - name: Comment plan on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.backend_check.outputs.configured == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -170,17 +188,38 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1 # Hardcoded for CI consistency and clarity during onboarding
 
+      - name: Check backend configuration
+        id: apply_backend_check
+        run: |
+          if [ -z "$TF_BACKEND_BUCKET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TF_BACKEND_BUCKET secret is not set. Apply will be skipped."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+
       - name: Download plan artifact
+        if: steps.apply_backend_check.outputs.configured == 'true'
         uses: actions/download-artifact@v4
         with:
           name: tfplan-${{ github.run_id }}
           path: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform init
-        run: terraform init -reconfigure
+        if: steps.apply_backend_check.outputs.configured == 'true'
+        run: |
+          terraform init -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/dev/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
 
       - name: Verify plan artifact integrity
+        if: steps.apply_backend_check.outputs.configured == 'true'
         run: sha256sum -c tfplan.sha256
 
       - name: Terraform apply
+        if: steps.apply_backend_check.outputs.configured == 'true'
         run: terraform apply tfplan.binary
