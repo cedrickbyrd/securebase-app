@@ -58,7 +58,11 @@ jobs:
             -backend-config="key=landing-zone/${{ env.TF_WORKSPACE }}/terraform.tfstate" \
             -backend-config="region=us-east-1" \
             -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
-          terraform workspace select ${{ env.TF_WORKSPACE }} || terraform workspace new ${{ env.TF_WORKSPACE }}
+          if terraform workspace list | sed 's/*//g' | awk '{print $1}' | grep -Fxq "${{ env.TF_WORKSPACE }}"; then
+            terraform workspace select "${{ env.TF_WORKSPACE }}"
+          else
+            terraform workspace new "${{ env.TF_WORKSPACE }}"
+          fi
           terraform validate
           terraform plan -no-color -input=false -out=phase6-dev.tfplan
 
@@ -87,7 +91,7 @@ jobs:
 
           path = Path("ROADMAP.md")
           content = path.read_text()
-          pattern = r"^\| Phase 6 \| Compliance Automation & Operations Scale \| .* \| .* \|$"
+          pattern = r"^\| Phase 6 \| Compliance Automation & Operations Scale \| [^|]+ \| [^|]+ \|$"
           replacement = "| Phase 6 | Compliance Automation & Operations Scale | ✅ Complete | 100% |"
           updated, replacements = re.subn(pattern, replacement, content, flags=re.MULTILINE)
           if replacements == 0:
