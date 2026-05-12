@@ -35,6 +35,8 @@ locals {
     "securebase-${var.environment}-failover-orchestrator",
     "securebase-${var.environment}-failback-orchestrator",
   ]
+  # Track 1 fallback: use existing audit log bucket when provided, otherwise
+  # use the standard securebase-audit-logs-{env} naming convention.
   phase6_audit_source_bucket = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
 }
 

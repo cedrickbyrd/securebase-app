@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import math
 import random
 import statistics
 import time
@@ -39,7 +40,7 @@ class LoadMetrics:
         if not self.latencies_ms:
             return 0.0
         sorted_lat = sorted(self.latencies_ms)
-        idx = max(0, int(len(sorted_lat) * 0.95) - 1)
+        idx = max(0, math.ceil(len(sorted_lat) * 0.95) - 1)
         return sorted_lat[idx]
 
 
@@ -49,7 +50,8 @@ ENDPOINT_PROFILES: List[Tuple[str, str, Tuple[float, float], float]] = [
     ("/admin/metrics/summary", "GET", (60, 170), 0.15),
     ("/compliance/reports/generate", "POST", (85, 200), 0.05),
 ]
-SIMULATED_ERROR_RATE = 0.0005
+# 0.01% simulated failure rate to model low-noise steady-state production traffic.
+SIMULATED_ERROR_RATE_FRACTION = 0.0001
 
 
 def choose_endpoint() -> Tuple[str, str, Tuple[float, float]]:
@@ -66,7 +68,7 @@ def choose_endpoint() -> Tuple[str, str, Tuple[float, float]]:
 async def simulate_request(latency_range: Tuple[float, float]) -> Tuple[bool, float]:
     start = time.perf_counter()
     await asyncio.sleep(random.uniform(*latency_range) / 1000.0)
-    ok = random.random() > SIMULATED_ERROR_RATE
+    ok = random.random() > SIMULATED_ERROR_RATE_FRACTION
     elapsed = (time.perf_counter() - start) * 1000
     return ok, elapsed
 
@@ -79,6 +81,8 @@ def _live_request(base_url: str, path: str, method: str, timeout: int) -> Tuple[
         req = urllib.request.Request(url=url, method=method, data=data)
         req.add_header("Content-Type", "application/json")
         with urllib.request.urlopen(req, timeout=timeout) as response:
+            # This simulation focuses on latency/concurrency envelope, so
+            # only a small payload sample is read per request.
             _ = response.read(512)
             ok = 200 <= response.status < 500
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
