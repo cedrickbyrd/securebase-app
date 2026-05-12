@@ -4,8 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import SystemHealth from './SystemHealth';
 import { adminService } from '../../services/adminService';
 
-const INITIAL_DELAY_MS = 30000;
-const MAX_DELAY_MS = 300000;
+const INITIAL_DELAY_MS = 60000;
 
 const defaultMetrics = {
   overview: null,
@@ -51,23 +50,14 @@ const AdminDashboard = () => {
     }
 
     try {
-      const [
-        overview,
-        infrastructure,
-        security,
-        customers,
-        costs,
-        operations,
-        alerts,
-      ] = await Promise.all([
-        adminService.getSystemOverview(),
-        adminService.getInfrastructureHealth(),
-        adminService.getSecurityMetrics(),
-        adminService.getCustomerAnalytics(),
-        adminService.getCostManagement(),
-        adminService.getOperationsStatus(),
-        adminService.getRecentAlerts(),
-      ]);
+      const snapshot = await adminService.getMetricsSnapshot(true);
+      const overview = snapshot?.overview || {};
+      const infrastructure = snapshot?.infrastructure || {};
+      const security = snapshot?.security || {};
+      const customers = snapshot?.customers || {};
+      const costs = snapshot?.costs || {};
+      const operations = snapshot?.operations || {};
+      const alerts = snapshot?.alerts || [];
 
       delayRef.current = INITIAL_DELAY_MS;
       if (isMountedRef.current) {
@@ -80,7 +70,7 @@ const AdminDashboard = () => {
       hasLoadedRef.current = true;
       return INITIAL_DELAY_MS;
     } catch (fetchError) {
-      const nextDelay = Math.min(delayRef.current * 2, MAX_DELAY_MS);
+      const nextDelay = INITIAL_DELAY_MS;
       delayRef.current = nextDelay;
       if (isMountedRef.current) {
         setError(fetchError);

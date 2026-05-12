@@ -840,6 +840,7 @@ resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   stage_name    = var.environment
+  xray_tracing_enabled = true
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
@@ -1949,5 +1950,4 @@ resource "aws_lambda_permission" "sre_metrics_api_gateway" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
 }
-
 
