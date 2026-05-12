@@ -1,0 +1,142 @@
+name: Promote Terraform Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_env:
+        description: Source environment workspace
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      target_env:
+        description: Target environment workspace
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      rollback_to_version_id:
+        description: Optional S3 object version ID for rollback (leave blank for normal promotion)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: '1.7.5'
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run integration suite against source
+        run: |
+          if [ -x ./run_all_tests.sh ]; then
+            ./run_all_tests.sh
+          else
+            bash ./run_all_tests.sh
+          fi
+
+  promote-nonprod:
+    if: ${{ inputs.target_env != 'prod' && inputs.source_env != inputs.target_env }}
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing-zone/environments/dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/${{ inputs.target_env }}/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+
+      - name: Promote workspace state
+        run: |
+          terraform workspace select "${{ inputs.source_env }}" || terraform workspace new "${{ inputs.source_env }}"
+          terraform state pull > /tmp/source.tfstate
+          terraform workspace select "${{ inputs.target_env }}" || terraform workspace new "${{ inputs.target_env }}"
+
+          if [ -n "${{ inputs.rollback_to_version_id }}" ]; then
+            aws s3api get-object \
+              --bucket "${{ secrets.TF_BACKEND_BUCKET }}" \
+              --key "landing-zone/${{ inputs.target_env }}/terraform.tfstate" \
+              --version-id "${{ inputs.rollback_to_version_id }}" /tmp/rollback.tfstate
+            terraform state push -force /tmp/rollback.tfstate
+          else
+            terraform state push -force /tmp/source.tfstate
+            terraform apply -auto-approve -input=false
+          fi
+
+      - name: Smoke test
+        run: terraform output -json > /tmp/promote-output.json
+
+  promote-prod:
+    if: ${{ inputs.target_env == 'prod' && inputs.source_env != inputs.target_env }}
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: landing-zone/environments/prod-us-west-2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/prod/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+
+      - name: Promote workspace state with approval gate
+        run: |
+          terraform workspace select "${{ inputs.source_env }}" || terraform workspace new "${{ inputs.source_env }}"
+          terraform state pull > /tmp/source.tfstate
+          terraform workspace select prod || terraform workspace new prod
+
+          if [ -n "${{ inputs.rollback_to_version_id }}" ]; then
+            aws s3api get-object \
+              --bucket "${{ secrets.TF_BACKEND_BUCKET }}" \
+              --key "landing-zone/prod/terraform.tfstate" \
+              --version-id "${{ inputs.rollback_to_version_id }}" /tmp/rollback.tfstate
+            terraform state push -force /tmp/rollback.tfstate
+          else
+            terraform state push -force /tmp/source.tfstate
+            terraform apply -auto-approve -input=false
+          fi
+
+      - name: Smoke test
+        run: terraform output -json > /tmp/promote-output.json
