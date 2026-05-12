@@ -30,6 +30,8 @@ const AdminDashboard = () => {
   const [costSortBy, setCostSortBy] = useState('totalCost');
   const [costSortDirection, setCostSortDirection] = useState('desc');
   const delayRef = useRef(INITIAL_DELAY_MS);
+  const costStartDateRef = useRef('');
+  const costEndDateRef = useRef('');
   const hasLoadedRef = useRef(false);
   const isMountedRef = useRef(true);
 
@@ -69,8 +71,8 @@ const AdminDashboard = () => {
         adminService.getSecurityMetrics(),
         adminService.getCustomerAnalytics(),
         adminService.getCostManagement({
-          start: costStartDate || undefined,
-          end: costEndDate || undefined,
+          start: costStartDateRef.current || undefined,
+          end: costEndDateRef.current || undefined,
         }),
         adminService.getOperationsStatus(),
         adminService.getRecentAlerts(),
@@ -101,6 +103,11 @@ const AdminDashboard = () => {
         setIsRefreshing(false);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    costStartDateRef.current = costStartDate;
+    costEndDateRef.current = costEndDate;
   }, [costEndDate, costStartDate]);
 
   useEffect(() => {

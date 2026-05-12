@@ -68,6 +68,7 @@ resource "aws_appautoscaling_scheduled_action" "prewarm" {
   service_namespace  = "lambda"
   resource_id        = aws_appautoscaling_target.provisioned_concurrency[each.key].resource_id
   scalable_dimension = aws_appautoscaling_target.provisioned_concurrency[each.key].scalable_dimension
+  # 7 AM UTC pre-warm aligns with business-hour ramp while still warming before daily peaks.
   schedule           = "cron(0 7 * * ? *)"
   timezone           = "UTC"
 
@@ -89,6 +90,7 @@ resource "aws_cloudwatch_metric_alarm" "cold_start_init_duration" {
   namespace           = "AWS/Lambda"
   period              = 300
   statistic           = "Maximum"
+  # Cold-start SLA target: initialize under 1 second.
   threshold           = 1000
   treat_missing_data  = "notBreaching"
 
