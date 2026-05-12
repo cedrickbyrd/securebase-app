@@ -1,1 +1,31 @@
-mcp-server.json
+{
+  "mcp_version": "1.0.0",
+  "project": {
+    "name": "securebase-app",
+    "repo": "cedrickbyrd/securebase-app",
+    "description": "Sovereign Infrastructure platform for automated SOC 2, HIPAA, and FFIEC compliance.",
+    "stack": {
+      "frontend": "React (Vite)",
+      "backend": "Node.js",
+      "hosting": "Netlify"
+    }
+  },
+  "development_constraints": {
+    "npm_install_overrides": [
+      {
+        "packages": ["react-chartjs-2", "chart.js"],
+        "command": "npm install react-chartjs-2 chart.js --save --legacy-peer-deps"
+      }
+    ]
+  },
+  "compliance_targets": [
+    "SOC 2",
+    "HIPAA",
+    "FFIEC"
+  ],
+  "infrastructure_context": {
+    "provider": "AWS",
+    "security": "AWS KMS / Sovereign Key Integration",
+    "distribution": "Netlify Edge"
+  }
+}
