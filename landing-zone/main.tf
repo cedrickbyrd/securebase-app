@@ -237,6 +237,7 @@ module "phase5_admin_metrics" {
   api_gateway_id                = module.api_gateway.api_gateway_id
   api_gateway_root_resource_id  = module.api_gateway.root_resource_id
   api_gateway_execution_arn     = module.api_gateway.api_gateway_execution_arn
+  jwt_authorizer_id             = module.api_gateway.authorizer_id
   
   cors_allowed_origin = "https://demo.securebase.tximhotep.com"
   

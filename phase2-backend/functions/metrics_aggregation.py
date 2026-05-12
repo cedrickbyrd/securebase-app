@@ -27,6 +27,12 @@ from decimal import Decimal
 from typing import Dict, List, Any
 import logging
 
+try:
+    from aws_xray_sdk.core import patch_all
+    patch_all()
+except Exception:
+    pass
+
 # Configure logging
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger()

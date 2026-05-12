@@ -1,9 +1,9 @@
 #!/bin/bash
-# Packages metrics_aggregation.py for Lambda deployment
+# Packages admin_metrics.py for Lambda deployment
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC="${SCRIPT_DIR}/../../../phase2-backend/functions/metrics_aggregation.py"
+SRC="${SCRIPT_DIR}/../../../src/lambdas/observability/admin_metrics.py"
 OUT_DIR="${SCRIPT_DIR}/lambda"
 OUT_FILE="${OUT_DIR}/metrics_aggregation.zip"
 
@@ -17,7 +17,7 @@ fi
 mkdir -p "$OUT_DIR"
 
 # Copy source file to lambda directory
-cp "$SRC" "$OUT_DIR/"
+cp "$SRC" "$OUT_DIR/metrics_aggregation.py"
 
 # Package into zip file
 cd "$OUT_DIR"

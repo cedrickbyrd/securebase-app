@@ -10,6 +10,7 @@ cryptography>=41.0.0
 
 # HTTP requests for webhooks
 requests>=2.31.0
+aws-xray-sdk>=2.14.0
 
 # Database connectivity
 psycopg2-binary>=2.9.9

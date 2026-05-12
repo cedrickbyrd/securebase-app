@@ -204,6 +204,14 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
           "${aws_dynamodb_table.customers.arn}/index/*",
           "${aws_dynamodb_table.invoices.arn}/index/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -254,6 +262,9 @@ resource "aws_lambda_function" "auth" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 256
+  tracing_config {
+    mode = "Active"
+  }
   
   environment {
     variables = {
@@ -277,6 +288,9 @@ resource "aws_lambda_function" "customers" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 256
+  tracing_config {
+    mode = "Active"
+  }
   
   environment {
     variables = {
@@ -300,6 +314,9 @@ resource "aws_lambda_function" "invoices" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 256
+  tracing_config {
+    mode = "Active"
+  }
   
   environment {
     variables = {
@@ -323,6 +340,9 @@ resource "aws_lambda_function" "metrics" {
   runtime         = "python3.11"
   timeout         = 30
   memory_size     = 256
+  tracing_config {
+    mode = "Active"
+  }
   
   environment {
     variables = {
@@ -346,6 +366,9 @@ resource "aws_lambda_function" "health" {
   runtime         = "python3.11"
   timeout         = 10
   memory_size     = 128
+  tracing_config {
+    mode = "Active"
+  }
   
   environment {
     variables = {
@@ -810,6 +833,7 @@ resource "aws_api_gateway_stage" "demo" {
   deployment_id = aws_api_gateway_deployment.demo.id
   rest_api_id   = aws_api_gateway_rest_api.demo_api.id
   stage_name    = var.environment
+  xray_tracing_enabled = true
   
   tags = local.common_tags
 }
