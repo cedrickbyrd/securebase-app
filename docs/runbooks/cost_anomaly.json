@@ -1,0 +1,76 @@
+{
+  "runbook_id": "cost_anomaly",
+  "version": "1.0",
+  "description": "Automated response to AWS cost anomaly detection alerts. Generates per-tenant cost breakdown, notifies account owners, and flags potential runaway resource usage.",
+  "severity": "P2",
+  "trigger_patterns": [
+    "*-daily-spend-anomaly",
+    "*-lambda-invocations-spike",
+    "*-cost-anomaly*"
+  ],
+  "estimated_duration_minutes": 10,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "notify_finops_slack",
+      "description": "Alert the FinOps/platform team in Slack with cost spike context.",
+      "action": "notify",
+      "params": {
+        "channel": "slack",
+        "message": "Cost anomaly detected. AWS spend has deviated significantly from the 7-day average. Investigating per-tenant breakdown. Check AWS Cost Explorer for details."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 2,
+      "name": "invoke_cost_breakdown_lambda",
+      "description": "Invoke the metrics aggregation Lambda to generate a per-tenant cost breakdown report.",
+      "action": "invoke_lambda",
+      "params": {
+        "function_name": "securebase-prod-metrics-aggregation",
+        "payload": {
+          "action": "cost_breakdown",
+          "granularity": "DAILY",
+          "group_by": "customer_id",
+          "source": "runbook_cost_anomaly"
+        }
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 3,
+      "name": "notify_pagerduty",
+      "description": "Open a P2 PagerDuty ticket for the FinOps team to review.",
+      "action": "notify",
+      "params": {
+        "channel": "pagerduty",
+        "message": "AWS cost anomaly detected. Per-tenant breakdown generation triggered. Review Cost Explorer and identify top spenders."
+      },
+      "on_failure": "continue"
+    }
+  ],
+  "investigation_steps": [
+    "1. Open AWS Cost Explorer: group by Service and by Tag (customer_id)",
+    "2. Identify the service and time window of the spike",
+    "3. Check Lambda invocation counts: unusually high counts may indicate a runaway loop",
+    "4. Check Data Transfer Out: may indicate a customer downloading large datasets",
+    "5. If Lambda invocations > 10x average: set concurrency limit on suspect function",
+    "6. Notify affected tenant account owner with cost breakdown report",
+    "7. If daily spend > $500 above forecast: escalate to Engineering Lead"
+  ],
+  "cost_explorer_links": [
+    "https://console.aws.amazon.com/cost-management/home#/cost-explorer",
+    "https://console.aws.amazon.com/cost-management/home#/anomaly-detection/overview"
+  ],
+  "remediation_commands": [
+    "# Get current day spend by service",
+    "aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-%d),End=$(date -d '+1 day' +%Y-%m-%d) --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE",
+    "",
+    "# Throttle a runaway Lambda (replace FUNCTION_NAME)",
+    "aws lambda put-function-concurrency --function-name FUNCTION_NAME --reserved-concurrent-executions 10"
+  ],
+  "references": [
+    "COST_OPTIMIZATION_PLAYBOOK.md",
+    "https://docs.aws.amazon.com/cost-management/latest/userguide/getting-started-ad.html"
+  ]
+}
