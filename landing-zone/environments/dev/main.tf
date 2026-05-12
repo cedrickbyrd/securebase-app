@@ -35,6 +35,9 @@ locals {
     "securebase-${var.environment}-failover-orchestrator",
     "securebase-${var.environment}-failback-orchestrator",
   ]
+  # Track 1 fallback: use existing audit log bucket when provided, otherwise
+  # use the standard securebase-audit-logs-{env} naming convention.
+  phase6_audit_source_bucket = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "securebase-audit-logs-${var.environment}"
 }
 
 data "aws_ssoadmin_instances" "this" {}
@@ -174,6 +177,40 @@ module "phase5_sre_metrics" {
   lambda_zip_path = var.sre_metrics_lambda_zip_path
   cors_origin     = "https://securebase.tximhotep.com"
   alert_email     = var.alert_email
+}
+
+module "phase6_audit_logging" {
+  source = "../../modules/phase6-audit-logging"
+
+  environment               = var.environment
+  project_name              = "securebase"
+  evidence_bucket_name      = "securebase-evidence-${var.environment}"
+  audit_source_bucket_name  = local.phase6_audit_source_bucket
+  object_lock_retention_days = 2555
+  macie_alert_email         = var.alert_email
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "1"
+  })
+}
+
+module "phase6_compliance" {
+  source = "../../modules/phase6-compliance"
+
+  environment                     = var.environment
+  project_name                    = "securebase"
+  config_delivery_bucket_name     = local.phase6_audit_source_bucket
+  config_recorder_already_enabled = true
+  enable_hipaa_conformance_pack   = true
+  enable_nist_conformance_pack    = true
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "1"
+  })
+
+  depends_on = [module.phase6_audit_logging]
 }
 
 terraform {

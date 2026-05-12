@@ -2,8 +2,8 @@
 
 **Project:** SecureBase  
 **Phase:** 6  
-**Status:** 📅 Scoped — Not Started  
-**Depends On:** Phase 5.3 ✅ (Logging, Alerting, Multi-Region DR, Cost Optimization)  
+**Status:** 🔨 In Progress — 85% Implemented (merged, not fully operationalized)  
+**Depends On:** Phase 5 ✅ (Logging, Alerting, Multi-Region DR, Cost Optimization)  
 **Audit Posture:** Pre-audit prep (no active audit window)  
 **Frameworks:** HIPAA (primary), SOC 2 Type II (primary), FedRAMP Moderate (baseline, low priority)
 
@@ -15,6 +15,40 @@ Automate the evidence collection, drift detection, and reporting workflows that 
 compliance auditor would review. The goal is a state where a SOC 2 Type II or HIPAA
 audit could begin at any time with zero scrambling — evidence is already collected,
 signed, and vaulted; control test results are fresh; the export is one button click.
+
+## Implementation Status Snapshot (May 2026)
+
+| Track | Status | Notes |
+|---|---|---|
+| Track 1 — Compliance Automation | 🔨 Operationalizing | Core lambdas/tests merged; environment wiring and scheduling hardening in progress |
+| Track 2 — Multi-Region DR | ✅ Merged | Route53 remains conditional; CloudFront/edge failover is the active path |
+| Track 3 — Alerting & Incident Response | ✅ Merged | Terraform + lambdas + tests in repo |
+| Track 4 — Distributed Tracing | ✅ Merged | Delivered under Phase 5 logging stack; observability controls active |
+| Track 5 — Scale & Cost Controls | 🔨 Operationalizing | Scaling modules and cost aggregation present; load validation automation pending |
+| Track 6 — IaC Pipeline Automation | 🔨 Operationalizing | Pipeline modules/workflows merged; end-to-end validation loop being finalized |
+
+Overall implementation completion is currently **~85%**, aligned to the roadmap and pending final operationalization/validation steps.
+
+## Route53 + Netlify Edge Configuration
+
+When DNS is managed at Netlify, keep Route53 failover resources **disabled** and rely on CloudFront origin failover. To enable Route53 health checks explicitly, set all of the following in environment tfvars:
+
+```hcl
+route53_hosted_zone_id = "Z123EXAMPLE"
+api_dns_name           = "api.securebase.tximhotep.com"
+primary_api_endpoint   = "primary-api.example.com"
+secondary_api_endpoint = "secondary-api.example.com"
+```
+
+For Netlify-edge DNS mode (current), keep these blank and use:
+
+```hcl
+route53_hosted_zone_id = ""
+primary_api_endpoint   = ""
+secondary_api_endpoint = ""
+```
+
+This ensures `landing-zone/modules/multi-region/route53-failover.tf` only creates health checks when DNS ownership is in Route53 and avoids split-brain routing with Netlify.
 
 ---
 
