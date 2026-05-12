@@ -30,6 +30,12 @@ from collections import defaultdict
 
 from boto3.dynamodb.conditions import Key
 
+try:
+    from aws_xray_sdk.core import patch_all
+    patch_all()
+except Exception:
+    pass
+
 # Configure logging
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 logger = logging.getLogger()

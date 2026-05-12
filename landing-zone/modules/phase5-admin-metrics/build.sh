@@ -1,11 +1,12 @@
 #!/bin/bash
-# Packages metrics_aggregation.py for Lambda deployment
+# Packages admin_metrics.py for Lambda deployment
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="${SCRIPT_DIR}/../../../phase2-backend/functions/metrics_aggregation.py"
 SRC_COST="${SCRIPT_DIR}/../../../phase2-backend/functions/cost_per_tenant.py"
 OUT_DIR="${SCRIPT_DIR}/lambda"
+# Keep zip filename stable to avoid churn in existing Terraform/package workflows.
 OUT_FILE="${OUT_DIR}/metrics_aggregation.zip"
 OUT_FILE_COST="${OUT_DIR}/cost_per_tenant.zip"
 

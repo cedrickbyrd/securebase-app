@@ -23,7 +23,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_lambda_function" "admin_metrics" {
   filename      = "${path.module}/lambda/metrics_aggregation.zip"
   function_name = "securebase-${var.environment}-admin-metrics"
-  handler       = "metrics_aggregation.lambda_handler"
+  handler       = "admin_metrics.lambda_handler"
   runtime       = "python3.11"
   # Publish immutable versions so lambda-scaling can attach aliases/provisioned concurrency.
   publish       = true
@@ -32,6 +32,9 @@ resource "aws_lambda_function" "admin_metrics" {
   role          = aws_iam_role.admin_metrics_lambda.arn
 
   source_code_hash = fileexists("${path.module}/lambda/metrics_aggregation.zip") ? filebase64sha256("${path.module}/lambda/metrics_aggregation.zip") : null
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -160,6 +163,14 @@ resource "aws_iam_role_policy" "admin_metrics_custom" {
           "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-${var.environment}-deployments",
           aws_dynamodb_table.cost_per_tenant.arn
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -352,49 +363,56 @@ resource "aws_api_gateway_method" "metrics_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.metrics.id
   http_method   = "GET"
-  authorization = "NONE"  # JWT auth handled in Lambda
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "customers_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.customers.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "api_performance_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.api_performance.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "infrastructure_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.infrastructure.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "security_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.security.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "costs_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.costs.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 resource "aws_api_gateway_method" "deployments_get" {
   rest_api_id   = var.api_gateway_id
   resource_id   = aws_api_gateway_resource.deployments.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "CUSTOM"
+  authorizer_id = var.jwt_authorizer_id
 }
 
 # ============================================================================

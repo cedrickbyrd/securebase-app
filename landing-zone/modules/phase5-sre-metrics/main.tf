@@ -273,6 +273,14 @@ resource "aws_iam_role_policy" "sre_metrics_lambda_policy" {
         ]
         Resource = "arn:aws:sqs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
       },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
+      },
     ]
   })
 }
@@ -300,6 +308,9 @@ resource "aws_lambda_function" "sre_metrics" {
   timeout       = 30
   memory_size   = 512
   role          = aws_iam_role.sre_metrics_lambda.arn
+  tracing_config {
+    mode = "Active"
+  }
 
   source_code_hash = fileexists(var.lambda_zip_path) ? filebase64sha256(var.lambda_zip_path) : null
 

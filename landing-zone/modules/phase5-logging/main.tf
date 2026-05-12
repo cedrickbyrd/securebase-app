@@ -96,20 +96,44 @@ resource "aws_cloudwatch_log_group" "api_gateway_access" {
 
 # ── X-Ray ─────────────────────────────────────────────────────────────────────
 
-resource "aws_xray_group" "securebase" {
-  group_name        = "securebase-${var.environment}"
-  filter_expression = "service(\"securebase-${var.environment}\")"
+resource "aws_xray_group" "admin" {
+  group_name        = "securebase-${var.environment}-admin"
+  filter_expression = "service(\"securebase-${var.environment}-admin-metrics\") OR http.url CONTAINS \"/admin/\""
 
   insights_configuration {
     insights_enabled      = true
     notifications_enabled = var.environment == "prod"
   }
 
-  tags = merge(var.tags, { Phase = "5.3" })
+  tags = merge(var.tags, { Phase = "5.3", Service = "admin" })
 }
 
-resource "aws_xray_sampling_rule" "securebase" {
-  rule_name      = "securebase-${var.environment}"
+resource "aws_xray_group" "tenant_metrics" {
+  group_name        = "securebase-${var.environment}-tenant-metrics"
+  filter_expression = "service(\"securebase-${var.environment}-tenant-metrics\") OR http.url CONTAINS \"/tenant/\""
+
+  insights_configuration {
+    insights_enabled      = true
+    notifications_enabled = var.environment == "prod"
+  }
+
+  tags = merge(var.tags, { Phase = "5.3", Service = "tenant-metrics" })
+}
+
+resource "aws_xray_group" "compliance" {
+  group_name        = "securebase-${var.environment}-compliance"
+  filter_expression = "service(\"securebase-${var.environment}-compliance\") OR http.url CONTAINS \"/compliance/\""
+
+  insights_configuration {
+    insights_enabled      = true
+    notifications_enabled = var.environment == "prod"
+  }
+
+  tags = merge(var.tags, { Phase = "5.3", Service = "compliance" })
+}
+
+resource "aws_xray_sampling_rule" "baseline" {
+  rule_name      = "securebase-${var.environment}-baseline"
   priority       = 1000
   reservoir_size = 1
   fixed_rate     = var.xray_sampling_rate
@@ -117,9 +141,48 @@ resource "aws_xray_sampling_rule" "securebase" {
   host           = "*"
   http_method    = "*"
   service_type   = "*"
-  service_name   = "securebase-${var.environment}-*"
+  service_name   = "*"
   resource_arn   = "*"
   version        = 1
 
-  tags = merge(var.tags, { Phase = "5.3" })
+  tags = merge(var.tags, { Phase = "5.3", RuleType = "baseline" })
+}
+
+resource "aws_xray_sampling_rule" "errors" {
+  rule_name      = "securebase-${var.environment}-errors"
+  priority       = 100
+  reservoir_size = 1
+  fixed_rate     = 1.0
+  url_path       = "*"
+  host           = "*"
+  http_method    = "*"
+  service_type   = "*"
+  service_name   = "*"
+  resource_arn   = "*"
+  version        = 1
+  attributes = {
+    fault = "true"
+  }
+
+  tags = merge(var.tags, { Phase = "5.3", RuleType = "errors" })
+}
+
+resource "aws_xray_sampling_rule" "slow_requests" {
+  rule_name      = "securebase-${var.environment}-slow-requests"
+  priority       = 200
+  reservoir_size = 1
+  fixed_rate     = 1.0
+  url_path       = "*"
+  host           = "*"
+  http_method    = "*"
+  service_type   = "*"
+  service_name   = "*"
+  resource_arn   = "*"
+  version        = 1
+  # duration threshold is in milliseconds (">1000" = requests slower than 1 second).
+  attributes = {
+    duration = ">1000"
+  }
+
+  tags = merge(var.tags, { Phase = "5.3", RuleType = "slow-requests" })
 }
