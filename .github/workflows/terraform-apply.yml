@@ -1,0 +1,101 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'landing-zone/**'
+      - 'terraform/**'
+      - '.github/workflows/terraform-apply.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: '1.7.5'
+
+jobs:
+  terraform-apply:
+    name: terraform apply (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workspace: dev
+            tf_dir: landing-zone/environments/dev
+          - workspace: staging
+            tf_dir: landing-zone/environments/staging
+          - workspace: prod
+            tf_dir: landing-zone/environments/prod-us-west-2
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.tf_dir }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=landing-zone/${{ matrix.workspace }}/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+
+      - name: Select workspace
+        run: terraform workspace select ${{ matrix.workspace }} || terraform workspace new ${{ matrix.workspace }}
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve -input=false
+
+  notify-slack:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: always()
+    steps:
+      - name: Send deployment status to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not configured; skipping notification"
+            exit 0
+          fi
+
+          if [ "${{ needs.terraform-apply.result }}" = "success" ]; then
+            STATUS_TEXT="✅ Terraform apply succeeded on main"
+            COLOR="good"
+          else
+            STATUS_TEXT="❌ Terraform apply failed on main"
+            COLOR="danger"
+          fi
+
+          payload=$(cat <<EOF
+          {
+            "attachments": [
+              {
+                "color": "${COLOR}",
+                "text": "${STATUS_TEXT}\nRepository: ${{ github.repository }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
