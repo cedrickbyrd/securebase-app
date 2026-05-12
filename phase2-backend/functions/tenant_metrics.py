@@ -404,14 +404,14 @@ def get_cost_metrics_data(tenant_id: str, time_range: str) -> Dict[str, Any]:
                 for service, amount in (row.get('breakdown') or {}).items():
                     breakdown_totals[service] += float(amount)
 
-            current_month = sum(trend)
+            total_in_range = sum(trend)
             now = datetime.utcnow()
             days_in_month = calendar.monthrange(now.year, now.month)[1]
-            avg_daily = (current_month / len(trend)) if trend else 0
+            avg_daily = (total_in_range / len(trend)) if trend else 0
             forecasted = avg_daily * days_in_month
 
             return {
-                'currentMonth': round(current_month, 2),
+                'currentMonth': round(total_in_range, 2),
                 'forecasted': round(forecasted, 2),
                 'estimatedMonthlyCost': round(forecasted, 2),
                 'breakdown': {key: round(value, 2) for key, value in sorted(breakdown_totals.items())},
