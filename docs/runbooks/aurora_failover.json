@@ -1,0 +1,65 @@
+{
+  "runbook_id": "aurora_failover",
+  "version": "1.0",
+  "description": "Automated response to Aurora Global DB replication lag or connection exhaustion alarms. Verifies replica health, triggers DR failover Lambda if needed, and notifies stakeholders.",
+  "severity": "P1",
+  "trigger_patterns": [
+    "*-aurora-replication-lag",
+    "*-aurora-cpu-high",
+    "*-aurora-connections-high",
+    "*-aurora-freeable-memory-low"
+  ],
+  "estimated_duration_minutes": 15,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "notify_oncall_immediate",
+      "description": "Immediately alert on-call engineer and open PagerDuty P1 incident.",
+      "action": "notify",
+      "params": {
+        "channel": "pagerduty",
+        "message": "CRITICAL: Aurora database alarm triggered. Automated runbook starting. Verify database health and consider failover."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 2,
+      "name": "notify_slack",
+      "description": "Post alert to Slack incident channel with context.",
+      "action": "notify",
+      "params": {
+        "channel": "slack",
+        "message": "Aurora alarm detected. Runbook executing. Check AWS Console → RDS → Clusters for current status. If replication lag > 5s and primary is unavailable, execute failover Lambda."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 3,
+      "name": "invoke_health_check",
+      "description": "Invoke the health check aggregator Lambda to assess current DB connectivity.",
+      "action": "invoke_lambda",
+      "params": {
+        "function_name": "securebase-prod-health-check-aggregator",
+        "payload": {
+          "check": "aurora",
+          "source": "runbook_aurora_failover"
+        }
+      },
+      "on_failure": "continue"
+    }
+  ],
+  "manual_escalation_steps": [
+    "If CPU > 95% for > 5 minutes: invoke securebase-prod-failover-orchestrator Lambda",
+    "If replication lag > 30s: execute failover (see DR_RUNBOOK.md)",
+    "After failover: verify replica promotion via RDS console",
+    "Update Route 53 / API connection strings if not handled automatically",
+    "Notify customer success team if customer-facing impact > 5 minutes",
+    "Open post-mortem within 24 hours"
+  ],
+  "failover_command": "aws lambda invoke --function-name securebase-prod-failover-orchestrator --payload '{\"action\": \"failover\", \"reason\": \"Aurora runbook auto-trigger\"}' --cli-binary-format raw-in-base64-out /tmp/failover-result.json",
+  "references": [
+    "DR_RUNBOOK.md",
+    "docs/runbooks/PHASE5_DR_DRILL.md",
+    "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database-managing.html"
+  ]
+}

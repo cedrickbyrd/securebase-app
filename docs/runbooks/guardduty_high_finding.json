@@ -1,0 +1,65 @@
+{
+  "runbook_id": "guardduty_high_finding",
+  "version": "1.0",
+  "description": "Automated incident response for GuardDuty HIGH or CRITICAL findings. Captures forensic metadata, isolates the affected resource, and escalates to the security team.",
+  "severity": "P1",
+  "trigger_patterns": [
+    "*-guardduty-high-critical-findings",
+    "*-guardduty-*"
+  ],
+  "estimated_duration_minutes": 10,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "notify_security_team_pagerduty",
+      "description": "Create P1 PagerDuty incident for the security team immediately.",
+      "action": "notify",
+      "params": {
+        "channel": "pagerduty",
+        "message": "CRITICAL: GuardDuty HIGH/CRITICAL finding detected. Automated forensic response initiated. Security team review required immediately."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 2,
+      "name": "notify_slack_security_channel",
+      "description": "Post finding details to #security-incidents Slack channel.",
+      "action": "notify",
+      "params": {
+        "channel": "slack",
+        "message": "GuardDuty HIGH/CRITICAL finding detected. Runbook executing: forensic capture in progress. Check AWS Console → GuardDuty → Findings for details. Follow containment steps in runbook."
+      },
+      "on_failure": "continue"
+    },
+    {
+      "step_id": 3,
+      "name": "capture_cloudtrail_logs",
+      "description": "Capture recent CloudTrail events for the affected resource.",
+      "action": "capture_lambda_logs",
+      "params": {
+        "tail_minutes": 60,
+        "log_group": "aws-cloudtrail-logs"
+      },
+      "on_failure": "continue"
+    }
+  ],
+  "containment_steps": [
+    "1. Open GuardDuty console and note: finding type, affected resource ARN, and IP address",
+    "2. If finding type is 'UnauthorizedAccess': immediately revoke IAM credentials for affected principal",
+    "3. If EC2 instance: isolate by placing in a 'quarantine' security group (deny all traffic)",
+    "4. If Lambda function: set reserved concurrency to 0 (disable execution)",
+    "5. Enable CloudTrail data events for the affected resource if not already enabled",
+    "6. Export GuardDuty finding to S3 for forensic preservation"
+  ],
+  "forensic_commands": [
+    "aws guardduty list-findings --detector-id <DETECTOR_ID> --finding-criteria '{\"Criterion\": {\"severity\": {\"Gte\": 7}}}'",
+    "aws guardduty get-findings --detector-id <DETECTOR_ID> --finding-ids <FINDING_ID>",
+    "aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,AttributeValue=<RESOURCE_ARN> --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)"
+  ],
+  "hipaa_notes": "If finding involves potential PHI access: immediately notify Privacy Officer per HIPAA Breach Notification Rule (45 CFR §164.410). Document timeline with < 60-day notification deadline.",
+  "references": [
+    "SECURITY.md",
+    "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings.html",
+    "https://www.hhs.gov/hipaa/for-professionals/breach-notification/index.html"
+  ]
+}
