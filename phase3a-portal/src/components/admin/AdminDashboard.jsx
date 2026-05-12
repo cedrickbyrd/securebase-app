@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import SystemHealth from './SystemHealth';
+import AlertingDashboard from './AlertingDashboard';
 import { adminService } from '../../services/adminService';
 
 const INITIAL_DELAY_MS = 60000;
@@ -24,7 +25,13 @@ const AdminDashboard = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [refreshDelay, setRefreshDelay] = useState(INITIAL_DELAY_MS);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [costStartDate, setCostStartDate] = useState('');
+  const [costEndDate, setCostEndDate] = useState('');
+  const [costSortBy, setCostSortBy] = useState('totalCost');
+  const [costSortDirection, setCostSortDirection] = useState('desc');
   const delayRef = useRef(INITIAL_DELAY_MS);
+  const costStartDateRef = useRef('');
+  const costEndDateRef = useRef('');
   const hasLoadedRef = useRef(false);
   const isMountedRef = useRef(true);
 
@@ -50,14 +57,26 @@ const AdminDashboard = () => {
     }
 
     try {
-      const snapshot = await adminService.getMetricsSnapshot(true);
-      const overview = snapshot?.overview || {};
-      const infrastructure = snapshot?.infrastructure || {};
-      const security = snapshot?.security || {};
-      const customers = snapshot?.customers || {};
-      const costs = snapshot?.costs || {};
-      const operations = snapshot?.operations || {};
-      const alerts = snapshot?.alerts || [];
+      const [
+        overview,
+        infrastructure,
+        security,
+        customers,
+        costs,
+        operations,
+        alerts,
+      ] = await Promise.all([
+        adminService.getSystemOverview(),
+        adminService.getInfrastructureHealth(),
+        adminService.getSecurityMetrics(),
+        adminService.getCustomerAnalytics(),
+        adminService.getCostManagement({
+          start: costStartDateRef.current || undefined,
+          end: costEndDateRef.current || undefined,
+        }),
+        adminService.getOperationsStatus(),
+        adminService.getRecentAlerts(),
+      ]);
 
       delayRef.current = INITIAL_DELAY_MS;
       if (isMountedRef.current) {
@@ -85,6 +104,11 @@ const AdminDashboard = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    costStartDateRef.current = costStartDate;
+    costEndDateRef.current = costEndDate;
+  }, [costEndDate, costStartDate]);
 
   useEffect(() => {
     let mounted = true;
@@ -127,6 +151,21 @@ const AdminDashboard = () => {
     const sign = Number(delta) >= 0 ? '+' : '';
     return `${sign}${delta}% over trend window`;
   }, [metrics.customers]);
+
+  const sortedTenantCosts = useMemo(() => {
+    const rows = Array.isArray(metrics.costs?.tenantCostHistory) ? [...metrics.costs.tenantCostHistory] : [];
+    rows.sort((a, b) => {
+      const aValue = a?.[costSortBy];
+      const bValue = b?.[costSortBy];
+      if (costSortBy === 'date' || costSortBy === 'tenant_id') {
+        const comparison = String(aValue || '').localeCompare(String(bValue || ''));
+        return costSortDirection === 'asc' ? comparison : -comparison;
+      }
+      const comparison = Number(aValue || 0) - Number(bValue || 0);
+      return costSortDirection === 'asc' ? comparison : -comparison;
+    });
+    return rows;
+  }, [costSortBy, costSortDirection, metrics.costs]);
 
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
@@ -224,6 +263,49 @@ const AdminDashboard = () => {
 
       <section className="bg-white border border-gray-200 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">Cost Management</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm mb-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-gray-600">Start date</span>
+            <input
+              type="date"
+              value={costStartDate}
+              onChange={(event) => setCostStartDate(event.target.value)}
+              className="border border-gray-300 rounded px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-gray-600">End date</span>
+            <input
+              type="date"
+              value={costEndDate}
+              onChange={(event) => setCostEndDate(event.target.value)}
+              className="border border-gray-300 rounded px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-gray-600">Sort by</span>
+            <select
+              value={costSortBy}
+              onChange={(event) => setCostSortBy(event.target.value)}
+              className="border border-gray-300 rounded px-2 py-1"
+            >
+              <option value="totalCost">Total cost</option>
+              <option value="tenant_id">Tenant</option>
+              <option value="date">Date</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-gray-600">Direction</span>
+            <select
+              value={costSortDirection}
+              onChange={(event) => setCostSortDirection(event.target.value)}
+              className="border border-gray-300 rounded px-2 py-1"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </label>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
           <Metric label="AWS Spend (MTD)" value={`$${(metrics.costs?.awsSpendMtd || 0).toLocaleString()}`} />
           <Metric label="Cost per Tenant" value={`$${metrics.costs?.costPerTenant || 0}`} />
@@ -237,6 +319,37 @@ const AdminDashboard = () => {
               <span>${service.cost.toLocaleString()}</span>
             </div>
           ))}
+        </div>
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Cost Per Tenant (Daily)</h3>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="text-left px-3 py-2">Tenant</th>
+                  <th className="text-left px-3 py-2">Date</th>
+                  <th className="text-right px-3 py-2">Total Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedTenantCosts.length > 0 ? (
+                  sortedTenantCosts.map((row) => (
+                    <tr key={`${row.tenant_id}-${row.date}`} className="border-t border-gray-100">
+                      <td className="px-3 py-2">{row.tenant_id}</td>
+                      <td className="px-3 py-2">{row.date}</td>
+                      <td className="px-3 py-2 text-right">${Number(row.totalCost || 0).toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-3 py-3 text-center text-gray-500">
+                      No tenant cost history available for selected range.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -268,6 +381,10 @@ const AdminDashboard = () => {
       </section>
 
       <SystemHealth refreshKey={refreshKey} />
+
+      <section className="bg-white border border-gray-200 rounded-xl p-6">
+        <AlertingDashboard />
+      </section>
 
       {lastUpdated && (
         <p className="text-xs text-gray-500">Last updated: {lastUpdated.toLocaleString()}</p>

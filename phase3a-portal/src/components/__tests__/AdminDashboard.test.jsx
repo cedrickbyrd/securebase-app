@@ -19,7 +19,13 @@ const payload = {
   infrastructure: { lambdaInvocations: 250000, apiLatency: { p50: 30, p95: 80, p99: 120 }, errorRate: 0.2, cloudwatchAlarms: 1 },
   security: { complianceScores: { soc2: 98, fedramp: 95, hipaa: 97 }, failedAuthAttempts: 5, securityEvents24h: 2 },
   customers: { newSignups30d: 12, churnRate: 1.2, mrrTrend: [90000, 96000], npsScore: 55 },
-  costs: { awsSpendMtd: 12000, costPerTenant: 89, savingsVsOnDemand: 22, topServicesByCost: [{ name: 'Aurora', cost: 5000 }] },
+  costs: {
+    awsSpendMtd: 12000,
+    costPerTenant: 89,
+    savingsVsOnDemand: 22,
+    topServicesByCost: [{ name: 'Aurora', cost: 5000 }],
+    tenantCostHistory: [{ tenant_id: 'tenant_a', date: '2026-05-11', totalCost: 325.12 }],
+  },
   operations: { activeDeployments: 1, failedPipelines: 0, pendingTerraformChanges: 2, lambdaColdStarts: 10 },
   alerts: [{ id: 'a1', severity: 'high', summary: 'Latency spike', source: 'CloudWatch', createdAt: new Date().toISOString() }],
 };
@@ -67,6 +73,7 @@ describe('AdminDashboard', () => {
       expect(screen.getByText(/security & compliance/i)).toBeInTheDocument();
       expect(screen.getByText(/customer analytics/i)).toBeInTheDocument();
       expect(screen.getByText(/cost management/i)).toBeInTheDocument();
+      expect(screen.getByText(/cost per tenant \(daily\)/i)).toBeInTheDocument();
       expect(screen.getByText(/operations/i)).toBeInTheDocument();
       expect(screen.getByText(/recent alerts/i)).toBeInTheDocument();
       expect(screen.getByTestId('system-health-widget')).toBeInTheDocument();
