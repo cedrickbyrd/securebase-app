@@ -276,11 +276,7 @@ class TestLambdaHandler:
 
     def _make_mock_db(self, customers=None):
         mock_db = MagicMock()
-        mock_pool = MagicMock()
-        mock_conn = MagicMock()
-        mock_pool.getconn.return_value = mock_conn
-        mock_db.get_connection_pool.return_value = mock_pool
-        mock_db.execute_query.return_value = customers or [
+        mock_db.query_many.return_value = customers or [
             {'id': 'tenant-aaa'},
             {'id': 'tenant-bbb'},
         ]
