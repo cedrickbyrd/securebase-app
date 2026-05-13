@@ -232,11 +232,16 @@ def _query_history(
                 items.extend(response.get('Items', []))
         else:
             # Fetch all frameworks: SK begins with 'FRAMEWORK#'
+            # Use FilterExpression to push the date window filter to DynamoDB,
+            # reducing unnecessary data transfer for large tenants.
+            from boto3.dynamodb.conditions import Attr  # noqa: PLC0415
+
             sk_prefix = 'FRAMEWORK#'
             response = table.query(
                 KeyConditionExpression=(
                     Key('PK').eq(pk) & Key('SK').begins_with(sk_prefix)
                 ),
+                FilterExpression=Attr('score_date').gte(cutoff_date),
                 ScanIndexForward=False,
             )
             items = response.get('Items', [])
@@ -246,16 +251,11 @@ def _query_history(
                     KeyConditionExpression=(
                         Key('PK').eq(pk) & Key('SK').begins_with(sk_prefix)
                     ),
+                    FilterExpression=Attr('score_date').gte(cutoff_date),
                     ScanIndexForward=False,
                     ExclusiveStartKey=response['LastEvaluatedKey'],
                 )
                 items.extend(response.get('Items', []))
-
-            # Filter client-side to the requested date window
-            items = [
-                item for item in items
-                if item.get('score_date', '') >= cutoff_date
-            ]
 
     except ClientError as exc:
         _log('error', 'DynamoDB query failed',
@@ -297,20 +297,19 @@ def _build_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     avg_score = round(sum(scores) / len(scores), 2)
 
     # 7-day trend: compare the most recent score to the score from ~7 days ago
-    today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     seven_days_ago = (
         datetime.now(timezone.utc) - timedelta(days=7)
     ).strftime('%Y-%m-%d')
 
-    # Find the score closest to 7 days ago (earliest item on or before that date)
+    # Find the score closest to (but not after) 7 days ago as the baseline
     older_items = [
         item for item in items
         if item.get('score_date', '') <= seven_days_ago
     ]
     score_delta_7d: Optional[float] = None
     if older_items:
-        oldest_of_week = max(older_items, key=lambda x: x.get('score_date', ''))
-        score_delta_7d = round(latest - float(oldest_of_week.get('score', 0)), 2)
+        baseline_item = max(older_items, key=lambda x: x.get('score_date', ''))
+        score_delta_7d = round(latest - float(baseline_item.get('score', 0)), 2)
 
     if score_delta_7d is None:
         trend = 'stable'
