@@ -808,7 +808,7 @@ resource "aws_api_gateway_model" "login_model" {
     type = "object"
     required = ["email", "password"]
     properties = {
-      email    = { type = "string", format = "email" }
+      email    = { type = "string" }
       password = { type = "string", minLength = 8 }
     }
   })
