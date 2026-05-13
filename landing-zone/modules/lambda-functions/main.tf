@@ -445,6 +445,48 @@ resource "aws_cloudwatch_log_group" "demo_auth" {
   tags              = var.tags
 }
 
+# Session Management Lambda (handles POST /auth/login, /auth/mfa, /auth/logout, etc.)
+resource "aws_lambda_function" "session_management" {
+  filename         = var.lambda_packages["session_management"]
+  function_name    = "securebase-${var.environment}-session-management"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "session_management.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["session_management"])
+  runtime          = "python3.11"
+  timeout          = 30
+  memory_size      = 512
+  tracing_config {
+    mode = "Active"
+  }
+
+  environment {
+    variables = {
+      ENVIRONMENT        = var.environment
+      JWT_SECRET_ARN     = coalesce(nullif(var.session_management_jwt_secret_arn, ""), var.jwt_secret_arn)
+      COOKIE_DOMAIN      = var.session_management_cookie_domain
+      ALLOWED_ORIGIN     = var.session_management_allowed_origin
+      RDS_HOST           = var.rds_proxy_endpoint
+      RDS_PROXY_ENDPOINT = var.rds_proxy_endpoint
+      RDS_DATABASE       = var.database_name
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.lambda_security_group_id]
+  }
+
+  tags = merge(var.tags, {
+    Name = "securebase-${var.environment}-session-management"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "session_management" {
+  name              = "/aws/lambda/securebase-${var.environment}-session-management"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
 #
 # MODULES
 #

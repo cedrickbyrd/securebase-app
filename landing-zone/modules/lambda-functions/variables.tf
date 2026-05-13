@@ -107,3 +107,21 @@ variable "demo_auth_token_ttl_secs" {
   type        = number
   default     = 3600
 }
+
+variable "session_management_jwt_secret_arn" {
+  description = "ARN of the Secrets Manager secret holding the JWT signing key for session_management Lambda"
+  type        = string
+  default     = ""
+}
+
+variable "session_management_cookie_domain" {
+  description = "Cookie domain for session cookies (default: .tximhotep.com)"
+  type        = string
+  default     = ".tximhotep.com"
+}
+
+variable "session_management_allowed_origin" {
+  description = "CORS allowed origin for the session_management Lambda"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
+}
