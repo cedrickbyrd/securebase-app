@@ -61,8 +61,7 @@ from botocore.exceptions import ClientError
 # Import shared database utilities from the Lambda layer.
 sys.path.insert(0, '/opt/python')
 from db_utils import (
-    get_connection_pool,
-    execute_query,
+    query_many,
     DatabaseError,
 )
 
@@ -409,22 +408,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Load customer list
     # ------------------------------------------------------------------
     try:
-        pool = get_connection_pool()
-        with pool.getconn() as conn:
-            if target_customer:
-                rows = execute_query(
-                    conn,
-                    "SELECT id FROM customers WHERE id = %s AND status = 'active'",
-                    (target_customer,),
-                    fetch=True,
-                )
-            else:
-                rows = execute_query(
-                    conn,
-                    "SELECT id FROM customers WHERE status = 'active'",
-                    fetch=True,
-                )
-            pool.putconn(conn)
+        if target_customer:
+            rows = query_many(
+                "SELECT id FROM customers WHERE id = %s AND status = 'active'",
+                (target_customer,),
+            )
+        else:
+            rows = query_many(
+                "SELECT id FROM customers WHERE status = 'active'",
+            )
     except DatabaseError as exc:
         _log('error', 'Failed to load customer list', error=str(exc))
         raise RuntimeError(f"Database error loading customers: {exc}") from exc
