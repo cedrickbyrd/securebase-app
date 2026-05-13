@@ -18,6 +18,7 @@ package() {
 
 package report_engine
 package demo_auth
+package session_management
 
 echo ""
 echo "🚀 All Lambda functions packaged in ../deploy/"

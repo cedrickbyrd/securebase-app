@@ -201,6 +201,12 @@ variable "allowed_origins" {
   default     = ["https://portal.securebase.com"]
 }
 
+variable "portal_origin" {
+  description = "Primary portal origin used in API Gateway gateway responses (must be a specific origin, not wildcard, because credentials are included)"
+  type        = string
+  default     = "https://securebase.tximhotep.com"
+}
+
 variable "submit_lead_lambda_arn" {
   description = "ARN of the submit_lead Lambda function"
   type        = string
