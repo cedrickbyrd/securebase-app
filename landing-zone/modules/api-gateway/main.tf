@@ -10,6 +10,12 @@ terraform {
   }
 }
 
+locals {
+  # Single authoritative origin for gateway-level CORS responses.
+  # Must be a specific origin (not *) because all portal requests use credentials: include.
+  portal_cors_origin = var.portal_origin
+}
+
 # ============================================================================
 # REST API Gateway
 # ============================================================================
@@ -800,9 +806,9 @@ resource "aws_api_gateway_model" "login_model" {
 
   schema = jsonencode({
     type = "object"
-    required = ["username", "password"]
+    required = ["email", "password"]
     properties = {
-      username = { type = "string" }
+      email    = { type = "string", format = "email" }
       password = { type = "string", minLength = 8 }
     }
   })
@@ -868,9 +874,10 @@ resource "aws_api_gateway_gateway_response" "cors_4xx" {
   response_type = "DEFAULT_4XX"
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
-    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'"
+    "gatewayresponse.header.Access-Control-Allow-Origin"      = "'${local.portal_cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers"     = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods"     = "'GET,OPTIONS,POST,PUT,DELETE'"
+    "gatewayresponse.header.Access-Control-Allow-Credentials" = "'true'"
   }
 }
 
@@ -879,7 +886,37 @@ resource "aws_api_gateway_gateway_response" "cors_5xx" {
   response_type = "DEFAULT_5XX"
 
   response_parameters = {
-    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Origin"      = "'${local.portal_cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers"     = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods"     = "'GET,OPTIONS,POST,PUT,DELETE'"
+    "gatewayresponse.header.Access-Control-Allow-Credentials" = "'true'"
+  }
+}
+
+# API Gateway returns MISSING_AUTHENTICATION_TOKEN (403) for undefined paths.
+# This response type is separate from DEFAULT_4XX, so it needs its own CORS headers.
+resource "aws_api_gateway_gateway_response" "cors_missing_auth_token" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  response_type = "MISSING_AUTHENTICATION_TOKEN"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"      = "'${local.portal_cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers"     = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods"     = "'GET,OPTIONS,POST,PUT,DELETE'"
+    "gatewayresponse.header.Access-Control-Allow-Credentials" = "'true'"
+  }
+}
+
+# API Gateway returns ACCESS_DENIED (403) for resource-policy denials and WAF blocks.
+resource "aws_api_gateway_gateway_response" "cors_access_denied" {
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  response_type = "ACCESS_DENIED"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"      = "'${local.portal_cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers"     = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods"     = "'GET,OPTIONS,POST,PUT,DELETE'"
+    "gatewayresponse.header.Access-Control-Allow-Credentials" = "'true'"
   }
 }
 # ============================================================================
