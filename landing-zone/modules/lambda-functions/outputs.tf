@@ -136,3 +136,18 @@ output "demo_auth_name" {
   description = "Name of the demo_auth Lambda function"
   value       = aws_lambda_function.demo_auth.function_name
 }
+
+output "session_management_arn" {
+  description = "ARN of the session_management Lambda function"
+  value       = aws_lambda_function.session_management.arn
+}
+
+output "session_management_invoke_arn" {
+  description = "Invoke ARN of the session_management Lambda function (used by API Gateway)"
+  value       = aws_lambda_function.session_management.invoke_arn
+}
+
+output "session_management_name" {
+  description = "Name of the session_management Lambda function"
+  value       = aws_lambda_function.session_management.function_name
+}
