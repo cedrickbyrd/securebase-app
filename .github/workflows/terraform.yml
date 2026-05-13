@@ -91,7 +91,20 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Check AWS credentials configuration
+        id: aws_credentials_check
+        run: |
+          if [ -z "$AWS_ROLE_ARN_SECRET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AWS_ROLE_ARN secret is not set. AWS authentication and provider-aware Terraform steps will be skipped."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          AWS_ROLE_ARN_SECRET: ${{ secrets.AWS_ROLE_ARN }}
+
       - name: Configure AWS credentials
+        if: steps.aws_credentials_check.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -112,7 +125,10 @@ jobs:
 
       - name: Terraform init
         run: |
-          if [ "${{ steps.backend_check.outputs.configured }}" = "true" ]; then
+          if [ "${{ steps.aws_credentials_check.outputs.configured }}" = "false" ] && [ "${{ steps.backend_check.outputs.configured }}" = "false" ]; then
+            echo "::warning::Skipping terraform init because both AWS_ROLE_ARN and TF_BACKEND_BUCKET are not configured."
+            exit 0
+          elif [ "${{ steps.backend_check.outputs.configured }}" = "true" ]; then
             terraform init -reconfigure \
               -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
               -backend-config="key=landing-zone/dev/terraform.tfstate" \
@@ -123,7 +139,12 @@ jobs:
           fi
 
       - name: Terraform validate
+        if: steps.aws_credentials_check.outputs.configured == 'true'
         run: terraform validate
+
+      - name: Terraform validate skipped notice
+        if: steps.aws_credentials_check.outputs.configured != 'true'
+        run: echo "::warning::Skipping terraform validate because AWS_ROLE_ARN is not configured and provider initialization cannot be guaranteed."
 
       - name: Terraform plan
         if: steps.backend_check.outputs.configured == 'true'
@@ -182,7 +203,20 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Check AWS credentials configuration
+        id: aws_credentials_check
+        run: |
+          if [ -z "$AWS_ROLE_ARN_SECRET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AWS_ROLE_ARN secret is not set. AWS authentication step will be skipped."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          AWS_ROLE_ARN_SECRET: ${{ secrets.AWS_ROLE_ARN }}
+
       - name: Configure AWS credentials (OIDC)
+        if: steps.aws_credentials_check.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
