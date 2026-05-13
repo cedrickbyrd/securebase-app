@@ -462,7 +462,7 @@ resource "aws_lambda_function" "session_management" {
   environment {
     variables = {
       ENVIRONMENT        = var.environment
-      JWT_SECRET_ARN     = var.session_management_jwt_secret_arn != "" ? var.session_management_jwt_secret_arn : var.jwt_secret_arn
+      JWT_SECRET_ARN     = coalesce(nullif(var.session_management_jwt_secret_arn, ""), var.jwt_secret_arn)
       COOKIE_DOMAIN      = var.session_management_cookie_domain
       ALLOWED_ORIGIN     = var.session_management_allowed_origin
       RDS_HOST           = var.rds_proxy_endpoint
