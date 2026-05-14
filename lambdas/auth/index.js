@@ -16,6 +16,8 @@ const JWT_EXPIRY   = process.env.JWT_EXPIRY   || "1h";
 const APP_URL      = process.env.APP_URL       || "https://portal.securebase.tximhotep.com";
 const FROM_EMAIL   = process.env.FROM_EMAIL    || "onboarding@tximhotep.com";
 const TOKEN_TTL_H  = 24; // hours
+const ACCEPT_INVITE_PATH_PATTERN = /(?:^|\/)accept-invite(?:\/|$)/;
+const INVITE_PATH_PATTERN = /(?:^|\/)invite(?:\/|$)/;
 
 const response = (statusCode, body) => ({
   statusCode,
@@ -261,8 +263,8 @@ export const handler = async (event) => {
     const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
     const body   = event.body ? JSON.parse(event.body) : {};
-    const isAcceptInvitePath = /(?:^|\/)accept-invite(?:\/|$)/.test(path);
-    const isInvitePath = /(?:^|\/)invite(?:\/|$)/.test(path);
+    const isAcceptInvitePath = ACCEPT_INVITE_PATH_PATTERN.test(path);
+    const isInvitePath = INVITE_PATH_PATTERN.test(path) && !isAcceptInvitePath;
     if (method === "OPTIONS") return response(200, {});
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
