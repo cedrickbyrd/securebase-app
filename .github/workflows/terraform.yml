@@ -5,12 +5,10 @@ on:
     branches: [main]
     paths:
       - 'landing-zone/**'
-      - 'terraform/**'
   pull_request:
     branches: [main]
     paths:
       - 'landing-zone/**'
-      - 'terraform/**'
 
 permissions:
   contents: write
