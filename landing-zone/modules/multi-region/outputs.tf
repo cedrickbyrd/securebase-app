@@ -52,3 +52,19 @@ output "secondary_health_endpoint" {
   description = "URL of the secondary region /health endpoint for Route53 health checks"
   value       = try("${aws_apigatewayv2_api.health_secondary.api_endpoint}/health", "")
 }
+
+output "dr_drill_lambda_arn" {
+  description = "ARN of the DR drill Lambda (monthly EventBridge schedule, Phase 6 / Track 2)"
+  value       = aws_lambda_function.dr_drill.arn
+}
+
+output "failover_validator_lambda_arn" {
+  description = "ARN of the failover validator Lambda"
+  value       = aws_lambda_function.failover_validator.arn
+}
+
+output "dr_drill_monthly_rule_arn" {
+  description = "ARN of the EventBridge rule that triggers the monthly DR drill"
+  value       = aws_cloudwatch_event_rule.dr_drill_monthly.arn
+}
+
