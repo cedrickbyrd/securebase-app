@@ -258,16 +258,16 @@ const mfaVerify = async (body) => {
 
 export const handler = async (event) => {
   try {
-    const path   = event.path || event.rawPath || "";
+    const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
     const body   = event.body ? JSON.parse(event.body) : {};
     if (method === "OPTIONS") return response(200, {});
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
-    if (method === "POST" && path.endsWith("/auth/invite"))          return await invite(body);
-    if (method === "POST" && path.endsWith("/auth/accept-invite"))   return await acceptInvite(body);
-    if (method === "POST" && path.endsWith("/auth/forgot-password")) return await forgotPassword(body);
-    if (method === "POST" && path.endsWith("/auth/reset-password"))  return await resetPassword(body);
+    if (method === "POST" && path.includes("/auth/invite"))          return await invite(body);
+    if (method === "POST" && path.includes("/auth/accept-invite"))   return await acceptInvite(body);
+    if (method === "POST" && path.includes("/auth/forgot-password")) return await forgotPassword(body);
+    if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
     if (method === "POST" && path.endsWith("/auth/mfa/setup"))       return await mfaSetup(body);
     if (method === "POST" && path.endsWith("/auth/mfa/verify"))      return await mfaVerify(body);
     return response(404, { message: "Not found" });
