@@ -23,6 +23,12 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.onboarding_status_get,
       aws_api_gateway_integration.onboarding_status_get,
       aws_lambda_permission.apigw_onboarding_status,
+      aws_api_gateway_resource.checkout,
+      aws_api_gateway_method.checkout_post,
+      aws_api_gateway_integration.checkout_post,
+      aws_api_gateway_method.checkout_options,
+      aws_api_gateway_integration.checkout_options,
+      aws_lambda_permission.apigw_checkout,
     ]))
   }
   lifecycle { create_before_destroy = true }
@@ -35,6 +41,10 @@ resource "aws_api_gateway_deployment" "main" {
     aws_api_gateway_integration.verify_email_post,
     aws_api_gateway_method.onboarding_status_get,
     aws_api_gateway_integration.onboarding_status_get,
+    aws_api_gateway_method.checkout_post,
+    aws_api_gateway_integration.checkout_post,
+    aws_api_gateway_method.checkout_options,
+    aws_api_gateway_integration.checkout_options,
   ]
 }
 resource "aws_api_gateway_stage" "main" {
