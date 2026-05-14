@@ -1,33 +1,66 @@
 # Compliance Automation Playbook
 
 ## Scope
-This playbook defines the Phase 6 Track 1 workflow for SOC 2, HIPAA, and FedRAMP evidence collection, controls monitoring, reporting, and audit integrity checks.
+This playbook defines the operational workflow for **Phase 6 Track 1 — Compliance Automation** across SOC 2, HIPAA, and FedRAMP.
 
-## Pipeline
-1. **Evidence Collection** (`src/lambdas/compliance/evidence_collector.py`)
-   - Scheduled by EventBridge (daily/weekly) and triggerable on-demand.
-   - Stores evidence records with schema: `control_id`, `timestamp`, `source`, `status`, `raw_payload`.
-2. **Controls Monitoring** (`src/lambdas/compliance/controls_monitor.py`)
-   - Compares live control states to baselines and flags drift.
-   - Persists drift snapshots and pushes SNS alerts.
-3. **Customer Reports** (`src/lambdas/compliance/report_generator.py`)
-   - Generates PDF/CSV artifacts and returns 24-hour pre-signed URLs.
-4. **Audit Integrity Validation** (`src/lambdas/compliance/audit_log_validator.py`)
-   - Verifies SHA-256 integrity for audit payloads.
+## Current Track 1 Architecture (Repository Source of Truth)
+
+### Core Lambda Functions
+1. **Immutable Evidence Packaging (Phase 6.1)**
+   - `phase6-backend/functions/audit_log_packager.py`
+   - Collects tenant audit logs from S3, generates a package-level SHA-256 manifest, uploads immutable evidence archives with Object Lock retention.
+
+2. **Evidence Management API (Phase 6.1)**
+   - `phase6-backend/functions/audit_evidence_api.py`
+   - Tenant-scoped endpoints for listing, fetching, and generating evidence packages.
+
+3. **Daily Compliance Scoring (Phase 6.2)**
+   - `phase6-backend/functions/compliance_score_recalculator.py`
+   - Scheduled recalculation pipeline using AWS Config / Security Hub / GuardDuty mappings and weighted control scoring.
+
+4. **Compliance Trend API (Phase 6.2)**
+   - `phase6-backend/functions/compliance_history_api.py`
+   - Returns 90-day (configurable) compliance trends from DynamoDB snapshots.
+
+### Framework Mapping Files
+- `phase6-backend/compliance/soc2_mapping.json`
+- `phase6-backend/compliance/hipaa_mapping.json`
+- `phase6-backend/compliance/fedramp_mapping.json`
+
+### Infrastructure Modules
+- `landing-zone/modules/phase6-audit-logging/` (Track 1 / 6.1)
+  - Evidence S3 bucket with Object Lock COMPLIANCE mode
+  - KMS encryption and IAM role for evidence packaging
+  - Macie integration and findings topic outputs
+- `landing-zone/modules/phase6-compliance/` (Track 1 / 6.2)
+  - AWS Config managed rules (26 currently declared)
+  - HIPAA + NIST conformance packs
+  - Config recorder guard for existing Phase 1 environments
+
+## Data Stores
+- **PostgreSQL (Aurora)**
+  - `phase6-backend/database/migrations/001_audit_evidence_tables.sql`
+    - `evidence_packages`, `macie_findings` (RLS enabled)
+  - `phase6-backend/database/migrations/002_compliance_score_history.sql`
+    - `compliance_score_daily`, `control_violation_log` (RLS enabled)
+- **DynamoDB**
+  - `securebase-compliance-scores` (trend snapshots consumed by compliance history API)
 
 ## API Endpoints
-- `POST /compliance/reports/generate`
-- `GET /audit/logs?tenant_id=&start=&end=&event_type=`
+- `GET /tenant/compliance/history`
+- `GET /admin/evidence`
+- `GET /admin/evidence/{package_id}`
+- `POST /admin/evidence/generate`
 
-## Infrastructure
-Terraform module: `terraform/modules/compliance/`
-- Immutable evidence bucket (versioning + Object Lock COMPLIANCE mode)
-- Controls state history table
-- SNS alert topic + SQS on-demand queue
+## Validation and Tests
+- `tests/phase6/test_audit_log_packager.py`
+- `tests/phase6/test_compliance_score_recalculator.py`
+- `tests/phase6/test_compliance_history_api.py`
+- `tests/phase6/test_track1_compliance_lambdas.py`
 
 ## Operational Checklist
-- [ ] EventBridge schedules enabled for evidence and controls jobs
-- [ ] On-demand collection queue connected
-- [ ] Alert routing configured for incident response
-- [ ] Report bucket lifecycle and permissions reviewed
-- [ ] Audit integrity checks monitored with alarms
+- [ ] Wire Phase 6 Track 1 module outputs into active environment stacks (`landing-zone/environments/*`)
+- [ ] Confirm EventBridge schedules are enabled for score recalculation and evidence packaging
+- [ ] Verify API Gateway routes/integrations for `/tenant/compliance/history` and `/admin/evidence*`
+- [ ] Validate object-lock retention and KMS settings in deployed evidence buckets
+- [ ] Run Track 1 Phase 6 tests and validate no regressions in existing compliance dashboards

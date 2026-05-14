@@ -1,9 +1,10 @@
 # DR Runbook — Phase 6 / Track 2: Multi-Region Disaster Recovery
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Phase:** 6 / Track 2  
-**Last Updated:** 2026-05-12  
+**Last Updated:** 2026-05-14  
 **Owner:** @cedrickbyrd  
+**Status:** ✅ Operational (final operator validation gates tracked separately)  
 **SLA:** 99.95% uptime | RTO < 15 min | RPO < 1 min
 
 ---
@@ -11,6 +12,8 @@
 ## Overview
 
 This runbook covers the end-to-end disaster recovery procedures for SecureBase's multi-region architecture:
+
+> For the Phase 5.4 production validation gate checklist (CloudFront, Aurora Global DB, DynamoDB replication, and secondary health endpoint verification), use `docs/runbooks/PHASE5_DR_DRILL.md` as the authoritative operator checklist.
 
 | Component | Primary (us-east-1) | Secondary (us-west-2) |
 |-----------|---------------------|-----------------------|
