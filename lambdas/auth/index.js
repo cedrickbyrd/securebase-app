@@ -105,6 +105,8 @@ const login = async (body) => {
   const { email, password, totp_code } = body;
   if (!email || !password) return response(400, { message: "Email and password required" });
   const user = await getUser(email);
+  // Return 401 for both "user not found" and "invited but not yet activated" —
+  // never leak which case applies (prevents user enumeration)
   if (!user || !user.password_hash) return response(401, { message: "Invalid credentials" });
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return response(401, { message: "Invalid credentials" });
@@ -135,13 +137,11 @@ const register = async (body) => {
   return response(201, { message: "User created successfully" });
 };
 
-// Invite — admin-initiated: creates/updates user record (no password yet) and sends set-password email
 const invite = async (body) => {
   const { email, invited_by } = body;
   if (!email) return response(400, { message: "Email required" });
   const existing = await getUser(email);
   if (!existing) {
-    // Provision stub record so the user exists before they set their password
     await db.send(new PutItemCommand({
       TableName: USERS_TABLE,
       Item: marshall({ email, role: "user", mfa_enabled: false, status: "invited", created_at: new Date().toISOString() }),
@@ -163,7 +163,6 @@ const invite = async (body) => {
   return response(200, { message: "Invite sent" });
 };
 
-// Accept invite — user sets password via link from email
 const acceptInvite = async (body) => {
   const { token, password } = body;
   if (!token || !password) return response(400, { message: "Token and password required" });
@@ -178,7 +177,6 @@ const acceptInvite = async (body) => {
     ExpressionAttributeNames:  { "#st": "status" },
     ExpressionAttributeValues: marshall({ ":h": password_hash, ":s": "active" }),
   }));
-  // Issue JWT so the user is logged in immediately after setting password
   const user = await getUser(item.email);
   const jwt_token = jwt.sign(
     { sub: user.email, role: user.role || "user", mfa_enabled: false },
@@ -188,12 +186,10 @@ const acceptInvite = async (body) => {
   return response(200, { token: jwt_token, user: { email: user.email, role: user.role, mfa_enabled: false } });
 };
 
-// Forgot password — sends reset link
 const forgotPassword = async (body) => {
   const { email } = body;
   if (!email) return response(400, { message: "Email required" });
   const user = await getUser(email);
-  // Always return 200 to prevent email enumeration
   if (!user) return response(200, { message: "If that email exists, a reset link has been sent" });
   const token = generateToken();
   await storeToken(email, token, "reset");
@@ -209,7 +205,6 @@ const forgotPassword = async (body) => {
   return response(200, { message: "If that email exists, a reset link has been sent" });
 };
 
-// Reset password — user sets new password via link
 const resetPassword = async (body) => {
   const { token, password } = body;
   if (!token || !password) return response(400, { message: "Token and password required" });
@@ -227,6 +222,8 @@ const resetPassword = async (body) => {
 };
 
 const mfaSetup = async (body) => {
+  // Null guard — missing email returns 400 not 500
+  if (!body || !body.email) return response(400, { message: "Email required" });
   const { email } = body;
   const user = await getUser(email);
   if (!user) return response(404, { message: "User not found" });
@@ -242,6 +239,8 @@ const mfaSetup = async (body) => {
 };
 
 const mfaVerify = async (body) => {
+  // Null guard — missing fields return 400 not 500
+  if (!body || !body.email || !body.totp_code) return response(400, { message: "Email and totp_code required" });
   const { email, totp_code } = body;
   const user = await getUser(email);
   if (!user || !user.mfa_secret_pending) return response(400, { message: "MFA setup not initiated" });
