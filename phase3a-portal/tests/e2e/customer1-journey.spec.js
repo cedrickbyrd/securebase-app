@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-const SIMULATION_TOKEN = process.env.TEST_SIMULATION_TOKEN || 'f29c7baf64f3476ea98988f8e5df53f2f23b0a7a2f92cb307c7285d6e11a4f8b';
+const SIMULATION_TOKEN = process.env.TEST_SIMULATION_TOKEN || 'SIMULATION_TOKEN_FOR_UI_SMOKE_TEST_ONLY';
 
 const resolveBaseUrl = () => process.env.PORTAL_URL || process.env.DEMO_URL || 'https://securebase.tximhotep.com';
 const buildUrl = (baseURL, path) => `${baseURL}${path}`;
-const containsJavaScriptErrorSignatures = (text) => /\bError:\b|ReferenceError|TypeError|SyntaxError|at\s+\w+/i.test(text);
+const hasJavaScriptErrorPattern = (text) => /\bError:\b|ReferenceError|TypeError|SyntaxError|at\s+\w+/i.test(text);
 
 const injectSession = async (page) => {
   await page.evaluate(() => {
@@ -56,7 +56,8 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
       } else {
         const errorMessage = page.locator('.error-message');
         await expect(errorMessage).toBeVisible();
-        await expect(errorMessage).not.toContainText(/^\s*$/);
+        const text = ((await errorMessage.textContent()) || '').trim();
+        expect(text.length).toBeGreaterThan(0);
       }
     });
 
@@ -93,7 +94,7 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
         const error = page.locator('.error-message');
         await expect(error).toBeVisible();
         const text = (await error.textContent()) || '';
-        expect(containsJavaScriptErrorSignatures(text)).toBe(false);
+        expect(hasJavaScriptErrorPattern(text)).toBe(false);
       }
     });
   });

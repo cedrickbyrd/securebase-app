@@ -145,6 +145,7 @@
   status = 200
   force = true
 
+# AUTH API GATEWAY BASE: https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod
 [[redirects]]
   from = "/api/auth/login"
   to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
