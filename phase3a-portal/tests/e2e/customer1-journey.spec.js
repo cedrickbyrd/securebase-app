@@ -4,7 +4,7 @@ const SIMULATION_TOKEN = process.env.TEST_SIMULATION_TOKEN || 'SIMULATION_TOKEN_
 
 const resolveBaseUrl = () => process.env.PORTAL_URL || process.env.DEMO_URL || 'https://securebase.tximhotep.com';
 const buildUrl = (baseURL, path) => `${baseURL}${path}`;
-const hasJavaScriptErrorPattern = (text) => /\bError:\b|ReferenceError|TypeError|SyntaxError|at\s+\w+/i.test(text);
+const containsJavaScriptErrorPattern = (text) => /\bError:\b|ReferenceError|TypeError|SyntaxError|at\s+\w+/i.test(text);
 
 const injectSession = async (page) => {
   await page.evaluate(() => {
@@ -94,7 +94,7 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
         const error = page.locator('.error-message');
         await expect(error).toBeVisible();
         const text = (await error.textContent()) || '';
-        expect(hasJavaScriptErrorPattern(text)).toBe(false);
+        expect(containsJavaScriptErrorPattern(text)).toBe(false);
       }
     });
   });
@@ -142,7 +142,7 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
     });
   });
 
-  test.describe('Scenario 5 & 6: API Route Validation', () => {
+  test.describe('Scenario 5: Accept-Invite API Route Validation & Scenario 6: Login API Route Validation', () => {
     test('/api/auth/accept-invite proxy is wired', async ({ request }) => {
       const response = await request.post(buildUrl(baseURL, '/api/auth/accept-invite'), {
         data: { password: 'StrongPassw0rd!' },
