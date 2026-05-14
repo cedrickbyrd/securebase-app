@@ -20,8 +20,8 @@ signed, and vaulted; control test results are fresh; the export is one button cl
 
 | Track | Status | Notes |
 |---|---|---|
-| Track 1 — Compliance Automation | 🔨 Operationalizing | Core lambdas/tests merged; environment wiring and scheduling hardening in progress |
-| Track 2 — Multi-Region DR | ✅ Merged | Route53 remains conditional; CloudFront/edge failover is the active path |
+| Track 1 — Compliance Automation | 🔨 Operationalizing | Phase 6.1/6.2 lambdas, Terraform modules, mappings, and tests are in repo; environment wiring and schedule enablement are the remaining operational steps |
+| Track 2 — Multi-Region DR | ✅ Operational | CloudFront-origin failover is active with conditional Route53; final operator gate closure tracked in `docs/runbooks/PHASE5_DR_DRILL.md` |
 | Track 3 — Alerting & Incident Response | ✅ Merged | Terraform + lambdas + tests in repo |
 | Track 4 — Distributed Tracing | ✅ Merged | Delivered under Phase 5 logging stack; observability controls active |
 | Track 5 — Scale & Cost Controls | 🔨 Operationalizing | Scaling modules and cost aggregation present; load validation automation pending |
@@ -55,12 +55,14 @@ This ensures `landing-zone/modules/multi-region/route53-failover.tf` only create
 ## Component 1 — Audit Logging Implementation
 
 **Priority:** Critical (blocks Components 2 and 4)  
-**Status:** Scaffold exists — `phase2-backend/functions/audit_logging.py` is all TODOs
+**Status:** Core implementation merged — integration hardening in progress
 
 ### What's there
-`audit_logging.py` has the function signatures and docstrings but every body is a TODO.
-The Aurora schema (`audit_events`, `activity_feed`) is fully documented in
-`docs/AUDIT_LOG_SCHEMA.md` and the tables exist in production.
+- `phase6-backend/functions/audit_log_packager.py` — immutable audit package generation with SHA-256 manifest + S3 Object Lock uploads.
+- `phase6-backend/functions/audit_evidence_api.py` — `/admin/evidence*` API for list/get/generate flows.
+- `landing-zone/modules/phase6-audit-logging/` — KMS, Object Lock evidence bucket, IAM role, and Macie-related outputs.
+- `phase6-backend/database/migrations/001_audit_evidence_tables.sql` — `evidence_packages` and `macie_findings` with RLS.
+- `tests/phase6/test_audit_log_packager.py` and `tests/phase6/test_track1_compliance_lambdas.py` cover Track 1 audit paths.
 
 ### Deliverables
 
@@ -105,13 +107,15 @@ The Aurora schema (`audit_events`, `activity_feed`) is fully documented in
 ## Component 2 — Automated Evidence Collection
 
 **Priority:** High  
-**Status:** HIPAA collector exists and works. SOC 2 and FedRAMP collectors missing.
-No Terraform scheduling exists for any collector.
+**Status:** Compliance scoring and history APIs are implemented; framework-specific collector expansion remains planned.
 
 ### What's there
-- `hipaa_compliance_collector.py` — full implementation (10 HIPAA controls)
-- `texas_fintech_compliance_collector.py` — full implementation
-- S3 evidence vault pattern established (Object Lock, KMS signing, SHA-256)
+- `phase6-backend/functions/compliance_score_recalculator.py` — weighted framework scoring with daily scheduled model (`cron(0 2 * * ? *)`).
+- `phase6-backend/functions/compliance_history_api.py` — tenant compliance trend API backed by DynamoDB snapshots.
+- `phase6-backend/compliance/{soc2,hipaa,fedramp}_mapping.json` — framework mapping sources.
+- `landing-zone/modules/phase6-compliance/` — 26 AWS Config rules + conformance packs.
+- `phase6-backend/database/migrations/002_compliance_score_history.sql` — score history and violation log schema (RLS).
+- `tests/phase6/test_compliance_score_recalculator.py` and `tests/phase6/test_compliance_history_api.py` cover Track 1 scoring/trend paths.
 
 ### Deliverables
 
