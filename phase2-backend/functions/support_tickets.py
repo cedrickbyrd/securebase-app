@@ -80,10 +80,18 @@ def get_customer_id_from_token(token):
     try:
         jwt_secret = os.environ.get('JWT_SECRET', '')
         if not jwt_secret:
+            logger.error('JWT_SECRET is not configured; token validation cannot proceed')
             return None
         payload = jwt.decode(token, jwt_secret, algorithms=['HS256'])
         return payload.get('customer_id')
-    except:
+    except jwt.ExpiredSignatureError:
+        logger.warning('JWT token has expired')
+        return None
+    except jwt.InvalidTokenError as e:
+        logger.warning(f'Invalid JWT token: {str(e)}')
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected JWT decode failure: {str(e)}')
         return None
 
 
