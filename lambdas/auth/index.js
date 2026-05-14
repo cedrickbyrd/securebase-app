@@ -24,8 +24,8 @@ const response = (statusCode, body) => ({
   headers: {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": process.env.CORS_ORIGIN || "*",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
   },
   body: JSON.stringify(body),
 });
@@ -261,10 +261,22 @@ export const handler = async (event) => {
   try {
     const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
-    const body   = event.body ? JSON.parse(event.body) : {};
     const isAcceptInvitePath = ACCEPT_INVITE_PATH_PATTERN.test(path);
     const isInvitePath = INVITE_PATH_PATTERN.test(path) && !isAcceptInvitePath;
-    if (method === "OPTIONS") return response(200, {});
+    if (method === "OPTIONS") {
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": process.env.CORS_ORIGIN || "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+        body: "",
+      };
+    }
+    const body = typeof event.body === "string"
+      ? (event.body ? JSON.parse(event.body) : {})
+      : (event.body || {});
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
     if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
