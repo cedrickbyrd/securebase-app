@@ -227,7 +227,7 @@ resource "aws_s3_bucket" "evidence_secondary" {
   provider = aws.secondary
 
   bucket        = "securebase-evidence-${var.environment}-dr"
-  force_destroy = false
+  force_destroy = var.environment != "prod"
 
   lifecycle { prevent_destroy = true }
 
@@ -376,13 +376,15 @@ resource "aws_s3_bucket_replication_configuration" "reports" {
   depends_on = [aws_s3_bucket_versioning.reports_secondary, aws_s3_bucket_versioning.reports_primary]
 }
 
-# ── CloudWatch alarm: S3 CRR failed-replication objects ──────────────────────
-# OperationsFailedReplication fires when objects fail to replicate — covers
-# all three buckets (audit logs, evidence, reports) via a single alarm.
+# ── CloudWatch alarms: S3 CRR failed-replication objects ─────────────────────
+# One alarm per source bucket — OperationsFailedReplication fires when objects
+# fail to replicate to the secondary region.
 
-resource "aws_cloudwatch_metric_alarm" "s3_crr_failed_replication" {
-  alarm_name          = "securebase-${var.environment}-s3-crr-failed-replication"
-  alarm_description   = "S3 CRR replication failures detected — objects failed to replicate to ${var.secondary_region}"
+resource "aws_cloudwatch_metric_alarm" "s3_crr_failed_audit_logs" {
+  count = var.audit_log_bucket_name != "" ? 1 : 0
+
+  alarm_name          = "securebase-${var.environment}-s3-crr-failed-replication-audit-logs"
+  alarm_description   = "S3 CRR replication failures on audit log bucket — objects failed to replicate to ${var.secondary_region}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "OperationsFailedReplication"
@@ -393,7 +395,58 @@ resource "aws_cloudwatch_metric_alarm" "s3_crr_failed_replication" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    SourceBucket = var.audit_log_bucket_name != "" ? var.audit_log_bucket_name : "none"
+    SourceBucket = var.audit_log_bucket_name
+    RuleId       = "replicate-all-audit-logs"
+  }
+
+  alarm_actions = compact([var.alert_sns_arn])
+  ok_actions    = compact([var.alert_sns_arn])
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "s3_crr_failed_evidence" {
+  count = var.evidence_bucket_name != "" ? 1 : 0
+
+  alarm_name          = "securebase-${var.environment}-s3-crr-failed-replication-evidence"
+  alarm_description   = "S3 CRR replication failures on evidence bucket — objects failed to replicate to ${var.secondary_region}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "OperationsFailedReplication"
+  namespace           = "AWS/S3"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    SourceBucket = var.evidence_bucket_name
+    RuleId       = "replicate-all-evidence"
+  }
+
+  alarm_actions = compact([var.alert_sns_arn])
+  ok_actions    = compact([var.alert_sns_arn])
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "s3_crr_failed_reports" {
+  count = var.report_bucket_name != "" ? 1 : 0
+
+  alarm_name          = "securebase-${var.environment}-s3-crr-failed-replication-reports"
+  alarm_description   = "S3 CRR replication failures on report output bucket — objects failed to replicate to ${var.secondary_region}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "OperationsFailedReplication"
+  namespace           = "AWS/S3"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    SourceBucket = var.report_bucket_name
+    RuleId       = "replicate-all-reports"
   }
 
   alarm_actions = compact([var.alert_sns_arn])
