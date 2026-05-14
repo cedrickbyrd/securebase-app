@@ -47,6 +47,20 @@ variable "dynamodb_table_names" {
 
 # ── S3 replication ────────────────────────────────────────────────────────────────────
 
+variable "evidence_bucket_name" {
+  description = "Source S3 bucket name for evidence cross-region replication (Phase 6 / Track 2, Sub-task 2.3). Leave empty to skip evidence CRR."
+  type        = string
+  default     = ""
+}
+
+variable "report_bucket_name" {
+  description = "Source S3 bucket name for report output cross-region replication (Phase 6 / Track 2, Sub-task 2.3). Leave empty to skip reports CRR."
+  type        = string
+  default     = ""
+}
+
+
+
 variable "audit_log_bucket_name" {
   description = "Source S3 bucket name for audit log cross-region replication"
   type        = string
@@ -186,6 +200,20 @@ variable "alert_sns_arn" {
   type        = string
   default     = ""
 }
+
+variable "drill_report_bucket" {
+  description = "S3 bucket name where DR drill reports are stored (Phase 6 / Track 2, Sub-task 2.5)"
+  type        = string
+  default     = ""
+}
+
+variable "secondary_health_url" {
+  description = "Full HTTPS URL of the secondary region /health endpoint for failover validation"
+  type        = string
+  default     = ""
+}
+
+
 
 # ── Tags ──────────────────────────────────────────────────────────────────────────────
 
