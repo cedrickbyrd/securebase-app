@@ -20,7 +20,7 @@ signed, and vaulted; control test results are fresh; the export is one button cl
 
 | Track | Status | Notes |
 |---|---|---|
-| Track 1 — Compliance Automation | 🔨 Operationalizing | Phase 6.1/6.2 Lambdas, Terraform modules, mappings, and tests are in repo; environment wiring and schedule enablement are the remaining operational steps |
+| Track 1 — Compliance Automation | 🔨 Operationalizing | Phase 6.1/6.2 lambdas, Terraform modules, mappings, and tests are in repo; environment wiring and schedule enablement are the remaining operational steps |
 | Track 2 — Multi-Region DR | ✅ Operational | CloudFront-origin failover is active with conditional Route53; final operator gate closure tracked in `docs/runbooks/PHASE5_DR_DRILL.md` |
 | Track 3 — Alerting & Incident Response | ✅ Merged | Terraform + lambdas + tests in repo |
 | Track 4 — Distributed Tracing | ✅ Merged | Delivered under Phase 5 logging stack; observability controls active |
