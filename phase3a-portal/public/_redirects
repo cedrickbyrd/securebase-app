@@ -1,0 +1,12 @@
+# Proxy /api/auth/* → API Gateway
+/api/auth/login           https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login           200
+/api/auth/register        https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/register        200
+/api/auth/invite          https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/invite          200
+/api/auth/accept-invite   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/accept-invite   200
+/api/auth/forgot-password https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/forgot-password 200
+/api/auth/reset-password  https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/reset-password  200
+/api/auth/mfa/setup       https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/setup       200
+/api/auth/mfa/verify      https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/verify      200
+
+# SPA fallback — must be last
+/*    /index.html   200
