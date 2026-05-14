@@ -261,11 +261,13 @@ export const handler = async (event) => {
     const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
     const body   = event.body ? JSON.parse(event.body) : {};
+    const isAcceptInvitePath = /(?:^|\/)accept-invite(?:\/|$)/.test(path);
+    const isInvitePath = /(?:^|\/)invite(?:\/|$)/.test(path);
     if (method === "OPTIONS") return response(200, {});
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
-    if (method === "POST" && path.includes("accept-invite"))         return await acceptInvite(body);
-    if (method === "POST" && path.includes("invite"))                return await invite(body);
+    if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
+    if (method === "POST" && isInvitePath)                            return await invite(body);
     if (method === "POST" && path.includes("/auth/forgot-password")) return await forgotPassword(body);
     if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
     if (method === "POST" && path.endsWith("/auth/mfa/setup"))       return await mfaSetup(body);
