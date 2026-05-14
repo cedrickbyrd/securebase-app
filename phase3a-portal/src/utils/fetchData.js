@@ -1,6 +1,6 @@
 // phase3a-portal/src/utils/fetchData.js
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.tximhotep.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const isDemoMode = () =>
   import.meta.env.VITE_DEMO_MODE === 'true' ||

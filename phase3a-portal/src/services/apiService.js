@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.securebase.tximhotep.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 class ApiService {
   constructor() { this.baseURL = API_BASE; }

@@ -145,6 +145,54 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/auth/login"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/register"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/invite"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/invite"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/accept-invite"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/accept-invite"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/forgot-password"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/forgot-password"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/reset-password"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/reset-password"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/mfa/setup"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/setup"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/mfa/verify"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/verify"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
@@ -161,7 +209,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://api.securebase.tximhotep.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
+      connect-src 'self' https://api.securebase.tximhotep.com https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
       frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
       frame-ancestors 'none';
       base-uri 'self';
@@ -184,7 +232,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://api.securebase.tximhotep.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
+      connect-src 'self' https://api.securebase.tximhotep.com https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
       frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
       frame-ancestors 'none';
       form-action 'self' https://checkout.stripe.com;

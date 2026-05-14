@@ -1,7 +1,7 @@
 import { MockAuthService } from '../mocks/mockAuth';
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.securebase.tximhotep.com';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 class RealAuthService {
   async login(email, password, totp_code) {
