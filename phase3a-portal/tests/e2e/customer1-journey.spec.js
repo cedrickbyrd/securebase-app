@@ -1,13 +1,14 @@
 import { test, expect } from '@playwright/test';
 
-const SIMULATION_TOKEN = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const SIMULATION_TOKEN = process.env.TEST_SIMULATION_TOKEN || 'f29c7baf64f3476ea98988f8e5df53f2f23b0a7a2f92cb307c7285d6e11a4f8b';
 
 const resolveBaseUrl = () => process.env.PORTAL_URL || process.env.DEMO_URL || 'https://securebase.tximhotep.com';
 const buildUrl = (baseURL, path) => `${baseURL}${path}`;
+const containsJavaScriptErrorSignatures = (text) => /\bError:\b|ReferenceError|TypeError|SyntaxError|at\s+\w+/i.test(text);
 
 const injectSession = async (page) => {
   await page.evaluate(() => {
-    sessionStorage.setItem('sessionToken', 'test-session');
+    sessionStorage.setItem('sessionToken', 'mock-auth-token-e2e-test');
   });
 };
 
@@ -44,7 +45,10 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
       await page.getByLabel('Confirm Password').fill('StrongPassw0rd!');
       await page.getByRole('button', { name: 'Activate Account & Sign In' }).click();
 
-      await page.waitForTimeout(1200);
+      await Promise.race([
+        page.waitForURL(/\/dashboard/, { timeout: 5000 }).catch(() => null),
+        page.locator('.error-message').waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+      ]);
 
       const onDashboard = page.url().includes('/dashboard');
       if (onDashboard) {
@@ -77,7 +81,10 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
       await page.getByLabel('Password').fill('InvalidPass123!');
       await page.getByRole('button', { name: 'Sign In' }).click();
 
-      await page.waitForTimeout(1200);
+      await Promise.race([
+        page.waitForURL(/\/dashboard/, { timeout: 5000 }).catch(() => null),
+        page.locator('.error-message').waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+      ]);
 
       const onDashboard = page.url().includes('/dashboard');
       if (onDashboard) {
@@ -86,7 +93,7 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
         const error = page.locator('.error-message');
         await expect(error).toBeVisible();
         const text = (await error.textContent()) || '';
-        expect(text).not.toMatch(/\bError:\b|ReferenceError|TypeError|at\s+\w+/i);
+        expect(containsJavaScriptErrorSignatures(text)).toBe(false);
       }
     });
   });
@@ -99,7 +106,10 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
       await page.getByLabel('Work Email').fill('matthew@example.com');
       await page.getByRole('button', { name: 'Send Reset Link' }).click();
 
-      await page.waitForTimeout(1200);
+      await Promise.race([
+        page.getByRole('heading', { name: 'Check your email' }).waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+        page.locator('.error-message').waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+      ]);
 
       const confirmation = page.getByRole('heading', { name: 'Check your email' });
       const error = page.locator('.error-message');
@@ -126,7 +136,7 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
 
     test('dashboard redirects to login when session is missing', async ({ page }) => {
       await page.goto(buildUrl(baseURL, '/dashboard'));
-      await page.waitForTimeout(800);
+      await page.waitForURL(/\/login/, { timeout: 5000 });
       await expect(page).toHaveURL(/\/login/);
     });
   });
@@ -163,4 +173,3 @@ test.describe('Customer #1 (Matthew) — Full Journey Simulation', () => {
     });
   });
 });
-
