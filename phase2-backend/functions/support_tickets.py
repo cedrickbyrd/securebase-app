@@ -2,6 +2,12 @@
 Support Tickets Lambda Functions
 Handles ticket creation, updating, commenting, and querying
 Database: support_tickets and ticket_comments tables (Phase 2 schema)
+
+Required environment variables:
+  - JWT_SECRET: JWT signing secret (must match auth_v2 Lambda)
+  - SNS_SUPPORT_TOPIC_ARN: SNS topic ARN for support events
+  - SUPPORT_TICKETS_TABLE: DynamoDB table name for support tickets
+  - TICKET_COMMENTS_TABLE: DynamoDB table name for ticket comments
 """
 
 import json
@@ -26,6 +32,7 @@ sns = boto3.client('sns')
 # Database tables - use environment variables for proper naming
 SUPPORT_TICKETS_TABLE = os.environ.get('SUPPORT_TICKETS_TABLE', 'support_tickets')
 TICKET_COMMENTS_TABLE = os.environ.get('TICKET_COMMENTS_TABLE', 'ticket_comments')
+SNS_SUPPORT_TOPIC_ARN = os.environ.get('SNS_SUPPORT_TOPIC_ARN', '')
 
 tickets_table = dynamodb.Table(SUPPORT_TICKETS_TABLE)
 comments_table = dynamodb.Table(TICKET_COMMENTS_TABLE)
@@ -71,9 +78,20 @@ def get_customer_id_from_token(token):
     # For now, assuming token contains customer_id
     import jwt
     try:
-        payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        jwt_secret = os.environ.get('JWT_SECRET', '')
+        if not jwt_secret:
+            logger.error('JWT_SECRET is not configured; token validation cannot proceed')
+            return None
+        payload = jwt.decode(token, jwt_secret, algorithms=['HS256'])
         return payload.get('customer_id')
-    except:
+    except jwt.ExpiredSignatureError:
+        logger.warning('JWT token has expired')
+        return None
+    except jwt.InvalidTokenError as e:
+        logger.warning(f'Invalid JWT token: {str(e)}')
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected JWT decode failure: {str(e)}')
         return None
 
 
@@ -191,15 +209,16 @@ You will be notified when we respond to your ticket.
         
         # Publish event for real-time notifications
         try:
-            sns.publish(
-                TopicArn='arn:aws:sns:us-east-1:ACCOUNT:support-events',
-                Message=json.dumps({
-                    'type': 'ticket_created',
-                    'ticket_id': ticket_id,
-                    'customer_id': customer_id,
-                    'priority': priority
-                })
-            )
+            if SNS_SUPPORT_TOPIC_ARN:
+                sns.publish(
+                    TopicArn=SNS_SUPPORT_TOPIC_ARN,
+                    Message=json.dumps({
+                        'type': 'ticket_created',
+                        'ticket_id': ticket_id,
+                        'customer_id': customer_id,
+                        'priority': priority
+                    })
+                )
         except Exception as e:
             logger.warning(f'Failed to publish SNS event: {str(e)}')
         
@@ -404,15 +423,16 @@ def update_ticket(event, context):
         
         # Publish event
         try:
-            sns.publish(
-                TopicArn='arn:aws:sns:us-east-1:ACCOUNT:support-events',
-                Message=json.dumps({
-                    'type': 'ticket_updated',
-                    'ticket_id': ticket_id,
-                    'customer_id': customer_id,
-                    'changes': body
-                })
-            )
+            if SNS_SUPPORT_TOPIC_ARN:
+                sns.publish(
+                    TopicArn=SNS_SUPPORT_TOPIC_ARN,
+                    Message=json.dumps({
+                        'type': 'ticket_updated',
+                        'ticket_id': ticket_id,
+                        'customer_id': customer_id,
+                        'changes': body
+                    })
+                )
         except Exception as e:
             logger.warning(f'Failed to publish SNS event: {str(e)}')
         
@@ -498,15 +518,16 @@ def add_comment(event, context):
         
         # Publish event for notifications
         try:
-            sns.publish(
-                TopicArn='arn:aws:sns:us-east-1:ACCOUNT:support-events',
-                Message=json.dumps({
-                    'type': 'comment_added',
-                    'ticket_id': ticket_id,
-                    'customer_id': customer_id,
-                    'comment_id': comment_id
-                })
-            )
+            if SNS_SUPPORT_TOPIC_ARN:
+                sns.publish(
+                    TopicArn=SNS_SUPPORT_TOPIC_ARN,
+                    Message=json.dumps({
+                        'type': 'comment_added',
+                        'ticket_id': ticket_id,
+                        'customer_id': customer_id,
+                        'comment_id': comment_id
+                    })
+                )
         except Exception as e:
             logger.warning(f'Failed to publish SNS event: {str(e)}')
         
