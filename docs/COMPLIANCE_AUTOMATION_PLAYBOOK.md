@@ -28,11 +28,11 @@ This playbook defines the operational workflow for **Phase 6 Track 1 — Complia
 - `phase6-backend/compliance/fedramp_mapping.json`
 
 ### Infrastructure Modules
-- `landing-zone/modules/phase6-audit-logging/` (Track 1 / 6.1)
+- `landing-zone/modules/phase6-audit-logging/` (Phase 6.1 / Track 1)
   - Evidence S3 bucket with Object Lock COMPLIANCE mode
   - KMS encryption and IAM role for evidence packaging
   - Macie integration and findings topic outputs
-- `landing-zone/modules/phase6-compliance/` (Track 1 / 6.2)
+- `landing-zone/modules/phase6-compliance/` (Phase 6.2 / Track 1)
   - AWS Config managed rules (26 currently declared)
   - HIPAA + NIST conformance packs
   - Config recorder guard for existing Phase 1 environments
