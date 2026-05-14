@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 
 /**
  * useMFAStatus
- * Replaces the former Supabase-based AAL check.
- * Reads the JWT stored in localStorage by Login.jsx and derives
- * authentication state from it — no Supabase dependency.
+ * JWT-based auth state derived from sessionStorage/localStorage.
+ * Supabase dependency removed — auth is handled by securebase-production-auth-v2 Lambda.
  */
 export function useMFAStatus() {
   const [aal, setAal] = useState(null);
@@ -13,15 +12,20 @@ export function useMFAStatus() {
   useEffect(() => {
     function checkAuth() {
       try {
-        const token = localStorage.getItem('sb_token');
-        const user = JSON.parse(localStorage.getItem('sb_user') || 'null');
+        const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sb_token');
+        const userEmail = localStorage.getItem('userEmail');
 
-        if (!token || !user) {
+        if (!token || !userEmail) {
           setAal('none');
         } else {
-          // If MFA was verified the Lambda returns mfa_enabled: true on the user object.
-          // We treat mfa_enabled as aal2, password-only as aal1.
-          setAal(user.mfa_enabled ? 'aal2' : 'aal1');
+          // Decode JWT payload to check MFA status without a network call.
+          // The Lambda stamps mfa_enabled in the token payload.
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            setAal(payload?.mfa_enabled ? 'aal2' : 'aal1');
+          } catch {
+            setAal('aal1'); // malformed token — treat as password-only session
+          }
         }
       } catch {
         setAal('none');
@@ -31,8 +35,6 @@ export function useMFAStatus() {
     }
 
     checkAuth();
-
-    // Re-check on storage events (e.g. logout in another tab)
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, []);
