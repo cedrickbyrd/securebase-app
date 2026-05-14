@@ -1,0 +1,7 @@
+# Netlify redirects for phase3a-portal auth endpoints
+# Inline with netlify.toml — these are appended automatically by Netlify
+
+/api/auth/invite          https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/invite          200
+/api/auth/accept-invite   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/accept-invite   200
+/api/auth/forgot-password https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/forgot-password 200
+/api/auth/reset-password  https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/reset-password  200
