@@ -17,7 +17,7 @@ export default function AcceptInvite({ setAuth }) {
   const [success, setSuccess]     = useState(false);
 
   useEffect(() => {
-    if (!token) navigate('/login');
+    if (!token) navigate('/login', { replace: true });
   }, [token, navigate]);
 
   const handleSubmit = async (e) => {

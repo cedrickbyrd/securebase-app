@@ -38,6 +38,54 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/auth/login"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/register"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/invite"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/invite"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/accept-invite"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/accept-invite"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/forgot-password"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/forgot-password"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/reset-password"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/reset-password"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/mfa/setup"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/setup"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/mfa/verify"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/verify"
+  status = 200
+  force = true
+
 
 # DEMO AUTH - Routes to AWS Lambda via API Gateway.
 # Per CLAUDE.md / .github/copilot-instructions.md Cost Optimization policy,
