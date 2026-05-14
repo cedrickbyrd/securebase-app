@@ -1,0 +1,71 @@
+name: Terraform Apply - SecureBase Workspace
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Terraform workspace to apply'
+        required: true
+        default: 'securebase'
+        type: choice
+        options:
+          - securebase
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      TF_WORKSPACE: ${{ github.event.inputs.workspace || 'securebase' }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ~1.5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        id: init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ./terraform
+        run: terraform plan -no-color -input=false -out=tfplan
+
+      - name: Terraform Apply
+        id: apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Output Summary
+        if: always()
+        run: |
+          echo "### Terraform Apply Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workspace:** \`${{ env.TF_WORKSPACE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** \`${{ steps.apply.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** \`${{ env.AWS_REGION }}\`" >> $GITHUB_STEP_SUMMARY
