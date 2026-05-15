@@ -248,20 +248,17 @@ test.describe('5 · Portal SPA routes exist (200 from Netlify)', () => {
 });
 
 // ── 6. Browser — auth routes behave correctly ─────────────────────────────
-// Login uses Lambda JWT auth (no Supabase). Input has id="email".
+// Login uses Lambda JWT auth (no Supabase). Inputs use id="email" / id="password".
 
 test.describe('6 · Browser auth flow behavior', () => {
 
   test('/login renders email + password fields', async ({ page }) => {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
-    // Clear any stale auth state via URL param (no pre-navigation needed)
     await page.goto(`${PORTAL}/login`);
-    // Wipe localStorage/sessionStorage so demo_mode doesn't interfere
     await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
     await page.reload();
     await page.waitForLoadState('networkidle');
-    // Login.jsx uses <input id="email"> and <input id="password">
     await expect(page.locator('#email').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#password').first()).toBeVisible({ timeout: 10000 });
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
@@ -274,9 +271,15 @@ test.describe('6 · Browser auth flow behavior', () => {
   });
 
   test('/accept-invite?token=x renders set-password form', async ({ page }) => {
+    // AcceptInvite.jsx redirects to /login only when token is MISSING.
+    // With a token present it renders the set-password form with id="password".
+    // Wait for URL to confirm we stayed on accept-invite (token kept us here).
     await page.goto(`${PORTAL}/accept-invite?token=${'x'.repeat(64)}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 });
+    // Confirm we did NOT get redirected away
+    await expect(page).toHaveURL(/accept-invite/);
+    // AcceptInvite renders <input id="password">
+    await expect(page.locator('#password').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('/forgot-password renders email field', async ({ page }) => {
