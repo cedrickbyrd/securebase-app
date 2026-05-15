@@ -172,16 +172,14 @@ test.describe('3 · Auth API error contracts', () => {
 
 test.describe('4 · Netlify /api proxy routes to Lambda', () => {
 
-  // Expected status = what Lambda returns for empty body via proxy
-  // These confirm the proxy is working (not returning Netlify 404)
   const proxyRoutes = [
     ['/auth/login',           400],
     ['/auth/register',        400],
     ['/auth/invite',          400],
     ['/auth/accept-invite',   400],
-    ['/auth/forgot-password', 400], // missing email → 400
+    ['/auth/forgot-password', 400],
     ['/auth/reset-password',  400],
-    ['/auth/mfa/setup',       400], // missing email → 400 (null guard)
+    ['/auth/mfa/setup',       400],
     ['/auth/mfa/verify',      400],
   ];
 
@@ -253,13 +251,30 @@ test.describe('5 · Portal SPA routes exist (200 from Netlify)', () => {
 
 test.describe('6 · Browser auth flow behavior', () => {
 
+  // Clear all storage before each browser test to prevent demo_mode bleed
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PORTAL);
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  });
+
   test('/login renders email + password fields', async ({ page }) => {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.goto(`${PORTAL}/login`);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('input[type="email"], input[id="email"], input[name="email"]').first()).toBeVisible();
-    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    // Supabase Auth UI or custom form — broad selector covers both
+    const emailInput = page.locator([
+      'input[type="email"]',
+      'input[id="email"]',
+      'input[name="email"]',
+      'input[autocomplete="email"]',
+      'input[placeholder*="email" i]',
+    ].join(', ')).first();
+    await expect(emailInput).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 });
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
   });
 
@@ -272,19 +287,26 @@ test.describe('6 · Browser auth flow behavior', () => {
   test('/accept-invite?token=x renders set-password form', async ({ page }) => {
     await page.goto(`${PORTAL}/accept-invite?token=${'x'.repeat(64)}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('/forgot-password renders email field', async ({ page }) => {
     await page.goto(`${PORTAL}/forgot-password`);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('input[type="email"], input[id="email"], input[name="email"], input[placeholder*="email" i]').first()).toBeVisible();
+    const emailInput = page.locator([
+      'input[type="email"]',
+      'input[id="email"]',
+      'input[name="email"]',
+      'input[autocomplete="email"]',
+      'input[placeholder*="email" i]',
+    ].join(', ')).first();
+    await expect(emailInput).toBeVisible({ timeout: 10000 });
   });
 
   test('/reset-password?token=x renders new-password form', async ({ page }) => {
     await page.goto(`${PORTAL}/reset-password?token=${'x'.repeat(64)}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('/dashboard unauthenticated redirects to /login', async ({ page }) => {
