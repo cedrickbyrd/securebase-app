@@ -17,89 +17,68 @@ variable "tags" {
   default     = {}
 }
 
-# ============================================================================
-# Lambda Function ARNs and Names
-# ============================================================================
-
 variable "auth_lambda_arn" {
-  description = "ARN of the authentication Lambda function"
-  type        = string
+  type = string
 }
 
 variable "auth_lambda_name" {
-  description = "Name of the authentication Lambda function"
-  type        = string
+  type = string
 }
 
 variable "health_check_lambda_arn" {
-  description = "ARN of the health check Lambda function"
-  type        = string
+  type = string
 }
 
 variable "health_check_lambda_name" {
-  description = "Name of the health check Lambda function"
-  type        = string
+  type = string
 }
 
 variable "webhook_lambda_arn" {
-  description = "ARN of the webhook manager Lambda function"
-  type        = string
+  type = string
 }
 
 variable "webhook_lambda_name" {
-  description = "Name of the webhook manager Lambda function"
-  type        = string
+  type = string
 }
 
 variable "billing_lambda_arn" {
-  description = "ARN of the billing worker Lambda function"
-  type        = string
+  type = string
 }
 
 variable "billing_lambda_name" {
-  description = "Name of the billing worker Lambda function"
-  type        = string
+  type = string
 }
 
 variable "support_lambda_arn" {
-  description = "ARN of the support tickets Lambda function"
-  type        = string
+  type = string
 }
 
 variable "support_lambda_name" {
-  description = "Name of the support tickets Lambda function"
-  type        = string
+  type = string
 }
 
 variable "forecasting_lambda_arn" {
-  description = "ARN of the cost forecasting Lambda function"
-  type        = string
+  type = string
 }
 
 variable "forecasting_lambda_name" {
-  description = "Name of the cost forecasting Lambda function"
-  type        = string
+  type = string
 }
 
 variable "analytics_lambda_arn" {
-  description = "ARN of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "analytics_lambda_name" {
-  description = "Name of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "analytics_lambda_invoke_arn" {
-  description = "Invoke ARN of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
-
-# RBAC Lambda Functions (Phase 4 Component 2)
 
 variable "user_management_lambda_arn" {
   type    = string
@@ -145,10 +124,6 @@ variable "permission_management_lambda_invoke_arn" {
   type    = string
   default = null
 }
-
-# ============================================================================
-# Security and Performance Settings
-# ============================================================================
 
 variable "log_retention_days" {
   type    = number
@@ -215,24 +190,62 @@ variable "demo_auth_lambda_name" {
 # Phase 6 Compliance Lambdas
 # ============================================================================
 
-variable "soc2_collector_lambda_arn"      { type = string; default = null }
-variable "soc2_collector_lambda_name"     { type = string; default = null }
-variable "fedramp_collector_lambda_arn"   { type = string; default = null }
-variable "fedramp_collector_lambda_name"  { type = string; default = null }
-variable "compliance_export_lambda_arn"   { type = string; default = null }
-variable "compliance_export_lambda_name"  { type = string; default = null }
-variable "control_test_runner_lambda_arn" { type = string; default = null }
-variable "control_test_runner_lambda_name"{ type = string; default = null }
-variable "vendor_risk_lambda_arn"         { type = string; default = null }
-variable "vendor_risk_lambda_name"        { type = string; default = null }
+variable "soc2_collector_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "soc2_collector_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "fedramp_collector_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "fedramp_collector_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "compliance_export_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "compliance_export_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "control_test_runner_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "control_test_runner_lambda_name" {
+  type    = string
+  default = null
+}
+
+variable "vendor_risk_lambda_arn" {
+  type    = string
+  default = null
+}
+
+variable "vendor_risk_lambda_name" {
+  type    = string
+  default = null
+}
 
 # ============================================================================
 # Phase 6.1 — Audit Evidence API Lambda
-# Optional: wires /admin/evidence/* routes when provided.
 # ============================================================================
 
 variable "audit_evidence_lambda_arn" {
-  description = "ARN of the audit_evidence_api Lambda (phase6-backend). Set to null to skip /admin/evidence routes."
+  description = "ARN of the audit_evidence_api Lambda. Set to null to skip /admin/evidence routes."
   type        = string
   default     = null
 }
@@ -244,18 +257,17 @@ variable "audit_evidence_lambda_invoke_arn" {
 }
 
 variable "audit_evidence_lambda_name" {
-  description = "Name of the audit_evidence_api Lambda (used for Lambda permission resource)."
+  description = "Name of the audit_evidence_api Lambda."
   type        = string
   default     = null
 }
 
 # ============================================================================
 # Phase 6.2 — Compliance History API Lambda
-# Optional: wires /tenant/compliance/history when provided.
 # ============================================================================
 
 variable "compliance_history_lambda_arn" {
-  description = "ARN of the compliance_history_api Lambda (phase6-backend). Set to null to skip /tenant/compliance/history route."
+  description = "ARN of the compliance_history_api Lambda. Set to null to skip /tenant/compliance/history route."
   type        = string
   default     = null
 }
@@ -284,6 +296,16 @@ variable "sre_metrics_lambda_invoke_arn" {
 
 variable "sre_metrics_lambda_name" {
   description = "Name of the SRE metrics Lambda."
+  type        = string
+  default     = null
+}
+
+# ============================================================================
+# Phase 6 route parent resource IDs
+# ============================================================================
+
+variable "tenant_compliance_resource_id" {
+  description = "API Gateway resource ID for /tenant/compliance. Required to wire /tenant/compliance/history."
   type        = string
   default     = null
 }
