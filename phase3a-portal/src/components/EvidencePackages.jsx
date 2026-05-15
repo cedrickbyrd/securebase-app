@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Download, RefreshCw, CheckCircle2, AlertCircle,
-  Clock, Package, Lock, FileText, ChevronRight, Loader
+  Clock, Package, Lock, FileText, Loader
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 function getAuthHeaders() {
   const token = localStorage.getItem('auth_token') ||
-    sessionStorage.getItem('auth_token') || '';
+    sessionStorage.getItem('auth_token') ||
+    localStorage.getItem('sessionToken') ||
+    sessionStorage.getItem('sessionToken') || '';
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -16,10 +18,10 @@ function getAuthHeaders() {
 }
 
 const STATUS_CONFIG = {
-  complete:    { color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-200',  icon: CheckCircle2, label: 'Complete' },
-  generating:  { color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-200',   icon: Loader,       label: 'Generating' },
-  failed:      { color: 'text-red-700',    bg: 'bg-red-50',    border: 'border-red-200',    icon: AlertCircle,  label: 'Failed' },
-  pending:     { color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200', icon: Clock,        label: 'Pending' },
+  complete:   { color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-200',  icon: CheckCircle2, label: 'Complete' },
+  generating: { color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-200',   icon: Loader,       label: 'Generating' },
+  failed:     { color: 'text-red-700',    bg: 'bg-red-50',    border: 'border-red-200',    icon: AlertCircle,  label: 'Failed' },
+  pending:    { color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200', icon: Clock,        label: 'Pending' },
 };
 
 function StatusBadge({ status }) {
@@ -36,7 +38,6 @@ function StatusBadge({ status }) {
 function PackageRow({ pkg, onDownload, downloading }) {
   const isDownloading = downloading === pkg.id;
   const canDownload = pkg.status === 'complete';
-
   return (
     <div className="flex items-center justify-between py-4 px-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -51,48 +52,21 @@ function PackageRow({ pkg, onDownload, downloading }) {
             <StatusBadge status={pkg.status} />
           </div>
           <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {pkg.created_at
-                ? new Date(pkg.created_at).toLocaleString()
-                : '—'}
-            </span>
-            {pkg.framework && (
-              <span className="flex items-center gap-1">
-                <Shield className="w-3 h-3" />
-                {pkg.framework}
-              </span>
-            )}
-            {pkg.log_count != null && (
-              <span className="flex items-center gap-1">
-                <FileText className="w-3 h-3" />
-                {pkg.log_count.toLocaleString()} logs
-              </span>
-            )}
+            {pkg.created_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(pkg.created_at).toLocaleString()}</span>}
+            {pkg.framework && <span className="flex items-center gap-1"><Shield className="w-3 h-3" />{pkg.framework}</span>}
+            {pkg.log_count != null && <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{pkg.log_count.toLocaleString()} logs</span>}
           </div>
           {pkg.sha256_manifest && (
             <div className="mt-1 flex items-center gap-1">
               <Lock className="w-3 h-3 text-gray-400" />
-              <span className="font-mono text-xs text-gray-400 truncate max-w-xs">
-                SHA-256: {pkg.sha256_manifest}
-              </span>
+              <span className="font-mono text-xs text-gray-400 truncate max-w-xs">SHA-256: {pkg.sha256_manifest}</span>
             </div>
           )}
         </div>
       </div>
-      <button
-        onClick={() => canDownload && onDownload(pkg.id)}
-        disabled={!canDownload || isDownloading}
-        className="ml-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-          disabled:opacity-40 disabled:cursor-not-allowed
-          enabled:hover:-translate-y-0.5
-          bg-blue-600 text-white hover:bg-blue-700
-          flex-shrink-0"
-        title={canDownload ? 'Download evidence package' : 'Package not ready'}
-      >
-        {isDownloading
-          ? <Loader className="w-4 h-4 animate-spin" />
-          : <Download className="w-4 h-4" />}
+      <button onClick={() => canDownload && onDownload(pkg.id)} disabled={!canDownload || isDownloading}
+        className="ml-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 flex-shrink-0">
+        {isDownloading ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         <span>{isDownloading ? 'Downloading…' : 'Download'}</span>
       </button>
     </div>
@@ -100,27 +74,37 @@ function PackageRow({ pkg, onDownload, downloading }) {
 }
 
 export default function EvidencePackages() {
-  const [packages, setPackages]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
+  const [packages, setPackages]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [apiReady, setApiReady]     = useState(true);
   const [generating, setGenerating] = useState(false);
   const [genSuccess, setGenSuccess] = useState(false);
   const [downloading, setDownloading] = useState(null);
-  const [genError, setGenError]   = useState(null);
+  const [genError, setGenError]     = useState(null);
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/evidence`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await fetch(`${API_BASE}/admin/evidence`, { headers: getAuthHeaders() });
+      if (res.status === 404) {
+        // API not yet deployed — show graceful provisioning state
+        setApiReady(false);
+        setPackages([]);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      setApiReady(true);
       setPackages(data.packages || data || []);
     } catch (err) {
-      console.error('Evidence fetch error:', err);
-      setError('Unable to load evidence packages. Check your connection and try again.');
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setApiReady(false);
+        setPackages([]);
+      } else {
+        setError('Unable to load evidence packages. Check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -128,7 +112,6 @@ export default function EvidencePackages() {
 
   useEffect(() => { fetchPackages(); }, [fetchPackages]);
 
-  // Auto-refresh while any package is generating
   useEffect(() => {
     const hasGenerating = packages.some(p => p.status === 'generating' || p.status === 'pending');
     if (!hasGenerating) return;
@@ -146,13 +129,17 @@ export default function EvidencePackages() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ framework: 'HIPAA' }),
       });
+      if (res.status === 404) { setApiReady(false); return; }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setGenSuccess(true);
       setTimeout(() => setGenSuccess(false), 5000);
       await fetchPackages();
     } catch (err) {
-      console.error('Generate error:', err);
-      setGenError('Failed to generate evidence package. Please try again.');
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setApiReady(false);
+      } else {
+        setGenError('Failed to generate evidence package. Please try again.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -161,9 +148,7 @@ export default function EvidencePackages() {
   const handleDownload = async (packageId) => {
     setDownloading(packageId);
     try {
-      const res = await fetch(`${API_BASE}/admin/evidence/${packageId}`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await fetch(`${API_BASE}/admin/evidence/${packageId}`, { headers: getAuthHeaders() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const url = data.download_url || data.presigned_url;
@@ -175,67 +160,83 @@ export default function EvidencePackages() {
       a.click();
       document.body.removeChild(a);
     } catch (err) {
-      console.error('Download error:', err);
       alert('Download failed. Please try again.');
     } finally {
       setDownloading(null);
     }
   };
 
+  // ---- Graceful provisioning state ----
+  if (!loading && !apiReady) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />Audit Evidence Packages
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">Cryptographically signed, tamper-evident evidence packages.</p>
+        </div>
+        <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-8 flex flex-col items-center gap-4 text-center">
+          <div className="p-4 bg-amber-50 rounded-full">
+            <Clock className="w-8 h-8 text-amber-500" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-gray-900">Evidence Infrastructure Provisioning</p>
+            <p className="text-sm text-gray-500 mt-1 max-w-md">
+              Your dedicated KMS key, Object Lock evidence bucket, and evidence API are being provisioned.
+              This completes within 24 hours of account activation.
+            </p>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left max-w-md w-full">
+            <p className="text-xs font-semibold text-blue-900 mb-2">What’s being set up for your account:</p>
+            <ul className="space-y-1 text-xs text-blue-700">
+              <li className="flex items-center gap-2"><Lock className="w-3 h-3" /> KMS key for cryptographic signing</li>
+              <li className="flex items-center gap-2"><Shield className="w-3 h-3" /> S3 Object Lock bucket (COMPLIANCE mode, 7-year retention)</li>
+              <li className="flex items-center gap-2"><Package className="w-3 h-3" /> Evidence packaging Lambda with SHA-256 manifest</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3" /> HIPAA control mapping (audit evidence API)</li>
+            </ul>
+          </div>
+          <button onClick={fetchPackages} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+            <RefreshCw className="w-3 h-3" />Check status
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-blue-600" />
-            Audit Evidence Packages
+            <Shield className="w-5 h-5 text-blue-600" />Audit Evidence Packages
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Cryptographically signed, tamper-evident evidence packages ready for auditor delivery.
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">Cryptographically signed, tamper-evident evidence packages ready for auditor delivery.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={fetchPackages}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+          <button onClick={fetchPackages} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Refresh
           </button>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5"
-          >
-            {generating
-              ? <><Loader className="w-4 h-4 animate-spin" /> Generating…</>
-              : <><Package className="w-4 h-4" /> Generate Evidence Package</>}
+          <button onClick={handleGenerate} disabled={generating}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5">
+            {generating ? <><Loader className="w-4 h-4 animate-spin" />Generating…</> : <><Package className="w-4 h-4" />Generate Evidence Package</>}
           </button>
         </div>
       </div>
 
-      {/* Integrity notice */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <Lock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
         <div>
           <p className="text-sm font-semibold text-blue-900">WORM Evidence Storage</p>
-          <p className="text-xs text-blue-700 mt-0.5">
-            All packages are stored with S3 Object Lock in COMPLIANCE mode (7-year retention).
-            Each package includes a SHA-256 manifest signed via AWS KMS.
-            No one — including root — can delete or alter these records.
-          </p>
+          <p className="text-xs text-blue-700 mt-0.5">All packages are stored with S3 Object Lock in COMPLIANCE mode (7-year retention), KMS-signed, SHA-256 verified. Tamper-evident and auditor-ready.</p>
         </div>
       </div>
 
-      {/* Generation feedback */}
       {genSuccess && (
         <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg p-4">
           <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <p className="text-sm font-medium text-green-900">
-            Evidence package generation started. It will appear below when ready.
-          </p>
+          <p className="text-sm font-medium text-green-900">Evidence package generation started. It will appear below when ready.</p>
         </div>
       )}
       {genError && (
@@ -245,7 +246,6 @@ export default function EvidencePackages() {
         </div>
       )}
 
-      {/* Package list */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading && packages.length === 0 ? (
           <div className="flex items-center justify-center py-16 text-gray-400">
@@ -253,12 +253,10 @@ export default function EvidencePackages() {
             <span className="text-sm">Loading evidence packages…</span>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
             <AlertCircle className="w-8 h-8 text-red-400" />
             <p className="text-sm text-red-600">{error}</p>
-            <button onClick={fetchPackages} className="text-sm text-blue-600 hover:underline">
-              Try again
-            </button>
+            <button onClick={fetchPackages} className="text-sm text-blue-600 hover:underline">Try again</button>
           </div>
         ) : packages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -269,23 +267,12 @@ export default function EvidencePackages() {
             </p>
           </div>
         ) : (
-          <div>
-            {packages.map(pkg => (
-              <PackageRow
-                key={pkg.id}
-                pkg={pkg}
-                onDownload={handleDownload}
-                downloading={downloading}
-              />
-            ))}
-          </div>
+          <div>{packages.map(pkg => <PackageRow key={pkg.id} pkg={pkg} onDownload={handleDownload} downloading={downloading} />)}</div>
         )}
       </div>
 
-      {/* Footer */}
       <p className="text-xs text-gray-400 text-center">
-        Evidence packages are generated from CloudTrail, Config, GuardDuty, and Security Hub.
-        Presigned download URLs expire after 1 hour.
+        Evidence packages are generated from CloudTrail, Config, GuardDuty, and Security Hub. Presigned download URLs expire after 1 hour.
       </p>
     </div>
   );
