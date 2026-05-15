@@ -248,33 +248,22 @@ test.describe('5 · Portal SPA routes exist (200 from Netlify)', () => {
 });
 
 // ── 6. Browser — auth routes behave correctly ─────────────────────────────
+// Login uses Lambda JWT auth (no Supabase). Input has id="email".
 
 test.describe('6 · Browser auth flow behavior', () => {
-
-  // Clear all storage before each browser test to prevent demo_mode bleed
-  test.beforeEach(async ({ page }) => {
-    await page.goto(PORTAL);
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-  });
 
   test('/login renders email + password fields', async ({ page }) => {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    // Clear any stale auth state via URL param (no pre-navigation needed)
     await page.goto(`${PORTAL}/login`);
+    // Wipe localStorage/sessionStorage so demo_mode doesn't interfere
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
     await page.waitForLoadState('networkidle');
-    // Supabase Auth UI or custom form — broad selector covers both
-    const emailInput = page.locator([
-      'input[type="email"]',
-      'input[id="email"]',
-      'input[name="email"]',
-      'input[autocomplete="email"]',
-      'input[placeholder*="email" i]',
-    ].join(', ')).first();
-    await expect(emailInput).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 });
+    // Login.jsx uses <input id="email"> and <input id="password">
+    await expect(page.locator('#email').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#password').first()).toBeVisible({ timeout: 10000 });
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
   });
 
@@ -293,14 +282,7 @@ test.describe('6 · Browser auth flow behavior', () => {
   test('/forgot-password renders email field', async ({ page }) => {
     await page.goto(`${PORTAL}/forgot-password`);
     await page.waitForLoadState('networkidle');
-    const emailInput = page.locator([
-      'input[type="email"]',
-      'input[id="email"]',
-      'input[name="email"]',
-      'input[autocomplete="email"]',
-      'input[placeholder*="email" i]',
-    ].join(', ')).first();
-    await expect(emailInput).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#email').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('/reset-password?token=x renders new-password form', async ({ page }) => {
@@ -311,18 +293,24 @@ test.describe('6 · Browser auth flow behavior', () => {
 
   test('/dashboard unauthenticated redirects to /login', async ({ page }) => {
     await page.goto(`${PORTAL}/dashboard`);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('/hipaa-dashboard unauthenticated redirects to /login', async ({ page }) => {
     await page.goto(`${PORTAL}/hipaa-dashboard`);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('/admin unauthenticated redirects to /login', async ({ page }) => {
     await page.goto(`${PORTAL}/admin`);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/login/);
   });
