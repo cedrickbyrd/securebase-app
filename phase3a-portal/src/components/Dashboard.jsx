@@ -37,11 +37,8 @@ function Dashboard() {
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   const startTimeRef = useRef(null);
 
-  // Determine if current customer has Texas fintech compliance
   const effectiveTier = customer?.tier || getCustomerTier();
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
-  // showsHIPAADashboard: true when the customer tier requires the HIPAA compliance dashboard
-  // (does NOT imply the customer is currently HIPAA-compliant — see /hipaa-dashboard for scores)
   const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
 
   useEffect(() => {
@@ -79,11 +76,10 @@ function Dashboard() {
       const [metricsData, invoicesData, keysData, complianceData, ticketsData, texasData] = await Promise.all(requests);
 
       setMetrics(metricsData);
-      // Handle both wrapped ({ data: [...] }) and unwrapped formats
       const invoicesArray = invoicesData?.data || invoicesData;
       const keysArray = keysData?.data || keysData;
       const ticketsArray = ticketsData?.data || ticketsData;
-      
+
       setInvoices(Array.isArray(invoicesArray) ? invoicesArray.slice(0, 3) : []);
       setApiKeys(Array.isArray(keysArray) ? keysArray : []);
       setCompliance(complianceData);
@@ -103,7 +99,6 @@ function Dashboard() {
   };
 
   const handleCriticalAlert = (notification) => {
-    // Add toast for critical notification
     setToasts(prev => [...prev, notification]);
   };
 
@@ -122,10 +117,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      {/* Wave 3 personalized outreach banner */}
       <PersonalizedBanner />
-
-      {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* Header */}
@@ -150,11 +142,11 @@ function Dashboard() {
           <p className="narrative-banner__eyebrow">{PORTAL_NARRATIVE.platformTitle}</p>
           <h2>{PORTAL_NARRATIVE.dashboardSubheadline}</h2>
         </section>
-        {/* Demo Customer Indicator */}
+
         {isDemoMode && customer && customerIndex !== null && (
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
         )}
-        {/* Wave 3 Personalization Hero */}
+
         {personalization.isWave3 && (
           <section style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -163,7 +155,6 @@ function Dashboard() {
             marginBottom: '1.5rem',
             color: '#fff',
           }}>
-            {/* Urgency banner */}
             {personalization.urgencyMessage && (
               <div style={{
                 background: 'rgba(255,255,255,0.15)',
@@ -183,9 +174,7 @@ function Dashboard() {
                 )}
               </div>
             )}
-
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Hero copy */}
               <div style={{ flex: '1 1 280px' }}>
                 <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.3 }}>
                   {personalization.heroHeading}
@@ -215,8 +204,6 @@ function Dashboard() {
                   {personalization.primaryCTA}
                 </button>
               </div>
-
-              {/* Inline lead capture */}
               <div style={{
                 flex: '1 1 260px',
                 background: 'rgba(255,255,255,0.12)',
@@ -311,6 +298,27 @@ function Dashboard() {
             </div>
           </div>
 
+          {/* Phase 6.1 — Audit Evidence Packages */}
+          <div
+            className="metric-card clickable"
+            onClick={() => navigate('/evidence')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/evidence')}
+            aria-label="Navigate to Audit Evidence Packages"
+            style={{ borderLeft: '3px solid #1e3a5f' }}
+          >
+            <div className="metric-icon" style={{ background: '#e8f0fe' }}>
+              🔒
+            </div>
+            <div className="metric-content">
+              <h3>Audit Evidence</h3>
+              <p className="metric-value" style={{ color: '#1e3a5f', fontSize: '0.9rem' }}>
+                Download Packages →
+              </p>
+            </div>
+          </div>
+
           {hasTexasCompliance && (
             <div
               className="metric-card clickable"
@@ -360,7 +368,6 @@ function Dashboard() {
         <div className="dashboard-columns">
           {/* Left Column */}
           <div className="dashboard-column">
-            {/* Recent Invoices */}
             <section className="dashboard-card">
               <div className="card-header">
                 <h2>Recent Invoices</h2>
@@ -388,7 +395,6 @@ function Dashboard() {
               </div>
             </section>
 
-            {/* API Keys Summary */}
             <section className="dashboard-card">
               <div className="card-header">
                 <h2>API Keys</h2>
@@ -416,7 +422,6 @@ function Dashboard() {
 
           {/* Right Column */}
           <div className="dashboard-column">
-            {/* Compliance Overview */}
             <section className="dashboard-card">
               <div className="card-header">
                 <h2>Compliance Overview</h2>
@@ -457,7 +462,6 @@ function Dashboard() {
               </div>
             </section>
 
-            {/* Support Tickets */}
             <section className="dashboard-card">
               <div className="card-header">
                 <h2>Recent Tickets</h2>
@@ -485,15 +489,11 @@ function Dashboard() {
               </div>
             </section>
 
-            {/* Texas DOB Compliance (fintech_pro / fintech_elite) */}
             {hasTexasCompliance && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
                 <div className="card-header">
                   <h2>⭐ Texas DOB Compliance</h2>
-                  <button
-                    className="view-all-btn"
-                    onClick={() => navigate('/fintech-portal')}
-                  >
+                  <button className="view-all-btn" onClick={() => navigate('/fintech-portal')}>
                     Access Examiner Portal →
                   </button>
                 </div>
@@ -512,9 +512,7 @@ function Dashboard() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {(texasCompliance.controls || []).slice(0, 3).map(ctrl => (
                           <div key={ctrl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#f8fafc', borderRadius: 6 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>
-                              ✅ {ctrl.id}
-                            </span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>✅ {ctrl.id}</span>
                             <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{ctrl.name}</span>
                           </div>
                         ))}
@@ -532,22 +530,16 @@ function Dashboard() {
               </section>
             )}
 
-            {/* HIPAA Compliance (healthcare / government) */}
             {showsHIPAADashboard && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
                 <div className="card-header">
                   <h2>🏥 HIPAA Compliance</h2>
-                  <button
-                    className="view-all-btn"
-                    onClick={() => navigate('/hipaa-dashboard')}
-                  >
+                  <button className="view-all-btn" onClick={() => navigate('/hipaa-dashboard')}>
                     Open HIPAA Dashboard →
                   </button>
                 </div>
                 <div className="card-content">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {/* TODO: replace these summary values with sreService.getHIPAACompliance() once
-                        a hipaaCompliance state variable is added to Dashboard — see HIPAADashboard.jsx */}
                     {[
                       { label: 'Administrative Safeguards', pct: 90, passed: 18, total: 20 },
                       { label: 'Physical Safeguards', pct: 92.9, passed: 13, total: 14 },
