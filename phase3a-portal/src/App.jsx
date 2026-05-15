@@ -16,6 +16,7 @@ import HIPAADashboard from './components/HIPAADashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import EvidencePackages from './components/EvidencePackages';
+import ComplianceTrend from './components/ComplianceTrend';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
 import ThankYou from './pages/ThankYou';
@@ -41,6 +42,15 @@ function ExternalSignupRedirect() {
 const DEMO_EMAIL       = 'demo@securebase.tximhotep.com';
 const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
 const DEMO_ORG_NAME    = 'Acme Corporation';
+
+// Full-page wrapper for ComplianceTrend
+function ComplianceTrendPage() {
+  return (
+    <div style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1.5rem' }}>
+      <ComplianceTrend defaultFramework="HIPAA" days={90} compact={false} />
+    </div>
+  );
+}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
@@ -68,15 +78,16 @@ function App() {
         <Route path="/onboarding"      element={<OnboardingRoute />} />
 
         {/* ─ Protected ─ */}
-        <Route path="/dashboard"       element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard />           : <Navigate to="/login" />)} />
-        <Route path="/demo-dashboard"  element={isAuthenticated ? <DemoDashboard />                                                                    : <Navigate to="/login" />} />
-        <Route path="/compliance"      element={<Compliance isPublic={!isAuthenticated} />} />
-        <Route path="/fintech-portal"  element={isAuthenticated ? <TexasExaminerPortal />                                                               : <Navigate to="/login" />} />
-        <Route path="/hipaa-dashboard" element={isAuthenticated ? <HIPAADashboard />                                                                    : <Navigate to="/login" />} />
-        <Route path="/sre-dashboard"   element={isAuthenticated ? <SREDashboardWrapper />                                                               : <Navigate to="/login" />} />
-        <Route path="/alerts"          element={isAuthenticated ? <AlertManagement />                                                                   : <Navigate to="/login" />} />
-        <Route path="/evidence"        element={isAuthenticated ? <EvidencePackages />                                                                  : <Navigate to="/login" />} />
-        <Route path="/admin"           element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard"           element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard />         : <Navigate to="/login" />)} />
+        <Route path="/demo-dashboard"      element={isAuthenticated ? <DemoDashboard />                                                                  : <Navigate to="/login" />} />
+        <Route path="/compliance"          element={<Compliance isPublic={!isAuthenticated} />} />
+        <Route path="/compliance/trend"    element={isAuthenticated ? <ComplianceTrendPage />                                                            : <Navigate to="/login" />} />
+        <Route path="/fintech-portal"      element={isAuthenticated ? <TexasExaminerPortal />                                                             : <Navigate to="/login" />} />
+        <Route path="/hipaa-dashboard"     element={isAuthenticated ? <HIPAADashboard />                                                                  : <Navigate to="/login" />} />
+        <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
+        <Route path="/alerts"              element={isAuthenticated ? <AlertManagement />                                                                 : <Navigate to="/login" />} />
+        <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />
+        <Route path="/admin"               element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
 
         {/* ─ Public ─ */}
         <Route path="/pricing"                      element={<Pricing />} />
