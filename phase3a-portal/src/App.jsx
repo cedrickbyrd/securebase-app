@@ -15,6 +15,7 @@ import AlertManagement from './components/AlertManagement';
 import HIPAADashboard from './components/HIPAADashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
+import EvidencePackages from './components/EvidencePackages';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
 import ThankYou from './pages/ThankYou';
@@ -74,6 +75,7 @@ function App() {
         <Route path="/hipaa-dashboard" element={isAuthenticated ? <HIPAADashboard />                                                                    : <Navigate to="/login" />} />
         <Route path="/sre-dashboard"   element={isAuthenticated ? <SREDashboardWrapper />                                                               : <Navigate to="/login" />} />
         <Route path="/alerts"          element={isAuthenticated ? <AlertManagement />                                                                   : <Navigate to="/login" />} />
+        <Route path="/evidence"        element={isAuthenticated ? <EvidencePackages />                                                                  : <Navigate to="/login" />} />
         <Route path="/admin"           element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
 
         {/* ─ Public ─ */}
