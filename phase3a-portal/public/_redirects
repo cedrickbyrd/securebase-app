@@ -1,4 +1,4 @@
-# Proxy /api/auth/* → API Gateway (force=true overrides SPA fallback)
+# Proxy /api/auth/* → API Gateway
 /api/auth/login              https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/login           200!
 /api/auth/register           https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/register        200!
 /api/auth/invite             https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/invite          200!
@@ -7,6 +7,14 @@
 /api/auth/reset-password     https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/reset-password  200!
 /api/auth/mfa/setup          https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/setup       200!
 /api/auth/mfa/verify         https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/mfa/verify      200!
+
+# Phase 6.1 — Audit Evidence API
+/api/admin/evidence/generate https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/admin/evidence/generate 200!
+/api/admin/evidence/:id      https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/admin/evidence/:id     200!
+/api/admin/evidence          https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/admin/evidence         200!
+
+# Phase 6.2 — Compliance History API
+/api/tenant/compliance/history https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/tenant/compliance/history 200!
 
 # SPA fallback — must be last
 /*    /index.html   200
