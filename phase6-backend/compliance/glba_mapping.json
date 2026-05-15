@@ -1,0 +1,145 @@
+{
+  "framework": "GLBA",
+  "standard": "Gramm-Leach-Bliley Act — FTC Safeguards Rule (16 CFR Part 314) — 2023 Amended Requirements",
+  "description": "Mapping of GLBA Safeguards Rule technical requirements to AWS Config managed rules and GuardDuty finding types. Covers financial institutions' obligations to protect customer financial information (NPI — Nonpublic Personal Information).",
+  "last_updated": "2026-05-15",
+  "controls": [
+    {
+      "control_id": "GLBA-314.4(c)(1)",
+      "control_name": "Access Controls — Limit Access to Customer Information",
+      "description": "Implement access controls that limit access to customer information only to authorized users with a legitimate business need. Controls must prevent unauthorized access to NPI.",
+      "severity": "CRITICAL",
+      "config_rule": "iam-root-access-key-check",
+      "guardduty_finding_types": [
+        "Policy:IAMUser/RootCredentialUsage"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(2)",
+      "control_name": "Access Controls — MFA for Remote Access",
+      "description": "Implement multi-factor authentication for any individual accessing any information system containing customer financial information, unless the covered entity uses equivalent compensating controls.",
+      "severity": "CRITICAL",
+      "config_rule": "mfa-enabled-for-iam-console-access",
+      "guardduty_finding_types": [
+        "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(3)",
+      "control_name": "Encryption — Customer Information at Rest",
+      "description": "Encrypt all customer information held or transmitted by the financial institution, both in transit over external networks and at rest.",
+      "severity": "CRITICAL",
+      "config_rule": "rds-storage-encrypted",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(4)",
+      "control_name": "Encryption — Customer Information in Transit",
+      "description": "All customer NPI transmitted over external networks must be encrypted. TLS must be enforced on all endpoints handling NPI.",
+      "severity": "CRITICAL",
+      "config_rule": "api-gw-ssl-enabled",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/apigateway-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(5)",
+      "control_name": "Audit Logging — Activity Monitoring",
+      "description": "Adopt procedures for audit logging to monitor the activity of authorized users and detect unauthorized access to or use of customer information.",
+      "severity": "CRITICAL",
+      "config_rule": "cloudtrail-enabled",
+      "guardduty_finding_types": [
+        "Stealth:IAMUser/CloudTrailLoggingDisabled",
+        "Stealth:IAMUser/LoggingConfigurationModified"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(6)",
+      "control_name": "Continuous Monitoring — Threat Detection",
+      "description": "Implement continuous monitoring to detect actual and attempted attacks on or intrusions into information systems containing customer NPI.",
+      "severity": "HIGH",
+      "config_rule": "guardduty-enabled-centralized",
+      "guardduty_finding_types": [
+        "Recon:IAMUser/NetworkPermissions",
+        "Recon:IAMUser/ResourcePermissions",
+        "UnauthorizedAccess:EC2/SSHBruteForce"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(7)",
+      "control_name": "Network Security — Segregation and Flow Logging",
+      "description": "Implement controls to detect changes to information and information system activity, including monitoring network traffic to identify anomalous activity.",
+      "severity": "HIGH",
+      "config_rule": "vpc-flow-logs-enabled",
+      "guardduty_finding_types": [
+        "Trojan:EC2/DNSDataExfiltration"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(8)",
+      "control_name": "S3 Public Access — NPI Prohibition",
+      "description": "Customer NPI must never be publicly accessible via S3 or any storage service. Public access must be blocked at the bucket and account level.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-public-read-prohibited",
+      "guardduty_finding_types": [
+        "Policy:S3/BucketPublicAccessGranted"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(9)",
+      "control_name": "S3 Write Prohibition — Unauthorized Modification",
+      "description": "Customer information stored in S3 must be protected against unauthorized modification. Public write access must be blocked.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-public-write-prohibited",
+      "guardduty_finding_types": [
+        "Impact:S3/ObjectDelete.Unusual"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(10)",
+      "control_name": "Secure Development — API Endpoint Hardening",
+      "description": "Implement secure development practices including controls to ensure secure API endpoints. Lambda functions serving customer NPI must not be publicly accessible.",
+      "severity": "HIGH",
+      "config_rule": "lambda-function-public-access-prohibited",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/lambda-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(11)",
+      "control_name": "Data Disposal — S3 TLS Enforcement",
+      "description": "All requests to S3 buckets containing customer information must use TLS. Non-TLS requests must be denied by bucket policy.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-ssl-requests-only",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(c)(12)",
+      "control_name": "Credential Management — Secrets Rotation",
+      "description": "Implement controls for the secure management of credentials used to access systems holding customer NPI, including automatic rotation of secrets.",
+      "severity": "HIGH",
+      "config_rule": "secretsmanager-rotation-enabled-check",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/secretsmanager-controls.html"
+    },
+    {
+      "control_id": "GLBA-314.4(f)",
+      "control_name": "Incident Response — Security Event Detection",
+      "description": "Define and periodically implement a written incident response plan. Security events affecting NPI must be detected, logged, and responded to in a defined timeframe.",
+      "severity": "HIGH",
+      "config_rule": "cloudwatch-alarm-action-check",
+      "guardduty_finding_types": [
+        "Backdoor:EC2/C&CActivity.B",
+        "CryptoCurrency:EC2/BitcoinTool.B"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html"
+    }
+  ]
+}
