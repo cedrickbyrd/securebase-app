@@ -5,7 +5,7 @@
  *   1. POST /onboarding/trigger
  *   2. POST /auth (API key -> session JWT)
  *   3. GET  /users
- *   4. POST /support/tickets
+ *   4. POST /support/tickets/create
  *   5. POST /webhooks
  *   6. GET  /reports
  *
@@ -26,6 +26,11 @@ const PORTAL = process.env.PORTAL_URL || 'https://portal.securebase.tximhotep.co
 const API = process.env.API_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod';
 const SMOKE_API_KEY = process.env.SMOKE_API_KEY || '';
 const SMOKE_EMAIL = process.env.SMOKE_EMAIL || `day1-smoke-${Date.now()}@securebase.tximhotep.com`;
+
+// Shared session token — populated by the happy-path Step 2 and consumed by
+// the input-validation block.  Must live at module scope so both describe
+// blocks can read/write it.
+let sessionToken = '';
 
 test.describe('Day 1 Access Flow — Auth Lambda (API contract)', () => {
   test('OPTIONS /auth returns 200 with CORS headers', async () => {
@@ -53,8 +58,6 @@ test.describe('Day 1 Access Flow — Auth Lambda (API contract)', () => {
 });
 
 test.describe.serial('Day 1 Access Flow — Happy Path (all 6 steps in sequence)', () => {
-  let sessionToken = '';
-
   test('Step 1: POST /onboarding/trigger succeeds for new customer', async () => {
     const ctx = await request.newContext();
     const res = await ctx.post(`${API}/onboarding/trigger`, {
@@ -102,7 +105,7 @@ test.describe.serial('Day 1 Access Flow — Happy Path (all 6 steps in sequence)
     test.skip(!sessionToken, 'Step 2 did not produce a session token; provide SMOKE_API_KEY.');
 
     const ctx = await request.newContext();
-    const res = await ctx.post(`${API}/support/tickets`, {
+    const res = await ctx.post(`${API}/support/tickets/create`, {
       headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         subject: 'Day 1 support smoke ticket',
@@ -131,9 +134,9 @@ test.describe.serial('Day 1 Access Flow — Happy Path (all 6 steps in sequence)
       },
     });
 
-    expect([200, 201]).toContain(res.status());
+    expect(res.status()).toBe(201);
     const body = await res.json();
-    expect(body.id || body.webhook_id || body.webhook?.id).toBeTruthy();
+    expect(body.webhook?.id).toBeTruthy();
   });
 
   test('Step 6: GET /reports returns reports array', async () => {
@@ -151,10 +154,12 @@ test.describe.serial('Day 1 Access Flow — Happy Path (all 6 steps in sequence)
 });
 
 test.describe('Day 1 Access Flow — Input Validation (API contract)', () => {
-  test('POST /support/tickets with short subject returns 400', async () => {
+  test('POST /support/tickets/create with short subject returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
     const ctx = await request.newContext();
-    const res = await ctx.post(`${API}/support/tickets`, {
-      headers: { Authorization: 'Bearer smoke.validation.token' },
+    const res = await ctx.post(`${API}/support/tickets/create`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         subject: 'abc',
         description: 'This description is intentionally long enough for validation checks.',
@@ -166,10 +171,12 @@ test.describe('Day 1 Access Flow — Input Validation (API contract)', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('POST /support/tickets with short description returns 400', async () => {
+  test('POST /support/tickets/create with short description returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
     const ctx = await request.newContext();
-    const res = await ctx.post(`${API}/support/tickets`, {
-      headers: { Authorization: 'Bearer smoke.validation.token' },
+    const res = await ctx.post(`${API}/support/tickets/create`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         subject: 'Valid Day 1 subject',
         description: 'too short',
@@ -181,10 +188,12 @@ test.describe('Day 1 Access Flow — Input Validation (API contract)', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('POST /support/tickets with invalid priority returns 400', async () => {
+  test('POST /support/tickets/create with invalid priority returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
     const ctx = await request.newContext();
-    const res = await ctx.post(`${API}/support/tickets`, {
-      headers: { Authorization: 'Bearer smoke.validation.token' },
+    const res = await ctx.post(`${API}/support/tickets/create`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         subject: 'Valid Day 1 subject',
         description: 'This description is intentionally long enough for validation checks.',
@@ -196,10 +205,29 @@ test.describe('Day 1 Access Flow — Input Validation (API contract)', () => {
     expect(res.status()).toBe(400);
   });
 
+  test('POST /support/tickets/create with invalid category returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
+    const ctx = await request.newContext();
+    const res = await ctx.post(`${API}/support/tickets/create`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+      data: {
+        subject: 'Valid Day 1 subject',
+        description: 'This description is intentionally long enough for validation checks.',
+        priority: 'medium',
+        category: 'not-a-valid-category',
+        email: SMOKE_EMAIL,
+      },
+    });
+    expect(res.status()).toBe(400);
+  });
+
   test('POST /webhooks with http:// URL returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
     const ctx = await request.newContext();
     const res = await ctx.post(`${API}/webhooks`, {
-      headers: { Authorization: 'Bearer smoke.validation.token' },
+      headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         url: 'http://example.com/webhook',
         events: ['ticket.created'],
@@ -210,9 +238,11 @@ test.describe('Day 1 Access Flow — Input Validation (API contract)', () => {
   });
 
   test('POST /webhooks with unknown event type returns 400', async () => {
+    test.skip(!sessionToken, 'Set SMOKE_API_KEY to run input-validation tests (auth is enforced before field validation).');
+
     const ctx = await request.newContext();
     const res = await ctx.post(`${API}/webhooks`, {
-      headers: { Authorization: 'Bearer smoke.validation.token' },
+      headers: { Authorization: `Bearer ${sessionToken}` },
       data: {
         url: 'https://example.com/webhook',
         events: ['ticket.unknown'],
