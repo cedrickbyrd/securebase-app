@@ -225,6 +225,24 @@ def verify_connection(event: dict, request_id: str) -> dict:
             'connected_at': now,
         })
 
+        # Trigger initial scan asynchronously
+        try:
+            lambda_client = boto3.client('lambda')
+            lambda_client.invoke(
+                FunctionName='securebase-aws-scanner',
+                InvocationType='Event',
+                Payload=json.dumps({
+                    'trigger': 'post_verify',
+                    'customer_id': customer_id,
+                    'role_arn': role_arn,
+                    'external_id': stored_external_id,
+                })
+            )
+            logger.info(f"Initial scan triggered for {customer_id}")
+        except Exception as e:
+            logger.warning(f"Could not trigger initial scan: {e}")
+            # Non-fatal — scan will run on next schedule
+
         return _resp(200, {
             'connected':   True,
             'account_id':  account_id,

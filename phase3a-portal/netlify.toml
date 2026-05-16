@@ -213,6 +213,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/scan/trigger"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/scan/trigger"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
