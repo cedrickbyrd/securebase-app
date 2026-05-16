@@ -194,6 +194,25 @@
   status = 200
   force = true
 
+# Cloud Connection — cross-account IAM role management
+[[redirects]]
+  from = "/api/cloud-connection/status"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/status"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/cloud-connection/init"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/init"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/cloud-connection/verify"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/verify"
+  status = 200
+  force = true
+
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"

@@ -16,6 +16,7 @@ import HIPAADashboard from './components/HIPAADashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import EvidencePackages from './components/EvidencePackages';
+import CloudConnection from './components/CloudConnection';
 import ComplianceTrend from './components/ComplianceTrend';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
@@ -87,6 +88,7 @@ function App() {
         <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
         <Route path="/alerts"              element={isAuthenticated ? <AlertManagement />                                                                 : <Navigate to="/login" />} />
         <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />
+        <Route path="/cloud-connection"    element={isAuthenticated ? <CloudConnection />                                                                  : <Navigate to="/login" />} />
         <Route path="/admin"               element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
 
         {/* ─ Public ─ */}
