@@ -219,6 +219,15 @@ function Dashboard() {
             </div>
           </div>
 
+          {/* Cloud Connection — cross-account IAM role */}
+          <div className="metric-card clickable" onClick={() => navigate('/cloud-connection')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/cloud-connection')} aria-label="Cloud Connection">
+            <div className="metric-icon" style={{ background: '#f0f4ff' }}>☁️</div>
+            <div className="metric-content">
+              <h3>Cloud Connection</h3>
+              <p className="metric-value" style={{ color: '#3b5bdb', fontSize: '0.9rem' }}>Connect AWS Account →</p>
+            </div>
+          </div>
+
           {hasTexasCompliance && (
             <div className="metric-card clickable" onClick={() => navigate('/fintech-portal')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/fintech-portal')} aria-label="Texas Examiner Portal">
               <div className="metric-icon" style={{ background: '#eff6ff' }}>⭐</div>

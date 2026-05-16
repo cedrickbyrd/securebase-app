@@ -126,6 +126,16 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "xray:PutTelemetryRecords"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "AssumeCustomerRoles"
+        Effect = "Allow"
+        # Resource uses wildcard account ID by design: SecureBase is a multi-tenant
+        # SaaS that scans customer AWS accounts in any account. Access is bounded by
+        # the role name prefix (SecureBase*) and enforced via ExternalId in each
+        # customer's trust policy — preventing confused-deputy escalation.
+        Action = ["sts:AssumeRole"]
+        Resource = "arn:aws:iam::*:role/SecureBase*"
       }
     ]
   })
