@@ -218,3 +218,16 @@ terraform {
 
   backend "s3" {}
 }
+
+module "phase6_lambdas" {
+  source                     = "../../modules/phase6-lambda-functions"
+  environment                = var.environment
+  audit_evidence_api_zip     = "${path.module}/../../files/phase6/audit_evidence_api.zip"
+  compliance_history_api_zip = "${path.module}/../../files/phase6/compliance_history_api.zip"
+  evidence_bucket_name       = module.phase6_audit_logging.evidence_bucket_name
+  evidence_kms_key_arn       = module.phase6_audit_logging.kms_key_arn
+  rds_proxy_endpoint         = module.securebase.rds_proxy_endpoint
+  private_subnet_ids         = var.lambda_subnets
+  security_group_ids         = [module.securebase.lambda_security_group_id]
+  tags                       = merge(var.tags, { Phase = "6" })
+}
