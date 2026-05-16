@@ -6,7 +6,7 @@
 #   /securebase/ga4/api_secret          → GA4 Admin → Data Streams → Measurement Protocol API secrets
 
 locals {
-  webhook_function_name = "securebase-stripe-webhook"
+  webhook_function_name = var.stripe_webhook_lambda_name
   webhook_zip           = "${path.module}/../lambda/stripe_webhook.zip"
 }
 
