@@ -51,6 +51,31 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
+
+      - name: Import existing AWS resources into Terraform state
+        working-directory: ./terraform
+        run: |
+          import_if_missing() {
+            local resource=$1
+            local id=$2
+            if terraform state show "$resource" > /dev/null 2>&1; then
+              echo "✅ $resource already in state, skipping"
+            else
+              echo "⬇️  Importing $resource ($id)"
+              terraform import -var-file=terraform.tfvars "$resource" "$id" || true
+            fi
+          }
+          import_if_missing aws_api_gateway_resource.auth              9xyetu7zq3/sfrsaw
+          import_if_missing aws_api_gateway_resource.auth_login        9xyetu7zq3/ogsr28
+          import_if_missing aws_api_gateway_resource.checkout          9xyetu7zq3/qlr2au
+          import_if_missing aws_api_gateway_resource.signup            9xyetu7zq3/01ulet
+          import_if_missing aws_api_gateway_resource.pilot             9xyetu7zq3/65tx0m
+          import_if_missing aws_api_gateway_resource.validate_session  9xyetu7zq3/wlmeaf
+          import_if_missing aws_api_gateway_resource.stripe_webhook    9xyetu7zq3/uyk609
+          import_if_missing aws_iam_role.validate_session_lambda       securebase-validate-session-role
+          import_if_missing aws_iam_role.stripe_webhook_lambda         securebase-stripe-webhook-role
+          import_if_missing aws_iam_role.pilot_availability_lambda     securebase-pilot-availability-role
+
         id: plan
         working-directory: ./terraform
         run: terraform plan -no-color -input=false -out=tfplan -var-file=terraform.tfvars
