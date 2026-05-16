@@ -39,6 +39,7 @@ _CONNECTIONS_TABLE     = os.environ.get('CONNECTIONS_TABLE', 'securebase-cloud-c
 _SECUREBASE_ACCOUNT_ID = os.environ.get('SECUREBASE_ACCOUNT_ID', '731184206915')
 _SECUREBASE_ROLE_NAME  = os.environ.get('SECUREBASE_ROLE_NAME', 'SecureBaseComplianceScanner')
 _CORS_ORIGIN           = os.environ.get('CORS_ORIGIN', 'https://portal.securebase.tximhotep.com')
+_AWS_SCANNER_FUNCTION  = os.environ.get('AWS_SCANNER_FUNCTION_NAME', 'securebase-aws-scanner')
 
 _CORS_HEADERS = {
     'Content-Type': 'application/json',
@@ -224,6 +225,24 @@ def verify_connection(event: dict, request_id: str) -> dict:
             'status':       'connected',
             'connected_at': now,
         })
+
+        # Trigger initial scan asynchronously
+        try:
+            lambda_client = boto3.client('lambda')
+            lambda_client.invoke(
+                FunctionName=_AWS_SCANNER_FUNCTION,
+                InvocationType='Event',
+                Payload=json.dumps({
+                    'trigger': 'post_verify',
+                    'customer_id': customer_id,
+                    'role_arn': role_arn,
+                    'external_id': stored_external_id,
+                })
+            )
+            logger.info(f"Initial scan triggered for {customer_id}")
+        except Exception as e:
+            logger.warning(f"Could not trigger initial scan: {e}")
+            # Non-fatal — scan will run on next schedule
 
         return _resp(200, {
             'connected':   True,
