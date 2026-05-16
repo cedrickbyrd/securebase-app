@@ -3,9 +3,9 @@ Authentication Lambda for SecureBase — DynamoDB-native.
 
 Routes:
   OPTIONS *                        -> CORS preflight
-  POST /auth/accept-invite         -> validate invite token, mint JWT
+  POST /auth/accept-invite         -> validate invite token, set password, mint JWT
   POST /auth/validate-session      -> verify existing JWT
-  POST /auth/login | /auth         -> email login (magic-link placeholder)
+  POST /auth/login | /auth         -> email + password login
 
 Tables (env vars):
   TOKENS_TABLE   securebase-tokens   PK: token (S)
@@ -15,7 +15,7 @@ Env vars:
   JWT_SECRET       Secrets Manager secret name (or raw secret)
   TOKENS_TABLE     DynamoDB table for invite/session tokens
   USERS_TABLE      DynamoDB table for user records
-  CORS_ORIGIN      Allowed origin (default: https://portal.securebase.tximhotep.com)
+  CORS_ORIGIN      Allowed origin
   LOG_LEVEL        DEBUG|INFO|WARNING|ERROR
 """
 
@@ -28,6 +28,7 @@ from datetime import datetime, timezone, timedelta
 from botocore.exceptions import ClientError
 
 import jwt
+import bcrypt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO'))
@@ -49,9 +50,9 @@ _CORS_HEADERS = {
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
 }
 
-_ACCEPT_INVITE_PATHS  = {'/auth/accept-invite', '/accept-invite'}
+_ACCEPT_INVITE_PATHS    = {'/auth/accept-invite', '/accept-invite'}
 _VALIDATE_SESSION_PATHS = {'/auth/validate-session', '/auth/verify'}
-_LOGIN_PATHS          = {'/auth', '/auth/login', '/login'}
+_LOGIN_PATHS            = {'/auth', '/auth/login', '/login'}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -65,7 +66,6 @@ def _resp(status: int, body: dict) -> dict:
 
 
 def _get_jwt_secret() -> str:
-    """Return JWT secret — try Secrets Manager first, fall back to env value."""
     secret_name = os.environ.get('JWT_SECRET', 'securebase-jwt-production')
     try:
         resp = secrets_client.get_secret_value(SecretId=secret_name)
@@ -76,7 +76,6 @@ def _get_jwt_secret() -> str:
         except (json.JSONDecodeError, AttributeError):
             return raw
     except ClientError:
-        # If the env var IS the secret (not a SM name), use it directly
         return secret_name
 
 
@@ -84,15 +83,15 @@ def _mint_jwt(email: str, user: dict) -> str:
     secret = _get_jwt_secret()
     now = datetime.now(timezone.utc)
     payload = {
-        'sub':   email,
-        'email': email,
-        'plan':  user.get('plan', 'standard'),
-        'tier':  user.get('pilot_tier', user.get('plan', 'standard')),
-        'status': user.get('status', 'active'),
+        'sub':        email,
+        'email':      email,
+        'plan':       user.get('plan', 'standard'),
+        'tier':       user.get('pilot_tier', user.get('plan', 'standard')),
+        'status':     user.get('status', 'active'),
         'pilot_ends': user.get('pilot_ends', ''),
-        'iat':   int(now.timestamp()),
-        'exp':   int((now + timedelta(hours=24)).timestamp()),
-        'jti':   str(uuid.uuid4()),
+        'iat':        int(now.timestamp()),
+        'exp':        int((now + timedelta(hours=24)).timestamp()),
+        'jti':        str(uuid.uuid4()),
     }
     return jwt.encode(payload, secret, algorithm='HS256')
 
@@ -124,18 +123,29 @@ def _mark_token_used(token: str) -> None:
         logger.warning(f"Could not mark token used: {e}")
 
 
+def _store_password(email: str, password: str, user: dict) -> None:
+    """Hash password with bcrypt and store/update user record."""
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    _users_table.put_item(Item={
+        **user,
+        'email':        email,
+        'password_hash': pw_hash,
+        'activated_at': datetime.now(timezone.utc).isoformat(),
+    })
+
+
 # ── Route handlers ────────────────────────────────────────────────────────────
 
 def accept_invite(event: dict, request_id: str) -> dict:
     """
     POST /auth/accept-invite
-    Body: {"token": "<invite_token>"}
+    Body: {"token": "<invite_token>", "password": "<chosen_password>"}
 
-    1. Look up token in securebase-tokens
-    2. Validate status=active and not expired
-    3. Look up user in securebase-users by email
-    4. Mint JWT
-    5. Mark token used
+    1. Validate invite token in securebase-tokens
+    2. Hash and store password in securebase-users
+    3. Mint JWT
+    4. Mark token used
+    Returns: {"token": "<jwt>", "user": {"email": ..., "role": ...}}
     """
     try:
         body = json.loads(event.get('body') or '{}')
@@ -143,8 +153,12 @@ def accept_invite(event: dict, request_id: str) -> dict:
         body = {}
 
     token_val = (body.get('token') or '').strip()
+    password  = body.get('password') or ''
+
     if not token_val:
         return _resp(400, {'error': 'token is required', 'request_id': request_id})
+    if not password or len(password) < 8:
+        return _resp(400, {'error': 'password must be at least 8 characters', 'request_id': request_id})
 
     token_record = _get_token_record(token_val)
     if not token_record:
@@ -152,10 +166,10 @@ def accept_invite(event: dict, request_id: str) -> dict:
         return _resp(401, {'error': 'Invalid or expired invite link', 'request_id': request_id})
 
     if token_record.get('status') != 'active':
-        logger.warning(f"Invite token already used/expired [{request_id}]")
+        logger.warning(f"Invite token already used [{request_id}]")
         return _resp(401, {'error': 'Invite link has already been used', 'request_id': request_id})
 
-    # Check expiry if present
+    # Check expiry
     expires_at = token_record.get('expires_at', '')
     if expires_at:
         try:
@@ -165,54 +179,99 @@ def accept_invite(event: dict, request_id: str) -> dict:
             if datetime.now(timezone.utc) > exp_dt:
                 return _resp(401, {'error': 'Invite link has expired', 'request_id': request_id})
         except ValueError:
-            pass  # malformed date — allow through
+            pass
 
     email = token_record.get('email', '')
     if not email:
         logger.error(f"Token record missing email [{request_id}]")
         return _resp(500, {'error': 'Invalid token record', 'request_id': request_id})
 
-    user = _get_user_record(email)
-    if not user:
-        # Auto-create minimal user record from token data
-        user = {
-            'email':      email,
-            'plan':       token_record.get('plan', 'standard'),
-            'pilot_tier': token_record.get('pilot_tier', ''),
-            'status':     'pro',
-        }
-        try:
-            _users_table.put_item(Item={**user, 'created_at': datetime.now(timezone.utc).date().isoformat()})
-            logger.info(f"Auto-created user record for {email}")
-        except Exception as e:
-            logger.warning(f"Could not auto-create user: {e}")
+    # Get or build user record
+    user = _get_user_record(email) or {
+        'email':      email,
+        'plan':       token_record.get('plan', 'standard'),
+        'pilot_tier': token_record.get('pilot_tier', ''),
+        'pilot_ends': token_record.get('pilot_ends', ''),
+        'status':     'pro',
+        'created_at': datetime.now(timezone.utc).date().isoformat(),
+    }
+
+    # Store hashed password
+    try:
+        _store_password(email, password, user)
+    except Exception as e:
+        logger.error(f"Failed to store password for {email}: {e}")
+        return _resp(500, {'error': 'Account activation failed', 'request_id': request_id})
 
     session_token = _mint_jwt(email, user)
     _mark_token_used(token_val)
 
-    logger.info(f"Invite accepted: {email} plan={user.get('plan')} [{request_id}]")
+    logger.info(f"Invite accepted + password set: {email} plan={user.get('plan')} [{request_id}]")
 
+    # Return 'token' and 'user' — matches what AcceptInvite.jsx expects
     return _resp(200, {
-        'session_token': session_token,
-        'email':         email,
-        'plan':          user.get('plan', 'standard'),
-        'tier':          user.get('pilot_tier', user.get('plan', 'standard')),
-        'pilot_ends':    user.get('pilot_ends', ''),
-        'expires_in':    86400,
+        'token': session_token,
+        'user': {
+            'email': email,
+            'role':  user.get('role', 'user'),
+            'plan':  user.get('plan', 'standard'),
+            'tier':  user.get('pilot_tier', user.get('plan', 'standard')),
+        },
+        'expires_in': 86400,
     })
 
 
-def validate_session(event: dict, request_id: str) -> dict:
+def login(event: dict, request_id: str) -> dict:
     """
-    POST /auth/validate-session  OR  Bearer <jwt> on any route
-    Body: {"token": "<jwt>"} OR Authorization: Bearer <jwt>
+    POST /auth/login
+    Body: {"email": "...", "password": "..."}
     """
     try:
         body = json.loads(event.get('body') or '{}')
     except (json.JSONDecodeError, TypeError):
         body = {}
 
-    # Accept token from body or Authorization header
+    email    = (body.get('email') or '').strip().lower()
+    password = body.get('password') or ''
+
+    if not email or not password:
+        return _resp(400, {'error': 'email and password are required', 'request_id': request_id})
+
+    user = _get_user_record(email)
+    if not user:
+        logger.warning(f"Login attempt for unknown email: {email} [{request_id}]")
+        return _resp(401, {'error': 'Invalid email or password', 'request_id': request_id})
+
+    pw_hash = user.get('password_hash', '')
+    if not pw_hash:
+        return _resp(401, {'error': 'Account not yet activated — check your invite email', 'request_id': request_id})
+
+    if not bcrypt.checkpw(password.encode(), pw_hash.encode()):
+        logger.warning(f"Bad password for {email} [{request_id}]")
+        return _resp(401, {'error': 'Invalid email or password', 'request_id': request_id})
+
+    session_token = _mint_jwt(email, user)
+    logger.info(f"Login success: {email} [{request_id}]")
+
+    return _resp(200, {
+        'token': session_token,
+        'user': {
+            'email': email,
+            'role':  user.get('role', 'user'),
+            'plan':  user.get('plan', 'standard'),
+            'tier':  user.get('pilot_tier', user.get('plan', 'standard')),
+        },
+        'expires_in': 86400,
+    })
+
+
+def validate_session(event: dict, request_id: str) -> dict:
+    """POST /auth/validate-session or Bearer <jwt>"""
+    try:
+        body = json.loads(event.get('body') or '{}')
+    except (json.JSONDecodeError, TypeError):
+        body = {}
+
     token_val = body.get('token', '')
     if not token_val:
         auth_header = event.get('headers', {}).get('Authorization', '')
@@ -233,34 +292,8 @@ def validate_session(event: dict, request_id: str) -> dict:
         })
     except jwt.ExpiredSignatureError:
         return _resp(401, {'error': 'Session expired', 'request_id': request_id})
-    except jwt.InvalidTokenError as e:
+    except jwt.InvalidTokenError:
         return _resp(401, {'error': 'Invalid session token', 'request_id': request_id})
-
-
-def login_placeholder(event: dict, request_id: str) -> dict:
-    """
-    POST /auth/login
-    Magic-link / passwordless placeholder.
-    Returns instructions — actual magic link flow TBD.
-    """
-    try:
-        body = json.loads(event.get('body') or '{}')
-    except (json.JSONDecodeError, TypeError):
-        body = {}
-
-    email = (body.get('email') or '').strip().lower()
-    if not email:
-        return _resp(400, {'error': 'email is required', 'request_id': request_id})
-
-    # Check if user exists
-    user = _get_user_record(email)
-    if not user:
-        # Return 200 to avoid email enumeration
-        logger.info(f"Login attempt for unknown email: {email}")
-        return _resp(200, {'message': 'If this email is registered, you will receive an invite link.'})
-
-    logger.info(f"Login requested for {email} [{request_id}]")
-    return _resp(200, {'message': 'Check your email for your access link.'})
 
 
 # ── Lambda handler ────────────────────────────────────────────────────────────
@@ -282,9 +315,9 @@ def lambda_handler(event, context) -> dict:
         return validate_session(event, request_id)
 
     if method == 'POST' and path in _LOGIN_PATHS:
-        return login_placeholder(event, request_id)
+        return login(event, request_id)
 
-    # Bearer token validation fallback (API integrations)
+    # Bearer token validation fallback
     auth_header = event.get('headers', {}).get('Authorization', '')
     if auth_header.startswith('Bearer '):
         return validate_session(event, request_id)
