@@ -43,6 +43,7 @@ secondary_api_endpoint = ""
 acm_certificate_arn = "arn:aws:acm:us-east-1:731184206915:certificate/109a7267-8b0e-438b-acf6-15ddbe5206d5"
 primary_api_fqdn    = "d-ky35u7ca93.execute-api.us-east-1.amazonaws.com"
 secondary_api_fqdn  = "bi8ixc75nl.execute-api.us-west-2.amazonaws.com"
+secondary_health_api_fqdn  = "bi8ixc75nl.execute-api.us-west-2.amazonaws.com"
 cloudfront_aliases  = ["api.securebase.tximhotep.com"]
 
 # Secondary health APIGWv2 endpoint (FQDN only, no https:// prefix, no /health suffix)
@@ -51,7 +52,6 @@ cloudfront_aliases  = ["api.securebase.tximhotep.com"]
 #     --query "Items[?contains(Name,'health-secondary')].ApiEndpoint" \
 #     --output text | sed 's|https://||'
 # Paste the result (e.g. abc123def.execute-api.us-west-2.amazonaws.com) below:
-secondary_health_api_fqdn = ""  # TODO: populate after running the command above, then re-apply
 
 # ── S3 audit log replication ──────────────────────────────────────────────────
 audit_log_bucket_name = "securebase-audit-logs-prod"
