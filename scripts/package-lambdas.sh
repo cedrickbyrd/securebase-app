@@ -1,71 +1,31 @@
 #!/bin/bash
-# Lambda Deployment Script for SecureBase Phase 2 Backend
-# Packages and deploys all Lambda functions
+# Packages Terraform-managed Lambda zip artifacts from source.
 
-set -e
+set -euo pipefail
 
-echo "🚀 SecureBase Lambda Deployment"
-echo "================================"
-
-# Variables
-REGION="us-east-1"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FUNCTIONS_DIR="$ROOT/phase2-backend/functions"
-DEPLOY_DIR="$ROOT/phase2-backend/deploy"
+OUTPUT_DIR="${LAMBDA_OUTPUT_DIR:-$ROOT/lambda}"
 
-# Create deployment directory
-mkdir -p "$DEPLOY_DIR"
+mkdir -p "$OUTPUT_DIR"
 
-# Function to package Lambda
 package_lambda() {
-    local function_name=$1
+    local zip_name=$1
     local source_file=$2
-    
-    echo ""
-    echo "📦 Packaging $function_name..."
-    
-    # Create temp directory
-    temp_dir="$DEPLOY_DIR/${function_name}_temp"
-    mkdir -p "$temp_dir"
-    
-    # Copy source file
-    cp "$FUNCTIONS_DIR/$source_file" "$temp_dir/lambda_function.py"
-    
-    # Install dependencies if requirements exist
-    if [ -f "$FUNCTIONS_DIR/requirements.txt" ]; then
-        echo "  📥 Installing dependencies..."
-        pip install -r "$FUNCTIONS_DIR/requirements.txt" -t "$temp_dir" --quiet
+
+    if [ ! -f "$source_file" ]; then
+        echo "Missing Lambda source: $source_file" >&2
+        exit 1
     fi
-    
-    # Create ZIP package
-    cd "$temp_dir"
-    zip -r "$DEPLOY_DIR/${function_name}.zip" . -q
-    cd - > /dev/null
-    
-    # Cleanup temp directory
-    rm -rf "$temp_dir"
-    
-    echo "  ✅ Package created: ${function_name}.zip ($(du -h $DEPLOY_DIR/${function_name}.zip | cut -f1))"
+
+    echo "📦 Packaging ${zip_name}.zip from $(basename "$source_file")"
+    rm -f "$OUTPUT_DIR/${zip_name}.zip"
+    zip -jq "$OUTPUT_DIR/${zip_name}.zip" "$source_file"
+    echo "  ✅ $OUTPUT_DIR/${zip_name}.zip ($(du -h "$OUTPUT_DIR/${zip_name}.zip" | cut -f1))"
 }
 
-# Package all Lambda functions
-echo ""
-echo "Packaging Lambda functions..."
+echo "🚀 Packaging Terraform-managed Lambda artifacts"
+echo "Output directory: $OUTPUT_DIR"
 
-package_lambda "auth_v2" "auth_v2.py"
-package_lambda "webhook_manager" "webhook_manager.py"
-package_lambda "billing_worker" "billing-worker.py"
-package_lambda "support_tickets" "support_tickets.py"
-package_lambda "cost_forecasting" "cost_forecasting.py"
-
-echo ""
-echo "✅ All Lambda functions packaged successfully!"
-echo ""
-echo "Package location: $DEPLOY_DIR"
-ls -lh "$DEPLOY_DIR"/*.zip
-
-echo ""
-echo "📋 Next steps:"
-echo "1. Deploy infrastructure: cd landing-zone/environments/dev && terraform apply"
-echo "2. Lambda packages will be deployed automatically via Terraform"
-echo ""
+package_lambda "pilot_availability" "$ROOT/phase2-backend/functions/pilot_availability.py"
+package_lambda "validate_session" "$ROOT/phase2-backend/functions/validate_session.py"
+package_lambda "stripe_webhook" "$ROOT/lambda/stripe_webhook_handler.py"

@@ -9,10 +9,10 @@
 #     --item '{"sku":{"S":"pilot_compliance"},"slots_total":{"N":"5"},"slots_claimed":{"N":"0"}}'
 
 locals {
-  pilot_availability_function_name = "securebase-pilot-availability"
+  pilot_availability_function_name = var.pilot_availability_lambda_name
   pilot_availability_zip           = "${path.module}/../lambda/pilot_availability.zip"
 
-  validate_session_function_name = "securebase-validate-session"
+  validate_session_function_name = var.validate_session_lambda_name
   validate_session_zip           = "${path.module}/../lambda/validate_session.zip"
 }
 
