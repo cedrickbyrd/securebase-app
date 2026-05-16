@@ -1,0 +1,89 @@
+name: Terraform Apply - Staging Workspace
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - 'phase2-backend/**'
+      - 'lambda/**'
+      - 'scripts/package-lambdas.sh'
+      - 'tests/smoke/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  staging-deploy:
+    name: Terraform Apply (staging)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_SMOKE_BASE_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/staging' }}
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      STAGING_TF_VARS: environments/staging/terraform.tfvars
+      STAGING_BACKEND_CONFIG: environments/staging/backend.tf
+      STAGING_API_URL: ${{ vars.STAGING_SMOKE_BASE_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/staging' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ~1.5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Package Lambda artifacts
+        run: bash ./scripts/package-lambdas.sh
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init -backend-config="${STAGING_BACKEND_CONFIG}"
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ./terraform
+        run: terraform plan -no-color -input=false -out=tfplan -var-file="${STAGING_TF_VARS}"
+
+      - name: Terraform Apply
+        if: ${{ vars.ENABLE_STAGING_TERRAFORM_APPLY == 'true' }}
+        id: apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Explain staged rollout status
+        if: ${{ vars.ENABLE_STAGING_TERRAFORM_APPLY != 'true' }}
+        run: |
+          echo "Staging Terraform apply is scaffolded but disabled until staging infrastructure variables and imports are ready."
+
+      - name: Run Lambda smoke tests
+        env:
+          SMOKE_BASE_URL: ${{ env.STAGING_API_URL }}
+        run: python -m unittest discover -s tests/smoke -p 'test_lambda_endpoints.py' -v
+
+      - name: Output Summary
+        if: always()
+        run: |
+          echo "### Staging Terraform Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Plan status:** \`${{ steps.plan.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Apply status:** \`${{ steps.apply.outcome || 'skipped' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Smoke test URL:** \`${{ env.STAGING_API_URL }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
