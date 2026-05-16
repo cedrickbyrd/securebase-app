@@ -28,7 +28,7 @@ jobs:
     env:
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
       TF_WORKSPACE: ${{ github.event.inputs.workspace || 'securebase' }}
-      
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,8 +49,6 @@ jobs:
         id: init
         working-directory: ./terraform
         run: terraform init
-
-      - name: Terraform Plan
 
       - name: Import existing AWS resources into Terraform state
         working-directory: ./terraform
@@ -76,6 +74,7 @@ jobs:
           import_if_missing aws_iam_role.stripe_webhook_lambda         securebase-stripe-webhook-role
           import_if_missing aws_iam_role.pilot_availability_lambda     securebase-pilot-availability-role
 
+      - name: Terraform Plan
         id: plan
         working-directory: ./terraform
         run: terraform plan -no-color -input=false -out=tfplan -var-file=terraform.tfvars
