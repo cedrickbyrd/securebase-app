@@ -16,5 +16,10 @@
 # Phase 6.2 — Compliance History API
 /api/tenant/compliance/history https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/tenant/compliance/history 200!
 
+# Cloud Connection — cross-account IAM role management
+/api/cloud-connection/status   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/status   200!
+/api/cloud-connection/init     https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/init     200!
+/api/cloud-connection/verify   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/verify   200!
+
 # SPA fallback — must be last
 /*    /index.html   200
