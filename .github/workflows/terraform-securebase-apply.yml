@@ -53,16 +53,27 @@ jobs:
       - name: Import existing AWS resources into Terraform state
         working-directory: ./terraform
         run: |
+          # Remove stale state entries that no longer exist in AWS
+          terraform state rm aws_api_gateway_method.auth_options || true
+          terraform state rm aws_api_gateway_method.validate_session_get || true
+          terraform state rm aws_api_gateway_method.validate_session_options || true
+          terraform state rm aws_api_gateway_method.stripe_webhook_post || true
+          terraform state rm aws_api_gateway_method.stripe_webhook_options || true
+          terraform state rm aws_api_gateway_resource.auth_login || true
+          terraform state rm aws_api_gateway_resource.pilot_availability || true
+
+          # Import existing resources not yet in state
           import_if_missing() {
             local resource=$1
             local id=$2
             if terraform state show "$resource" > /dev/null 2>&1; then
-              echo "✅ $resource already in state, skipping"
+              echo "already in state, skipping: $resource"
             else
-              echo "⬇️  Importing $resource ($id)"
+              echo "importing: $resource ($id)"
               terraform import -var-file=terraform.tfvars "$resource" "$id" || true
             fi
           }
+
           import_if_missing aws_api_gateway_resource.auth              9xyetu7zq3/sfrsaw
           import_if_missing aws_api_gateway_resource.auth_login        9xyetu7zq3/ogsr28
           import_if_missing aws_api_gateway_resource.checkout          9xyetu7zq3/qlr2au
