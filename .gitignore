@@ -26,6 +26,7 @@ dist-ssr
 # Local secrets and variables
 *.tfvars
 *.tfvars.json
+!terraform/environments/staging/terraform.tfvars
 
 # Terraform state and metadata
 .terraform/
