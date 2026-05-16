@@ -39,6 +39,7 @@ _CONNECTIONS_TABLE     = os.environ.get('CONNECTIONS_TABLE', 'securebase-cloud-c
 _SECUREBASE_ACCOUNT_ID = os.environ.get('SECUREBASE_ACCOUNT_ID', '731184206915')
 _SECUREBASE_ROLE_NAME  = os.environ.get('SECUREBASE_ROLE_NAME', 'SecureBaseComplianceScanner')
 _CORS_ORIGIN           = os.environ.get('CORS_ORIGIN', 'https://portal.securebase.tximhotep.com')
+_AWS_SCANNER_FUNCTION  = os.environ.get('AWS_SCANNER_FUNCTION_NAME', 'securebase-aws-scanner')
 
 _CORS_HEADERS = {
     'Content-Type': 'application/json',
@@ -229,7 +230,7 @@ def verify_connection(event: dict, request_id: str) -> dict:
         try:
             lambda_client = boto3.client('lambda')
             lambda_client.invoke(
-                FunctionName='securebase-aws-scanner',
+                FunctionName=_AWS_SCANNER_FUNCTION,
                 InvocationType='Event',
                 Payload=json.dumps({
                     'trigger': 'post_verify',
