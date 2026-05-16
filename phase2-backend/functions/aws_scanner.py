@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import time
+import csv
+import io
 from datetime import datetime, timezone
 from typing import Any
 
@@ -22,22 +24,20 @@ COLLECTOR_FUNCTION_NAME = os.environ.get(
     "HIPAA_COLLECTOR_FUNCTION_NAME", "securebase-hipaa-compliance-collector"
 )
 SERVICE_TIMEOUT_SECONDS = int(os.environ.get("SERVICE_TIMEOUT_SECONDS", "45"))
+HIPAA_MIN_BACKUP_RETENTION_DAYS = 7
+IAM_CRED_REPORT_MIN_COLUMNS = 8
 
 PHI_KEYWORDS = ("phi", "ehr", "patient", "health", "medical", "hipaa", "clinical")
 ddb = boto3.resource("dynamodb")
 
 
-def _json_log(payload: dict[str, Any]) -> None:
-    logger.info(json.dumps(payload, default=str))
-
-
 def _log_resource(service: str, resource: str, status: str, findings: dict | None = None, error: str | None = None) -> None:
     entry = {"service": service, "resource": resource, "status": status}
     if findings is not None:
-        entry["findings"] = findings
+        entry["finding_keys"] = sorted(str(key) for key in findings.keys())
     if error:
-        entry["error"] = error
-    _json_log(entry)
+        entry["error"] = "redacted"
+    logger.info(json.dumps(entry, default=str))
 
 
 def _response(status_code: int, body: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,7 @@ def _assume_customer_session(customer_id: str, role_arn: str, external_id: str):
     sts = boto3.client("sts")
     assumed = sts.assume_role(
         RoleArn=role_arn,
-        RoleSessionName=f"securebase-scan-{customer_id[:8]}",
+        RoleSessionName=f"securebase-scan-{int(time.time())}",
         ExternalId=external_id,
         DurationSeconds=3600,
     )
@@ -131,6 +131,7 @@ def _upsert_encryption_status(
     try:
         execute_one(query, params)
     except Exception:
+        logger.warning("Upsert fallback insert for %s/%s", resource_type, resource_id)
         execute_one(
             """
             INSERT INTO hipaa_encryption_status (
@@ -255,13 +256,17 @@ def _scan_s3(session, customer_id: str) -> int:
                         pab.get("RestrictPublicBuckets", False),
                     ]
                 )
-            except ClientError:
-                world_readable = True
+            except ClientError as e:
+                code = e.response.get("Error", {}).get("Code", "")
+                if code in ("NoSuchPublicAccessBlockConfiguration", "NoSuchPublicAccessBlock"):
+                    world_readable = True
 
             try:
                 policy = s3.get_bucket_policy(Bucket=name)
                 policy_doc = json.loads(policy.get("Policy", "{}"))
                 for stmt in policy_doc.get("Statement", []):
+                    if stmt.get("Effect") != "Allow":
+                        continue
                     principal = stmt.get("Principal")
                     if principal == "*" or (isinstance(principal, dict) and any(v == "*" for v in principal.values())):
                         overly_permissive = True
@@ -321,7 +326,7 @@ def _scan_rds(session, customer_id: str) -> int:
                 encryption_enabled=encrypted,
                 kms_key_status="active" if instance.get("KmsKeyId") else None,
                 access_control_configured=bool(instance.get("IAMDatabaseAuthenticationEnabled", False)),
-                overly_permissive=instance.get("BackupRetentionPeriod", 0) < 7,
+                overly_permissive=instance.get("BackupRetentionPeriod", 0) < HIPAA_MIN_BACKUP_RETENTION_DAYS,
                 world_readable=False,
             )
             _log_resource(
@@ -406,8 +411,6 @@ def _scan_cloudtrail(session, customer_id: str) -> int:
             selectors = cloudtrail.get_event_selectors(TrailName=trail_name)
             data_events_enabled = False
             for selector in selectors.get("EventSelectors", []):
-                if not selector.get("IncludeManagementEvents"):
-                    continue
                 for data_resource in selector.get("DataResources", []):
                     if data_resource.get("Type") == "AWS::S3::Object":
                         data_events_enabled = True
@@ -481,15 +484,25 @@ def _scan_iam(session, customer_id: str) -> int:
 
     try:
         iam.generate_credential_report()
-        report = iam.get_credential_report().get("Content", b"").decode("utf-8", errors="ignore")
-        for line in report.splitlines()[1:]:
-            cols = line.split(",")
-            if len(cols) < 8:
+        report = None
+        delay_seconds = 0.5
+        for _ in range(5):
+            try:
+                report = iam.get_credential_report().get("Content", b"").decode("utf-8", errors="ignore")
+                break
+            except ClientError:
+                time.sleep(delay_seconds)
+                delay_seconds *= 2
+        if report is None:
+            raise RuntimeError("IAM credential report generation timed out after 5 retries")
+        reader = csv.DictReader(io.StringIO(report))
+        for row in reader:
+            if len(row.keys()) < IAM_CRED_REPORT_MIN_COLUMNS:
                 continue
-            username = cols[0]
-            password_enabled = cols[3] == "true"
-            mfa_active = cols[7] == "true"
-            if password_enabled and not mfa_active:
+            username = row.get("user")
+            password_enabled = (row.get("password_enabled") or "").lower() == "true"
+            mfa_active = (row.get("mfa_active") or "").lower() == "true"
+            if username and password_enabled and not mfa_active:
                 users_without_mfa.add(username)
     except Exception as e:
         logger.warning("Credential report unavailable: %s", e)
@@ -612,7 +625,8 @@ def _run_customer_scan(customer_id: str, role_arn: str, external_id: str) -> dic
             try:
                 total_resources_scanned += scanner(session, customer_id)
             except Exception as e:
-                logger.warning("Service scanner failed (%s): %s", scanner.__name__, e, exc_info=True)
+                scanner_name = getattr(scanner, "__name__", scanner.__class__.__name__)
+                logger.warning("Service scanner failed (%s): %s", scanner_name, e, exc_info=True)
 
         table.update_item(
             Key={"customer_id": customer_id},
@@ -636,13 +650,16 @@ def _run_customer_scan(customer_id: str, role_arn: str, external_id: str) -> dic
             ),
         )
 
-        _json_log(
-            {
-                "event": "scan_complete",
-                "customer_id": customer_id,
-                "started_at": started,
-                "resources_scanned": total_resources_scanned,
-            }
+        logger.info(
+            json.dumps(
+                {
+                    "event": "scan_complete",
+                    "customer_id": customer_id,
+                    "started_at": started,
+                    "resources_scanned": total_resources_scanned,
+                },
+                default=str,
+            )
         )
         return {
             "customer_id": customer_id,

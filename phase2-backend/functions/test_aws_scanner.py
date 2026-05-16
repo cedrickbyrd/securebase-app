@@ -120,6 +120,32 @@ class TestAwsScanner(unittest.TestCase):
         self.assertEqual(scanned, 1)
         mock_upsert.assert_called_once()
 
+    def test_run_customer_scan_continues_on_service_failure(self):
+        table_mock = MagicMock()
+        with (
+            patch.object(aws_scanner, "ddb") as mock_ddb,
+            patch.object(aws_scanner, "_assume_customer_session", return_value=MagicMock()),
+            patch.object(aws_scanner, "_seed_baa_if_needed"),
+            patch.object(aws_scanner, "_scan_s3", side_effect=Exception("s3 failed")),
+            patch.object(aws_scanner, "_scan_rds", return_value=2),
+            patch.object(aws_scanner, "_scan_kms", return_value=1),
+            patch.object(aws_scanner, "_scan_cloudtrail", return_value=1),
+            patch.object(aws_scanner, "_scan_iam", return_value=1),
+            patch.object(aws_scanner, "_scan_config", return_value=1),
+            patch.object(aws_scanner, "_scan_securityhub", return_value=1),
+            patch("aws_scanner.boto3.client") as mock_boto_client,
+        ):
+            mock_ddb.Table.return_value = table_mock
+            mock_lambda_client = MagicMock()
+            mock_boto_client.return_value = mock_lambda_client
+
+            result = aws_scanner._run_customer_scan("cust-1", "arn:role", "ext-1")
+
+            self.assertEqual(result["scan_status"], "completed")
+            self.assertEqual(result["resources_scanned"], 7)
+            self.assertTrue(table_mock.update_item.called)
+            self.assertTrue(mock_lambda_client.invoke.called)
+
 
 if __name__ == "__main__":
     unittest.main()
