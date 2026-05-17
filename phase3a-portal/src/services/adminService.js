@@ -100,6 +100,35 @@ const mockServicesByCost = [
   { name: 'CloudFront', cost: 640 },
 ];
 
+// ── Mock data: cross-tenant compliance scores (Phase 6.2 / Track 4) ──────────
+
+const mockComplianceScores = {
+  generated_at: new Date().toISOString(),
+  tenants: [
+    {
+      tenant_id: 'tenant-uuid-001',
+      tenant_display_name: 'Customer #1',
+      SOC2:    { score: 96, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 98, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 92, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+    {
+      tenant_id: 'tenant-uuid-002',
+      tenant_display_name: 'Customer #2',
+      SOC2:    { score: 93, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 68, status: 'At Risk',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 91, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+    {
+      tenant_id: 'tenant-uuid-003',
+      tenant_display_name: 'Customer #3',
+      SOC2:    { score: 54, status: 'Critical', last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 94, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 95, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+  ],
+};
+
 const mockData = {
   overview: {
     activeTenants: 142,
@@ -119,11 +148,6 @@ const mockData = {
       fedramp: 95,
       hipaa: 97,
     },
-    tenantComplianceScores: [
-      { tenant: 'Customer #1', soc2: 96, hipaa: 98, fedramp: 92, lastCalculated: '2026-05-17T02:06:00Z' },
-      { tenant: 'Customer #2', soc2: 93, hipaa: 89, fedramp: 91, lastCalculated: '2026-05-17T02:06:00Z' },
-      { tenant: 'Customer #3', soc2: 97, hipaa: 94, fedramp: 95, lastCalculated: '2026-05-17T02:06:00Z' },
-    ],
     failedAuthAttempts: 12,
     securityEvents24h: 4,
   },
@@ -313,6 +337,13 @@ class AdminService {
   async getMttaMttrMetrics() {
     if (USE_MOCK) return clone(mockMttaMetrics);
     return api.get('/admin/alarms/mtta-mttr');
+  }
+
+  // ── Phase 6.2 / Track 4: Cross-tenant Compliance Scores ──────────────────
+
+  async getComplianceScores() {
+    if (USE_MOCK) return clone(mockComplianceScores);
+    return api.get('/admin/compliance/scores');
   }
 
   // ── Phase 6.1 / Track 4: Vault Visibility ─────────────────────────────────
