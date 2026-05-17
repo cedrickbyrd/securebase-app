@@ -45,11 +45,17 @@ export async function getEvidencePackage(packageId) {
   return handleResponse(res);
 }
 
-export async function generateEvidencePackage({ framework = 'HIPAA', period_days = 30 } = {}) {
+const DEFAULT_RANGE_DAYS = 90;
+const DEFAULT_RANGE_MS = DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000;
+
+export async function generateEvidencePackage({ framework = 'ALL', date_range_start, date_range_end } = {}) {
+  const now = new Date();
+  const end = date_range_end || now.toISOString();
+  const start = date_range_start || new Date(now.getTime() - DEFAULT_RANGE_MS).toISOString();
   const res = await fetch(`${API_BASE}/admin/evidence/generate`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ framework, period_days }),
+    body: JSON.stringify({ framework, date_range_start: start, date_range_end: end }),
   });
   return handleResponse(res);
 }
