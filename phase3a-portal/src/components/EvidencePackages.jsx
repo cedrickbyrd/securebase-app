@@ -17,6 +17,33 @@ function getAuthHeaders() {
   };
 }
 
+const FRAMEWORK_BADGE_COLORS = {
+  SOC2:    'bg-blue-50 text-blue-700 border-blue-200',
+  HIPAA:   'bg-purple-50 text-purple-700 border-purple-200',
+  FEDRAMP: 'bg-green-50 text-green-700 border-green-200',
+};
+
+function FrameworkBadges({ framework }) {
+  if (!framework) return null;
+  if (framework === 'ALL') {
+    return (
+      <span className="flex items-center gap-1 flex-wrap">
+        {['SOC2', 'HIPAA', 'FedRAMP'].map((fw) => (
+          <span key={fw} className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${FRAMEWORK_BADGE_COLORS[fw.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+            {fw}
+          </span>
+        ))}
+      </span>
+    );
+  }
+  const color = FRAMEWORK_BADGE_COLORS[framework.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${color}`}>
+      <Shield className="w-3 h-3" />{framework}
+    </span>
+  );
+}
+
 const STATUS_CONFIG = {
   complete:   { color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-200',  icon: CheckCircle2, label: 'Complete' },
   generating: { color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-200',   icon: Loader,       label: 'Generating' },
@@ -53,13 +80,13 @@ function PackageRow({ pkg, onDownload, downloading }) {
           </div>
           <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
             {pkg.created_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(pkg.created_at).toLocaleString()}</span>}
-            {pkg.framework && <span className="flex items-center gap-1"><Shield className="w-3 h-3" />{pkg.framework}</span>}
+            <FrameworkBadges framework={pkg.framework} />
             {pkg.log_count != null && <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{pkg.log_count.toLocaleString()} logs</span>}
           </div>
-          {pkg.sha256_manifest && (
+          {(pkg.sha256 || pkg.sha256_manifest) && (
             <div className="mt-1 flex items-center gap-1">
               <Lock className="w-3 h-3 text-gray-400" />
-              <span className="font-mono text-xs text-gray-400 truncate max-w-xs">SHA-256: {pkg.sha256_manifest}</span>
+              <span className="font-mono text-xs text-gray-400 truncate max-w-xs">SHA-256: {pkg.sha256 || pkg.sha256_manifest}</span>
             </div>
           )}
         </div>
@@ -124,10 +151,16 @@ export default function EvidencePackages() {
     setGenError(null);
     setGenSuccess(false);
     try {
+      const now = new Date();
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       const res = await fetch(`${API_BASE}/admin/evidence/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ framework: 'HIPAA' }),
+        body: JSON.stringify({
+          framework: 'ALL',
+          date_range_start: ninetyDaysAgo.toISOString(),
+          date_range_end: now.toISOString(),
+        }),
       });
       if (res.status === 404) { setApiReady(false); return; }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
