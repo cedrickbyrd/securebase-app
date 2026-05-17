@@ -158,12 +158,27 @@ class TestBuildZipPackage:
             manifest_meta = {'customer_id': 'tenant-id', 'framework': 'SOC2'}
 
             zip_bytes, sha256 = audit_log_packager._build_zip_package(
-                'source-bucket', objects, manifest_meta
+                'source-bucket',
+                objects,
+                manifest_meta,
+                {
+                    'organization_name': 'Tenant Inc.',
+                    'customer_id': 'tenant-id',
+                    'framework': 'SOC2',
+                    'date_range_start': '2026-01-01T00:00:00+00:00',
+                    'date_range_end': '2026-01-31T23:59:59+00:00',
+                    'created_at': '2026-02-01T00:00:00+00:00',
+                    'package_id': 'pkg-123',
+                    'kms_key_arn': 'arn:aws:kms:us-east-1:123:key/abc',
+                    'log_count': 1,
+                    'retention_until': '2033-02-01T00:00:00+00:00',
+                },
             )
 
             # Verify zip contains MANIFEST.json
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
                 assert 'MANIFEST.json' in zf.namelist()
+                assert 'COVER_PAGE.pdf' in zf.namelist()
                 manifest = json.loads(zf.read('MANIFEST.json'))
                 assert manifest['customer_id'] == 'tenant-id'
                 assert manifest['framework'] == 'SOC2'
@@ -187,12 +202,24 @@ class TestBuildZipPackage:
                 [{'Key': 'test.log', 'Size': 7,
                   'LastModified': '2026-01-01T00:00:00+00:00'}],
                 {},
+                {
+                    'organization_name': 'Tenant Inc.',
+                    'customer_id': 'tenant-id',
+                    'framework': 'SOC2',
+                    'date_range_start': '2026-01-01T00:00:00+00:00',
+                    'date_range_end': '2026-01-31T23:59:59+00:00',
+                    'created_at': '2026-02-01T00:00:00+00:00',
+                    'package_id': 'pkg-123',
+                    'kms_key_arn': 'arn:aws:kms:us-east-1:123:key/abc',
+                    'log_count': 1,
+                    'retention_until': '2033-02-01T00:00:00+00:00',
+                },
             )
             assert len(sha256) == 64
             assert all(c in '0123456789abcdef' for c in sha256)
 
-    def test_sha256_matches_zip_content(self):
-        """The SHA-256 digest must match the actual hash of the zip bytes."""
+    def test_sha256_matches_manifest_content(self):
+        """The SHA-256 digest must match the hash of MANIFEST.json bytes."""
         with patch('boto3.client'), patch('boto3.resource'), \
              patch.dict('sys.modules', {'db_utils': MagicMock()}):
             import importlib
@@ -209,8 +236,21 @@ class TestBuildZipPackage:
                 [{'Key': 'log.txt', 'Size': 8,
                   'LastModified': '2026-01-01T00:00:00+00:00'}],
                 {},
+                {
+                    'organization_name': 'Tenant Inc.',
+                    'customer_id': 'tenant-id',
+                    'framework': 'SOC2',
+                    'date_range_start': '2026-01-01T00:00:00+00:00',
+                    'date_range_end': '2026-01-31T23:59:59+00:00',
+                    'created_at': '2026-02-01T00:00:00+00:00',
+                    'package_id': 'pkg-123',
+                    'kms_key_arn': 'arn:aws:kms:us-east-1:123:key/abc',
+                    'log_count': 1,
+                    'retention_until': '2033-02-01T00:00:00+00:00',
+                },
             )
-            expected = hashlib.sha256(zip_bytes).hexdigest()
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                expected = hashlib.sha256(zf.read('MANIFEST.json')).hexdigest()
             assert sha256 == expected
 
 
