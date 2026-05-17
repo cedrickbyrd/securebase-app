@@ -1,134 +1,22 @@
 {
   "framework": "HIPAA",
-  "standard": "45 CFR Part 164 — Security Rule (Technical Safeguards)",
-  "description": "Mapping of HIPAA Technical Safeguard requirements to AWS GuardDuty finding types and AWS Config managed rule names.",
-  "last_updated": "2026-05-08",
+  "standard": "45 CFR 164.312 / 164.308",
+  "description": "HIPAA safeguard mappings for AWS Config managed rules.",
+  "last_updated": "2026-05-17",
   "controls": [
-    {
-      "control_id": "HIPAA-164.312(a)(1)",
-      "control_name": "Access Control — Unique User Identification",
-      "description": "Assign a unique name and/or number for identifying and tracking user identity.",
-      "severity": "CRITICAL",
-      "config_rule": "iam-root-access-key-check",
-      "guardduty_finding_types": [
-        "Policy:IAMUser/RootCredentialUsage"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(a)(2)(i)",
-      "control_name": "Access Control — Emergency Access Procedure",
-      "description": "Establish and implement procedures for obtaining necessary ePHI during an emergency.",
-      "severity": "HIGH",
-      "config_rule": "mfa-enabled-for-iam-console-access",
-      "guardduty_finding_types": [],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(a)(2)(iv)",
-      "control_name": "Access Control — Encryption and Decryption",
-      "description": "Implement a mechanism to encrypt and decrypt ePHI.",
-      "severity": "CRITICAL",
-      "config_rule": "rds-storage-encrypted",
-      "guardduty_finding_types": [],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(b)",
-      "control_name": "Audit Controls",
-      "description": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in information systems that contain or use ePHI.",
-      "severity": "CRITICAL",
-      "config_rule": "cloudtrail-enabled",
-      "guardduty_finding_types": [
-        "Stealth:IAMUser/CloudTrailLoggingDisabled",
-        "Stealth:IAMUser/LoggingConfigurationModified"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(c)(1)",
-      "control_name": "Integrity — Authenticate ePHI",
-      "description": "Implement policies and procedures to protect ePHI from improper alteration or destruction.",
-      "severity": "HIGH",
-      "config_rule": "s3-bucket-versioning-enabled",
-      "guardduty_finding_types": [
-        "Impact:S3/ObjectDelete.Unusual"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(c)(2)",
-      "control_name": "Integrity — Mechanism to Authenticate ePHI",
-      "description": "Implement electronic mechanisms to corroborate that ePHI has not been altered or destroyed in an unauthorized manner.",
-      "severity": "HIGH",
-      "config_rule": "s3-bucket-ssl-requests-only",
-      "guardduty_finding_types": [],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(d)",
-      "control_name": "Person or Entity Authentication",
-      "description": "Implement procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
-      "severity": "CRITICAL",
-      "config_rule": "root-account-mfa-enabled",
-      "guardduty_finding_types": [
-        "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(e)(1)",
-      "control_name": "Transmission Security — Protect ePHI in Transit",
-      "description": "Implement technical security measures to guard against unauthorized access to ePHI that is being transmitted over an electronic communications network.",
-      "severity": "CRITICAL",
-      "config_rule": "api-gw-ssl-enabled",
-      "guardduty_finding_types": [],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/apigateway-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(e)(2)(i)",
-      "control_name": "Transmission Security — Integrity Controls",
-      "description": "Implement security measures to ensure that electronically transmitted ePHI is not improperly modified without detection.",
-      "severity": "HIGH",
-      "config_rule": "vpc-flow-logs-enabled",
-      "guardduty_finding_types": [
-        "Trojan:EC2/DNSDataExfiltration",
-        "UnauthorizedAccess:EC2/MetadataDNSRebind"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.312(e)(2)(ii)",
-      "control_name": "Transmission Security — Encryption",
-      "description": "Implement a mechanism to encrypt ePHI whenever deemed appropriate.",
-      "severity": "CRITICAL",
-      "config_rule": "encrypted-volumes",
-      "guardduty_finding_types": [],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
-    },
-    {
-      "control_id": "HIPAA-164.308(a)(1)",
-      "control_name": "Security Management — Risk Analysis",
-      "description": "Conduct an accurate and thorough assessment of the potential risks and vulnerabilities to the confidentiality, integrity, and availability of ePHI.",
-      "severity": "HIGH",
-      "config_rule": "guardduty-enabled-centralized",
-      "guardduty_finding_types": [
-        "Recon:IAMUser/NetworkPermissions",
-        "Recon:IAMUser/ResourcePermissions"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
-    },
-    {
-      "control_id": "HIPAA-164.308(a)(5)",
-      "control_name": "Security Management — Malware Protection",
-      "description": "Procedures for guarding against, detecting, and reporting malicious software.",
-      "severity": "HIGH",
-      "config_rule": "ec2-imdsv2-check",
-      "guardduty_finding_types": [
-        "Trojan:EC2/BlackholeTraffic",
-        "Backdoor:EC2/C&CActivity.B"
-      ],
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
-    }
+    {"rule_name": "dynamodb-pitr-enabled", "config_rule": "dynamodb-pitr-enabled", "control_id": "164.308(a)(7)(ii)(A)", "control_name": "Contingency Plan — Data Backup", "framework": "HIPAA", "severity": "High", "description": "DynamoDB point-in-time recovery must be enabled for ePHI backup and restoration."},
+    {"rule_name": "rds-automatic-minor-version-upgrade-enabled", "config_rule": "rds-automatic-minor-version-upgrade-enabled", "control_id": "164.308(a)(8)", "control_name": "Evaluation", "framework": "HIPAA", "severity": "Medium", "description": "RDS minor version upgrades must be enabled for ongoing security maintenance."},
+    {"rule_name": "rds-instance-deletion-protection-enabled", "config_rule": "rds-instance-deletion-protection-enabled", "control_id": "164.308(a)(7)(ii)(D)", "control_name": "Contingency Operations", "framework": "HIPAA", "severity": "High", "description": "RDS deletion protection must be enabled to prevent accidental ePHI data loss."},
+    {"rule_name": "kms-cmk-not-scheduled-for-deletion", "config_rule": "kms-cmk-not-scheduled-for-deletion", "control_id": "164.312(a)(2)(iv)", "control_name": "Access Control — Encryption/Decryption", "framework": "HIPAA", "severity": "High", "description": "KMS CMKs used for regulated data must not be pending deletion."},
+    {"rule_name": "ec2-instances-in-vpc", "config_rule": "ec2-instances-in-vpc", "control_id": "164.312(a)(1)", "control_name": "Access Control", "framework": "HIPAA", "severity": "Medium", "description": "EC2 instances processing ePHI must run inside private VPC boundaries."},
+    {"rule_name": "s3-bucket-logging-enabled", "config_rule": "s3-bucket-logging-enabled", "control_id": "164.312(b)", "control_name": "Audit Controls", "framework": "HIPAA", "severity": "Medium", "description": "S3 access logging must be enabled for ePHI data access auditing."},
+    {"rule_name": "cloudwatch-log-group-encrypted", "config_rule": "cloudwatch-log-group-encrypted", "control_id": "164.312(a)(2)(iv)", "control_name": "Access Control — Encryption/Decryption", "framework": "HIPAA", "severity": "High", "description": "CloudWatch log groups must be encrypted to protect audit data at rest."},
+    {"rule_name": "backup-plan-min-frequency-and-min-retention-check", "config_rule": "backup-plan-min-frequency-and-min-retention-check", "control_id": "164.308(a)(7)(ii)(A)", "control_name": "Contingency Plan — Data Backup", "framework": "HIPAA", "severity": "High", "description": "Backups must satisfy minimum retention and frequency for regulated systems."},
+    {"rule_name": "acm-certificate-expiration-check", "config_rule": "acm-certificate-expiration-check", "control_id": "164.312(e)(1)", "control_name": "Transmission Security", "framework": "HIPAA", "severity": "Medium", "description": "Certificates must not expire to preserve encrypted transport channels."},
+    {"rule_name": "wafv2-webacl-not-empty", "config_rule": "wafv2-webacl-not-empty", "control_id": "164.312(c)(1)", "control_name": "Integrity", "framework": "HIPAA", "severity": "Medium", "description": "WAFv2 WebACLs must contain active protections for internet-facing workloads."},
+    {"rule_name": "cloudtrail-enabled", "config_rule": "cloudtrail-enabled", "control_id": "164.312(b)", "control_name": "Audit Controls", "framework": "HIPAA", "severity": "Critical", "description": "CloudTrail must be enabled for account-wide audit logging."},
+    {"rule_name": "api-gw-ssl-enabled", "config_rule": "api-gw-ssl-enabled", "control_id": "164.312(e)(1)", "control_name": "Transmission Security", "framework": "HIPAA", "severity": "High", "description": "API Gateway endpoints handling ePHI must enforce SSL/TLS transport."},
+    {"rule_name": "encrypted-volumes", "config_rule": "encrypted-volumes", "control_id": "164.312(e)(2)(ii)", "control_name": "Transmission Security — Encryption", "framework": "HIPAA", "severity": "High", "description": "EBS volume encryption protects ePHI storage media."},
+    {"rule_name": "rds-storage-encrypted", "config_rule": "rds-storage-encrypted", "control_id": "164.312(a)(2)(iv)", "control_name": "Access Control — Encryption/Decryption", "framework": "HIPAA", "severity": "Critical", "description": "RDS storage must be encrypted for ePHI confidentiality at rest."}
   ]
 }
