@@ -101,6 +101,7 @@ AUDIT_SOURCE_BUCKET = os.environ.get('AUDIT_SOURCE_BUCKET', '')
 EVIDENCE_BUCKET = os.environ.get('EVIDENCE_BUCKET', '')
 EVIDENCE_RETENTION_YEARS = int(os.environ.get('EVIDENCE_RETENTION_YEARS', '7'))
 MAX_OBJECTS_PER_PACKAGE = 10_000   # Hard cap to stay within Lambda memory
+EVIDENCE_KMS_KEY_ARN = os.environ.get('EVIDENCE_KMS_KEY_ARN', '')
 
 
 # ---------------------------------------------------------------------------
@@ -159,11 +160,12 @@ def _build_zip_package(
     bucket: str,
     objects: List[Dict[str, Any]],
     manifest_meta: Dict[str, Any],
+    cover_page_meta: Dict[str, Any],
 ) -> Tuple[bytes, str]:
     """Download objects from S3 and create an in-memory zip archive.
 
-    A ``MANIFEST.json`` file is included as the first entry in the zip.
-    The SHA-256 digest is computed over the entire zip bytes.
+    A ``COVER_PAGE.pdf`` and ``MANIFEST.json`` file are included in the zip.
+    The SHA-256 digest is computed over MANIFEST.json content.
 
     Args:
         bucket:        Source S3 bucket name.
@@ -173,45 +175,166 @@ def _build_zip_package(
     Returns:
         Tuple of (zip_bytes, sha256_hex_digest).
     """
-    zip_buffer = io.BytesIO()
     file_hashes: Dict[str, str] = {}
 
-    with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-        # Download and add each log object
-        for obj in objects:
-            key = obj['Key']
-            response = s3_client.get_object(Bucket=bucket, Key=key)
-            content = response['Body'].read()
-            file_hashes[key] = hashlib.sha256(content).hexdigest()
-            # Store under a relative path inside the zip
-            arc_name = key.split('/', 2)[-1] if key.count('/') >= 2 else key
-            zf.writestr(arc_name, content)
+    object_contents: Dict[str, bytes] = {}
+    for obj in objects:
+        key = obj['Key']
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        content = response['Body'].read()
+        file_hashes[key] = hashlib.sha256(content).hexdigest()
+        object_contents[key] = content
 
-        # Build and add manifest
-        manifest: Dict[str, Any] = {
-            **manifest_meta,
-            'generated_at': datetime.now(timezone.utc).isoformat(),
-            'object_count': len(objects),
-            'file_hashes': file_hashes,
-        }
-        zf.writestr('MANIFEST.json', json.dumps(manifest, indent=2))
+    manifest: Dict[str, Any] = {
+        **manifest_meta,
+        'generated_at': datetime.now(timezone.utc).isoformat(),
+        'object_count': len(objects),
+        'file_hashes': file_hashes,
+    }
+    manifest_json = json.dumps(manifest, indent=2).encode('utf-8')
+    sha256 = hashlib.sha256(manifest_json).hexdigest()
 
-    zip_bytes = zip_buffer.getvalue()
-    sha256 = hashlib.sha256(zip_bytes).hexdigest()
+    def _build_with_size(package_size_bytes: int) -> bytes:
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(
+                'COVER_PAGE.pdf',
+                _generate_cover_page_pdf({
+                    **cover_page_meta,
+                    'sha256_manifest': sha256,
+                    'package_size_bytes': package_size_bytes,
+                }),
+            )
+            for key, content in object_contents.items():
+                arc_name = key.split('/', 2)[-1] if key.count('/') >= 2 else key
+                zf.writestr(arc_name, content)
+            zf.writestr('MANIFEST.json', manifest_json)
+        return zip_buffer.getvalue()
+
+    zip_bytes = _build_with_size(0)
+    for _ in range(3):
+        candidate_size = len(zip_bytes)
+        updated_zip = _build_with_size(candidate_size)
+        if len(updated_zip) == candidate_size:
+            zip_bytes = updated_zip
+            break
+        zip_bytes = updated_zip
     return zip_bytes, sha256
+
+
+def _generate_cover_page_pdf(cover_page_meta: Dict[str, Any]) -> bytes:
+    """Render the auditor-grade evidence package cover page as PDF bytes."""
+    try:
+        from reportlab.lib.pagesizes import LETTER
+        from reportlab.pdfgen import canvas
+    except Exception:
+        body = (
+            "%PDF-1.4\n"
+            "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+            "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+            "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            "/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n"
+            "4 0 obj << /Length 44 >> stream\n"
+            "BT /F1 14 Tf 72 720 Td (SecureBase Evidence Package) Tj ET\n"
+            "endstream endobj\n"
+            "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+            "xref\n0 6\n0000000000 65535 f \n"
+            "trailer << /Root 1 0 R /Size 6 >>\nstartxref\n390\n%%EOF"
+        )
+        return body.encode('utf-8')
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=LETTER)
+    width, height = LETTER
+    y = height - 50
+
+    c.setFont('Helvetica-Bold', 18)
+    c.drawString(50, y, 'SecureBase')
+    y -= 22
+    c.setFont('Helvetica-Bold', 15)
+    c.drawString(50, y, 'Immutable Compliance Evidence Package')
+    y -= 24
+
+    c.setFont('Helvetica', 11)
+    c.drawString(
+        50,
+        y,
+        f"Tenant: {cover_page_meta['organization_name']} "
+        f"({cover_page_meta['customer_id']})",
+    )
+    y -= 22
+
+    sections = [
+        ('Framework(s)', cover_page_meta['framework']),
+        (
+            'Coverage Period',
+            f"{cover_page_meta['date_range_start']} -> {cover_page_meta['date_range_end']}",
+        ),
+        ('Generated', f"{cover_page_meta['created_at']} UTC"),
+        ('Package ID', cover_page_meta['package_id']),
+        ('SHA256 Manifest Hash', cover_page_meta['sha256_manifest']),
+        ('KMS Key ARN', cover_page_meta['kms_key_arn']),
+        ('Log Records Included', str(cover_page_meta['log_count'])),
+        ('Package Size', f"{cover_page_meta['package_size_bytes']} bytes"),
+    ]
+    for label, value in sections:
+        c.setFont('Helvetica-Bold', 10.5)
+        c.drawString(50, y, f'{label}:')
+        c.setFont('Helvetica', 10.5)
+        c.drawString(210, y, value)
+        y -= 17
+
+    y -= 6
+    c.setFont('Helvetica-Bold', 11)
+    c.drawString(50, y, 'Immutability Statement')
+    y -= 16
+
+    statement = (
+        "This evidence package was written to AWS S3 with Object Lock "
+        "(COMPLIANCE mode) and cannot be modified, overwritten, or deleted "
+        "for the duration of the retention period. All records are encrypted "
+        "at rest using AWS KMS. The SHA256 hash above can be used to verify "
+        "package integrity at any time."
+    )
+    c.setFont('Helvetica', 10)
+    words = statement.split(' ')
+    line = []
+    for word in words:
+        test_line = ' '.join(line + [word]).strip()
+        if c.stringWidth(test_line, 'Helvetica', 10) > (width - 100):
+            c.drawString(50, y, ' '.join(line))
+            y -= 14
+            line = [word]
+        else:
+            line.append(word)
+    if line:
+        c.drawString(50, y, ' '.join(line))
+        y -= 20
+
+    c.setFont('Helvetica-Bold', 10.5)
+    c.drawString(50, y, f"Retention Until: {cover_page_meta['retention_until']}")
+    y -= 16
+    c.setFont('Helvetica', 10)
+    c.drawString(50, y, 'SecureBase by TxImhotep LLC | securebase.tximhotep.com')
+
+    c.showPage()
+    c.save()
+    return buffer.getvalue()
 
 
 def _upload_evidence_package(
     zip_bytes: bytes,
     s3_key: str,
-    retention_years: int,
+    retain_until: datetime,
+    kms_key_arn: str,
 ) -> str:
     """Upload zip to the evidence bucket with Object Lock (COMPLIANCE mode).
 
     Args:
         zip_bytes:       Raw bytes of the zip archive.
         s3_key:          Destination S3 key in the evidence bucket.
-        retention_years: Number of years for Object Lock retention.
+        retain_until:    Object Lock retention timestamp.
+        kms_key_arn:     KMS key ARN to use for SSE-KMS.
 
     Returns:
         S3 version ID of the uploaded object.
@@ -219,25 +342,28 @@ def _upload_evidence_package(
     Raises:
         ClientError: On upload failure.
     """
-    retain_until = datetime.now(timezone.utc) + timedelta(days=365 * retention_years)
-
-    response = s3_client.put_object(
-        Bucket=EVIDENCE_BUCKET,
-        Key=s3_key,
-        Body=zip_bytes,
-        ContentType='application/zip',
-        ObjectLockMode='COMPLIANCE',
-        ObjectLockRetainUntilDate=retain_until,
-        ServerSideEncryption='aws:kms',
-        Metadata={
+    put_args: Dict[str, Any] = {
+        'Bucket': EVIDENCE_BUCKET,
+        'Key': s3_key,
+        'Body': zip_bytes,
+        'ContentType': 'application/zip',
+        'ObjectLockMode': 'COMPLIANCE',
+        'ObjectLockRetainUntilDate': retain_until,
+        'ServerSideEncryption': 'aws:kms',
+        'Metadata': {
             'phase': '6.1',
             'generated_by': 'audit_log_packager',
         },
-    )
+    }
+    if kms_key_arn:
+        put_args['SSEKMSKeyId'] = kms_key_arn
+
+    response = s3_client.put_object(**put_args)
     return response.get('VersionId', '')
 
 
 def _write_evidence_record(
+    package_id: str,
     customer_id: str,
     package_name: str,
     s3_key: str,
@@ -285,16 +411,17 @@ def _write_evidence_record(
             cur.execute(
                 """
                 INSERT INTO evidence_packages (
-                    customer_id, package_name, s3_bucket, s3_key, s3_version_id,
+                    id, customer_id, package_name, s3_bucket, s3_key, s3_version_id,
                     sha256_manifest, framework, date_range_start, date_range_end,
                     log_count, package_size_bytes, status, generated_by, retention_until
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'complete', %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'complete', %s,
                     NOW() + (%s || ' years')::INTERVAL
                 )
                 RETURNING id
                 """,
                 (
+                    package_id,
                     customer_id,
                     package_name,
                     EVIDENCE_BUCKET,
@@ -367,6 +494,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         raise RuntimeError("AUDIT_SOURCE_BUCKET environment variable is not set")
     if not EVIDENCE_BUCKET:
         raise RuntimeError("EVIDENCE_BUCKET environment variable is not set")
+    organization_name: str = (
+        event.get('organization_name')
+        or event.get('tenant_name')
+        or f'Customer {customer_id}'
+    )
 
     try:
         date_range_start = datetime.fromisoformat(
@@ -442,10 +574,28 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         's3_key': s3_key,
         'evidence_bucket': EVIDENCE_BUCKET,
     }
+    package_id = str(uuid.uuid4())
+    generated_at = datetime.now(timezone.utc)
+    retention_until = generated_at + timedelta(days=365 * EVIDENCE_RETENTION_YEARS)
+    kms_key_arn = EVIDENCE_KMS_KEY_ARN or 'arn:aws:kms:managed:alias/aws/s3'
 
     try:
         zip_bytes, sha256 = _build_zip_package(
-            AUDIT_SOURCE_BUCKET, objects, manifest_meta
+            AUDIT_SOURCE_BUCKET,
+            objects,
+            manifest_meta,
+            {
+                'organization_name': organization_name,
+                'customer_id': customer_id,
+                'framework': framework,
+                'date_range_start': date_range_start.isoformat(),
+                'date_range_end': date_range_end.isoformat(),
+                'created_at': generated_at.replace(microsecond=0).isoformat(),
+                'package_id': package_id,
+                'kms_key_arn': kms_key_arn,
+                'log_count': len(objects),
+                'retention_until': retention_until.replace(microsecond=0).isoformat(),
+            },
         )
     except ClientError as exc:
         _log('error', 'Failed to download log objects for packaging',
@@ -463,7 +613,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # ------------------------------------------------------------------
     try:
         version_id = _upload_evidence_package(
-            zip_bytes, s3_key, EVIDENCE_RETENTION_YEARS
+            zip_bytes, s3_key, retention_until, kms_key_arn
         )
     except ClientError as exc:
         _log('error', 'Failed to upload evidence package to S3',
@@ -481,6 +631,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # ------------------------------------------------------------------
     try:
         package_id = _write_evidence_record(
+            package_id=package_id,
             customer_id=customer_id,
             package_name=package_name,
             s3_key=s3_key,
