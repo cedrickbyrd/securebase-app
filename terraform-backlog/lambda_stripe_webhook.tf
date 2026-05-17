@@ -4,7 +4,6 @@
 # SSM parameters to create before terraform apply:
 #   /securebase/stripe/secret_key      → Stripe secret key (server-side API)
 #   /securebase/stripe/webhook_secret   → Stripe Dashboard → Webhooks → Signing secret
-#   /securebase/ga4/api_secret          → GA4 Admin → Data Streams → Measurement Protocol API secrets
 
 locals {
   webhook_function_name = var.stripe_webhook_lambda_name
@@ -74,7 +73,6 @@ resource "aws_iam_role_policy" "stripe_webhook_ssm" {
       Resource = [
         "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/secret_key",
         "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/webhook_secret",
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/ga4/api_secret",
       ]
     }]
   })
