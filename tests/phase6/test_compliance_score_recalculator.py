@@ -105,13 +105,17 @@ class TestMappingFiles:
         'fedramp_mapping.json',
     ])
     def test_each_control_has_required_fields(self, filename):
-        """Every control must have 'control_id', 'severity', and 'config_rule'."""
+        """Every control must include required compliance metadata fields."""
         filepath = os.path.join(COMPLIANCE_DIR, filename)
         with open(filepath) as fh:
             data = json.load(fh)
         for ctrl in data['controls']:
             cid = ctrl.get('control_id', '(unknown)')
             assert ctrl.get('control_id'), f"{filename}: control missing 'control_id'"
+            assert ctrl.get('rule_name'), f"{filename}: {cid} missing 'rule_name'"
+            assert ctrl.get('framework'), f"{filename}: {cid} missing 'framework'"
+            assert ctrl.get('control_name'), f"{filename}: {cid} missing 'control_name'"
+            assert ctrl.get('description'), f"{filename}: {cid} missing 'description'"
             assert ctrl.get('severity'), f"{filename}: {cid} missing 'severity'"
             assert ctrl.get('config_rule'), f"{filename}: {cid} missing 'config_rule'"
 
@@ -122,7 +126,7 @@ class TestMappingFiles:
     ])
     def test_severity_values_are_valid(self, filename):
         """Each control's severity must be one of the recognised values."""
-        valid = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'}
+        valid = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'}
         filepath = os.path.join(COMPLIANCE_DIR, filename)
         with open(filepath) as fh:
             data = json.load(fh)

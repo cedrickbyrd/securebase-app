@@ -93,7 +93,7 @@ resource "aws_config_configuration_recorder_status" "this" {
 # AWS Config Managed Rules — SOC 2 Controls
 # ============================================================================
 
-resource "aws_config_rule" "s3_ssl_requests_only" {
+resource "aws_config_config_rule" "s3_ssl_requests_only" {
   name        = "${var.project_name}-${var.environment}-s3-ssl-requests-only"
   description = "SOC2 CC6.7 / FedRAMP SC-8: S3 buckets must require SSL for all requests"
 
@@ -105,7 +105,7 @@ resource "aws_config_rule" "s3_ssl_requests_only" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "encrypted_volumes" {
+resource "aws_config_config_rule" "encrypted_volumes" {
   name        = "${var.project_name}-${var.environment}-encrypted-volumes"
   description = "SOC2 CC9.2 / HIPAA 164.312(e)(2)(ii): EBS volumes must be encrypted"
 
@@ -117,7 +117,7 @@ resource "aws_config_rule" "encrypted_volumes" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "iam_password_policy" {
+resource "aws_config_config_rule" "iam_password_policy" {
   name        = "${var.project_name}-${var.environment}-iam-password-policy"
   description = "SOC2 CC6.2: IAM password policy must meet complexity requirements"
 
@@ -139,7 +139,7 @@ resource "aws_config_rule" "iam_password_policy" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "mfa_iam_console" {
+resource "aws_config_config_rule" "mfa_iam_console" {
   name        = "${var.project_name}-${var.environment}-mfa-iam-console"
   description = "SOC2 CC6.1 / FedRAMP IA-2: MFA must be enabled for IAM console access"
 
@@ -151,7 +151,7 @@ resource "aws_config_rule" "mfa_iam_console" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "root_account_mfa" {
+resource "aws_config_config_rule" "root_account_mfa" {
   name        = "${var.project_name}-${var.environment}-root-account-mfa"
   description = "SOC2 CC9.1 / CIS 1.13: Root account must have MFA enabled"
 
@@ -163,7 +163,7 @@ resource "aws_config_rule" "root_account_mfa" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "cloudtrail_enabled" {
+resource "aws_config_config_rule" "cloudtrail_enabled" {
   name        = "${var.project_name}-${var.environment}-cloudtrail-enabled"
   description = "SOC2 CC7.1 / HIPAA 164.312(b) / FedRAMP AU-2: CloudTrail must be enabled"
 
@@ -175,7 +175,7 @@ resource "aws_config_rule" "cloudtrail_enabled" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "cloudtrail_log_validation" {
+resource "aws_config_config_rule" "cloudtrail_log_validation" {
   name        = "${var.project_name}-${var.environment}-cloudtrail-log-validation"
   description = "SOC2 CC7.1 / FedRAMP AU-9: CloudTrail log file validation must be enabled"
 
@@ -187,7 +187,7 @@ resource "aws_config_rule" "cloudtrail_log_validation" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "vpc_flow_logs" {
+resource "aws_config_config_rule" "vpc_flow_logs" {
   name        = "${var.project_name}-${var.environment}-vpc-flow-logs"
   description = "SOC2 CC8.1 / FedRAMP SC-7 / HIPAA 164.312(e)(2)(i): VPC flow logs must be enabled"
 
@@ -199,7 +199,7 @@ resource "aws_config_rule" "vpc_flow_logs" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "guardduty_enabled" {
+resource "aws_config_config_rule" "guardduty_enabled" {
   name        = "${var.project_name}-${var.environment}-guardduty-enabled"
   description = "SOC2 CC6.8 / HIPAA 164.308(a)(1) / FedRAMP SI-3: GuardDuty must be enabled"
 
@@ -211,7 +211,7 @@ resource "aws_config_rule" "guardduty_enabled" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "s3_bucket_logging" {
+resource "aws_config_config_rule" "s3_bucket_logging" {
   name        = "${var.project_name}-${var.environment}-s3-bucket-logging"
   description = "FedRAMP AU-9: S3 bucket access logging must be enabled"
 
@@ -223,7 +223,7 @@ resource "aws_config_rule" "s3_bucket_logging" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "s3_bucket_versioning" {
+resource "aws_config_config_rule" "s3_bucket_versioning" {
   name        = "${var.project_name}-${var.environment}-s3-bucket-versioning"
   description = "HIPAA 164.312(c)(1) / FedRAMP CM-6: S3 bucket versioning must be enabled"
 
@@ -235,7 +235,7 @@ resource "aws_config_rule" "s3_bucket_versioning" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "s3_public_read_prohibited" {
+resource "aws_config_config_rule" "s3_public_read_prohibited" {
   name        = "${var.project_name}-${var.environment}-s3-public-read-prohibited"
   description = "SOC2 CC6.6 / FedRAMP AC-3: S3 bucket public read access must be prohibited"
 
@@ -247,7 +247,7 @@ resource "aws_config_rule" "s3_public_read_prohibited" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "s3_public_write_prohibited" {
+resource "aws_config_config_rule" "s3_public_write_prohibited" {
   name        = "${var.project_name}-${var.environment}-s3-public-write-prohibited"
   description = "SOC2 CC6.6 / FedRAMP AC-3: S3 bucket public write access must be prohibited"
 
@@ -259,7 +259,7 @@ resource "aws_config_rule" "s3_public_write_prohibited" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "iam_no_inline_policy" {
+resource "aws_config_config_rule" "iam_no_inline_policy" {
   name        = "${var.project_name}-${var.environment}-iam-no-inline-policy"
   description = "SOC2 CC6.3 / FedRAMP AC-2: IAM users must not have inline policies"
 
@@ -271,7 +271,7 @@ resource "aws_config_rule" "iam_no_inline_policy" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "iam_root_access_key" {
+resource "aws_config_config_rule" "iam_root_access_key" {
   name        = "${var.project_name}-${var.environment}-iam-root-access-key"
   description = "SOC2 CC6.4 / HIPAA 164.312(a)(1): Root account must not have active access keys"
 
@@ -283,7 +283,7 @@ resource "aws_config_rule" "iam_root_access_key" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "access_keys_rotated" {
+resource "aws_config_config_rule" "access_keys_rotated" {
   name        = "${var.project_name}-${var.environment}-access-keys-rotated"
   description = "SOC2 CC6.5 / FedRAMP IA-5: IAM access keys must be rotated within 90 days"
 
@@ -299,7 +299,7 @@ resource "aws_config_rule" "access_keys_rotated" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "rds_public_access" {
+resource "aws_config_config_rule" "rds_public_access" {
   name        = "${var.project_name}-${var.environment}-rds-no-public-access"
   description = "FedRAMP AC-17: RDS instances must not be publicly accessible"
 
@@ -311,7 +311,7 @@ resource "aws_config_rule" "rds_public_access" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "rds_storage_encrypted" {
+resource "aws_config_config_rule" "rds_storage_encrypted" {
   name        = "${var.project_name}-${var.environment}-rds-storage-encrypted"
   description = "SOC2 CC9.3 / HIPAA 164.312(a)(2)(iv): RDS storage must be encrypted"
 
@@ -323,7 +323,7 @@ resource "aws_config_rule" "rds_storage_encrypted" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "rds_multi_az" {
+resource "aws_config_config_rule" "rds_multi_az" {
   name        = "${var.project_name}-${var.environment}-rds-multi-az"
   description = "FedRAMP SI-2 / CIS: RDS instances must have Multi-AZ enabled"
 
@@ -335,7 +335,7 @@ resource "aws_config_rule" "rds_multi_az" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "lambda_no_public_access" {
+resource "aws_config_config_rule" "lambda_no_public_access" {
   name        = "${var.project_name}-${var.environment}-lambda-no-public-access"
   description = "SOC2 CC6.6: Lambda functions must not allow public access"
 
@@ -347,7 +347,7 @@ resource "aws_config_rule" "lambda_no_public_access" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "api_gw_ssl" {
+resource "aws_config_config_rule" "api_gw_ssl" {
   name        = "${var.project_name}-${var.environment}-api-gw-ssl"
   description = "HIPAA 164.312(e)(1): API Gateway stages must have SSL client certificate enabled"
 
@@ -359,7 +359,7 @@ resource "aws_config_rule" "api_gw_ssl" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "cloudwatch_alarm_action" {
+resource "aws_config_config_rule" "cloudwatch_alarm_action" {
   name        = "${var.project_name}-${var.environment}-cloudwatch-alarm-action"
   description = "SOC2 CC7.2: CloudWatch alarms must have at least one action configured"
 
@@ -377,7 +377,7 @@ resource "aws_config_rule" "cloudwatch_alarm_action" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "kms_not_scheduled_deletion" {
+resource "aws_config_config_rule" "kms_not_scheduled_deletion" {
   name        = "${var.project_name}-${var.environment}-kms-not-deletion"
   description = "FedRAMP SI-7: KMS CMKs must not be scheduled for deletion"
 
@@ -389,7 +389,7 @@ resource "aws_config_rule" "kms_not_scheduled_deletion" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "secretsmanager_rotation" {
+resource "aws_config_config_rule" "secretsmanager_rotation" {
   name        = "${var.project_name}-${var.environment}-secretsmanager-rotation"
   description = "SOC2 CC9.4: Secrets Manager secrets must have automatic rotation enabled"
 
@@ -401,7 +401,7 @@ resource "aws_config_rule" "secretsmanager_rotation" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "ec2_imdsv2" {
+resource "aws_config_config_rule" "ec2_imdsv2" {
   name        = "${var.project_name}-${var.environment}-ec2-imdsv2"
   description = "FedRAMP CM-2 / HIPAA 164.308(a)(5): EC2 instances must use IMDSv2"
 
@@ -413,7 +413,7 @@ resource "aws_config_rule" "ec2_imdsv2" {
   tags = local.config_rule_tags
 }
 
-resource "aws_config_rule" "dynamodb_backup_plan" {
+resource "aws_config_config_rule" "dynamodb_backup_plan" {
   name        = "${var.project_name}-${var.environment}-dynamodb-backup-plan"
   description = "SOC2 / CIS: DynamoDB tables must be covered by a backup plan"
 
