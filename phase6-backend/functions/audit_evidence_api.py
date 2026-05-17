@@ -284,6 +284,7 @@ def _handle_generate(
     event: Dict[str, Any],
     customer_id: str,
     user_id: Optional[str],
+    organization_name: Optional[str],
 ) -> Dict:
     """Handle POST /admin/evidence/generate — asynchronously trigger packaging.
 
@@ -316,6 +317,7 @@ def _handle_generate(
         'date_range_start': date_range_start,
         'date_range_end': date_range_end,
         'requested_by': user_id,
+        'organization_name': organization_name,
     }
     request_id = str(uuid.uuid4())
 
@@ -379,6 +381,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict:
 
     customer_id: str = str(customer['id'])
     user_id: Optional[str] = customer.get('user_id')
+    organization_name: Optional[str] = (
+        customer.get('organization_name')
+        or customer.get('name')
+        or customer.get('company_name')
+    )
 
     # ------------------------------------------------------------------
     # Route dispatch
@@ -399,6 +406,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict:
 
     if method == 'POST' and len(path_parts) == 3 and path_parts[2] == 'generate':
         # POST /admin/evidence/generate
-        return _handle_generate(event, customer_id, user_id)
+        return _handle_generate(event, customer_id, user_id, organization_name)
 
     return _error(404, f"Route not found: {method} {path}")
