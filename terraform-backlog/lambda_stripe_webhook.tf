@@ -61,23 +61,6 @@ resource "aws_iam_role_policy_attachment" "stripe_webhook_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy" "stripe_webhook_ssm" {
-  name = "${local.webhook_function_name}-ssm"
-  role = aws_iam_role.stripe_webhook_lambda.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = ["ssm:GetParameter"]
-      Resource = [
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.stripe_secret_key_ssm_parameter_name}",
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.stripe_webhook_secret_ssm_parameter_name}",
-      ]
-    }]
-  })
-}
-
 resource "aws_api_gateway_resource" "stripe_webhook" {
   rest_api_id = var.rest_api_id
   parent_id   = var.root_resource_id
