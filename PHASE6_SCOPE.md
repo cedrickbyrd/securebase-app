@@ -25,6 +25,7 @@ Phase 6 transforms SecureBase from a platform with compliance tooling into a **c
 | Component | Description | Status |
 |-----------|-------------|--------|
 | 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete (May 17, 2026) |
+| 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
 | 6.2 | Compliance Automation (50+ Config rules, scoring) | 🔨 In Progress |
 | 6.3 | Scalability to 10,000+ concurrent users | 🔨 In Progress |
 | 6.4 | Build Debt Cleanup | 🔨 In Progress |
@@ -35,7 +36,6 @@ Phase 6 transforms SecureBase from a platform with compliance tooling into a **c
 ## Component 6.1 — Immutable Audit Logging + Evidence Baseline ✅
 
 **Status:** COMPLETE — May 17, 2026
-**All four tracks merged.**
 
 ### What Was Built
 
@@ -62,23 +62,44 @@ Phase 6 transforms SecureBase from a platform with compliance tooling into a **c
 - `evidence_packages` table (PostgreSQL + RLS — tenant-isolated)
 - `macie_findings` table
 
-**Portal Components:**
-- Evidence history table (framework, date range, log count, SHA256, status, download)
-- Async job polling (5s interval, pending → complete state)
-- Presigned S3 download with expiry indicator
-- Admin cross-tenant vault panel
-
 **Vault Receipt (Cover Page) — fields:**
-- Tenant name + customer ID
-- Framework(s), coverage period, generation timestamp, package ID
+- Tenant name + customer ID, framework(s), coverage period, generation timestamp, package ID
 - SHA256 manifest hash, KMS key ARN, log count, package size
-- Immutability statement (Object Lock COMPLIANCE mode, retention policy)
-- Retention until date
+- Immutability statement (Object Lock COMPLIANCE mode, retention policy), retention until date
 
 **Security Standards:**
 - COMPLIANCE mode Object Lock — not GOVERNANCE (root cannot override)
 - No PII in evidence packages — Macie scans enforce this
 - Customer PII (names, emails, tokens) never stored in repo files, issues, or commit messages
+
+---
+
+## Component 6.1.1 — Scheduled Evidence Runs (Repeatable Vault) ✅
+
+**Status:** COMPLETE — May 17, 2026
+**Issue:** #694
+
+### What Was Built
+
+Transforms the Vault from a one-time baseline into a continuous compliance trail — packages generated automatically on a per-tenant schedule without user action.
+
+| Track | Deliverable | Status |
+|-------|------------|--------|
+| 1 | EventBridge per-tenant cron (default: weekly, Sunday 03:00 UTC) | ✅ |
+| 2 | Portal schedule selector — Weekly / Monthly / Manual; "Next scheduled run" display | ✅ |
+| 3 | Evidence history as chronological compliance trail; gap detection on missed runs | ✅ |
+| 4 | Customer #1 first scheduled run triggered immediately post-deploy | ✅ |
+
+**Key Design:**
+- Supported cadences: `weekly` | `monthly` | `manual-only` — default for pilot tenants: `weekly`
+- EventBridge passes `date_range_start` = last run, `date_range_end` = now to packager Lambda
+- `last_run_at` and `next_run_at` stored per tenant
+- CloudWatch alarm: fires if scheduled run produces no package within 1hr of scheduled time
+- Package naming: `"Weekly Compliance Report — {date_range_start} to {date_range_end}"`
+- Schedule configuration: read-only for standard tier, configurable for enterprise tier
+
+**Business Impact:**
+Customer accumulates a continuous, auditor-grade compliance trail without any manual action. A customer seeing their second package appear unprompted is the retention and renewal proof point.
 
 ---
 
@@ -165,6 +186,15 @@ Phase 6 transforms SecureBase from a platform with compliance tooling into a **c
 - [x] Admin vault visibility + CloudWatch alarms
 - [x] Customer #1 baseline written to Vault
 
+### 6.1.1 ✅ Complete
+- [x] EventBridge per-tenant scheduled cron deployed (weekly default)
+- [x] Portal schedule selector live (Weekly / Monthly / Manual)
+- [x] "Next scheduled run" displayed in portal
+- [x] Evidence history renders as chronological compliance trail
+- [x] Gap detection flags missed scheduled runs
+- [x] CloudWatch alarm on packager failure within 1hr of scheduled time
+- [x] Customer #1 first scheduled run triggered
+
 ### 6.2
 - [ ] 50+ Config rules deployed across all accounts
 - [ ] Daily score recalculation completes within 10 min of 02:00 UTC
@@ -201,3 +231,4 @@ Phase 6 transforms SecureBase from a platform with compliance tooling into a **c
 **Created:** May 8, 2026
 **Last Updated:** May 17, 2026
 **6.1 Completed:** May 17, 2026
+**6.1.1 Completed:** May 17, 2026
