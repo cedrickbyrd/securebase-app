@@ -205,6 +205,9 @@ resource "aws_iam_role_policy" "cost_per_tenant_custom" {
         Sid    = "CloudWatchMetrics"
         Effect = "Allow"
         Action = ["cloudwatch:PutMetricData"]
+        # Resource must be "*" — PutMetricData does not support resource-level
+        # restrictions by ARN.  The Condition key narrows writes to the
+        # SecureBase/CostPerTenant namespace only.
         Resource = "*"
         Condition = {
           StringEquals = { "cloudwatch:namespace" = "SecureBase/CostPerTenant" }
@@ -223,6 +226,8 @@ resource "aws_iam_role_policy" "cost_per_tenant_custom" {
         Sid    = "XRayTracing"
         Effect = "Allow"
         Action = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
+        # X-Ray segment resources do not have ARNs; "*" is required by the AWS
+        # IAM documentation for these actions.
         Resource = "*"
       },
     ]
