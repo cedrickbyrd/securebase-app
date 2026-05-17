@@ -359,6 +359,20 @@ const ComplianceDrift = () => {
     ]
   };
 
+  const currentScore = complianceHistory[complianceHistory.length - 1]?.score ?? null;
+  const baselineIndex = Math.max(0, complianceHistory.length - 31);
+  const score30dAgo = complianceHistory[baselineIndex]?.score ?? null;
+  const trendDelta30d = currentScore !== null && score30dAgo !== null
+    ? Math.round((currentScore - score30dAgo) * 10) / 10
+    : null;
+  const trendDirection = trendDelta30d === null
+    ? 'stable'
+    : trendDelta30d >= 3
+      ? 'improving'
+      : trendDelta30d <= -3
+        ? 'declining'
+        : 'stable';
+
   if (loading) {
     return (
       <div className="compliance-drift min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -499,7 +513,25 @@ const ComplianceDrift = () => {
       </div>
 
       {/* Drift Analytics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        {/* 30-Day Trend */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">30-Day Trend</h3>
+            {trendDirection === 'improving' ? (
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            ) : trendDirection === 'declining' ? (
+              <TrendingDown className="w-6 h-6 text-red-600" />
+            ) : (
+              <Calendar className="w-6 h-6 text-gray-600" />
+            )}
+          </div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">
+            {trendDelta30d === null ? '—' : `${trendDelta30d > 0 ? '+' : ''}${trendDelta30d} pts`}
+          </div>
+          <p className="text-sm text-gray-600 capitalize">{trendDirection}</p>
+        </div>
+
         {/* MTTR */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
