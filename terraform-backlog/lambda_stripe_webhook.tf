@@ -71,8 +71,8 @@ resource "aws_iam_role_policy" "stripe_webhook_ssm" {
       Effect = "Allow"
       Action = ["ssm:GetParameter"]
       Resource = [
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/secret_key",
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/webhook_secret",
+        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.stripe_secret_key_ssm_parameter_name}",
+        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.stripe_webhook_secret_ssm_parameter_name}",
       ]
     }]
   })
