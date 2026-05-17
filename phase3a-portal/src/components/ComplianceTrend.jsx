@@ -14,6 +14,7 @@ import { ArrowDown, ArrowRight, ArrowUp, RefreshCw } from 'lucide-react';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_ENDPOINT || '';
 const FRAMEWORKS = ['SOC2', 'HIPAA', 'FedRAMP'];
 const SEVERITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+const MAX_X_AXIS_TICKS = 12;
 
 function getToken() {
   return (
@@ -193,7 +194,7 @@ export default function ComplianceTrend({ days = 90 }) {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData} margin={{ top: 12, right: 12, left: -20, bottom: 6 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="tick" interval={Math.max(0, Math.floor(chartData.length / 12))} tick={{ fontSize: 12 }} />
+            <XAxis dataKey="tick" interval={Math.max(0, Math.ceil(chartData.length / MAX_X_AXIS_TICKS))} tick={{ fontSize: 12 }} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
             <Tooltip />
             <ReferenceLine y={80} stroke="#16a34a" strokeDasharray="4 4" />
