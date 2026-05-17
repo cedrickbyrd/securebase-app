@@ -119,6 +119,11 @@ const mockData = {
       fedramp: 95,
       hipaa: 97,
     },
+    tenantComplianceScores: [
+      { tenant: 'Customer #1', soc2: 96, hipaa: 98, fedramp: 92, lastCalculated: '2026-05-17T02:06:00Z' },
+      { tenant: 'Customer #2', soc2: 93, hipaa: 89, fedramp: 91, lastCalculated: '2026-05-17T02:06:00Z' },
+      { tenant: 'Customer #3', soc2: 97, hipaa: 94, fedramp: 95, lastCalculated: '2026-05-17T02:06:00Z' },
+    ],
     failedAuthAttempts: 12,
     securityEvents24h: 4,
   },

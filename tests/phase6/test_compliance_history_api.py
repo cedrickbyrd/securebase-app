@@ -100,6 +100,19 @@ _SAMPLE_ITEMS = [
     },
 ]
 
+_SAMPLE_CONTROL_ITEMS = [
+    {
+        'PK': 'CUSTOMER#cust-uuid-001',
+        'SK': 'CONTROL#HIPAA#HIPAA-164.312(b)#DATE#2026-05-12',
+        'framework': 'HIPAA',
+        'control_id': 'HIPAA-164.312(b)',
+        'control_name': 'Audit Controls',
+        'severity': 'CRITICAL',
+        'status': 'NON_COMPLIANT',
+        'recorded_date': '2026-05-12',
+    }
+]
+
 
 def _mock_table(items: list) -> MagicMock:
     """Return a mock DynamoDB table whose query() returns the given items."""
@@ -293,6 +306,8 @@ class TestResponseStructure:
         _, body = self._call()
         for key in ('customer_id', 'framework', 'days', 'history', 'summary'):
             assert key in body, f"Missing key: {key}"
+        assert 'framework_badge' in body
+        assert 'control_violations' in body
 
     def test_history_items_have_expected_fields(self):
         _, body = self._call()
@@ -415,3 +430,25 @@ class TestErrorHandling:
             result = mod.lambda_handler(event, _make_context())
 
         assert result['statusCode'] == 200
+
+
+class TestControlBreakdown:
+    def test_control_breakdown_is_returned(self):
+        with patch('boto3.resource') as mock_resource:
+            mod = _load_module()
+            score_table = _mock_table(_SAMPLE_ITEMS)
+            control_table = _mock_table(_SAMPLE_CONTROL_ITEMS)
+
+            def table_selector(name):
+                if name == mod.CONTROL_VIOLATIONS_TABLE:
+                    return control_table
+                return score_table
+
+            mod.dynamodb = mock_resource.return_value
+            mod.dynamodb.Table.side_effect = table_selector
+            result = mod.lambda_handler(_make_event(), _make_context())
+
+        assert result['statusCode'] == 200
+        body = json.loads(result['body'])
+        assert len(body['control_violations']) == 1
+        assert body['control_violations'][0]['control_id'] == 'HIPAA-164.312(b)'

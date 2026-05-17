@@ -182,6 +182,14 @@ const AdminDashboard = () => {
     return rows;
   }, [metrics.vault, vaultSortDirection]);
 
+  const tenantComplianceRows = useMemo(() => {
+    const rows = Array.isArray(metrics.security?.tenantComplianceScores)
+      ? [...metrics.security.tenantComplianceScores]
+      : [];
+    rows.sort((a, b) => String(a.tenant || '').localeCompare(String(b.tenant || '')));
+    return rows;
+  }, [metrics.security]);
+
   const toggleTenantExpand = (tenantId) => {
     setExpandedTenantIds((prev) => {
       const next = new Set(prev);
@@ -275,6 +283,35 @@ const AdminDashboard = () => {
           <Metric label="HIPAA" value={`${metrics.security?.complianceScores?.hipaa || 0}%`} />
           <Metric label="Failed Auth Attempts" value={metrics.security?.failedAuthAttempts} />
           <Metric label="Security Events (24h)" value={metrics.security?.securityEvents24h} />
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Cross-tenant compliance scores</h3>
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left">Tenant</th>
+                <th className="px-3 py-2 text-left">SOC2</th>
+                <th className="px-3 py-2 text-left">HIPAA</th>
+                <th className="px-3 py-2 text-left">FedRAMP</th>
+                <th className="px-3 py-2 text-left">Last Calculated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenantComplianceRows.length > 0 ? tenantComplianceRows.map((row) => (
+                <tr key={row.tenant} className="border-t border-gray-100">
+                  <td className="px-3 py-2">{row.tenant}</td>
+                  <td className="px-3 py-2">{row.soc2}%</td>
+                  <td className="px-3 py-2">{row.hipaa}%</td>
+                  <td className="px-3 py-2">{row.fedramp}%</td>
+                  <td className="px-3 py-2">{row.lastCalculated || '—'}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td className="px-3 py-3 text-gray-500" colSpan={5}>No tenant compliance scores available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 

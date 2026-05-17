@@ -20,6 +20,18 @@ variable "packager_log_group" {
   default     = "/aws/lambda/securebase-prod-audit-log-packager"
 }
 
+variable "score_recalculator_function_name" {
+  description = "Lambda function name for compliance_score_recalculator"
+  type        = string
+  default     = "securebase-prod-phase6-compliance-score-recalculator"
+}
+
+variable "score_recalculator_log_group" {
+  description = "CloudWatch Logs log group for compliance_score_recalculator"
+  type        = string
+  default     = "/aws/lambda/securebase-prod-phase6-compliance-score-recalculator"
+}
+
 variable "tags" {
   description = "Common tags applied to all resources"
   type        = map(string)
