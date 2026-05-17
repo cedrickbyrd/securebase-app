@@ -56,6 +56,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 # Import shared database utilities from the Lambda layer.
@@ -104,6 +105,9 @@ s3_client = boto3.client('s3')
 
 COMPLIANCE_SCORES_TABLE = os.environ.get(
     'COMPLIANCE_SCORES_TABLE', 'securebase-compliance-scores'
+)
+CONTROL_VIOLATION_TABLE = os.environ.get(
+    'CONTROL_VIOLATION_TABLE', 'control_violation_log'
 )
 MAPPINGS_BUCKET = os.environ.get('MAPPINGS_BUCKET', '')
 
@@ -258,7 +262,7 @@ def _calculate_weighted_score(
 
 
 # ---------------------------------------------------------------------------
-# DynamoDB write
+# DynamoDB writes
 # ---------------------------------------------------------------------------
 
 
@@ -313,10 +317,80 @@ def _write_score_to_dynamodb(
         return
 
     table = dynamodb.Table(COMPLIANCE_SCORES_TABLE)
+    try:
+        previous = table.query(
+            KeyConditionExpression=(
+                Key('PK').eq(f'CUSTOMER#{customer_id}')
+                & Key('SK').begins_with(f'FRAMEWORK#{framework}#DATE#')
+            ),
+            ScanIndexForward=False,
+            Limit=1,
+        ).get('Items', [])
+        if previous:
+            previous_score = float(previous[0].get('score', 0))
+            drop = round(previous_score - score, 2)
+            if drop > 10:
+                _log(
+                    'warning',
+                    'compliance_score_drop_gt_10',
+                    customer_id=customer_id,
+                    framework=framework,
+                    previous_score=previous_score,
+                    current_score=score,
+                    score_drop=drop,
+                )
+    except ClientError as exc:
+        # Best-effort check: a query failure should not block writing today's score.
+        _log(
+            'warning',
+            'Failed to evaluate score drop',
+            error=str(exc),
+            customer_id=customer_id,
+            framework=framework,
+        )
+
     table.put_item(Item=item)
     _log('info', 'compliance score written to DynamoDB',
          customer_id=customer_id, framework=framework, score=score,
          controls_total=controls_total, controls_passing=controls_passing)
+
+
+def _write_control_violations_to_dynamodb(
+    customer_id: str,
+    framework: str,
+    controls: List[Dict[str, Any]],
+    compliance_map: Dict[str, str],
+    dry_run: bool = False,
+) -> None:
+    """Write per-control status snapshots to the control_violation_log table."""
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    now = datetime.now(timezone.utc)
+    table = dynamodb.Table(CONTROL_VIOLATION_TABLE)
+
+    for control in controls:
+        item = {
+            'PK': f'CUSTOMER#{customer_id}',
+            'SK': f"CONTROL#{framework}#{control.get('control_id', 'UNKNOWN')}#DATE#{today}",
+            'customer_id': customer_id,
+            'framework': framework,
+            'recorded_date': today,
+            'control_id': control.get('control_id'),
+            'control_name': control.get('control_name'),
+            'control_description': control.get('description'),
+            'aws_config_rule': control.get('config_rule'),
+            'severity': str(control.get('severity', 'MEDIUM')).upper(),
+            'status': compliance_map.get(control.get('config_rule', ''), 'INSUFFICIENT_DATA'),
+            'remediation_url': control.get('remediation_url'),
+            'calculated_at': now.isoformat(),
+            'ttl': int(
+                (now.replace(year=now.year + 1)).timestamp()
+            ),
+        }
+
+        if dry_run:
+            continue
+
+        table.put_item(Item=item)
 
 
 # ---------------------------------------------------------------------------
@@ -366,6 +440,13 @@ def _score_tenant(
                 violations=violations,
                 controls_total=len(controls),
                 controls_passing=controls_passing,
+                dry_run=dry_run,
+            )
+            _write_control_violations_to_dynamodb(
+                customer_id=customer_id,
+                framework=framework,
+                controls=controls,
+                compliance_map=compliance_map,
                 dry_run=dry_run,
             )
         except ClientError as exc:

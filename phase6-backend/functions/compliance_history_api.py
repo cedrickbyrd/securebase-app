@@ -69,7 +69,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 # ---------------------------------------------------------------------------
@@ -108,11 +108,18 @@ dynamodb = boto3.resource('dynamodb')
 COMPLIANCE_SCORES_TABLE = os.environ.get(
     'COMPLIANCE_SCORES_TABLE', 'securebase-compliance-scores'
 )
+CONTROL_VIOLATIONS_TABLE = os.environ.get(
+    'CONTROL_VIOLATIONS_TABLE', 'control_violation_log'
+)
 
 VALID_FRAMEWORKS = {'SOC2', 'HIPAA', 'FedRAMP', 'CIS'}
 
 MAX_DAYS = 365
 DEFAULT_DAYS = 90
+BADGE_THRESHOLDS = {
+    'passing': 90.0,
+    'at_risk': 75.0,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +272,47 @@ def _query_history(
     return items
 
 
+def _query_control_violations(
+    customer_id: str,
+    framework: Optional[str],
+    days: int,
+) -> List[Dict[str, Any]]:
+    """Query control-level violation history for the tenant."""
+    table = dynamodb.Table(CONTROL_VIOLATIONS_TABLE)
+    pk = f'CUSTOMER#{customer_id}'
+    cutoff_date = (
+        datetime.now(timezone.utc) - timedelta(days=days - 1)
+    ).strftime('%Y-%m-%d')
+    items: List[Dict[str, Any]] = []
+
+    try:
+        response = table.query(
+            KeyConditionExpression=(
+                Key('PK').eq(pk) & Key('SK').begins_with('CONTROL#')
+            ),
+            FilterExpression=Attr('recorded_date').gte(cutoff_date),
+            ScanIndexForward=False,
+        )
+        items = response.get('Items', [])
+
+        while 'LastEvaluatedKey' in response:
+            response = table.query(
+                KeyConditionExpression=(
+                    Key('PK').eq(pk) & Key('SK').begins_with('CONTROL#')
+                ),
+                FilterExpression=Attr('recorded_date').gte(cutoff_date),
+                ScanIndexForward=False,
+                ExclusiveStartKey=response['LastEvaluatedKey'],
+            )
+            items.extend(response.get('Items', []))
+    except ClientError:
+        raise
+
+    if framework:
+        return [item for item in items if item.get('framework') == framework]
+    return items
+
+
 # ---------------------------------------------------------------------------
 # Summary calculation
 # ---------------------------------------------------------------------------
@@ -296,26 +344,38 @@ def _build_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     max_score = round(max(scores), 2)
     avg_score = round(sum(scores) / len(scores), 2)
 
-    # 7-day trend: compare the most recent score to the score from ~7 days ago
+    # Trend baselines: compare the latest score to ~7-day and ~30-day history points.
     seven_days_ago = (
         datetime.now(timezone.utc) - timedelta(days=7)
     ).strftime('%Y-%m-%d')
+    thirty_days_ago = (
+        datetime.now(timezone.utc) - timedelta(days=30)
+    ).strftime('%Y-%m-%d')
 
-    # Find the score closest to (but not after) 7 days ago as the baseline
-    older_items = [
+    # Find the score closest to (but not after) each baseline date.
+    older_items_30d = [
+        item for item in items
+        if item.get('score_date', '') <= thirty_days_ago
+    ]
+    score_delta_30d: Optional[float] = None
+    if older_items_30d:
+        baseline_item = max(older_items_30d, key=lambda x: x.get('score_date', ''))
+        score_delta_30d = round(latest - float(baseline_item.get('score', 0)), 2)
+
+    older_items_7d = [
         item for item in items
         if item.get('score_date', '') <= seven_days_ago
     ]
     score_delta_7d: Optional[float] = None
-    if older_items:
-        baseline_item = max(older_items, key=lambda x: x.get('score_date', ''))
-        score_delta_7d = round(latest - float(baseline_item.get('score', 0)), 2)
+    if older_items_7d:
+        baseline_item_7d = max(older_items_7d, key=lambda x: x.get('score_date', ''))
+        score_delta_7d = round(latest - float(baseline_item_7d.get('score', 0)), 2)
 
-    if score_delta_7d is None:
+    if score_delta_30d is None:
         trend = 'stable'
-    elif score_delta_7d > 2.0:
+    elif score_delta_30d > 2.0:
         trend = 'improving'
-    elif score_delta_7d < -2.0:
+    elif score_delta_30d < -2.0:
         trend = 'degrading'
     else:
         trend = 'stable'
@@ -326,8 +386,100 @@ def _build_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         'max_score': max_score,
         'avg_score': avg_score,
         'score_delta_7d': score_delta_7d,
+        'score_delta_30d': score_delta_30d,
         'trend': trend,
     }
+
+
+def _badge_for_score(score: Optional[float]) -> str:
+    if score is None:
+        return 'Failing'
+    if score >= BADGE_THRESHOLDS['passing']:
+        return 'Passing'
+    if score >= BADGE_THRESHOLDS['at_risk']:
+        return 'At Risk'
+    return 'Failing'
+
+
+def _group_framework_history(history: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    for item in history:
+        framework = item.get('framework')
+        grouped.setdefault(framework, []).append(item)
+
+    framework_map: Dict[str, Dict[str, Any]] = {}
+    for framework, items in grouped.items():
+        sorted_items = sorted(items, key=lambda x: x.get('score_date', ''), reverse=True)
+        summary = _build_summary(sorted_items)
+        framework_map[framework] = {
+            'history': [_format_item(i) for i in sorted_items],
+            'summary': summary,
+            'badge': _badge_for_score(summary.get('latest_score')),
+        }
+    return framework_map
+
+
+def _build_overall_history(history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if not history:
+        return {'history': [], 'summary': _build_summary([]), 'badge': _badge_for_score(None)}
+
+    by_date: Dict[str, List[float]] = {}
+    for item in history:
+        by_date.setdefault(item.get('score_date'), []).append(float(item.get('score', 0)))
+
+    aggregate = []
+    for date_key, scores in by_date.items():
+        aggregate.append({'score_date': date_key, 'score': sum(scores) / max(len(scores), 1)})
+
+    aggregate.sort(key=lambda x: x['score_date'], reverse=True)
+    summary = _build_summary(aggregate)
+    return {
+        'history': [{'date': i['score_date'], 'framework': 'overall', 'score': round(i['score'], 2)} for i in aggregate],
+        'summary': summary,
+        'badge': _badge_for_score(summary.get('latest_score')),
+    }
+
+
+def _build_control_breakdown(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    for item in items:
+        key = f"{item.get('framework')}::{item.get('control_id')}"
+        grouped.setdefault(key, []).append(item)
+
+    output: List[Dict[str, Any]] = []
+    for _, entries in grouped.items():
+        entries_sorted = sorted(entries, key=lambda x: x.get('recorded_date', ''), reverse=True)
+        latest = entries_sorted[0]
+        non_compliant_dates = [
+            e.get('recorded_date')
+            for e in entries_sorted
+            if e.get('status') == 'NON_COMPLIANT' and e.get('recorded_date')
+        ]
+        days_failing = 0
+        if non_compliant_dates:
+            first_seen = min(non_compliant_dates)
+            first_dt = datetime.strptime(first_seen, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            days_failing = (datetime.now(timezone.utc) - first_dt).days + 1
+
+        output.append({
+            'framework': latest.get('framework'),
+            'control_id': latest.get('control_id'),
+            'description': latest.get('control_name') or latest.get('control_description'),
+            'severity': latest.get('severity'),
+            'status': latest.get('status'),
+            'days_failing': days_failing if latest.get('status') == 'NON_COMPLIANT' else 0,
+            'recorded_date': latest.get('recorded_date'),
+        })
+
+    severity_rank = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'INFORMATIONAL': 4}
+    output.sort(
+        key=lambda x: (
+            severity_rank.get(str(x.get('severity', 'MEDIUM')).upper(), 5),
+            x.get('framework', ''),
+            x.get('control_id', ''),
+        )
+    )
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -426,6 +578,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # ------------------------------------------------------------------
     history = [_format_item(item) for item in raw_items]
     summary = _build_summary(raw_items)
+    frameworks = _group_framework_history(raw_items)
+    overall = _build_overall_history(raw_items)
+
+    try:
+        control_items = _query_control_violations(customer_id, framework_param, days)
+    except ClientError as exc:
+        _log('warning', 'Control violation query failed',
+             customer_id=customer_id, error=str(exc), request_id=request_id)
+        control_items = []
+    control_breakdown = _build_control_breakdown(control_items)
 
     _log('info', 'compliance_history_api responded',
          customer_id=customer_id,
@@ -440,4 +602,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'days': days,
         'history': history,
         'summary': summary,
+        'frameworks': frameworks,
+        'overall': overall,
+        'control_violations': control_breakdown,
+        'framework_badge': _badge_for_score(summary.get('latest_score')),
     })

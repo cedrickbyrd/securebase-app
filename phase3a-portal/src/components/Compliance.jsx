@@ -11,6 +11,7 @@ import SocialProof from './SocialProof';
 import SignatureBadge from './SignatureBadge';
 import FFIECCATDashboard from './FFIECCATDashboard';
 import FFIECControlMapping from './compliance/FFIECControlMapping';
+import ComplianceTrend from './ComplianceTrend';
 import { PORTAL_NARRATIVE } from '../content/portalNarrative';
 
 const TEXAS_FINTECH_TIERS = new Set(['fintech_pro', 'fintech_elite']);
@@ -258,6 +259,10 @@ export default function Compliance({ isPublic = false }) {
             Logout
           </button>
         )}
+      </div>
+
+      <div className="mb-6 bg-white rounded-lg shadow p-6">
+        <ComplianceTrend defaultFramework="HIPAA" days={90} />
       </div>
 
       {/* Audit Readiness Assessment CTA */}
