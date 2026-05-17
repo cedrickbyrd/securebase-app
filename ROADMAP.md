@@ -24,7 +24,7 @@ This document is the single source of truth for what has been built, what is in 
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
 | Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete | 100% |
-| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | ~30% |
+| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | ~35% |
 
 ---
 
@@ -95,15 +95,14 @@ React 18 + Vite portal: Dashboard, Compliance, HIPAA, FFIEC CAT, Texas Examiner,
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete |
+| 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete (May 17, 2026) |
+| 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
 | 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | 🔨 In Progress |
 | 6.3 | Scalability to 10,000+ concurrent users | 🔨 In Progress |
 | 6.4 | Build debt cleanup | 🔨 In Progress |
 | 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | 🔨 In Progress |
 
-### Phase 6.1 — Complete (May 17, 2026)
-
-All four Evidence Baseline tracks merged:
+### Phase 6.1 — Evidence Baseline (Complete May 17, 2026)
 
 | Track | Deliverable | Issue | Status |
 |-------|------------|-------|--------|
@@ -112,18 +111,27 @@ All four Evidence Baseline tracks merged:
 | 3 | Vault Receipt / Auditor-Grade Cover Page | #688 | ✅ |
 | 4 | Admin Vault Visibility (cross-tenant, CloudWatch alarms) | #689 | ✅ |
 
-**What the Vault delivers:**
-- S3 Object Lock (COMPLIANCE mode, 7yr / 2555 days) — immutable, root-delete-proof
-- KMS-encrypted evidence packages with SHA-256 manifest
-- Auditor-grade PDF cover page: tenant, framework, date range, log count, SHA256, KMS ARN, immutability statement
-- Customer-facing portal: evidence history table, async job polling, presigned download
-- Admin panel: cross-tenant vault overview, per-tenant package history, CloudWatch alarms on packager failures
+### Phase 6.1.1 — Scheduled Evidence Runs (Complete May 17, 2026)
+
+| Track | Deliverable | Issue | Status |
+|-------|------------|-------|--------|
+| 1 | EventBridge per-tenant cron (weekly default, Sunday 03:00 UTC) | #694 | ✅ |
+| 2 | Portal schedule selector (Weekly / Monthly / Manual) | #694 | ✅ |
+| 3 | Evidence history as chronological compliance trail + gap detection | #694 | ✅ |
+| 4 | Customer #1 first scheduled run triggered | #694 | ✅ |
+
+**What the Vault now delivers:**
+- Immutable WORM storage — S3 Object Lock COMPLIANCE mode, 7yr, root-delete-proof
+- KMS-encrypted packages, SHA-256 manifest, auditor-grade PDF cover page
+- Customer portal: evidence history, polling, presigned download, schedule configuration
+- Automatic weekly runs per tenant via EventBridge — compliance trail builds without user action
+- Admin panel: cross-tenant vault overview, CloudWatch alarms on packager failures
 
 ---
 
 ## Current Priorities (May 2026)
 
-1. **Phase 6.1 operationalized** — Customer #1 baseline live, Day 7 check-in May 21
+1. **6.1.1 live** — Customer #1 will see second package automatically before May 21 Day 7 check-in
 2. **Phase 6.2** — compliance score automation and Config rules
 3. **Phase 5.4 DR drill** — run `docs/runbooks/PHASE5_DR_DRILL.md` to close four remaining validation gates
 4. **PII hygiene** — customer names/emails never in repo files, issues, or commit messages; use Customer #1, #2, etc.
@@ -152,6 +160,8 @@ Aurora Global DB (PostgreSQL 15.15) ──▶ Aurora Reader (us-west-2)
 DynamoDB Global Tables              ──▶ DynamoDB Replicas (us-west-2)
 S3 audit-logs-prod                  ──▶ S3 replica (us-west-2)
 S3 evidence-vault (Object Lock)     ──▶ Immutable WORM store (6.1)
+      │
+EventBridge scheduled cron          ──▶ Weekly evidence runs per tenant (6.1.1)
       │
       ▼
 AWS Organizations (Landing Zone)
@@ -191,6 +201,6 @@ AWS Organizations (Landing Zone)
 | Auth | AWS IAM Identity Center (SSO), API Keys, JWT |
 | Observability | CloudWatch, X-Ray ✅, PagerDuty/Opsgenie ✅ |
 | DR | CloudFront multi-origin, Aurora Global DB, DynamoDB Global Tables ✅ |
-| Evidence Vault | S3 Object Lock (COMPLIANCE), KMS, SHA-256 manifests ✅ |
+| Evidence Vault | S3 Object Lock (COMPLIANCE), KMS, SHA-256 manifests, EventBridge cron ✅ |
 | Deployment | Netlify (frontend), AWS (backend + infra) |
 | CI/CD | GitHub Actions + GitHub Copilot |
