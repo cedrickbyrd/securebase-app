@@ -64,8 +64,15 @@ variable "xray_tenant_filters" {
   }
 }
 
+# Track 5 — used by module "phase6_cost"
+variable "alert_sns_arn" {
+  description = "SNS topic ARN for cost anomaly and threshold alerts (Track 5)"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
-  description = "Common tags for all Track 4 resources"
+  description = "Common tags for all production resources"
   type        = map(string)
   default = {
     Project     = "SecureBase"
@@ -75,3 +82,4 @@ variable "tags" {
     tenant_id   = "multi-tenant"
   }
 }
+
