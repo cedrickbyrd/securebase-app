@@ -51,12 +51,14 @@ from typing import Any, Dict, List, Optional, Tuple
 import boto3
 from botocore.exceptions import ClientError
 
-# Import shared database utilities from the Lambda layer.
+# Import shared database utilities and psycopg2 from the Lambda layer.
 sys.path.insert(0, '/opt/python')
+import psycopg2
+import psycopg2.extras
+from psycopg2.extras import RealDictCursor
 from db_utils import (
-    get_connection_pool,
-    set_rls_context,
-    execute_one,
+    get_connection,
+    release_connection,
     DatabaseError,
 )
 
@@ -271,43 +273,53 @@ def _write_evidence_record(
     Raises:
         DatabaseError: On database insert failure.
     """
-    pool = get_connection_pool()
-    with pool.getconn() as conn:
-        set_rls_context(conn, customer_id)
-        package_id = execute_one(
-            conn,
-            """
-            INSERT INTO evidence_packages (
-                customer_id, package_name, s3_bucket, s3_key, s3_version_id,
-                sha256_manifest, framework, date_range_start, date_range_end,
-                log_count, package_size_bytes, status, generated_by, retention_until
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'complete', %s,
-                NOW() + (%s || ' years')::INTERVAL
+    conn = get_connection()
+    try:
+        # Set RLS context on this connection before any DML so the INSERT
+        # runs under the correct tenant policy.
+        with conn.cursor() as rls_cur:
+            rls_cur.execute(
+                "SELECT set_customer_context(%s, %s)", (customer_id, 'customer')
             )
-            RETURNING id
-            """,
-            (
-                customer_id,
-                package_name,
-                EVIDENCE_BUCKET,
-                s3_key,
-                version_id,
-                sha256,
-                framework,
-                date_range_start,
-                date_range_end,
-                log_count,
-                package_size_bytes,
-                requested_by,
-                str(retention_years),
-            ),
-            fetch=True,
-        )
-        conn.commit()
-        pool.putconn(conn)
-
-    return str(package_id['id']) if package_id else ''
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO evidence_packages (
+                    customer_id, package_name, s3_bucket, s3_key, s3_version_id,
+                    sha256_manifest, framework, date_range_start, date_range_end,
+                    log_count, package_size_bytes, status, generated_by, retention_until
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'complete', %s,
+                    NOW() + (%s || ' years')::INTERVAL
+                )
+                RETURNING id
+                """,
+                (
+                    customer_id,
+                    package_name,
+                    EVIDENCE_BUCKET,
+                    s3_key,
+                    version_id,
+                    sha256,
+                    framework,
+                    date_range_start,
+                    date_range_end,
+                    log_count,
+                    package_size_bytes,
+                    requested_by,
+                    str(retention_years),
+                ),
+            )
+            row = cur.fetchone()
+            conn.commit()
+        if row:
+            return str(row['id'] if isinstance(row, dict) else row[0])
+        return ''
+    except psycopg2.Error as exc:
+        conn.rollback()
+        raise DatabaseError(f"Failed to insert evidence_packages record: {exc}") from exc
+    finally:
+        release_connection(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +414,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # ------------------------------------------------------------------
     # Build zip archive with manifest
     # ------------------------------------------------------------------
-    package_name = (
+    # Human-readable display name shown in the portal evidence table.
+    month_label = date_range_end.strftime('%B %Y')   # e.g. "May 2026"
+    if framework == 'ALL':
+        package_name = f"Compliance Baseline \u2014 {month_label}"
+    else:
+        package_name = f"{framework} Evidence \u2014 {month_label}"
+
+    # Machine-readable S3 key preserves full date range for uniqueness.
+    s3_package_slug = (
         f"{framework}_{date_range_start.strftime('%Y%m%d')}"
         f"_{date_range_end.strftime('%Y%m%d')}"
         f"_{customer_id[:8]}"
@@ -410,7 +430,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     s3_key = (
         f"evidence/{customer_id}/{framework}/"
         f"{date_range_start.strftime('%Y/%m')}/"
-        f"{package_name}.zip"
+        f"{s3_package_slug}.zip"
     )
 
     manifest_meta: Dict[str, Any] = {
