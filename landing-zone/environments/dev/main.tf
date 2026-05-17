@@ -231,3 +231,23 @@ module "phase6_lambdas" {
   security_group_ids         = [module.securebase.lambda_security_group_id]
   tags                       = merge(var.tags, { Phase = "6" })
 }
+
+# ============================================================================
+# Phase 6 / Track 5: Cost-per-tenant reporting and CloudWatch alarms
+# ============================================================================
+module "phase6_cost" {
+  source = "../../modules/phase6-cost"
+
+  environment                      = var.environment
+  cost_per_tenant_lambda_zip       = "${path.module}/../../files/phase6/cost_per_tenant.zip"
+  cost_per_tenant_table_name       = module.phase5_admin_metrics.cost_per_tenant_table_name
+  alert_sns_arn                    = module.phase5_alerting.alert_sns_arn
+  monthly_cost_alert_threshold_usd = 50
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "5"
+  })
+
+  depends_on = [module.phase5_admin_metrics, module.phase5_alerting]
+}

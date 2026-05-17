@@ -25,6 +25,7 @@ FUNCTIONS=(
   audit_log_packager
   compliance_score_recalculator
   compliance_history_api
+  cost_per_tenant
 )
 
 # If --function arg provided, package only that one
