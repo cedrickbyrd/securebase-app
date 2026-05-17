@@ -277,14 +277,9 @@ resource "aws_dynamodb_table" "control_violation_log" {
 
   tags = merge(var.tags, {
     Phase = "6.2"
-    Name  = "control-violation-log"
+    Name  = "securebase-control-violation-log"
   })
 }
-
-# ============================================================================
-# compliance_score_recalculator Lambda
-# Trigger: EventBridge daily at 02:00 UTC
-# ============================================================================
 
 # ============================================================================
 # compliance_score_recalculator Lambda

@@ -237,8 +237,12 @@ module "phase6_lambdas" {
 module "phase6_alerting" {
   source = "../../modules/phase6-alerting"
 
-  environment            = var.environment
-  sns_topic_arn          = module.phase5_alerting.alert_sns_arn
+  environment = var.environment
+  sns_topic_arn = module.phase5_alerting.alert_sns_arn
+
+  # audit_log_packager is deployed by the securebase root module; its name/log group
+  # follow the standard naming convention. These are hardcoded here because the
+  # phase6-audit-logging module does not currently expose them as outputs.
   packager_function_name = "securebase-${var.environment}-audit-log-packager"
   packager_log_group     = "/aws/lambda/securebase-${var.environment}-audit-log-packager"
 
