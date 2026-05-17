@@ -1,7 +1,7 @@
 # SecureBase — Product Roadmap
 
-**Last Updated:** May 2026  
-**Maintained by:** Cedrick J. Byrd / TxImhotep LLC  
+**Last Updated:** May 17, 2026
+**Maintained by:** Cedrick J. Byrd / TxImhotep LLC
 **Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com)
 
 ---
@@ -24,7 +24,7 @@ This document is the single source of truth for what has been built, what is in 
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
 | Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete | 100% |
-| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | 85% |
+| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | ~30% |
 
 ---
 
@@ -69,10 +69,8 @@ React 18 + Vite portal: Dashboard, Compliance, HIPAA, FFIEC CAT, Texas Examiner,
 
 ## Phase 5 — Observability, Multi-Region DR & Incident Response
 
-**Status:** ✅ Complete (May 2026)  
+**Status:** ✅ Complete (May 2026)
 **See:** `PHASE5_COMPLETE.md` for full delivery record.
-
-Phase 5 was executed as six sub-phases. Phases 5.5 and 5.6 were originally standalone in Sprint #2 (PR #475) but delivered within the 5.3 sprint.
 
 | Sub-Phase | Description | Module | Status |
 |-----------|-------------|--------|--------|
@@ -83,24 +81,6 @@ Phase 5 was executed as six sub-phases. Phases 5.5 and 5.6 were originally stand
 | 5.5 | Alerting & Incident Response | `phase5-alerting/` | ✅ |
 | 5.6 | Distributed Tracing (AWS X-Ray) | `phase5-logging/` | ✅ |
 
-### Key Phase 5 Deliverables
-
-**Frontend:** `AdminDashboard.jsx`, `SystemHealth.jsx`, `TenantDashboard.jsx`, `ComplianceDrift.jsx`, `SREDashboard.jsx` (58 KB), `AlertManagement.jsx`
-
-**Lambda:** `metrics_aggregation.py`, `tenant_metrics.py`, `alert_router.py`, `failover_orchestrator.py`, `failback_orchestrator.py`, `health_check_aggregator.py`
-
-**Terraform:** 7 modules, 49+ AWS resources across us-east-1 and us-west-2
-
-**Infrastructure:** Aurora Global Database, DynamoDB Global Tables, S3 CRR, CloudFront multi-origin failover, 40+ CloudWatch alarms, X-Ray tracing, PagerDuty/Opsgenie integration
-
-### Phase 5.4 Production Validation
-
-49/49 Terraform resources applied 2026-05-10. Four operator validation gates remain open — run `docs/runbooks/PHASE5_DR_DRILL.md` to close them:
-- CloudFront distribution live health check
-- Aurora Global DB secondary healthy
-- DynamoDB replication lag < 1 min
-- First DR drill (RTO < 15 min)
-
 ### SLA Commitments
 - **RTO:** < 15 min | **RPO:** < 1 min | **Uptime:** 99.95%
 - **Alert detection:** < 5 min | **X-Ray coverage:** 100% of Lambda functions
@@ -109,25 +89,44 @@ Phase 5 was executed as six sub-phases. Phases 5.5 and 5.6 were originally stand
 
 ## Phase 6 — Compliance Automation & Operations Scale
 
-**Status:** 🔨 In Progress (started May 2026)  
-**Theme:** Make compliance a product feature, not an afterthought.  
-**Scope:** See [PHASE6_SCOPE.md](PHASE6_SCOPE.md) | **Tasks:** See [TODO_PHASE6.md](TODO_PHASE6.md)
+**Status:** 🔨 In Progress (started May 2026)
+**Theme:** Make compliance a product feature, not an afterthought.
+**Scope:** See [PHASE6_SCOPE.md](PHASE6_SCOPE.md)
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| 6.1 | Immutable Audit Logging (S3 Object Lock, Macie, evidence API) | Merged (Operationalizing) |
-| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | Merged (Operationalizing) |
-| 6.3 | Scalability to 10,000+ concurrent users | In Progress |
-| 6.4 | Build debt cleanup (remove `--legacy-peer-deps`, mock migration) | In Progress |
-| 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | In Progress |
+| 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete |
+| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | 🔨 In Progress |
+| 6.3 | Scalability to 10,000+ concurrent users | 🔨 In Progress |
+| 6.4 | Build debt cleanup | 🔨 In Progress |
+| 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | 🔨 In Progress |
+
+### Phase 6.1 — Complete (May 17, 2026)
+
+All four Evidence Baseline tracks merged:
+
+| Track | Deliverable | Issue | Status |
+|-------|------------|-------|--------|
+| 1 | Customer Portal UI (evidence history, polling, download) | #686 | ✅ |
+| 2 | Operational Baseline Run — Customer #1 | #687 | ✅ |
+| 3 | Vault Receipt / Auditor-Grade Cover Page | #688 | ✅ |
+| 4 | Admin Vault Visibility (cross-tenant, CloudWatch alarms) | #689 | ✅ |
+
+**What the Vault delivers:**
+- S3 Object Lock (COMPLIANCE mode, 7yr / 2555 days) — immutable, root-delete-proof
+- KMS-encrypted evidence packages with SHA-256 manifest
+- Auditor-grade PDF cover page: tenant, framework, date range, log count, SHA256, KMS ARN, immutability statement
+- Customer-facing portal: evidence history table, async job polling, presigned download
+- Admin panel: cross-tenant vault overview, per-tenant package history, CloudWatch alarms on packager failures
 
 ---
 
 ## Current Priorities (May 2026)
 
-1. **Run DR drill** — follow `docs/runbooks/PHASE5_DR_DRILL.md` to close Phase 5.4 validation gates
-2. **Begin Phase 6.1 + 6.2** — compliance automation and audit logging in parallel
-3. **Documentation hygiene** — consolidate root-level markdown into `docs/`
+1. **Phase 6.1 operationalized** — Customer #1 baseline live, Day 7 check-in May 21
+2. **Phase 6.2** — compliance score automation and Config rules
+3. **Phase 5.4 DR drill** — run `docs/runbooks/PHASE5_DR_DRILL.md` to close four remaining validation gates
+4. **PII hygiene** — customer names/emails never in repo files, issues, or commit messages; use Customer #1, #2, etc.
 
 ---
 
@@ -152,6 +151,7 @@ Lambda Functions (Python 3.11)    ← X-Ray tracing (5.6) + Alarms (5.5)
 Aurora Global DB (PostgreSQL 15.15) ──▶ Aurora Reader (us-west-2)
 DynamoDB Global Tables              ──▶ DynamoDB Replicas (us-west-2)
 S3 audit-logs-prod                  ──▶ S3 replica (us-west-2)
+S3 evidence-vault (Object Lock)     ──▶ Immutable WORM store (6.1)
       │
       ▼
 AWS Organizations (Landing Zone)
@@ -191,5 +191,6 @@ AWS Organizations (Landing Zone)
 | Auth | AWS IAM Identity Center (SSO), API Keys, JWT |
 | Observability | CloudWatch, X-Ray ✅, PagerDuty/Opsgenie ✅ |
 | DR | CloudFront multi-origin, Aurora Global DB, DynamoDB Global Tables ✅ |
+| Evidence Vault | S3 Object Lock (COMPLIANCE), KMS, SHA-256 manifests ✅ |
 | Deployment | Netlify (frontend), AWS (backend + infra) |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions + GitHub Copilot |
