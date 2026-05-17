@@ -220,16 +220,41 @@ terraform {
 }
 
 module "phase6_lambdas" {
-  source                     = "../../modules/phase6-lambda-functions"
-  environment                = var.environment
-  audit_evidence_api_zip     = "${path.module}/../../files/phase6/audit_evidence_api.zip"
-  compliance_history_api_zip = "${path.module}/../../files/phase6/compliance_history_api.zip"
-  evidence_bucket_name       = module.phase6_audit_logging.evidence_bucket_name
-  evidence_kms_key_arn       = module.phase6_audit_logging.kms_key_arn
-  rds_proxy_endpoint         = module.securebase.rds_proxy_endpoint
-  private_subnet_ids         = var.lambda_subnets
-  security_group_ids         = [module.securebase.lambda_security_group_id]
-  tags                       = merge(var.tags, { Phase = "6" })
+  source                             = "../../modules/phase6-lambda-functions"
+  environment                        = var.environment
+  audit_evidence_api_zip             = "${path.module}/../../files/phase6/audit_evidence_api.zip"
+  compliance_history_api_zip         = "${path.module}/../../files/phase6/compliance_history_api.zip"
+  compliance_score_recalculator_zip  = "${path.module}/../../files/phase6/compliance_score_recalculator.zip"
+  evidence_bucket_name               = module.phase6_audit_logging.evidence_bucket_name
+  evidence_kms_key_arn               = module.phase6_audit_logging.kms_key_arn
+  rds_proxy_endpoint                 = module.securebase.rds_proxy_endpoint
+  private_subnet_ids                 = var.lambda_subnets
+  security_group_ids                 = [module.securebase.lambda_security_group_id]
+  alert_sns_arn                      = module.phase5_alerting.alert_sns_arn
+  tags                               = merge(var.tags, { Phase = "6" })
+}
+
+module "phase6_alerting" {
+  source = "../../modules/phase6-alerting"
+
+  environment = var.environment
+  sns_topic_arn = module.phase5_alerting.alert_sns_arn
+
+  # audit_log_packager is deployed by the securebase root module; its name/log group
+  # follow the standard naming convention. These are hardcoded here because the
+  # phase6-audit-logging module does not currently expose them as outputs.
+  packager_function_name = "securebase-${var.environment}-audit-log-packager"
+  packager_log_group     = "/aws/lambda/securebase-${var.environment}-audit-log-packager"
+
+  score_recalculator_function_name = module.phase6_lambdas.compliance_score_recalculator_name
+  score_recalculator_log_group     = module.phase6_lambdas.compliance_score_recalculator_log_group
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "2"
+  })
+
+  depends_on = [module.phase6_lambdas]
 }
 
 # ============================================================================
