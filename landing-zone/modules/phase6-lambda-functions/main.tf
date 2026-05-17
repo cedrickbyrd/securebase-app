@@ -67,7 +67,10 @@ resource "aws_iam_role_policy" "phase6_permissions" {
           "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem",
           "dynamodb:Query", "dynamodb:Scan"
         ]
-        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/securebase-compliance-scores"
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/securebase-compliance-scores",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/control_violation_log",
+        ]
       },
       {
         Sid    = "RDSProxy"
@@ -86,8 +89,51 @@ resource "aws_iam_role_policy" "phase6_permissions" {
         Effect = "Allow"
         Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:${data.aws_region.current.name}:*:log-group:/aws/lambda/securebase-${var.environment}-phase6-*"
-      }
+      },
+      {
+        Sid    = "AWSConfigRead"
+        Effect = "Allow"
+        Action = [
+          "config:GetComplianceDetailsByConfigRule",
+          "config:DescribeComplianceByConfigRule",
+          "config:GetComplianceSummaryByConfigRule",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SecurityHubRead"
+        Effect = "Allow"
+        Action = ["securityhub:GetFindings"]
+        Resource = "*"
+      },
+      {
+        Sid    = "GuardDutyRead"
+        Effect = "Allow"
+        Action = [
+          "guardduty:ListFindings",
+          "guardduty:GetFindings",
+          "guardduty:ListDetectors",
+        ]
+        Resource = "*"
+      },
     ]
+  })
+}
+
+# Optional: S3 GetObject permission for compliance mapping files stored in S3
+resource "aws_iam_role_policy" "phase6_s3_mappings" {
+  count = var.mappings_bucket != "" ? 1 : 0
+  name  = "securebase-${var.environment}-phase6-s3-mappings"
+  role  = aws_iam_role.phase6_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "S3MappingsBucket"
+      Effect   = "Allow"
+      Action   = ["s3:GetObject"]
+      Resource = "arn:aws:s3:::${var.mappings_bucket}/compliance/*"
+    }]
   })
 }
 
@@ -156,7 +202,7 @@ resource "aws_lambda_function" "compliance_history_api" {
   environment {
     variables = {
       ENVIRONMENT             = var.environment
-      COMPLIANCE_SCORES_TABLE = "securebase-compliance-scores"
+      COMPLIANCE_SCORES_TABLE = aws_dynamodb_table.compliance_scores.name
       LOG_LEVEL               = "INFO"
     }
   }
@@ -169,4 +215,179 @@ resource "aws_cloudwatch_log_group" "compliance_history_api" {
   name              = "/aws/lambda/securebase-${var.environment}-phase6-compliance-history-api"
   retention_in_days = 90
   tags              = var.tags
+}
+
+# ============================================================================
+# DynamoDB Tables — Compliance Scoring
+# ============================================================================
+
+resource "aws_dynamodb_table" "compliance_scores" {
+  name         = "securebase-compliance-scores"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(var.tags, {
+    Phase = "6.2"
+    Name  = "securebase-compliance-scores"
+  })
+}
+
+resource "aws_dynamodb_table" "control_violation_log" {
+  name         = "control_violation_log"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(var.tags, {
+    Phase = "6.2"
+    Name  = "control-violation-log"
+  })
+}
+
+# ============================================================================
+# compliance_score_recalculator Lambda
+# Trigger: EventBridge daily at 02:00 UTC
+# ============================================================================
+
+# ============================================================================
+# compliance_score_recalculator Lambda
+# Trigger: EventBridge daily at 02:00 UTC
+# ============================================================================
+
+resource "aws_lambda_function" "compliance_score_recalculator" {
+  filename         = var.compliance_score_recalculator_zip
+  function_name    = "securebase-${var.environment}-phase6-compliance-score-recalculator"
+  role             = aws_iam_role.phase6_lambda.arn
+  handler          = "compliance_score_recalculator.lambda_handler"
+  source_code_hash = filebase64sha256(var.compliance_score_recalculator_zip)
+  runtime          = "python3.11"
+  timeout          = 600  # 10 minutes — per-tenant scoring across 3 frameworks
+  memory_size      = 512
+
+  tracing_config { mode = "Active" }
+
+  environment {
+    variables = {
+      ENVIRONMENT             = var.environment
+      COMPLIANCE_SCORES_TABLE = aws_dynamodb_table.compliance_scores.name
+      CONTROL_VIOLATION_TABLE = aws_dynamodb_table.control_violation_log.name
+      MAPPINGS_BUCKET         = var.mappings_bucket
+      LOG_LEVEL               = "INFO"
+    }
+  }
+
+  # Runs against AWS Config / Security Hub / GuardDuty — no VPC required
+  tags = merge(var.tags, {
+    Phase = "6.2"
+    Name  = "securebase-${var.environment}-phase6-compliance-score-recalculator"
+  })
+
+  depends_on = [
+    aws_dynamodb_table.compliance_scores,
+    aws_dynamodb_table.control_violation_log,
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "compliance_score_recalculator" {
+  name              = "/aws/lambda/securebase-${var.environment}-phase6-compliance-score-recalculator"
+  retention_in_days = 90
+  tags              = var.tags
+}
+
+# ============================================================================
+# EventBridge — Daily compliance score recalculation cron (02:00 UTC)
+# ============================================================================
+
+resource "aws_cloudwatch_event_rule" "score_recalculator_daily" {
+  name                = "securebase-${var.environment}-phase6-score-recalculator-daily"
+  description         = "Phase 6.2: trigger compliance_score_recalculator Lambda daily at 02:00 UTC"
+  schedule_expression = "cron(0 2 * * ? *)"
+
+  tags = merge(var.tags, {
+    Phase = "6.2"
+    Name  = "securebase-${var.environment}-phase6-score-recalculator-daily"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "score_recalculator_daily" {
+  rule      = aws_cloudwatch_event_rule.score_recalculator_daily.name
+  target_id = "phase6-compliance-score-recalculator"
+  arn       = aws_lambda_function.compliance_score_recalculator.arn
+
+  retry_policy {
+    maximum_event_age_in_seconds = 120
+    maximum_retry_attempts       = 2
+  }
+}
+
+resource "aws_lambda_permission" "score_recalculator_eventbridge" {
+  statement_id  = "AllowEventBridgePhase6ScoreRecalculator"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.compliance_score_recalculator.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.score_recalculator_daily.arn
+}
+
+# ============================================================================
+# CloudWatch Alarms — Score Recalculator
+# ============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "score_recalculator_errors" {
+  count               = var.alert_sns_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-compliance-score-recalculator-failure"
+  alarm_description   = "compliance_score_recalculator Lambda errors > 0 in 5-minute window"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.compliance_score_recalculator.function_name
+  }
+
+  alarm_actions = [var.alert_sns_arn]
+  ok_actions    = [var.alert_sns_arn]
+
+  tags = merge(var.tags, { Phase = "6.2", Severity = "high" })
 }
