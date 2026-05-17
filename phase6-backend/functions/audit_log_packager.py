@@ -56,7 +56,6 @@ sys.path.insert(0, '/opt/python')
 from db_utils import (
     get_connection,
     release_connection,
-    set_rls_context,
     DatabaseError,
 )
 
@@ -276,9 +275,14 @@ def _write_evidence_record(
     except ImportError:
         RealDictCursor = None  # fallback; row will be a plain tuple
 
-    set_rls_context(customer_id)
     conn = get_connection()
     try:
+        # Set RLS context on this connection before any DML so the INSERT
+        # runs under the correct tenant policy.
+        with conn.cursor() as rls_cur:
+            rls_cur.execute(
+                "SELECT set_customer_context(%s, %s)", (customer_id, 'customer')
+            )
         cursor_factory = RealDictCursor if RealDictCursor else None
         with conn.cursor(cursor_factory=cursor_factory) as cur:
             cur.execute(

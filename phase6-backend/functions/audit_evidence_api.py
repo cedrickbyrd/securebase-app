@@ -51,7 +51,6 @@ from botocore.exceptions import ClientError
 # Shared Lambda layer utilities
 sys.path.insert(0, '/opt/python')
 from db_utils import (
-    set_rls_context,
     query_many,
     query_one,
     get_api_key_by_prefix,
@@ -185,7 +184,7 @@ def _handle_list(
     values.extend([limit, offset])
 
     try:
-        set_rls_context(customer_id)
+        # Tenant isolation is enforced via the customer_id WHERE clause below.
         rows = query_many(
             f"""
             SELECT id, package_name, framework, status, date_range_start,
@@ -234,7 +233,7 @@ def _handle_get(
         API Gateway response with package details and pre-signed download URL.
     """
     try:
-        set_rls_context(customer_id)
+        # Tenant isolation is enforced via the customer_id WHERE clause below.
         row = query_one(
             """
             SELECT id, package_name, s3_bucket, s3_key, sha256_manifest,
