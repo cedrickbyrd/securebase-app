@@ -55,3 +55,20 @@ variable "security_group_ids" {
   description = "Security group IDs for Lambda VPC config"
   type        = list(string)
 }
+
+variable "compliance_score_recalculator_zip" {
+  description = "Path to the compliance_score_recalculator Lambda zip package"
+  type        = string
+}
+
+variable "alert_sns_arn" {
+  description = "ARN of the SNS topic to receive CloudWatch alarm notifications"
+  type        = string
+  default     = ""
+}
+
+variable "mappings_bucket" {
+  description = "S3 bucket name containing compliance framework mapping JSON files (leave empty to use bundled mappings)"
+  type        = string
+  default     = ""
+}
