@@ -26,8 +26,10 @@ const defaultMetrics = {
  */
 function relativeTime(isoString) {
   if (!isoString) return '—';
-  const ms = Date.now() - new Date(isoString).getTime();
-  if (Number.isNaN(ms)) return isoString;
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return isoString;
+  const ms = Date.now() - date.getTime();
+  if (ms < 0) return 'just now';
   const secs = Math.floor(ms / 1000);
   if (secs < 60) return 'just now';
   const mins = Math.floor(secs / 60);
@@ -417,7 +419,9 @@ const AdminDashboard = () => {
                   const calculatedTimestamps = ['SOC2', 'HIPAA', 'FedRAMP']
                     .map((fw) => row[fw]?.last_calculated)
                     .filter(Boolean);
-                  const latestCalc = calculatedTimestamps.sort().reverse()[0] || null;
+                  const latestCalc = calculatedTimestamps.sort(
+                    (a, b) => new Date(b) - new Date(a),
+                  )[0] || null;
 
                   return (
                     <tr key={row.tenant_id} className="border-t border-gray-100 hover:bg-gray-50">
