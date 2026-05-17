@@ -194,18 +194,41 @@ class TestLambdaHandlerSuccess:
             import compliance_admin_scores_api
             importlib.reload(compliance_admin_scores_api)
 
-        mock_table = MagicMock()
+        # Build separate mock tables per framework so each call returns the
+        # right items regardless of the internal KeyConditionExpression format.
+        def make_table(fw_items):
+            call_count = [0]
 
-        def dynamo_query_side_effect(**kwargs):
-            key_expr = str(kwargs.get('KeyConditionExpression', ''))
-            for fw, items in dynamo_items_by_fw.items():
-                if f'FRAMEWORK#{fw}#DATE#' in key_expr:
-                    return {'Items': items}
-            return {'Items': []}
+            def query_side_effect(**_kwargs):
+                # Return items on the first call (for this framework), then []
+                idx = call_count[0] % len(fw_items) if fw_items else 0
+                result = fw_items[call_count[0]] if call_count[0] < len(fw_items) else []
+                call_count[0] += 1
+                return {'Items': result}
 
-        mock_table.query.side_effect = dynamo_query_side_effect
+            mock_table = MagicMock()
+            mock_table.query.side_effect = query_side_effect
+            return mock_table
+
+        # The module calls dynamodb.Table() once per (tenant, framework) pair.
+        # We return items in the order SOC2, HIPAA, FedRAMP per tenant.
+        all_item_batches = []
+        for _cust in customers:
+            for fw in ('SOC2', 'HIPAA', 'FedRAMP'):
+                all_item_batches.append(dynamo_items_by_fw.get(fw, []))
+
+        batch_index = [0]
+        mock_table_obj = MagicMock()
+
+        def table_query_side_effect(**_kwargs):
+            idx = batch_index[0]
+            items = all_item_batches[idx] if idx < len(all_item_batches) else []
+            batch_index[0] += 1
+            return {'Items': items}
+
+        mock_table_obj.query.side_effect = table_query_side_effect
         compliance_admin_scores_api.dynamodb = MagicMock()
-        compliance_admin_scores_api.dynamodb.Table.return_value = mock_table
+        compliance_admin_scores_api.dynamodb.Table.return_value = mock_table_obj
         compliance_admin_scores_api.query_many = mock_db.query_many
 
         return compliance_admin_scores_api
