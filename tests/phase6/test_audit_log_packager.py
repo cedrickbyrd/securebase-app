@@ -231,27 +231,35 @@ class TestBuildZipPackage:
                 'Body': io.BytesIO(b'log data')
             }
 
-            zip_bytes, sha256 = audit_log_packager._build_zip_package(
-                'bucket',
-                [{'Key': 'log.txt', 'Size': 8,
-                  'LastModified': '2026-01-01T00:00:00+00:00'}],
-                {},
-                {
-                    'organization_name': 'Tenant Inc.',
-                    'customer_id': 'tenant-id',
-                    'framework': 'SOC2',
-                    'date_range_start': '2026-01-01T00:00:00+00:00',
-                    'date_range_end': '2026-01-31T23:59:59+00:00',
-                    'created_at': '2026-02-01T00:00:00+00:00',
-                    'package_id': 'pkg-123',
-                    'kms_key_arn': 'arn:aws:kms:us-east-1:123:key/abc',
-                    'log_count': 1,
-                    'retention_until': '2033-02-01T00:00:00+00:00',
-                },
-            )
+            with patch.object(
+                audit_log_packager,
+                '_generate_cover_page_pdf',
+                wraps=audit_log_packager._generate_cover_page_pdf,
+            ) as mock_cover_pdf:
+                zip_bytes, sha256 = audit_log_packager._build_zip_package(
+                    'bucket',
+                    [{'Key': 'log.txt', 'Size': 8,
+                      'LastModified': '2026-01-01T00:00:00+00:00'}],
+                    {},
+                    {
+                        'organization_name': 'Tenant Inc.',
+                        'customer_id': 'tenant-id',
+                        'framework': 'SOC2',
+                        'date_range_start': '2026-01-01T00:00:00+00:00',
+                        'date_range_end': '2026-01-31T23:59:59+00:00',
+                        'created_at': '2026-02-01T00:00:00+00:00',
+                        'package_id': 'pkg-123',
+                        'kms_key_arn': 'arn:aws:kms:us-east-1:123:key/abc',
+                        'log_count': 1,
+                        'retention_until': '2033-02-01T00:00:00+00:00',
+                    },
+                )
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
                 expected = hashlib.sha256(zf.read('MANIFEST.json')).hexdigest()
             assert sha256 == expected
+            assert mock_cover_pdf.called
+            for call_record in mock_cover_pdf.call_args_list:
+                assert call_record.args[0]['sha256_manifest'] == sha256
 
 
 # ---------------------------------------------------------------------------

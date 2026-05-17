@@ -101,7 +101,9 @@ AUDIT_SOURCE_BUCKET = os.environ.get('AUDIT_SOURCE_BUCKET', '')
 EVIDENCE_BUCKET = os.environ.get('EVIDENCE_BUCKET', '')
 EVIDENCE_RETENTION_YEARS = int(os.environ.get('EVIDENCE_RETENTION_YEARS', '7'))
 MAX_OBJECTS_PER_PACKAGE = 10_000   # Hard cap to stay within Lambda memory
+MAX_SIZE_CONVERGENCE_ITERATIONS = 3
 EVIDENCE_KMS_KEY_ARN = os.environ.get('EVIDENCE_KMS_KEY_ARN', '')
+DEFAULT_KMS_KEY_ALIAS = 'alias/aws/s3'
 
 
 # ---------------------------------------------------------------------------
@@ -212,7 +214,10 @@ def _build_zip_package(
         return zip_buffer.getvalue()
 
     zip_bytes = _build_with_size(0)
-    for _ in range(3):
+    # Iterate until the ZIP size converges because package_size_bytes is rendered
+    # on the cover page, which changes the PDF content and therefore ZIP size.
+    # Three passes are sufficient for decimal-length stabilization in practice.
+    for _ in range(MAX_SIZE_CONVERGENCE_ITERATIONS):
         candidate_size = len(zip_bytes)
         updated_zip = _build_with_size(candidate_size)
         if len(updated_zip) == candidate_size:
@@ -224,24 +229,8 @@ def _build_zip_package(
 
 def _generate_cover_page_pdf(cover_page_meta: Dict[str, Any]) -> bytes:
     """Render the auditor-grade evidence package cover page as PDF bytes."""
-    try:
-        from reportlab.lib.pagesizes import LETTER
-        from reportlab.pdfgen import canvas
-    except Exception:
-        body = (
-            "%PDF-1.4\n"
-            "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
-            "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
-            "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            "/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n"
-            "4 0 obj << /Length 44 >> stream\n"
-            "BT /F1 14 Tf 72 720 Td (SecureBase Evidence Package) Tj ET\n"
-            "endstream endobj\n"
-            "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
-            "xref\n0 6\n0000000000 65535 f \n"
-            "trailer << /Root 1 0 R /Size 6 >>\nstartxref\n390\n%%EOF"
-        )
-        return body.encode('utf-8')
+    from reportlab.lib.pagesizes import LETTER
+    from reportlab.pdfgen import canvas
 
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=LETTER)
@@ -355,7 +344,7 @@ def _upload_evidence_package(
             'generated_by': 'audit_log_packager',
         },
     }
-    if kms_key_arn:
+    if kms_key_arn and kms_key_arn != DEFAULT_KMS_KEY_ALIAS:
         put_args['SSEKMSKeyId'] = kms_key_arn
 
     response = s3_client.put_object(**put_args)
@@ -577,7 +566,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     package_id = str(uuid.uuid4())
     generated_at = datetime.now(timezone.utc)
     retention_until = generated_at + timedelta(days=365 * EVIDENCE_RETENTION_YEARS)
-    kms_key_arn = EVIDENCE_KMS_KEY_ARN or 'arn:aws:kms:managed:alias/aws/s3'
+    kms_key_arn = EVIDENCE_KMS_KEY_ARN or DEFAULT_KMS_KEY_ALIAS
 
     try:
         zip_bytes, sha256 = _build_zip_package(
