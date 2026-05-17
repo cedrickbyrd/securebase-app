@@ -303,11 +303,11 @@ const AdminDashboard = () => {
                   <td className="px-3 py-2">{row.soc2}%</td>
                   <td className="px-3 py-2">{row.hipaa}%</td>
                   <td className="px-3 py-2">{row.fedramp}%</td>
-                  <td className="px-3 py-2">{row.lastCalculated || '—'}</td>
+                  <td className="px-3 py-2">{row.lastCalculated || 'Not available'}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td className="px-3 py-3 text-gray-500" colSpan={5}>No tenant compliance scores available.</td>
+                  <td className="px-3 py-2 text-gray-500" colSpan={5}>No tenant compliance scores available.</td>
                 </tr>
               )}
             </tbody>

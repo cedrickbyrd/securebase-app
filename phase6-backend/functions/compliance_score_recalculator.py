@@ -340,8 +340,14 @@ def _write_score_to_dynamodb(
                     score_drop=drop,
                 )
     except ClientError as exc:
-        _log('warning', 'Failed to evaluate score drop', error=str(exc),
-             customer_id=customer_id, framework=framework)
+        # Best-effort check: a query failure should not block writing today's score.
+        _log(
+            'warning',
+            'Failed to evaluate score drop',
+            error=str(exc),
+            customer_id=customer_id,
+            framework=framework,
+        )
 
     table.put_item(Item=item)
     _log('info', 'compliance score written to DynamoDB',
