@@ -153,17 +153,26 @@ resource "aws_lambda_permission" "audit_evidence_api_gateway" {
 # Wired conditionally: only deployed when compliance_history_lambda_arn is set.
 # ============================================================================
 
-# /tenant resource — only create if admin_metrics hasn't claimed it
-# (phase5-admin-metrics owns /tenant/* via api_gateway_root_resource_id pass-through)
-# We reuse the existing /tenant parent by referencing it via data source.
-# If the resource doesn't exist yet this count guard prevents a conflict.
+# Create /tenant and /tenant/compliance when an upstream module does not pass
+# an existing parent resource id for /tenant/compliance.
+resource "aws_api_gateway_resource" "tenant" {
+  count       = local.compliance_hist_enabled && var.tenant_compliance_resource_id == null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "tenant"
+}
+
+resource "aws_api_gateway_resource" "tenant_compliance" {
+  count       = local.compliance_hist_enabled && var.tenant_compliance_resource_id == null ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.tenant[0].id
+  path_part   = "compliance"
+}
+
 resource "aws_api_gateway_resource" "tenant_compliance_history" {
   count       = local.compliance_hist_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-  # Parent must be /tenant/compliance — created by phase5-admin-metrics.
-  # Pass the parent resource ID via variable when phase5 module exposes it;
-  # otherwise fall back to root (will 404 gracefully until wired).
-  parent_id   = var.tenant_compliance_resource_id != null ? var.tenant_compliance_resource_id : aws_api_gateway_rest_api.securebase_api.root_resource_id
+  parent_id   = var.tenant_compliance_resource_id != null ? var.tenant_compliance_resource_id : aws_api_gateway_resource.tenant_compliance[0].id
   path_part   = "history"
 }
 
@@ -191,6 +200,7 @@ module "cors_compliance_history" {
   source = "./cors-with-credentials"
   api_id      = aws_api_gateway_rest_api.securebase_api.id
   resource_id = aws_api_gateway_resource.tenant_compliance_history[0].id
+  allowed_origin = "https://portal.securebase.tximhotep.com"
 }
 
 resource "aws_lambda_permission" "compliance_history_api_gateway" {
