@@ -4,11 +4,20 @@ variable "github_actions_role_name" {
   default     = "GitHubActionsRole"
 }
 
+variable "terraform_lock_table_name" {
+  description = "Name of the DynamoDB table used for Terraform state locking."
+  type        = string
+  default     = "securebase-terraform-locks"
+}
+
 data "aws_caller_identity" "current" {}
+data "aws_iam_role" "github_actions" {
+  name = var.github_actions_role_name
+}
 
 resource "aws_iam_role_policy" "github_actions_terraform_locking" {
   name = "GitHubActionsTerraformStateLocking"
-  role = var.github_actions_role_name
+  role = data.aws_iam_role.github_actions.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -21,7 +30,7 @@ resource "aws_iam_role_policy" "github_actions_terraform_locking" {
           "dynamodb:DeleteItem",
           "dynamodb:DescribeTable",
         ]
-        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/securebase-terraform-locks"
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${var.terraform_lock_table_name}"
       },
     ]
   })
