@@ -21,6 +21,7 @@ const FRAMEWORK_BADGE_COLORS = {
   SOC2:    'bg-blue-50 text-blue-700 border-blue-200',
   HIPAA:   'bg-purple-50 text-purple-700 border-purple-200',
   FEDRAMP: 'bg-green-50 text-green-700 border-green-200',
+  DEFAULT: 'bg-gray-50 text-gray-600 border-gray-200',
 };
 
 // Each entry maps display label → CSS classes for the individual badge chips
@@ -44,7 +45,7 @@ function FrameworkBadges({ framework }) {
       </span>
     );
   }
-  const color = FRAMEWORK_BADGE_COLORS[framework.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
+  const color = FRAMEWORK_BADGE_COLORS[framework.toUpperCase()] || FRAMEWORK_BADGE_COLORS.DEFAULT;
   return (
     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${color}`}>
       <Shield className="w-3 h-3" />{framework}
@@ -160,7 +161,8 @@ export default function EvidencePackages() {
     setGenSuccess(false);
     try {
       const now = new Date();
-      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+      const ninetyDaysAgo = new Date(now.getTime() - ninetyDaysMs);
       const res = await fetch(`${API_BASE}/admin/evidence/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),

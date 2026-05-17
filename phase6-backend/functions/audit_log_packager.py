@@ -51,8 +51,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import boto3
 from botocore.exceptions import ClientError
 
-# Import shared database utilities from the Lambda layer.
+# Import shared database utilities and psycopg2 from the Lambda layer.
 sys.path.insert(0, '/opt/python')
+import psycopg2
+import psycopg2.extras
+from psycopg2.extras import RealDictCursor
 from db_utils import (
     get_connection,
     release_connection,
@@ -270,11 +273,6 @@ def _write_evidence_record(
     Raises:
         DatabaseError: On database insert failure.
     """
-    try:
-        from psycopg2.extras import RealDictCursor
-    except ImportError:
-        RealDictCursor = None  # fallback; row will be a plain tuple
-
     conn = get_connection()
     try:
         # Set RLS context on this connection before any DML so the INSERT
@@ -283,8 +281,7 @@ def _write_evidence_record(
             rls_cur.execute(
                 "SELECT set_customer_context(%s, %s)", (customer_id, 'customer')
             )
-        cursor_factory = RealDictCursor if RealDictCursor else None
-        with conn.cursor(cursor_factory=cursor_factory) as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
                 INSERT INTO evidence_packages (
@@ -318,7 +315,7 @@ def _write_evidence_record(
         if row:
             return str(row['id'] if isinstance(row, dict) else row[0])
         return ''
-    except Exception as exc:
+    except psycopg2.Error as exc:
         conn.rollback()
         raise DatabaseError(f"Failed to insert evidence_packages record: {exc}") from exc
     finally:
