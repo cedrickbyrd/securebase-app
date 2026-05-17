@@ -98,6 +98,7 @@ securityhub_client = boto3.client('securityhub')
 guardduty_client = boto3.client('guardduty')
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
+cloudwatch = boto3.client('cloudwatch')
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -339,6 +340,27 @@ def _write_score_to_dynamodb(
                     current_score=score,
                     score_drop=drop,
                 )
+                try:
+                    cloudwatch.put_metric_data(
+                        Namespace='SecureBase/Compliance',
+                        MetricData=[{
+                            'MetricName': 'ComplianceScoreDrop',
+                            'Dimensions': [
+                                {'Name': 'TenantId', 'Value': customer_id},
+                                {'Name': 'Framework', 'Value': framework},
+                            ],
+                            'Value': abs(drop),
+                            'Unit': 'Count',
+                        }],
+                    )
+                except ClientError as cw_exc:
+                    _log(
+                        'warning',
+                        'Failed to publish ComplianceScoreDrop metric',
+                        error=str(cw_exc),
+                        customer_id=customer_id,
+                        framework=framework,
+                    )
     except ClientError as exc:
         # Best-effort check: a query failure should not block writing today's score.
         _log(

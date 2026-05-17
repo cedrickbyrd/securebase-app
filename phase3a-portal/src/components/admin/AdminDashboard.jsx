@@ -18,6 +18,39 @@ const defaultMetrics = {
   vault: null,
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Returns a human-readable relative time string (e.g. "2 hours ago") for the
+ * given ISO timestamp.  Falls back to the raw string if parsing fails.
+ */
+function relativeTime(isoString) {
+  if (!isoString) return '—';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return isoString;
+  const ms = Date.now() - date.getTime();
+  if (ms < 0) return 'just now';
+  const secs = Math.floor(ms / 1000);
+  if (secs < 60) return 'just now';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? 's' : ''} ago`;
+}
+
+/**
+ * Returns the Tailwind colour classes for a compliance score cell based on
+ * the score value: green ≥ 80, amber 60–79, red < 60.
+ */
+function scoreColorClass(score) {
+  if (score == null) return 'text-gray-400';
+  if (score >= 80) return 'text-green-700 font-semibold';
+  if (score >= 60) return 'text-amber-700 font-semibold';
+  return 'text-red-700 font-semibold';
+}
+
 const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(defaultMetrics);
   const [error, setError] = useState(null);
@@ -32,6 +65,11 @@ const AdminDashboard = () => {
   const [costSortDirection, setCostSortDirection] = useState('desc');
   const [vaultSortDirection, setVaultSortDirection] = useState('desc');
   const [expandedTenantIds, setExpandedTenantIds] = useState(new Set());
+  // ── Phase 6.2 / Track 4: Cross-tenant compliance scores ────────────────
+  const [complianceScores, setComplianceScores] = useState(null);
+  const [complianceScoresLoading, setComplianceScoresLoading] = useState(false);
+  const [complianceSortKey, setComplianceSortKey] = useState('tenant_display_name');
+  const [complianceSortDir, setComplianceSortDir] = useState('asc');
   const delayRef = useRef(INITIAL_DELAY_MS);
   const costStartDateRef = useRef('');
   const costEndDateRef = useRef('');
@@ -69,6 +107,7 @@ const AdminDashboard = () => {
         operations,
         alerts,
         vault,
+        complianceData,
       ] = await Promise.all([
         adminService.getSystemOverview(),
         adminService.getInfrastructureHealth(),
@@ -81,11 +120,13 @@ const AdminDashboard = () => {
         adminService.getOperationsStatus(),
         adminService.getRecentAlerts(),
         adminService.getVaultSummary(),
+        adminService.getComplianceScores(),
       ]);
 
       delayRef.current = INITIAL_DELAY_MS;
       if (isMountedRef.current) {
         setMetrics({ overview, infrastructure, security, customers, costs, operations, alerts, vault });
+        setComplianceScores(complianceData || null);
         setError(null);
         setRefreshDelay(INITIAL_DELAY_MS);
         setLastUpdated(new Date());
@@ -138,6 +179,19 @@ const AdminDashboard = () => {
     loadDashboard();
   };
 
+  const handleComplianceRefresh = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    setComplianceScoresLoading(true);
+    try {
+      const data = await adminService.getComplianceScores();
+      if (isMountedRef.current) setComplianceScores(data || null);
+    } catch (_err) {
+      // Leave existing data in place on error
+    } finally {
+      if (isMountedRef.current) setComplianceScoresLoading(false);
+    }
+  }, []);
+
   const mrrTrend = useMemo(() => {
     const points = metrics.customers?.mrrTrend || [];
     if (points.length < 2) return 'No trend data';
@@ -182,13 +236,37 @@ const AdminDashboard = () => {
     return rows;
   }, [metrics.vault, vaultSortDirection]);
 
-  const tenantComplianceRows = useMemo(() => {
-    const rows = Array.isArray(metrics.security?.tenantComplianceScores)
-      ? [...metrics.security.tenantComplianceScores]
+  const sortedComplianceRows = useMemo(() => {
+    const rows = Array.isArray(complianceScores?.tenants)
+      ? [...complianceScores.tenants]
       : [];
-    rows.sort((a, b) => String(a.tenant || '').localeCompare(String(b.tenant || '')));
+    rows.sort((a, b) => {
+      let aVal, bVal;
+      if (complianceSortKey === 'tenant_display_name') {
+        aVal = a.tenant_display_name || '';
+        bVal = b.tenant_display_name || '';
+        const cmp = aVal.localeCompare(bVal);
+        return complianceSortDir === 'asc' ? cmp : -cmp;
+      }
+      // Sort by framework score
+      aVal = a[complianceSortKey]?.score ?? -1;
+      bVal = b[complianceSortKey]?.score ?? -1;
+      const cmp = aVal - bVal;
+      return complianceSortDir === 'asc' ? cmp : -cmp;
+    });
     return rows;
-  }, [metrics.security]);
+  }, [complianceScores, complianceSortKey, complianceSortDir]);
+
+  const handleComplianceSort = (key) => {
+    setComplianceSortKey((prev) => {
+      if (prev === key) {
+        setComplianceSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setComplianceSortDir('asc');
+      return key;
+    });
+  };
 
   const toggleTenantExpand = (tenantId) => {
     setExpandedTenantIds((prev) => {
@@ -284,34 +362,105 @@ const AdminDashboard = () => {
           <Metric label="Failed Auth Attempts" value={metrics.security?.failedAuthAttempts} />
           <Metric label="Security Events (24h)" value={metrics.security?.securityEvents24h} />
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Cross-tenant compliance scores</h3>
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 py-2 text-left">Tenant</th>
-                <th className="px-3 py-2 text-left">SOC2</th>
-                <th className="px-3 py-2 text-left">HIPAA</th>
-                <th className="px-3 py-2 text-left">FedRAMP</th>
-                <th className="px-3 py-2 text-left">Last Calculated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenantComplianceRows.length > 0 ? tenantComplianceRows.map((row) => (
-                <tr key={row.tenant} className="border-t border-gray-100">
-                  <td className="px-3 py-2">{row.tenant}</td>
-                  <td className="px-3 py-2">{row.soc2}%</td>
-                  <td className="px-3 py-2">{row.hipaa}%</td>
-                  <td className="px-3 py-2">{row.fedramp}%</td>
-                  <td className="px-3 py-2">{row.lastCalculated || 'Not available'}</td>
-                </tr>
-              )) : (
+
+        {/* ── Phase 6.2 / Track 4: Cross-tenant compliance scores table ── */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700">Cross-tenant compliance scores</h3>
+            <button
+              type="button"
+              onClick={handleComplianceRefresh}
+              disabled={complianceScoresLoading}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 disabled:opacity-50"
+              aria-label="Refresh compliance scores"
+            >
+              <RefreshCw className={`w-3 h-3 ${complianceScoresLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700 text-xs uppercase tracking-wide">
                 <tr>
-                  <td className="px-3 py-2 text-gray-500" colSpan={5}>No tenant compliance scores available.</td>
+                  <SortableTh
+                    label="Tenant"
+                    sortKey="tenant_display_name"
+                    current={complianceSortKey}
+                    dir={complianceSortDir}
+                    onSort={handleComplianceSort}
+                  />
+                  <SortableTh
+                    label="SOC2"
+                    sortKey="SOC2"
+                    current={complianceSortKey}
+                    dir={complianceSortDir}
+                    onSort={handleComplianceSort}
+                  />
+                  <SortableTh
+                    label="HIPAA"
+                    sortKey="HIPAA"
+                    current={complianceSortKey}
+                    dir={complianceSortDir}
+                    onSort={handleComplianceSort}
+                  />
+                  <SortableTh
+                    label="FedRAMP"
+                    sortKey="FedRAMP"
+                    current={complianceSortKey}
+                    dir={complianceSortDir}
+                    onSort={handleComplianceSort}
+                  />
+                  <th className="px-3 py-3 text-left">Last Calculated</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortedComplianceRows.length > 0 ? sortedComplianceRows.map((row) => {
+                  // Use the most recent last_calculated across all frameworks
+                  const calculatedTimestamps = ['SOC2', 'HIPAA', 'FedRAMP']
+                    .map((fw) => row[fw]?.last_calculated)
+                    .filter(Boolean);
+                  const latestCalc = calculatedTimestamps.sort(
+                    (a, b) => new Date(b) - new Date(a),
+                  )[0] || null;
+
+                  return (
+                    <tr key={row.tenant_id} className="border-t border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2 font-medium text-gray-900">
+                        {row.tenant_display_name}
+                      </td>
+                      <td className={`px-3 py-2 ${scoreColorClass(row.SOC2?.score)}`}>
+                        {row.SOC2 != null ? `${row.SOC2.score}` : '—'}
+                      </td>
+                      <td className={`px-3 py-2 ${scoreColorClass(row.HIPAA?.score)}`}>
+                        {row.HIPAA != null ? `${row.HIPAA.score}` : '—'}
+                      </td>
+                      <td className={`px-3 py-2 ${scoreColorClass(row.FedRAMP?.score)}`}>
+                        {row.FedRAMP != null ? `${row.FedRAMP.score}` : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-gray-600">
+                        {latestCalc ? (
+                          <span title={new Date(latestCalc).toLocaleString()}>
+                            {relativeTime(latestCalc)}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr>
+                    <td className="px-3 py-4 text-center text-gray-500" colSpan={5}>
+                      {complianceScoresLoading ? 'Loading compliance scores…' : 'No tenant compliance scores available.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {complianceScores?.generated_at && (
+            <p className="text-xs text-gray-400 mt-1">
+              Generated {relativeTime(complianceScores.generated_at)}
+            </p>
+          )}
         </div>
       </section>
 
@@ -628,5 +777,23 @@ const Metric = ({ label, value }) => (
     <p className="text-sm font-semibold text-gray-900 mt-1">{value ?? 0}</p>
   </div>
 );
+
+const SortableTh = ({ label, sortKey, current, dir, onSort }) => {
+  const isActive = current === sortKey;
+  return (
+    <th
+      className="px-3 py-3 text-left cursor-pointer select-none hover:bg-gray-100"
+      onClick={() => onSort(sortKey)}
+      aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className="text-gray-400 text-xs" aria-hidden>
+          {isActive ? (dir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </span>
+    </th>
+  );
+};
 
 export default AdminDashboard;
