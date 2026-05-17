@@ -15,6 +15,7 @@ import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
 import PersonalizedBanner from './PersonalizedBanner';
 import { usePersonalization } from '../hooks/usePersonalization';
 import ComplianceTrend from './ComplianceTrend';
+import EvidencePackages from './EvidencePackages';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -315,6 +316,16 @@ function Dashboard() {
                     </div>
                   </div>
                 ) : <p className="empty-state">No compliance data available</p>}
+              </div>
+            </section>
+
+            <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
+              <div className="card-header">
+                <h2>Evidence Baseline</h2>
+                <button className="view-all-btn" onClick={() => navigate('/evidence')}>Full View →</button>
+              </div>
+              <div className="card-content">
+                <EvidencePackages embedded />
               </div>
             </section>
 

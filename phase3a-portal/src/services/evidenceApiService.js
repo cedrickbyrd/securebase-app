@@ -28,12 +28,59 @@ async function handleResponse(res) {
   return res.json();
 }
 
-export async function listEvidencePackages() {
-  const res = await fetch(`${API_BASE}/admin/evidence`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
-  return handleResponse(res);
+export async function listEvidencePackages({ limit = 100 } = {}) {
+  let offset = 0;
+  const packages = [];
+  let lastPayload = null;
+  const maxPages = 50;
+  let pageCount = 0;
+
+  // Paginate to retrieve complete package history for the tenant.
+  // Backend caps limit at 100, so we page in chunks of up to 100.
+  while (true) {
+    pageCount += 1;
+    if (pageCount > maxPages) {
+      throw new Error('Exceeded maximum evidence pagination limit');
+    }
+
+    const query = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+    const res = await fetch(`${API_BASE}/admin/evidence?${query.toString()}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    const payload = await handleResponse(res);
+    lastPayload = payload;
+
+    let batch;
+    if (Array.isArray(payload)) {
+      batch = payload;
+    } else if (Array.isArray(payload?.packages)) {
+      batch = payload.packages;
+    } else {
+      throw new Error('Unexpected evidence list response format');
+    }
+    packages.push(...batch);
+
+    if (batch.length === 0 || batch.length < limit) {
+      break;
+    }
+    if (!Array.isArray(payload) && typeof payload?.count === 'number' && packages.length >= payload.count) {
+      break;
+    }
+    offset += batch.length;
+  }
+
+  if (Array.isArray(lastPayload)) {
+    return packages;
+  }
+  return {
+    ...(lastPayload || {}),
+    packages,
+    count: packages.length,
+  };
 }
 
 export async function getEvidencePackage(packageId) {
