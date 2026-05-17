@@ -12,7 +12,7 @@ locals {
     Environment = var.environment
     Phase       = "6"
     Track       = "4"
-    tenant_id   = "shared"
+    tenant_id   = "multi-tenant"
   })
 
   lambda_names = toset(var.lambda_function_names)
