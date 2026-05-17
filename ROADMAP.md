@@ -24,7 +24,7 @@ This document is the single source of truth for what has been built, what is in 
 | Phase 3b | Support Tickets, Webhooks & Cost Forecasting | ✅ Complete | 100% |
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete | 100% |
 | Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete | 100% |
-| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | ~35% |
+| Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress | ~50% |
 
 ---
 
@@ -97,10 +97,12 @@ React 18 + Vite portal: Dashboard, Compliance, HIPAA, FFIEC CAT, Texas Examiner,
 |-----------|-------------|--------|
 | 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete (May 17, 2026) |
 | 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
-| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | 🔨 In Progress |
-| 6.3 | Scalability to 10,000+ concurrent users | 🔨 In Progress |
-| 6.4 | Build debt cleanup | 🔨 In Progress |
+| 6.2 | Compliance Score Engine (54 Config rules, SOC2/HIPAA/FedRAMP scoring, portal UI) | ✅ Complete (May 17, 2026) |
+| 6.3 | Scalability to 10,000+ concurrent users | 📅 Planned |
+| 6.4 | Build debt cleanup | 📅 Planned |
 | 6.5 | Developer experience (docker-compose, Storybook, OpenAPI, Playwright) | 🔨 In Progress |
+
+---
 
 ### Phase 6.1 — Evidence Baseline (Complete May 17, 2026)
 
@@ -120,21 +122,31 @@ React 18 + Vite portal: Dashboard, Compliance, HIPAA, FFIEC CAT, Texas Examiner,
 | 3 | Evidence history as chronological compliance trail + gap detection | #694 | ✅ |
 | 4 | Customer #1 first scheduled run triggered | #694 | ✅ |
 
-**What the Vault now delivers:**
-- Immutable WORM storage — S3 Object Lock COMPLIANCE mode, 7yr, root-delete-proof
-- KMS-encrypted packages, SHA-256 manifest, auditor-grade PDF cover page
-- Customer portal: evidence history, polling, presigned download, schedule configuration
-- Automatic weekly runs per tenant via EventBridge — compliance trail builds without user action
-- Admin panel: cross-tenant vault overview, CloudWatch alarms on packager failures
+### Phase 6.2 — Compliance Score Engine (Complete May 17, 2026)
+
+| Track | Deliverable | PR | Status |
+|-------|------------|-----|--------|
+| 1 | 54 org-level AWS Config rules + SOC2/HIPAA/FedRAMP mapping JSON files | #709 | ✅ |
+| 2 | `compliance_score_recalculator` Lambda — daily EventBridge cron (02:00 UTC), weighted scoring, DynamoDB snapshots | #710 | ✅ |
+| 3 | `GET /tenant/compliance/history` API + portal 90-day trend chart, framework score cards, violation table | #711 | ✅ |
+| 4 | Admin cross-tenant compliance score table + CloudWatch alarms (score drop >10pts, cron missed) | #712 | ✅ |
+
+**What 6.2 delivers:**
+- **54 AWS Config rules** active across all tenant OUs — SOC2, HIPAA, FedRAMP, CIS coverage with healthcare-only scoping
+- **Weighted compliance scoring** — Critical 3×, High 2×, Medium 1×, Low 0.5× — per framework per tenant, daily snapshots in DynamoDB (365-day TTL)
+- **Customer portal** — SOC2/HIPAA/FedRAMP score cards, 90-day recharts trend line, control violation table (filterable, sortable by severity), Improving/Stable/Declining trend indicator
+- **Admin panel** — cross-tenant compliance table, color-coded by status (Passing ≥80 / At Risk 60–79 / Failing <60)
+- **Operational coverage** — CloudWatch alarms on score drop >10pts in 24hrs and missed daily cron window, routed to SNS/PagerDuty
 
 ---
 
 ## Current Priorities (May 2026)
 
-1. **6.1.1 live** — Customer #1 will see second package automatically before May 21 Day 7 check-in
-2. **Phase 6.2** — compliance score automation and Config rules
-3. **Phase 5.4 DR drill** — run `docs/runbooks/PHASE5_DR_DRILL.md` to close four remaining validation gates
-4. **PII hygiene** — customer names/emails never in repo files, issues, or commit messages; use Customer #1, #2, etc.
+1. **Customer #1 Day 7 check-in — May 21** — portal shows live SOC2/HIPAA/FedRAMP scores after 02:00 UTC nightly cron
+2. **Phase 6.3** — scalability to 10,000+ concurrent users
+3. **Phase 6.4** — build debt cleanup
+4. **Phase 5.4 DR drill** — run `docs/runbooks/PHASE5_DR_DRILL.md` to close remaining validation gates
+5. **PII hygiene** — customer names/emails never in repo files, issues, or commit messages; use Customer #1, #2, etc.
 
 ---
 
@@ -155,15 +167,24 @@ API Gateway us-east-1             API Gateway us-west-2 (standby)
       ▼
 Lambda Functions (Python 3.11)    ← X-Ray tracing (5.6) + Alarms (5.5)
       │
+      ├── compliance_score_recalculator          ← 6.2: daily 02:00 UTC cron
+      ├── compliance_history_api                 ← 6.2: GET /tenant/compliance/history
+      ├── compliance_admin_scores_api            ← 6.2: GET /admin/compliance/scores
+      │
       ▼
 Aurora Global DB (PostgreSQL 15.15) ──▶ Aurora Reader (us-west-2)
 DynamoDB Global Tables              ──▶ DynamoDB Replicas (us-west-2)
+  ├── securebase-compliance-scores  ──▶ Daily score snapshots (6.2)
+  └── control_violation_log         ──▶ Per-control NON_COMPLIANT detail (6.2)
 S3 audit-logs-prod                  ──▶ S3 replica (us-west-2)
 S3 evidence-vault (Object Lock)     ──▶ Immutable WORM store (6.1)
       │
-EventBridge scheduled cron          ──▶ Weekly evidence runs per tenant (6.1.1)
+EventBridge scheduled crons:
+  ├── Weekly evidence runs per tenant (6.1.1) — Sunday 03:00 UTC
+  └── Daily compliance score recalculation (6.2) — 02:00 UTC
       │
       ▼
+AWS Config (54 org-level rules)     ← 6.2: SOC2/HIPAA/FedRAMP/CIS
 AWS Organizations (Landing Zone)
  ├── Healthcare OU (HIPAA)
  ├── Fintech OU (SOC 2)
@@ -194,7 +215,7 @@ AWS Organizations (Landing Zone)
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite, Tailwind CSS, react-chartjs-2 |
+| Frontend | React 18, Vite, Tailwind CSS, react-chartjs-2, Recharts |
 | Backend | Python 3.11, AWS Lambda, API Gateway |
 | Database | Aurora Serverless v2 (PostgreSQL 15.15), DynamoDB |
 | IaC | Terraform ≥ 1.5.0, AWS Provider ~> 5.0 |
@@ -202,5 +223,6 @@ AWS Organizations (Landing Zone)
 | Observability | CloudWatch, X-Ray ✅, PagerDuty/Opsgenie ✅ |
 | DR | CloudFront multi-origin, Aurora Global DB, DynamoDB Global Tables ✅ |
 | Evidence Vault | S3 Object Lock (COMPLIANCE), KMS, SHA-256 manifests, EventBridge cron ✅ |
+| Compliance Engine | AWS Config (54 org rules), Security Hub, GuardDuty, weighted scoring ✅ |
 | Deployment | Netlify (frontend), AWS (backend + infra) |
 | CI/CD | GitHub Actions + GitHub Copilot |
