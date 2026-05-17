@@ -27,5 +27,13 @@ module "phase6_cost" {
 terraform {
   required_version = ">= 1.5.0"
 
+  # Backend configured at init time:
+  #   terraform init -backend-config=prod-backend.hcl
+  # Example prod-backend.hcl:
+  #   bucket         = "securebase-terraform-state-prod"
+  #   key            = "prod/phase6-cost.tfstate"
+  #   region         = "us-east-1"
+  #   dynamodb_table = "securebase-terraform-locks"
+  #   encrypt        = true
   backend "s3" {}
 }

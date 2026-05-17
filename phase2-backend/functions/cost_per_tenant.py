@@ -219,8 +219,6 @@ def emit_monthly_cost_metrics(
 
     # Compute day-of-month for pro-rated monthly estimate.
     day_of_month = target_date.day
-    if day_of_month == 0:
-        day_of_month = 1
 
     metric_data = []
     max_estimated = 0.0
