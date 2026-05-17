@@ -2,6 +2,7 @@
 # Stores secrets in SSM (consistent with all other SecureBase Lambdas)
 #
 # SSM parameters to create before terraform apply:
+#   /securebase/stripe/secret_key      → Stripe secret key (server-side API)
 #   /securebase/stripe/webhook_secret   → Stripe Dashboard → Webhooks → Signing secret
 #   /securebase/ga4/api_secret          → GA4 Admin → Data Streams → Measurement Protocol API secrets
 
@@ -145,5 +146,5 @@ resource "aws_lambda_permission" "apigw_stripe_webhook" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.stripe_webhook.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/*/POST/webhook"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/${var.api_stage_name}/POST/webhook"
 }
