@@ -359,9 +359,14 @@ const ComplianceDrift = () => {
     ]
   };
 
-  const currentScore = complianceHistory[complianceHistory.length - 1]?.score ?? null;
-  const baselineIndex = Math.max(0, complianceHistory.length - 31);
-  const score30dAgo = complianceHistory[baselineIndex]?.score ?? null;
+  const currentPoint = complianceHistory[complianceHistory.length - 1] || null;
+  const currentScore = currentPoint?.score ?? null;
+  const thresholdDate = new Date();
+  thresholdDate.setDate(thresholdDate.getDate() - 30);
+  const baselineCandidates = complianceHistory
+    .filter((point) => new Date(point.date) <= thresholdDate)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const score30dAgo = baselineCandidates[0]?.score ?? null;
   const trendDelta30d = currentScore !== null && score30dAgo !== null
     ? Math.round((currentScore - score30dAgo) * 10) / 10
     : null;
