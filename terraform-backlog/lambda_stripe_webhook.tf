@@ -12,12 +12,12 @@ locals {
 }
 
 data "aws_ssm_parameter" "stripe_secret_key" {
-  name            = "/securebase/stripe/secret_key"
+  name            = var.stripe_secret_key_ssm_parameter_name
   with_decryption = true
 }
 
 data "aws_ssm_parameter" "stripe_webhook_secret" {
-  name            = "/securebase/stripe/webhook_secret"
+  name            = var.stripe_webhook_secret_ssm_parameter_name
   with_decryption = true
 }
 
@@ -32,6 +32,7 @@ resource "aws_lambda_function" "stripe_webhook" {
 
   environment {
     variables = {
+      # Do not log these env vars in Lambda output.
       STRIPE_SECRET_KEY     = data.aws_ssm_parameter.stripe_secret_key.value
       STRIPE_WEBHOOK_SECRET = data.aws_ssm_parameter.stripe_webhook_secret.value
     }
@@ -146,5 +147,6 @@ resource "aws_lambda_permission" "apigw_stripe_webhook" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.stripe_webhook.function_name
   principal     = "apigateway.amazonaws.com"
+  # Keep api_stage_name aligned with the deployed API Gateway stage.
   source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/${var.api_stage_name}/POST/webhook"
 }
