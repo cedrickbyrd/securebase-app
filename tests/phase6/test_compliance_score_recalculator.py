@@ -266,6 +266,35 @@ class TestWriteScoreToDynamoDB:
         assert item['controls_failing'] == 1
         assert 'ttl' in item
 
+    def test_control_violations_written_with_expected_key(self):
+        """Per-control snapshots are written to control_violation_log table."""
+        mod = self._setup()
+        mock_table = MagicMock()
+        mod.dynamodb = MagicMock()
+        mod.dynamodb.Table.return_value = mock_table
+
+        mod._write_control_violations_to_dynamodb(
+            customer_id='tenant-id',
+            framework='HIPAA',
+            controls=[{
+                'control_id': 'HIPAA-164.312(b)',
+                'control_name': 'Audit Controls',
+                'description': 'Audit logging controls',
+                'severity': 'CRITICAL',
+                'config_rule': 'cloudtrail-enabled',
+                'remediation_url': 'https://example.com/fix',
+            }],
+            compliance_map={'cloudtrail-enabled': 'NON_COMPLIANT'},
+            dry_run=False,
+        )
+
+        mock_table.put_item.assert_called_once()
+        item = mock_table.put_item.call_args.kwargs['Item']
+        assert item['PK'] == 'CUSTOMER#tenant-id'
+        assert item['SK'].startswith('CONTROL#HIPAA#HIPAA-164.312(b)#DATE#')
+        assert item['status'] == 'NON_COMPLIANT'
+        assert item['severity'] == 'CRITICAL'
+
 
 # ---------------------------------------------------------------------------
 # Tests: lambda_handler
