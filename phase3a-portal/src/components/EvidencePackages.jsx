@@ -23,14 +23,22 @@ const FRAMEWORK_BADGE_COLORS = {
   FEDRAMP: 'bg-green-50 text-green-700 border-green-200',
 };
 
+// Each entry maps display label → CSS classes for the individual badge chips
+// shown when framework === 'ALL'.
+const ALL_FRAMEWORK_BADGES = [
+  { label: 'SOC 2',   className: FRAMEWORK_BADGE_COLORS.SOC2 },
+  { label: 'HIPAA',   className: FRAMEWORK_BADGE_COLORS.HIPAA },
+  { label: 'FedRAMP', className: FRAMEWORK_BADGE_COLORS.FEDRAMP },
+];
+
 function FrameworkBadges({ framework }) {
   if (!framework) return null;
   if (framework === 'ALL') {
     return (
       <span className="flex items-center gap-1 flex-wrap">
-        {['SOC2', 'HIPAA', 'FedRAMP'].map((fw) => (
-          <span key={fw} className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${FRAMEWORK_BADGE_COLORS[fw.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-            {fw}
+        {ALL_FRAMEWORK_BADGES.map(({ label, className }) => (
+          <span key={label} className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${className}`}>
+            {label}
           </span>
         ))}
       </span>
