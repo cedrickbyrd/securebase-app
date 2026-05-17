@@ -226,7 +226,7 @@ npx playwright test tests/e2e/customer1-comprehensive.spec.js --reporter=list
 
 - Runs firefox only locally (Mac 10.15 limitation)
 - All 5 browsers on CI (`CI=true`)
-- 74 tests across 7 suites covering Lambda API, CORS, proxy, SPA routes, browser behavior, Matthew's record
+- 74 tests across 7 suites covering Lambda API, CORS, proxy, SPA routes, and Customer #1 pilot flows
 
 ---
 
@@ -236,3 +236,4 @@ npx playwright test tests/e2e/customer1-comprehensive.spec.js --reporter=list
 - PHI never logged — `analyticsService.js` strips query params from GA4 events
 - Rate limiting: 100 req/hr per customer enforced server-side in Lambda
 - All auditor-facing HTML uses `escHtml()` — no string interpolation of user data into style attributes
+- **Customer PII (names, emails, tokens) must never appear in repo files, issues, or commit messages**
