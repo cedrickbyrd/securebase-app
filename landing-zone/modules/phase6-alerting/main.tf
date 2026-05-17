@@ -159,7 +159,7 @@ resource "aws_cloudwatch_metric_alarm" "score_recalculator_stale" {
   evaluation_periods  = 1
   metric_name         = "DailyRuns"
   namespace           = "SecureBase/Compliance"
-  period              = 10800
+  period              = 10800 # evaluates 02:00-05:00 UTC so alarm trips if no completion is logged in that window
   statistic           = "Sum"
   threshold           = 0
   treat_missing_data  = "breaching"

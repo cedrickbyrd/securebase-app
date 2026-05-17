@@ -69,7 +69,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 # ---------------------------------------------------------------------------
@@ -286,8 +286,6 @@ def _query_control_violations(
     items: List[Dict[str, Any]] = []
 
     try:
-        from boto3.dynamodb.conditions import Attr  # noqa: PLC0415
-
         response = table.query(
             KeyConditionExpression=(
                 Key('PK').eq(pk) & Key('SK').begins_with('CONTROL#')
@@ -346,20 +344,32 @@ def _build_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     max_score = round(max(scores), 2)
     avg_score = round(sum(scores) / len(scores), 2)
 
-    # 30-day trend: compare the most recent score to the score from ~30 days ago
+    # Trend baselines: compare the latest score to ~7-day and ~30-day history points.
+    seven_days_ago = (
+        datetime.now(timezone.utc) - timedelta(days=7)
+    ).strftime('%Y-%m-%d')
     thirty_days_ago = (
         datetime.now(timezone.utc) - timedelta(days=30)
     ).strftime('%Y-%m-%d')
 
-    # Find the score closest to (but not after) 7 days ago as the baseline
-    older_items = [
+    # Find the score closest to (but not after) each baseline date.
+    older_items_30d = [
         item for item in items
         if item.get('score_date', '') <= thirty_days_ago
     ]
     score_delta_30d: Optional[float] = None
-    if older_items:
-        baseline_item = max(older_items, key=lambda x: x.get('score_date', ''))
+    if older_items_30d:
+        baseline_item = max(older_items_30d, key=lambda x: x.get('score_date', ''))
         score_delta_30d = round(latest - float(baseline_item.get('score', 0)), 2)
+
+    older_items_7d = [
+        item for item in items
+        if item.get('score_date', '') <= seven_days_ago
+    ]
+    score_delta_7d: Optional[float] = None
+    if older_items_7d:
+        baseline_item_7d = max(older_items_7d, key=lambda x: x.get('score_date', ''))
+        score_delta_7d = round(latest - float(baseline_item_7d.get('score', 0)), 2)
 
     if score_delta_30d is None:
         trend = 'stable'
@@ -375,7 +385,7 @@ def _build_summary(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         'min_score': min_score,
         'max_score': max_score,
         'avg_score': avg_score,
-        'score_delta_7d': score_delta_30d,
+        'score_delta_7d': score_delta_7d,
         'score_delta_30d': score_delta_30d,
         'trend': trend,
     }
