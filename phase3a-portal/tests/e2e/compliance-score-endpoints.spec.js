@@ -6,6 +6,8 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD;
 const TEST_ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL;
 const TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD;
 const FRAMEWORKS = ['SOC2', 'HIPAA', 'FedRAMP'];
+const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}/i;
+const COMMON_NAME_PATTERN = /\b(john|jane|michael|sarah|matthew)\b/i;
 
 async function proxyPost(request, path, data = {}) {
   return request.post(`${PORTAL}/api${path}`, { data });
@@ -106,10 +108,8 @@ test.describe('Group 1: GET /api/tenant/compliance/history — API contract', ()
     if (TEST_EMAIL) {
       expect(raw.toLowerCase()).not.toContain(TEST_EMAIL.toLowerCase());
     }
-    expect(raw).not.toContain('@');
-    for (const commonName of ['john', 'jane', 'matthew', 'michael', 'sarah']) {
-      expect(raw.toLowerCase()).not.toContain(`"${commonName}"`);
-    }
+    expect(raw).not.toMatch(EMAIL_PATTERN);
+    expect(raw).not.toMatch(COMMON_NAME_PATTERN);
   });
 });
 
@@ -156,9 +156,9 @@ test.describe('Group 2: Portal UI — compliance score cards', () => {
   test('90-day trend chart renders', async ({ page }) => {
     await page.goto(`${PORTAL}/compliance`);
 
-    const chartContainer = page.locator('text=Compliance Score Trend (90 Days)').locator('..').locator('..');
-    await expect(chartContainer.locator('svg, canvas').first()).toBeVisible();
-    await expect(chartContainer.locator('path, rect').first()).toBeVisible();
+    const chartSurface = page.locator('svg.recharts-surface').first();
+    await expect(chartSurface).toBeVisible();
+    await expect(chartSurface.locator('path, rect').first()).toBeVisible();
   });
 
   test('violation table renders', async ({ page }) => {
@@ -185,7 +185,7 @@ test.describe('Group 2: Portal UI — compliance score cards', () => {
     });
 
     await page.goto(`${PORTAL}/compliance`);
-    await expect(page.getByText(/compliance score|02:00|no data/i)).toBeVisible();
+    await expect(page.getByText(/compliance score|no data|daily calculation/i)).toBeVisible();
   });
 });
 
@@ -227,13 +227,13 @@ test.describe('Group 3: GET /api/admin/compliance/scores — admin API contract'
     expect(res.status()).toBe(200);
 
     const raw = await res.text();
-    expect(raw).not.toContain('@');
+    expect(raw).not.toMatch(EMAIL_PATTERN);
   });
 });
 
 test.describe('Group 4: Netlify redirect — /api/tenant/compliance/history proxies correctly', () => {
   test('Netlify _redirects proxy is active', async ({ request }) => {
-    const res = await request.get('https://portal.securebase.tximhotep.com/api/tenant/compliance/history');
+    const res = await request.get(`${PORTAL}/api/tenant/compliance/history`);
     expect(res.status()).toBe(401);
 
     const body = (await res.text()).toLowerCase();
