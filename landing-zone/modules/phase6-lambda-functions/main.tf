@@ -98,13 +98,23 @@ resource "aws_iam_role_policy" "phase6_permissions" {
           "config:DescribeComplianceByConfigRule",
           "config:GetComplianceSummaryByConfigRule",
         ]
+        # AWS Config read APIs do not support resource-level ARN restrictions.
+        # Wildcard is required; access is scoped to the deployment region via condition.
         Resource = "*"
+        Condition = {
+          StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
+        }
       },
       {
         Sid    = "SecurityHubRead"
         Effect = "Allow"
         Action = ["securityhub:GetFindings"]
+        # Security Hub read APIs do not support resource-level ARN restrictions.
+        # Wildcard is required; access is scoped to the deployment region via condition.
         Resource = "*"
+        Condition = {
+          StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
+        }
       },
       {
         Sid    = "GuardDutyRead"
@@ -114,7 +124,11 @@ resource "aws_iam_role_policy" "phase6_permissions" {
           "guardduty:GetFindings",
           "guardduty:ListDetectors",
         ]
+        # GuardDuty read APIs require wildcard resource; scoped to deployment region.
         Resource = "*"
+        Condition = {
+          StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
+        }
       },
     ]
   })
@@ -277,7 +291,7 @@ resource "aws_dynamodb_table" "control_violation_log" {
 
   tags = merge(var.tags, {
     Phase = "6.2"
-    Name  = "securebase-control-violation-log"
+    Name  = "control_violation_log"
   })
 }
 
@@ -293,7 +307,8 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
   handler          = "compliance_score_recalculator.lambda_handler"
   source_code_hash = filebase64sha256(var.compliance_score_recalculator_zip)
   runtime          = "python3.11"
-  timeout          = 600  # 10 minutes — per-tenant scoring across 3 frameworks
+  timeout     = 600  # 10 minutes — sequential per-tenant scoring across 3 frameworks.
+  # Viable for up to ~200 tenants. For larger deployments, consider SQS fanout or Step Functions.
   memory_size      = 512
 
   tracing_config { mode = "Active" }
