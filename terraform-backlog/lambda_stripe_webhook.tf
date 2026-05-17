@@ -10,6 +10,16 @@ locals {
   webhook_zip           = "${path.module}/../lambda/stripe_webhook.zip"
 }
 
+data "aws_ssm_parameter" "stripe_secret_key" {
+  name            = "/securebase/stripe/secret_key"
+  with_decryption = true
+}
+
+data "aws_ssm_parameter" "stripe_webhook_secret" {
+  name            = "/securebase/stripe/webhook_secret"
+  with_decryption = true
+}
+
 resource "aws_lambda_function" "stripe_webhook" {
   function_name    = local.webhook_function_name
   filename         = local.webhook_zip
@@ -18,6 +28,13 @@ resource "aws_lambda_function" "stripe_webhook" {
   runtime          = "python3.12"
   role             = aws_iam_role.stripe_webhook_lambda.arn
   timeout          = 30
+
+  environment {
+    variables = {
+      STRIPE_SECRET_KEY     = data.aws_ssm_parameter.stripe_secret_key.value
+      STRIPE_WEBHOOK_SECRET = data.aws_ssm_parameter.stripe_webhook_secret.value
+    }
+  }
 
   tags = {
     Project = "SecureBase"
@@ -64,7 +81,7 @@ resource "aws_iam_role_policy" "stripe_webhook_ssm" {
 resource "aws_api_gateway_resource" "stripe_webhook" {
   rest_api_id = var.rest_api_id
   parent_id   = var.root_resource_id
-  path_part   = "stripe-webhook"
+  path_part   = "webhook"
 }
 
 resource "aws_api_gateway_method" "stripe_webhook_post" {
@@ -128,5 +145,5 @@ resource "aws_lambda_permission" "apigw_stripe_webhook" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.stripe_webhook.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/*/POST/stripe-webhook"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/*/POST/webhook"
 }

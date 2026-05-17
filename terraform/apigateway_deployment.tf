@@ -37,6 +37,14 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.checkout_options,
       aws_api_gateway_integration.checkout_options,
       aws_lambda_permission.apigw_checkout,
+      aws_api_gateway_resource.stripe_webhook,
+      aws_api_gateway_method.stripe_webhook_post,
+      aws_api_gateway_integration.stripe_webhook_post,
+      aws_api_gateway_method.stripe_webhook_options,
+      aws_api_gateway_integration.stripe_webhook_options,
+      aws_api_gateway_method_response.stripe_webhook_options_200,
+      aws_api_gateway_integration_response.stripe_webhook_options,
+      aws_lambda_permission.apigw_stripe_webhook,
     ]))
   }
   lifecycle { create_before_destroy = true }
@@ -59,6 +67,12 @@ resource "aws_api_gateway_deployment" "main" {
     aws_api_gateway_integration.checkout_post,
     aws_api_gateway_method.checkout_options,
     aws_api_gateway_integration.checkout_options,
+    aws_api_gateway_method.stripe_webhook_post,
+    aws_api_gateway_integration.stripe_webhook_post,
+    aws_api_gateway_method.stripe_webhook_options,
+    aws_api_gateway_integration.stripe_webhook_options,
+    aws_api_gateway_method_response.stripe_webhook_options_200,
+    aws_api_gateway_integration_response.stripe_webhook_options,
   ]
 }
 resource "aws_api_gateway_stage" "main" {
