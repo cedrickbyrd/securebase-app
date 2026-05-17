@@ -855,6 +855,7 @@ resource "aws_api_gateway_stage" "main" {
       ip        = "$context.identity.sourceIp",
       caller    = "$context.identity.caller",
       user      = "$context.identity.user",
+      tenantId  = "$context.authorizer.customer_id",
       requestTime = "$context.requestTime",
       httpMethod = "$context.httpMethod",
       resourcePath = "$context.resourcePath",
