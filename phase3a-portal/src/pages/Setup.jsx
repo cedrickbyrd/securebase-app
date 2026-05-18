@@ -17,6 +17,7 @@ export default function Setup() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = params.get('session_id') || '';
+  const product = params.get('product') || '';
 
   // Session validation state
   const [validating, setValidating] = useState(true);
@@ -85,6 +86,7 @@ export default function Setup() {
 
     setSubmitting(true);
     setSubmitError('');
+    const derivedTier = product === 'hipaa_assessment' ? 'healthcare' : (tier || 'pilot_compliance');
 
     try {
       const res = await fetch(`/api/signup`, {
@@ -94,9 +96,9 @@ export default function Setup() {
           email: customerEmail,
           password,
           org_name: orgName.trim(),
-          tier: tier || 'pilot_compliance',
+          tier: derivedTier,
           session_id: sessionId,
-          source: 'pilot_setup',
+          source: product === 'hipaa_assessment' ? 'hipaa_assessment_setup' : 'pilot_setup',
         }),
       });
 
@@ -106,7 +108,7 @@ export default function Setup() {
         throw new Error(data.error || `Error ${res.status} — please contact support.`);
       }
 
-      trackEvent('pilot_account_created', { tier: tier || 'pilot_compliance', sku: 'pilot_compliance' });
+      trackEvent('pilot_account_created', { tier: derivedTier, sku: product || 'pilot_compliance' });
       setDone(true);
     } catch (err) {
       console.error('Setup submission error:', err);
@@ -124,7 +126,8 @@ export default function Setup() {
           <div className="text-5xl mb-4">🎉</div>
           <h1 className="text-3xl font-bold text-white mb-3">You&apos;re all set!</h1>
           <p className="text-blue-100 mb-6">
-            Your SecureBase Compliance Jumpstart account is being provisioned. Check your inbox at{' '}
+            Your SecureBase {product === 'hipaa_assessment' ? 'HIPAA Assessment' : 'Compliance Jumpstart'} account is
+            being provisioned. Check your inbox at{' '}
             <strong className="text-white">{customerEmail}</strong> for the download link and login instructions.
           </p>
           <p className="text-blue-200 text-sm mb-6">
