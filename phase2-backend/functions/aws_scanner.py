@@ -81,7 +81,7 @@ def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
     token = auth[7:]
     secret_name = os.environ.get("JWT_SECRET")
     if not secret_name:
-        raise JwtSecretError("JWT_SECRET environment variable is not set")
+        raise JwtSecretError("JWT_SECRET environment variable must be configured (non-empty)")
 
     try:
         try:
@@ -92,9 +92,9 @@ def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
             except (json.JSONDecodeError, AttributeError):
                 secret = raw
         except ClientError as exc:
-            raise JwtSecretError("JWT secret lookup failed") from exc
+            raise JwtSecretError(f"JWT secret lookup failed: {exc}") from exc
         if not secret:
-            raise JwtSecretError("JWT secret is empty")
+            raise JwtSecretError("JWT secret value is empty or not found in SecretString")
         claims = jwt.decode(token, secret, algorithms=["HS256"])
         return claims.get("sub") or claims.get("customer_id")
     except jwt.InvalidTokenError:

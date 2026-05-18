@@ -513,7 +513,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if role_arn:
             external_id = os.environ.get('SECUREBASE_EXTERNAL_ID', '').strip()
             if not external_id:
-                raise RuntimeError('SECUREBASE_EXTERNAL_ID environment variable must be set for cross-account scoring')
+                raise RuntimeError('SECUREBASE_EXTERNAL_ID environment variable must be configured (non-empty) for cross-account scoring')
             sts = boto3.client('sts')
             assumed = sts.assume_role(
                 RoleArn=role_arn,

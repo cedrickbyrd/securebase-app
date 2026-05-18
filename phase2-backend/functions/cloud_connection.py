@@ -243,7 +243,7 @@ def verify_connection(event: dict, request_id: str) -> dict:
             )
             logger.info(f"Initial scan triggered for {customer_id}")
         except ClientError as e:
-            logger.warning(f"Could not trigger initial scan: {e}")
+            logger.warning(f"Could not trigger initial scan via {_AWS_SCANNER_FUNCTION}: {e}")
             # Non-fatal — scan will run on next schedule
 
         # Trigger initial compliance score snapshot asynchronously
@@ -260,7 +260,7 @@ def verify_connection(event: dict, request_id: str) -> dict:
             )
             logger.info(f"Initial compliance score triggered for {customer_id}")
         except ClientError as e:
-            logger.warning(f"Could not trigger initial compliance score: {e}")
+            logger.warning(f"Could not trigger initial compliance score via {_COMPLIANCE_SCORE_FUNCTION}: {e}")
             # Non-fatal — score will be recalculated by scheduler or API trigger
 
         return _resp(200, {
