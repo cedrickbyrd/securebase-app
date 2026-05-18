@@ -25,7 +25,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
 from botocore.exceptions import ClientError
@@ -339,7 +339,7 @@ def _resolve_rule_names(
 def _get_config_compliance(
     controls: List[Dict[str, str]],
     config_client: Any,
-) -> Dict[str, str]:
+) -> Tuple[Dict[str, str], List[str]]:
     """Query AWS Config compliance state for the supplied HIPAA controls."""
     config_rules = _list_config_rules(config_client)
     resolved_names = _resolve_rule_names(controls, config_rules)
@@ -363,7 +363,7 @@ def _get_config_compliance(
              unresolved_rules=unresolved)
 
     if not actual_to_logical:
-        return compliance_map
+        return compliance_map, unresolved
 
     try:
         paginator = config_client.get_paginator('describe_compliance_by_config_rule')
@@ -383,7 +383,7 @@ def _get_config_compliance(
     except ClientError as exc:
         _log('warning', 'AWS Config compliance query failed', error=str(exc))
 
-    return compliance_map
+    return compliance_map, unresolved
 
 
 # ---------------------------------------------------------------------------
@@ -503,10 +503,15 @@ def _build_phi_locations(
     ]
 
 
-def _build_assessment_payload(customer_id: str, compliance_map: Dict[str, str]) -> Dict[str, Any]:
+def _build_assessment_payload(
+    customer_id: str,
+    compliance_map: Dict[str, str],
+    unresolved_rules: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     """Build the portal response shape expected by HIPAADashboard.jsx."""
     now = datetime.now(timezone.utc)
     next_due = now + timedelta(days=90)
+    unresolved_rules = unresolved_rules or []
     safeguards = {
         safeguard: _build_safeguard_summary(controls, compliance_map)
         for safeguard, controls in RULES_BY_SAFEGUARD.items()
@@ -534,6 +539,11 @@ def _build_assessment_payload(customer_id: str, compliance_map: Dict[str, str]) 
 
     payload: Dict[str, Any] = {
         'customerId': customer_id,
+        'assessmentComplete': not unresolved_rules,
+        'assessmentWarnings': [
+            f'AWS Config rule not resolved: {rule_name}'
+            for rule_name in unresolved_rules
+        ],
         'overallScore': overall_score,
         'lastAssessmentDate': now.isoformat(),
         'nextAssessmentDue': next_due.isoformat(),
@@ -635,8 +645,12 @@ def _assess_tenant(
 ) -> Dict[str, Any]:
     """Build a HIPAA assessment for a single tenant."""
     config_client = session.client('config')
-    compliance_map = _get_config_compliance(ALL_RULES, config_client)
-    payload = _build_assessment_payload(customer_id, compliance_map)
+    compliance_map, unresolved_rules = _get_config_compliance(ALL_RULES, config_client)
+    payload = _build_assessment_payload(
+        customer_id,
+        compliance_map,
+        unresolved_rules=unresolved_rules,
+    )
 
     try:
         _write_assessment_to_dynamodb(
@@ -675,7 +689,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     dry_run: bool = bool(event.get('dry_run', body.get('dry_run', False)))
     extracted_customer_id = _extract_tenant_id(event, body)
-    target_customer: str = extracted_customer_id or event.get('customer_id') or 'platform'
+    target_customer: str = extracted_customer_id or 'platform'
     role_arn: Optional[str] = _extract_role_arn(event, body)
     role_mode = 'cross_account' if role_arn else 'platform'
 
@@ -724,7 +738,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             role_mode=role_mode,
             dry_run=dry_run,
         )
-    except Exception as exc:  # noqa: BLE001
+    except (ClientError, RuntimeError, ValueError) as exc:
         _log('error', 'Failed to assess tenant',
              customer_id=target_customer, error=str(exc))
         if is_api_request:
