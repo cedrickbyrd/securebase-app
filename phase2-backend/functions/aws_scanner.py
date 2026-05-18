@@ -36,6 +36,10 @@ COMPLIANCE_SCORE_FUNCTION_NAME = os.environ.get(
 )
 
 
+class JwtSecretError(Exception):
+    """Raised when JWT secret configuration or retrieval fails."""
+
+
 def _log_resource(service: str, resource: str, status: str, findings: dict | None = None, error: str | None = None) -> None:
     entry = {"service": service, "resource": resource, "status": status}
     if findings is not None:
@@ -75,8 +79,11 @@ def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
         return None
 
     token = auth[7:]
+    secret_name = os.environ.get("JWT_SECRET")
+    if not secret_name:
+        raise JwtSecretError("JWT_SECRET environment variable is not set")
+
     try:
-        secret_name = os.environ.get("JWT_SECRET", "securebase-jwt-production")
         try:
             resp = secrets_client.get_secret_value(SecretId=secret_name)
             raw = resp.get("SecretString", "")
@@ -85,11 +92,9 @@ def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
             except (json.JSONDecodeError, AttributeError):
                 secret = raw
         except ClientError as exc:
-            logger.warning("JWT secret lookup failed: %s", exc)
-            return None
+            raise JwtSecretError("JWT secret lookup failed") from exc
         if not secret:
-            logger.warning("JWT secret is empty; rejecting request")
-            return None
+            raise JwtSecretError("JWT secret is empty")
         claims = jwt.decode(token, secret, algorithms=["HS256"])
         return claims.get("sub") or claims.get("customer_id")
     except jwt.InvalidTokenError:
@@ -759,7 +764,11 @@ def _handle_post_verify(event: dict[str, Any]) -> dict[str, Any]:
 def _handle_on_demand(event: dict[str, Any]) -> dict[str, Any]:
     if event.get("httpMethod") == "OPTIONS":
         return _response(200, {"ok": True})
-    customer_id = _get_customer_id_from_event(event)
+    try:
+        customer_id = _get_customer_id_from_event(event)
+    except JwtSecretError as exc:
+        logger.error("JWT authentication configuration error: %s", exc)
+        return _response(500, {"error": "Authentication configuration error"})
     if not customer_id:
         return _response(401, {"error": "Unauthorized"})
 
@@ -776,7 +785,7 @@ def _handle_on_demand(event: dict[str, Any]) -> dict[str, Any]:
         return _response(202, {"scan_status": "queued", "customer_id": customer_id})
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not invoke compliance score lambda: %s", exc)
-        return _response(500, {"error": "Failed to queue scan"})
+        return _response(500, {"error": "Failed to trigger compliance score calculation"})
 
 
 def _handle_scheduled() -> dict[str, Any]:
