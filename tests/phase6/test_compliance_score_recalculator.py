@@ -238,6 +238,7 @@ class TestWriteScoreToDynamoDB:
             violations={'CRITICAL': 1, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0},
             controls_total=10,
             controls_passing=9,
+            cloudwatch_client=MagicMock(),
             dry_run=True,
         )
         mock_table.put_item.assert_not_called()
@@ -256,6 +257,7 @@ class TestWriteScoreToDynamoDB:
             violations={'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 1, 'LOW': 0},
             controls_total=12,
             controls_passing=11,
+            cloudwatch_client=MagicMock(),
             dry_run=False,
         )
 
@@ -307,86 +309,88 @@ class TestWriteScoreToDynamoDB:
 class TestLambdaHandler:
     """Integration-level tests for compliance_score_recalculator.lambda_handler."""
 
-    def _make_mock_db(self, customers=None):
-        mock_db = MagicMock()
-        mock_db.query_many.return_value = customers or [
-            {'id': 'tenant-aaa'},
-            {'id': 'tenant-bbb'},
-        ]
-        return mock_db
-
-    def test_handler_returns_tenant_count(self):
-        """handler must return tenants_processed equal to number of active tenants."""
-        mock_db = self._make_mock_db(customers=[{'id': 'tenant-aaa'}, {'id': 'tenant-bbb'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_defaults_to_platform_customer(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={'SOC2': 90.0, 'HIPAA': 85.0}):
+                               return_value={'SOC2': 90.0, 'HIPAA': 85.0}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
                 result = compliance_score_recalculator.lambda_handler({}, _make_context())
 
-        assert result['tenants_processed'] == 2
+        assert result['tenants_processed'] == 1
+        assert result['scores']['platform']['SOC2'] == 90.0
         assert 'errors' in result
         assert result['errors'] == []
+        mock_session.assert_called_once()
+        called_args, called_kwargs = mock_score.call_args
+        assert called_args[0] == 'platform'
+        assert called_kwargs['dry_run'] is False
+        assert called_kwargs['session'] is mock_session.return_value
 
     def test_handler_with_dry_run(self):
         """dry_run=True is passed through to _score_tenant."""
-        mock_db = self._make_mock_db(customers=[{'id': 'tenant-ccc'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={}) as mock_score:
+                               return_value={}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
                 compliance_score_recalculator.lambda_handler(
                     {'dry_run': True}, _make_context()
                 )
-            mock_score.assert_called_once_with('tenant-ccc', dry_run=True)
+            called_args, called_kwargs = mock_score.call_args
+            assert called_args[0] == 'platform'
+            assert called_kwargs['dry_run'] is True
+            assert called_kwargs['session'] is mock_session.return_value
 
-    def test_handler_records_errors_but_continues(self):
-        """Errors for individual tenants are recorded and processing continues."""
-        mock_db = self._make_mock_db(
-            customers=[{'id': 'tenant-ok'}, {'id': 'tenant-bad'}]
-        )
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_records_errors(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
-            def side_effect(customer_id, dry_run=False):
-                if customer_id == 'tenant-bad':
-                    raise RuntimeError('Simulated AWS API failure')
-                return {'SOC2': 95.0}
-
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               side_effect=side_effect):
+                               side_effect=RuntimeError('Simulated AWS API failure')), \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()):
                 result = compliance_score_recalculator.lambda_handler({}, _make_context())
 
-        # tenant-ok processed successfully; tenant-bad recorded as error
-        assert result['tenants_processed'] == 1
+        assert result['tenants_processed'] == 0
         assert len(result['errors']) == 1
-        assert 'tenant-bad' in result['errors'][0]
+        assert 'platform' in result['errors'][0]
 
-    def test_handler_single_tenant_target(self):
-        """customer_id in event restricts scoring to a single tenant."""
-        mock_db = self._make_mock_db(customers=[{'id': 'target-tenant'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_assumes_role_when_role_arn_is_provided(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={'SOC2': 80.0}) as mock_score:
+                               return_value={'SOC2': 80.0}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.client') as mock_boto_client, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
+                mock_boto_client.return_value.assume_role.return_value = {
+                    'Credentials': {
+                        'AccessKeyId': 'ak',
+                        'SecretAccessKey': 'sk',
+                        'SessionToken': 'st',
+                    }
+                }
                 result = compliance_score_recalculator.lambda_handler(
-                    {'customer_id': 'target-tenant'}, _make_context()
+                    {'customer_id': 'target-tenant', 'role_arn': 'arn:aws:iam::123:role/SecureBaseReadOnlyRole'},
+                    _make_context(),
                 )
 
         assert result['tenants_processed'] == 1
-        mock_score.assert_called_once_with('target-tenant', dry_run=False)
+        called_args, called_kwargs = mock_score.call_args
+        assert called_args[0] == 'target-tenant'
+        assert called_kwargs['dry_run'] is False
+        assert called_kwargs['session'] is mock_session.return_value

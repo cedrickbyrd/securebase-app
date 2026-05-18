@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import boto3
+import jwt
 from botocore.exceptions import ClientError
 
 from db_utils import execute_one, query_one
@@ -29,6 +30,10 @@ IAM_CRED_REPORT_MIN_COLUMNS = 8
 
 PHI_KEYWORDS = ("phi", "ehr", "patient", "health", "medical", "hipaa", "clinical")
 ddb = boto3.resource("dynamodb")
+secrets_client = boto3.client("secretsmanager")
+COMPLIANCE_SCORE_FUNCTION_NAME = os.environ.get(
+    "COMPLIANCE_SCORE_FUNCTION_NAME", "securebase-dev-compliance-score"
+)
 
 
 def _log_resource(service: str, resource: str, status: str, findings: dict | None = None, error: str | None = None) -> None:
@@ -62,6 +67,43 @@ def _safe_json_loads(value: Any) -> dict[str, Any]:
         return json.loads(value)
     except (TypeError, json.JSONDecodeError):
         return {}
+
+
+def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
+    auth = (event.get("headers") or {}).get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+
+    token = auth[7:]
+    try:
+        secret_name = os.environ.get("JWT_SECRET", "securebase-jwt-production")
+        try:
+            resp = secrets_client.get_secret_value(SecretId=secret_name)
+            raw = resp.get("SecretString", "")
+            try:
+                secret = json.loads(raw).get("jwt_secret") or raw
+            except (json.JSONDecodeError, AttributeError):
+                secret = raw
+        except ClientError:
+            secret = secret_name
+        claims = jwt.decode(token, secret, algorithms=["HS256"])
+        return claims.get("sub") or claims.get("customer_id")
+    except jwt.InvalidTokenError:
+        return None
+
+
+def _invoke_compliance_score(customer_id: str, role_arn: str, source: str) -> None:
+    boto3.client("lambda").invoke(
+        FunctionName=COMPLIANCE_SCORE_FUNCTION_NAME,
+        InvocationType="Event",
+        Payload=json.dumps(
+            {
+                "customer_id": customer_id,
+                "role_arn": role_arn,
+                "source": source,
+            }
+        ),
+    )
 
 
 def _assume_customer_session(customer_id: str, role_arn: str, external_id: str):
@@ -713,18 +755,24 @@ def _handle_post_verify(event: dict[str, Any]) -> dict[str, Any]:
 def _handle_on_demand(event: dict[str, Any]) -> dict[str, Any]:
     if event.get("httpMethod") == "OPTIONS":
         return _response(200, {"ok": True})
-    body = _safe_json_loads(event.get("body"))
-    customer_id = body.get("customer_id")
+    customer_id = _get_customer_id_from_event(event)
     if not customer_id:
-        return _response(400, {"error": "customer_id is required"})
+        return _response(401, {"error": "Unauthorized"})
 
     conn = _get_connection(customer_id)
     if not conn or conn.get("status") != "connected":
         return _response(404, {"error": "connected customer not found"})
 
-    result = _run_customer_scan(customer_id, conn.get("role_arn"), conn.get("external_id"))
-    status_code = 200 if result.get("scan_status") == "completed" else 500
-    return _response(status_code, result)
+    role_arn = conn.get("role_arn")
+    if not role_arn:
+        return _response(400, {"error": "connected role ARN not found"})
+
+    try:
+        _invoke_compliance_score(customer_id, role_arn, "api_scan_trigger")
+        return _response(202, {"scan_status": "queued", "customer_id": customer_id})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not invoke compliance score lambda: %s", exc)
+        return _response(500, {"error": "Failed to queue scan"})
 
 
 def _handle_scheduled() -> dict[str, Any]:
