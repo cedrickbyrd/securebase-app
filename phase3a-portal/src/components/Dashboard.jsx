@@ -34,6 +34,7 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [texasCompliance, setTexasCompliance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scanPending, setScanPending] = useState(false);
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -55,6 +56,16 @@ function Dashboard() {
   }, []);
 
   const loadDashboardData = async () => {
+    const hasPendingScan = sessionStorage.getItem('scanPending') === 'true';
+    if (hasPendingScan) {
+      sessionStorage.removeItem('scanPending');
+      setScanPending(true);
+      setLoading(false);
+      return;
+    }
+
+    setScanPending(false);
+
     if (checkDemoMode()) {
       const mockMetrics = await fetchData('/metrics');
       setMetrics(mockMetrics);
@@ -101,6 +112,45 @@ function Dashboard() {
       <div className="dashboard-loading">
         <div className="spinner"></div>
         <p>Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (!loading && !metrics && scanPending) {
+    return (
+      <div className="dashboard-page">
+        <PersonalizedBanner />
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+        <header className="dashboard-header">
+          <div className="header-content">
+            <div className="header-left">
+              <h1>{PORTAL_NARRATIVE.dashboardHeadline}</h1>
+              <p>Welcome back to {BRANDING.productShortName}</p>
+            </div>
+            <div className="header-right">
+              <NotificationBell onCriticalAlert={handleCriticalAlert} />
+              <button className="logout-button" onClick={handleLogout}>Logout</button>
+            </div>
+          </div>
+        </header>
+
+        <main className="dashboard-main">
+          <div className="dashboard-empty-state">
+            <div style={{ textAlign: 'center', padding: '4rem 2rem', maxWidth: 480, margin: '0 auto' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '0.75rem' }}>
+                Your compliance posture is being calculated
+              </h2>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                SecureBase is scanning your AWS environment. Your compliance score, findings, and evidence packages will appear here within 15 minutes.
+              </p>
+              <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                You can close this tab and come back — we'll have your results ready.
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
