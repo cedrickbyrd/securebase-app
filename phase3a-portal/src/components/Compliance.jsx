@@ -124,7 +124,7 @@ export default function Compliance({ isPublic = false }) {
       });
 
       if (!res.ok) {
-        throw new Error(`Error ${res.status}`);
+        throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
