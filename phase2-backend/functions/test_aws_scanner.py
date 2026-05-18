@@ -55,32 +55,36 @@ class TestAwsScanner(unittest.TestCase):
         self.assertEqual(result["customers_scanned"], 2)
         self.assertEqual(mock_run.call_count, 2)
 
+    @patch("aws_scanner._get_customer_id_from_event", return_value=None)
     @patch("aws_scanner._get_connection")
-    def test_on_demand_missing_customer_id(self, mock_connection):
-        event = {"httpMethod": "POST", "path": "/scan/trigger", "body": "{}"}
+    def test_on_demand_missing_customer_id(self, mock_connection, mock_customer_id):
+        event = {"httpMethod": "POST", "path": "/scan/trigger", "headers": {}}
         result = aws_scanner.lambda_handler(event, None)
-        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(result["statusCode"], 401)
         mock_connection.assert_not_called()
+        mock_customer_id.assert_called_once()
 
-    @patch("aws_scanner._run_customer_scan")
+    @patch("aws_scanner._invoke_compliance_score")
+    @patch("aws_scanner._get_customer_id_from_event", return_value="cust-1")
     @patch("aws_scanner._get_connection")
-    def test_on_demand_connected_customer(self, mock_connection, mock_run):
+    def test_on_demand_connected_customer(self, mock_connection, mock_customer_id, mock_invoke):
         mock_connection.return_value = {
             "customer_id": "cust-1",
             "status": "connected",
             "role_arn": "arn:role",
             "external_id": "ext-1",
         }
-        mock_run.return_value = {"customer_id": "cust-1", "scan_status": "completed", "resources_scanned": 5}
         event = {
             "httpMethod": "POST",
             "path": "/scan/trigger",
-            "body": json.dumps({"customer_id": "cust-1"}),
+            "headers": {"Authorization": "Bearer token"},
         }
         result = aws_scanner.lambda_handler(event, None)
-        self.assertEqual(result["statusCode"], 200)
+        self.assertEqual(result["statusCode"], 202)
         body = json.loads(result["body"])
-        self.assertEqual(body["scan_status"], "completed")
+        self.assertEqual(body["scan_status"], "queued")
+        mock_customer_id.assert_called_once_with(event)
+        mock_invoke.assert_called_once_with("cust-1", "arn:role", "api_scan_trigger")
 
     @patch("aws_scanner.execute_one")
     @patch("aws_scanner.query_one")
