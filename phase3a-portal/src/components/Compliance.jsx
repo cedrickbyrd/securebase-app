@@ -239,7 +239,7 @@ export default function Compliance({ isPublic = false }) {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{PORTAL_NARRATIVE.complianceHeadline}</h1>
           <p className="text-gray-600">{PORTAL_NARRATIVE.complianceSubheadline}</p>
           {!isPublic && downloadError && (
-            <p className="mt-2 text-sm text-red-600">{downloadError}</p>
+            <p className="mt-2 text-sm text-red-600" role="alert" aria-live="polite">{downloadError}</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-3">
@@ -247,6 +247,7 @@ export default function Compliance({ isPublic = false }) {
             <button
               onClick={handleDownloadReport}
               disabled={downloading}
+              aria-label="Download compliance findings report"
               className="inline-flex items-center rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {downloading ? 'Generating…' : '⬇ Download Report'}

@@ -405,14 +405,14 @@ function Dashboard() {
               <div className="card-header">
                 <h2>Audit Evidence</h2>
                 <div className="flex items-center gap-3">
-                  <button className="view-all-btn" onClick={handleDownloadReport} disabled={downloading}>
+                  <button className="view-all-btn" onClick={handleDownloadReport} disabled={downloading} aria-label="Download compliance findings report">
                     {downloading ? 'Generating…' : '⬇ Download Report'}
                   </button>
                   <button className="view-all-btn" onClick={() => navigate('/evidence')}>Full View →</button>
                 </div>
               </div>
               {downloadError && (
-                <p className="px-6 pt-3 text-sm text-red-600">{downloadError}</p>
+                <p className="px-6 pt-3 text-sm text-red-600" role="alert" aria-live="polite">{downloadError}</p>
               )}
               <div className="card-content">
                 <EvidencePackages embedded />
