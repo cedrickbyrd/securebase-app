@@ -87,7 +87,7 @@ export default function Setup() {
     setSubmitError('');
 
     try {
-      const res = await fetch(`${API_BASE}/signup`, {
+      const res = await fetch(`/api/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
