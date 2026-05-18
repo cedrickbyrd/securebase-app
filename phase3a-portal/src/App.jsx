@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { initializeSessionTracking } from './utils/analytics';
 import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
@@ -53,20 +53,44 @@ function ComplianceTrendPage() {
   );
 }
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
-    if ((import.meta.env.VITE_DEMO_MODE === 'true' || demoParam) && !localStorage.getItem('sessionToken')) {
-      localStorage.setItem('demo_mode', 'true');
-      localStorage.setItem('demo_user', JSON.stringify({ email: DEMO_EMAIL, customerId: DEMO_CUSTOMER_ID, orgName: DEMO_ORG_NAME }));
-    }
-    return !!sessionStorage.getItem('sessionToken') || !!localStorage.getItem('sessionToken') || isDemoMode();
-  });
+const ONBOARDING_EXEMPT_PATHS = [
+  '/cloud-connection', '/login', '/accept-invite', '/forgot-password',
+  '/reset-password', '/onboarding', '/admin',
+];
 
-  useEffect(() => { initializeSessionTracking(); }, []);
+function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNeedsOnboarding }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated || isDemoMode()) return;
+    const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
+    if (userRole === 'admin') return;
+    if (ONBOARDING_EXEMPT_PATHS.some(p => location.pathname.startsWith(p))) return;
+
+    const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    fetch('/api/cloud-connection/status', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: controller.signal,
+    })
+      .then(res => {
+        if (!res.ok) { setNeedsOnboarding(true); return; }
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.connected === false) setNeedsOnboarding(true);
+        if (data && data.connected === true) setNeedsOnboarding(false);
+      })
+      .catch(() => { /* non-blocking: default to allowing access on network error/timeout */ })
+      .finally(() => clearTimeout(timeoutId));
+
+    return () => { clearTimeout(timeoutId); controller.abort(); };
+  }, [isAuthenticated, location.pathname, setNeedsOnboarding]);
 
   return (
-    <Router>
+    <>
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         {/* ─ Auth ─ */}
@@ -79,7 +103,7 @@ function App() {
         <Route path="/onboarding"      element={<OnboardingRoute />} />
 
         {/* ─ Protected ─ */}
-        <Route path="/dashboard"           element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard />         : <Navigate to="/login" />)} />
+        <Route path="/dashboard"           element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : isAuthenticated ? (needsOnboarding ? <Navigate to="/cloud-connection" replace /> : <Dashboard />) : <Navigate to="/login" />} />
         <Route path="/demo-dashboard"      element={isAuthenticated ? <DemoDashboard />                                                                  : <Navigate to="/login" />} />
         <Route path="/compliance"          element={<Compliance isPublic={!isAuthenticated} />} />
         <Route path="/compliance/trend"    element={isAuthenticated ? <ComplianceTrendPage />                                                            : <Navigate to="/login" />} />
@@ -101,6 +125,32 @@ function App() {
         <Route path="/setup"                        element={<Setup />} />
         <Route path="/"                             element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
+    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
+    if ((import.meta.env.VITE_DEMO_MODE === 'true' || demoParam) && !localStorage.getItem('sessionToken')) {
+      localStorage.setItem('demo_mode', 'true');
+      localStorage.setItem('demo_user', JSON.stringify({ email: DEMO_EMAIL, customerId: DEMO_CUSTOMER_ID, orgName: DEMO_ORG_NAME }));
+    }
+    return !!sessionStorage.getItem('sessionToken') || !!localStorage.getItem('sessionToken') || isDemoMode();
+  });
+
+  const [needsOnboarding, setNeedsOnboarding] = React.useState(false);
+
+  useEffect(() => { initializeSessionTracking(); }, []);
+
+  return (
+    <Router>
+      <AppInner
+        isAuthenticated={isAuthenticated}
+        setIsAuthenticated={setIsAuthenticated}
+        needsOnboarding={needsOnboarding}
+        setNeedsOnboarding={setNeedsOnboarding}
+      />
     </Router>
   );
 }
