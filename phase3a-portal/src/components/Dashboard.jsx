@@ -135,15 +135,15 @@ function Dashboard() {
 
         <main className="dashboard-main">
           <div className="dashboard-empty-state">
-            <div style={{ textAlign: 'center', padding: '4rem 2rem', maxWidth: 480, margin: '0 auto' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '0.75rem' }}>
+            <div className="mx-auto max-w-[480px] px-8 py-16 text-center">
+              <div className="mb-4 text-5xl">🔍</div>
+              <h2 className="mb-3 text-2xl font-bold text-gray-900">
                 Your compliance posture is being calculated
               </h2>
-              <p style={{ color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              <p className="mb-6 leading-relaxed text-gray-500">
                 SecureBase is scanning your AWS environment. Your compliance score, findings, and evidence packages will appear here within 15 minutes.
               </p>
-              <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+              <p className="text-sm text-gray-400">
                 You can close this tab and come back — we'll have your results ready.
               </p>
             </div>
