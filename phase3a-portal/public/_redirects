@@ -21,6 +21,9 @@
 # Phase 6.2 — Compliance History API
 /api/tenant/compliance/history https://api.securebase.tximhotep.com/tenant/compliance/history 200!
 
+# Signup/onboarding — provision new customer account
+/api/signup  https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/signup  200!
+
 # Cloud Connection — cross-account IAM role management
 /api/cloud-connection/status   https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/status   200!
 /api/cloud-connection/init     https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/cloud-connection/init     200!
