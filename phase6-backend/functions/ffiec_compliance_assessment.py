@@ -41,16 +41,19 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Govern',
         'controls': [
             {
+                'mappingId': 'GV.OC-01-iam-password-policy',
                 'controlId': 'GV.OC-01',
                 'title': 'organizational context',
                 'configRule': 'IAM_PASSWORD_POLICY',
             },
             {
+                'mappingId': 'GV.OC-03-cloudtrail-enabled',
                 'controlId': 'GV.OC-03',
                 'title': 'legal and regulatory requirements',
                 'configRule': 'CLOUD_TRAIL_ENABLED',
             },
             {
+                'mappingId': 'GV.SC-07-secrets-rotation',
                 'controlId': 'GV.SC-07',
                 'title': 'supply chain risk',
                 'configRule': 'SECRETSMANAGER_ROTATION_ENABLED_CHECK',
@@ -62,16 +65,19 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Identify',
         'controls': [
             {
+                'mappingId': 'ID.AM-01-config-enabled',
                 'controlId': 'ID.AM-01',
                 'title': 'asset inventory',
                 'configRule': 'AWS_CONFIG_ENABLED',
             },
             {
+                'mappingId': 'ID.RA-01-guardduty',
                 'controlId': 'ID.RA-01',
                 'title': 'vulnerability identification',
                 'configRule': 'GUARDDUTY_ENABLED_CENTRALIZED',
             },
             {
+                'mappingId': 'ID.AM-08-s3-versioning',
                 'controlId': 'ID.AM-08',
                 'title': 'systems and software managed',
                 'configRule': 'S3_BUCKET_VERSIONING_ENABLED',
@@ -83,36 +89,43 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Protect',
         'controls': [
             {
+                'mappingId': 'PR.AA-01-mfa-console',
                 'controlId': 'PR.AA-01',
                 'title': 'identity management',
                 'configRule': 'MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS',
             },
             {
+                'mappingId': 'PR.DS-01-encrypted-volumes',
                 'controlId': 'PR.DS-01',
                 'title': 'data at rest',
                 'configRule': 'ENCRYPTED_VOLUMES',
             },
             {
+                'mappingId': 'PR.DS-02-s3-ssl-only',
                 'controlId': 'PR.DS-02',
                 'title': 'data in transit',
                 'configRule': 'S3_BUCKET_SSL_REQUESTS_ONLY',
             },
             {
+                'mappingId': 'PR.AC-03-s3-public-read',
                 'controlId': 'PR.AC-03',
                 'title': 'remote access',
                 'configRule': 'S3_BUCKET_PUBLIC_READ_PROHIBITED',
             },
             {
+                'mappingId': 'PR.AC-03-s3-public-write',
                 'controlId': 'PR.AC-03',
                 'title': 'remote access',
                 'configRule': 'S3_BUCKET_PUBLIC_WRITE_PROHIBITED',
             },
             {
+                'mappingId': 'PR.DS-01-rds-storage-encrypted',
                 'controlId': 'PR.DS-01',
                 'title': 'data at rest',
                 'configRule': 'RDS_STORAGE_ENCRYPTED',
             },
             {
+                'mappingId': 'PR.AA-05-iam-inline-policy',
                 'controlId': 'PR.AA-05',
                 'title': 'access permissions',
                 'configRule': 'IAM_NO_INLINE_POLICY_CHECK',
@@ -124,16 +137,19 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Detect',
         'controls': [
             {
+                'mappingId': 'DE.AE-02-cloudtrail-validation',
                 'controlId': 'DE.AE-02',
                 'title': 'anomaly analysis',
                 'configRule': 'CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED',
             },
             {
+                'mappingId': 'DE.CM-01-vpc-flow-logs',
                 'controlId': 'DE.CM-01',
                 'title': 'networks monitored',
                 'configRule': 'VPC_FLOW_LOGS_ENABLED',
             },
             {
+                'mappingId': 'DE.CM-09-cloudwatch-alarm-actions',
                 'controlId': 'DE.CM-09',
                 'title': 'computing hardware monitored',
                 'configRule': 'CLOUDWATCH_ALARM_ACTION_CHECK',
@@ -145,11 +161,13 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Respond',
         'controls': [
             {
+                'mappingId': 'RS.MA-01-kms-cmk',
                 'controlId': 'RS.MA-01',
                 'title': 'incident management',
                 'configRule': 'KMS_CMK_NOT_SCHEDULED_FOR_DELETION',
             },
             {
+                'mappingId': 'RS.CO-02-api-gw-ssl',
                 'controlId': 'RS.CO-02',
                 'title': 'reporting',
                 'configRule': 'API_GW_SSL_ENABLED',
@@ -161,11 +179,13 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
         'name': 'Recover',
         'controls': [
             {
+                'mappingId': 'RC.RP-01-rds-multi-az',
                 'controlId': 'RC.RP-01',
                 'title': 'recovery plan executed',
                 'configRule': 'RDS_MULTI_AZ_SUPPORT',
             },
             {
+                'mappingId': 'RC.RP-01-dynamodb-backup',
                 'controlId': 'RC.RP-01',
                 'title': 'recovery plan executed',
                 'configRule': 'DYNAMODB_IN_BACKUP_PLAN',
@@ -291,6 +311,7 @@ def _get_config_compliance(rule_names: List[str], config_client: Any) -> Dict[st
 def _control_payload(control: Dict[str, str], compliance_map: Dict[str, str]) -> Dict[str, Any]:
     status = compliance_map.get(control['configRule'], 'INSUFFICIENT_DATA')
     return {
+        'mappingId': control['mappingId'],
         'controlId': control['controlId'],
         'title': control['title'],
         'configRule': control['configRule'],

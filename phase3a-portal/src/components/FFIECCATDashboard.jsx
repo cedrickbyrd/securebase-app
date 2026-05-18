@@ -76,7 +76,7 @@ function ScoreSegments({ score }) {
     <div className="grid grid-cols-10 gap-1">
       {Array.from({ length: 10 }).map((_, index) => (
         <div
-          key={`${score}-${index}`}
+          key={index}
           className={`h-2 rounded-full ${index < activeSegments ? activeClass : 'bg-slate-200'}`}
         />
       ))}
@@ -166,7 +166,7 @@ function FunctionCard({ category, onEvidenceClick }) {
                   : 'bg-slate-100 text-slate-700';
 
               return (
-                <div key={`${category.function}-${control.controlId}-${control.configRule}`} className={`rounded-lg border px-4 py-3 ${controlState}`}>
+                <div key={control.mappingId || `${category.function}-${control.controlId}-${control.configRule}`} className={`rounded-lg border px-4 py-3 ${controlState}`}>
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
