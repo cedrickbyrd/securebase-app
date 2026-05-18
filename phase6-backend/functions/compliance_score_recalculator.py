@@ -30,7 +30,7 @@ Environment Variables:
     RDS_DATABASE              Database name (default: securebase)
     RDS_USER                  Application database user
     AWS_DEFAULT_REGION        AWS region for API calls (default: us-east-1)
-    SECUREBASE_EXTERNAL_ID    External ID used for cross-account AssumeRole
+    SECUREBASE_EXTERNAL_ID    Required for cross-account AssumeRole when role_arn is provided
     LOG_LEVEL                 DEBUG | INFO | WARNING | ERROR (default: INFO)
 
 Scoring Model:
@@ -511,11 +511,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     try:
         if role_arn:
+            external_id = os.environ.get('SECUREBASE_EXTERNAL_ID', '').strip()
+            if not external_id:
+                raise RuntimeError('SECUREBASE_EXTERNAL_ID is required for cross-account scoring')
             sts = boto3.client('sts')
             assumed = sts.assume_role(
                 RoleArn=role_arn,
                 RoleSessionName=f'securebase-scan-{target_customer}',
-                ExternalId=os.environ.get('SECUREBASE_EXTERNAL_ID', ''),
+                ExternalId=external_id,
             )
             creds = assumed['Credentials']
             session = boto3.Session(

@@ -84,8 +84,12 @@ def _get_customer_id_from_event(event: dict[str, Any]) -> str | None:
                 secret = json.loads(raw).get("jwt_secret") or raw
             except (json.JSONDecodeError, AttributeError):
                 secret = raw
-        except ClientError:
-            secret = secret_name
+        except ClientError as exc:
+            logger.warning("JWT secret lookup failed: %s", exc)
+            return None
+        if not secret:
+            logger.warning("JWT secret is empty; rejecting request")
+            return None
         claims = jwt.decode(token, secret, algorithms=["HS256"])
         return claims.get("sub") or claims.get("customer_id")
     except jwt.InvalidTokenError:
