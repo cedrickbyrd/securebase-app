@@ -64,8 +64,6 @@ function Dashboard() {
       return;
     }
 
-    setScanPending(false);
-
     if (checkDemoMode()) {
       const mockMetrics = await fetchData('/metrics');
       setMetrics(mockMetrics);
@@ -116,7 +114,7 @@ function Dashboard() {
     );
   }
 
-  if (!loading && !metrics && scanPending) {
+  if (!loading && scanPending) {
     return (
       <div className="dashboard-page">
         <PersonalizedBanner />
