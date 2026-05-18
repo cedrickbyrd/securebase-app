@@ -48,7 +48,14 @@ function Dashboard() {
     startTimeRef.current = Date.now();
     trackPageView('Dashboard', '/dashboard');
     incrementPagesViewed();
-    loadDashboardData();
+    const hasPendingScan = sessionStorage.getItem('scanPending') === 'true';
+    if (hasPendingScan) {
+      sessionStorage.removeItem('scanPending');
+      setScanPending(true);
+      setLoading(false);
+    } else {
+      loadDashboardData();
+    }
     return () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Dashboard', timeSpent);
@@ -56,14 +63,6 @@ function Dashboard() {
   }, []);
 
   const loadDashboardData = async () => {
-    const hasPendingScan = sessionStorage.getItem('scanPending') === 'true';
-    if (hasPendingScan) {
-      sessionStorage.removeItem('scanPending');
-      setScanPending(true);
-      setLoading(false);
-      return;
-    }
-
     if (checkDemoMode()) {
       const mockMetrics = await fetchData('/metrics');
       setMetrics(mockMetrics);
@@ -114,7 +113,7 @@ function Dashboard() {
     );
   }
 
-  if (!loading && scanPending) {
+  if (scanPending) {
     return (
       <div className="dashboard-page">
         <PersonalizedBanner />
