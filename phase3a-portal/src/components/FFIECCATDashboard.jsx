@@ -166,7 +166,7 @@ function FunctionCard({ category, onEvidenceClick }) {
                   : 'bg-slate-100 text-slate-700';
 
               return (
-                <div key={control.mappingId || `${category.function}-${control.controlId}-${control.configRule}`} className={`rounded-lg border px-4 py-3 ${controlState}`}>
+                <div key={control.mappingId} className={`rounded-lg border px-4 py-3 ${controlState}`}>
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -223,8 +223,8 @@ export default function FFIECCATDashboard({ onEvidenceExport }) {
           setData(result);
         }
       })
-      .catch((err) => {
-        console.error('Failed to load NIST CSF 2.0 compliance data:', err);
+      .catch(() => {
+        console.error('Failed to load NIST CSF 2.0 compliance data.');
         if (isMounted) {
           setError('Failed to load NIST CSF 2.0 compliance data.');
         }

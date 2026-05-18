@@ -169,7 +169,7 @@ NIST_CSF_FUNCTIONS: List[Dict[str, Any]] = [
             {
                 'mappingId': 'RS.CO-02-api-gw-ssl',
                 'controlId': 'RS.CO-02',
-                'title': 'reporting',
+                'title': 'encrypted API communication',
                 'configRule': 'API_GW_SSL_ENABLED',
             },
         ],
@@ -263,7 +263,7 @@ def _build_session(target_customer: str, role_arn: Optional[str]) -> boto3.Sessi
             if not external_id:
                 raise RuntimeError(
                     'SECUREBASE_EXTERNAL_ID environment variable must be configured '
-                    '(non-empty) for cross-account scoring'
+                    '(non-empty) whenever role_arn is provided'
                 )
             sts = boto3.client('sts')
             assumed = sts.assume_role(
