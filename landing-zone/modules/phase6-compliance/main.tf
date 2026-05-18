@@ -433,38 +433,18 @@ resource "aws_config_conformance_pack" "hipaa" {
   count = var.enable_hipaa_conformance_pack ? 1 : 0
   name  = "${var.project_name}-${var.environment}-hipaa"
 
-  template_body = <<-EOT
-    Parameters:
-      ConformancePackName:
-        Type: String
-    Resources:
-      HIPAAConformancePack:
-        Type: AWS::Config::ConformancePack
-        Properties:
-          ConformancePackName: !Ref ConformancePackName
-  EOT
+  template_s3_uri = "https://raw.githubusercontent.com/awslabs/aws-config-rules/master/aws-config-conformance-packs/Operational-Best-Practices-for-HIPAA-Security.yaml"
 
-  # TODO: Replace with the managed AWS HIPAA conformance pack template URL
-  # when deploying to production.  The template_body above is a placeholder.
+  depends_on = [aws_config_configuration_recorder_status.this]
 }
 
 resource "aws_config_conformance_pack" "nist_800_53" {
   count = var.enable_nist_conformance_pack ? 1 : 0
   name  = "${var.project_name}-${var.environment}-nist-800-53"
 
-  template_body = <<-EOT
-    Parameters:
-      ConformancePackName:
-        Type: String
-    Resources:
-      NISTConformancePack:
-        Type: AWS::Config::ConformancePack
-        Properties:
-          ConformancePackName: !Ref ConformancePackName
-  EOT
+  template_s3_uri = "https://raw.githubusercontent.com/awslabs/aws-config-rules/master/aws-config-conformance-packs/Operational-Best-Practices-for-NIST-800-53.yaml"
 
-  # TODO: Replace with the managed AWS NIST 800-53 conformance pack template URL
-  # when deploying to production.  The template_body above is a placeholder.
+  depends_on = [aws_config_configuration_recorder_status.this]
 }
 
 # ============================================================================
