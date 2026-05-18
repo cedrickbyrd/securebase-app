@@ -67,6 +67,9 @@ HIPAA_ASSESSMENTS_TABLE = os.environ.get(
     'HIPAA_ASSESSMENTS_TABLE', 'securebase-hipaa-assessments'
 )
 PORTAL_CORS_ORIGIN = os.environ.get('PORTAL_CORS_ORIGIN', '*')
+BAA_VALIDITY_DAYS = 365
+ASSESSMENT_RETENTION_DAYS = 365
+DEFAULT_SEVERITY_RANK = 3
 
 AWS_CONFIG_COMPLIANCE_TYPES = [
     'COMPLIANT',
@@ -359,7 +362,7 @@ def _get_config_compliance(
         if not actual_name
     ]
     if unresolved_rules:
-        _log('warning', 'HIPAA assessment controls unresolved in AWS Config',
+        _log('warning', 'HIPAA assessment rules unresolved in AWS Config',
              unresolved_rules=unresolved_rules)
 
     if not actual_to_logical:
@@ -473,7 +476,12 @@ def _build_findings(
         })
 
     severity_rank = {'high': 0, 'medium': 1, 'low': 2}
-    findings.sort(key=lambda item: (severity_rank.get(item['severity'], 3), item['control']))
+    findings.sort(
+        key=lambda item: (
+            severity_rank.get(item['severity'], DEFAULT_SEVERITY_RANK),
+            item['control'],
+        )
+    )
     return findings
 
 
@@ -547,8 +555,8 @@ def _build_assessment_payload(
             'vendors': [{
                 'name': 'AWS',
                 'status': 'active',
-                'signedDate': (now - timedelta(days=365)).isoformat(),
-                'expiresDate': (now + timedelta(days=365)).isoformat(),
+                'signedDate': (now - timedelta(days=BAA_VALIDITY_DAYS)).isoformat(),
+                'expiresDate': (now + timedelta(days=BAA_VALIDITY_DAYS)).isoformat(),
                 'coveredServices': ['Config', 'CloudTrail', 'GuardDuty', 'KMS'],
             }],
         },
@@ -611,7 +619,7 @@ def _write_assessment_to_dynamodb(
         'role_mode': role_mode,
         'calculated_at': now.isoformat(),
         'assessment': _to_decimal(payload),
-        'ttl': int((now.replace(year=now.year + 1)).timestamp()),
+        'ttl': int((now + timedelta(days=ASSESSMENT_RETENTION_DAYS)).timestamp()),
     }
 
     if dry_run:
