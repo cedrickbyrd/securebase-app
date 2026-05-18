@@ -81,7 +81,7 @@ class TestLambdaHandler:
         mod = self._get_module()
 
         with patch.object(mod, '_assess_tenant', return_value={'overallScore': 84.6, 'findings': []}) as mock_assess, \
-             patch('hipaa_compliance_assessment.boto3.Session', return_value=MagicMock()) as mock_session:
+             patch.object(mod.boto3, 'Session', return_value=MagicMock()) as mock_session:
             result = mod.lambda_handler({'customer_id': 'tenant-123'}, _make_context())
 
         assert result['overallScore'] == pytest.approx(84.6)
@@ -95,8 +95,8 @@ class TestLambdaHandler:
         mod = self._get_module()
 
         with patch.object(mod, '_assess_tenant', return_value={'overallScore': 92.0, 'findings': []}) as mock_assess, \
-             patch('hipaa_compliance_assessment.boto3.client') as mock_boto_client, \
-             patch('hipaa_compliance_assessment.boto3.Session', return_value=MagicMock()) as mock_session, \
+             patch.object(mod.boto3, 'client') as mock_boto_client, \
+             patch.object(mod.boto3, 'Session', return_value=MagicMock()) as mock_session, \
              patch.dict('os.environ', {'SECUREBASE_EXTERNAL_ID': 'external-id-123'}, clear=False):
             mock_boto_client.return_value.assume_role.return_value = {
                 'Credentials': {
@@ -121,7 +121,7 @@ class TestLambdaHandler:
         mod = self._get_module()
 
         with patch.object(mod, '_assess_tenant', return_value={'overallScore': 88.0, 'findings': []}), \
-             patch('hipaa_compliance_assessment.boto3.Session', return_value=MagicMock()):
+             patch.object(mod.boto3, 'Session', return_value=MagicMock()):
             response = mod.lambda_handler({
                 'httpMethod': 'GET',
                 'path': '/compliance/hipaa',
