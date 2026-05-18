@@ -17,7 +17,11 @@
 /api/compliance/score        https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/compliance/score    200!
 /api/compliance/status       https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/compliance/status   200!
 /api/compliance/findings     https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/compliance/findings 200!
+<<<<<<< copilot/build-hipaa-compliance-lambda
 /api/compliance/hipaa        https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/compliance/hipaa    200!
+=======
+/api/compliance/ffiec        https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/compliance/ffiec   200!
+>>>>>>> main
 
 # Phase 6.2 — Compliance History API
 /api/tenant/compliance/history https://api.securebase.tximhotep.com/tenant/compliance/history 200!
