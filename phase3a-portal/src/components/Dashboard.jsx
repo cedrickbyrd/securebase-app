@@ -34,6 +34,7 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [texasCompliance, setTexasCompliance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scanPending, setScanPending] = useState(false);
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -47,7 +48,14 @@ function Dashboard() {
     startTimeRef.current = Date.now();
     trackPageView('Dashboard', '/dashboard');
     incrementPagesViewed();
-    loadDashboardData();
+    const hasPendingScan = sessionStorage.getItem('scanPending') === 'true';
+    if (hasPendingScan) {
+      sessionStorage.removeItem('scanPending');
+      setScanPending(true);
+      setLoading(false);
+    } else {
+      loadDashboardData();
+    }
     return () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Dashboard', timeSpent);
@@ -101,6 +109,45 @@ function Dashboard() {
       <div className="dashboard-loading">
         <div className="spinner"></div>
         <p>Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (scanPending) {
+    return (
+      <div className="dashboard-page">
+        <PersonalizedBanner />
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+        <header className="dashboard-header">
+          <div className="header-content">
+            <div className="header-left">
+              <h1>{PORTAL_NARRATIVE.dashboardHeadline}</h1>
+              <p>Welcome back to {BRANDING.productShortName}</p>
+            </div>
+            <div className="header-right">
+              <NotificationBell onCriticalAlert={handleCriticalAlert} />
+              <button className="logout-button" onClick={handleLogout}>Logout</button>
+            </div>
+          </div>
+        </header>
+
+        <main className="dashboard-main">
+          <div className="dashboard-empty-state">
+            <div className="mx-auto max-w-[480px] px-8 py-16 text-center">
+              <div className="mb-4 text-5xl">🔍</div>
+              <h2 className="mb-3 text-2xl font-bold text-gray-900">
+                Your compliance posture is being calculated
+              </h2>
+              <p className="mb-6 leading-relaxed text-gray-500">
+                SecureBase is scanning your AWS environment. Your compliance score, findings, and evidence packages will appear here within 15 minutes.
+              </p>
+              <p className="text-sm text-gray-400">
+                You can close this tab and come back — we'll have your results ready.
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }

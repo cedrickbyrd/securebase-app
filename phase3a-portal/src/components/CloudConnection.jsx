@@ -158,6 +158,7 @@ export default function CloudConnection() {
           body: JSON.stringify({ source: 'cloud_connection_onboarding' }),
         }).catch(() => { /* non-blocking */ });
         setScanPending(true);
+        sessionStorage.setItem('scanPending', 'true');
       }
       else setError(data.error || 'Role verification failed. Check that the trust policy and external ID are correct.');
     } catch (e) {
