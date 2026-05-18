@@ -85,7 +85,7 @@ class TestLambdaHandler:
             result = mod.lambda_handler({'customer_id': 'tenant-123'}, _make_context())
 
         assert result['overallScore'] == pytest.approx(84.6)
-        mock_session.assert_called_once()
+        mock_session.assert_called_once_with()
         called_args, called_kwargs = mock_assess.call_args
         assert called_args[0] == 'tenant-123'
         assert called_kwargs['role_mode'] == 'platform'

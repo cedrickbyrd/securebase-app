@@ -353,17 +353,17 @@ def _get_config_compliance(
         if actual_name
     }
 
-    unresolved = [
+    unresolved_rules = [
         logical_name
         for logical_name, actual_name in resolved_names.items()
         if not actual_name
     ]
-    if unresolved:
+    if unresolved_rules:
         _log('warning', 'HIPAA assessment controls unresolved in AWS Config',
-             unresolved_rules=unresolved)
+             unresolved_rules=unresolved_rules)
 
     if not actual_to_logical:
-        return compliance_map, unresolved
+        return compliance_map, unresolved_rules
 
     try:
         paginator = config_client.get_paginator('describe_compliance_by_config_rule')
@@ -383,7 +383,7 @@ def _get_config_compliance(
     except ClientError as exc:
         _log('warning', 'AWS Config compliance query failed', error=str(exc))
 
-    return compliance_map, unresolved
+    return compliance_map, unresolved_rules
 
 
 # ---------------------------------------------------------------------------
@@ -493,12 +493,6 @@ def _build_phi_locations(
             'encrypted': _ui_status(compliance_map.get('rds-storage-encrypted')) == 'passing',
             'region': region,
             'kmsKeyId': 'aws-managed-or-customer-managed',
-        },
-        {
-            'service': 'Amazon S3',
-            'encrypted': _ui_status(compliance_map.get('s3-bucket-ssl-requests-only')) == 'passing',
-            'region': region,
-            'kmsKeyId': 'bucket-policy-enforced',
         },
     ]
 
