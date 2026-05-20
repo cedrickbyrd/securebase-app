@@ -1,0 +1,129 @@
+{
+  "framework": "CRA",
+  "standard": "Community Reinvestment Act — 12 CFR Part 25 / 228 / 345 / 563e — Documentation and Record Retention Requirements",
+  "description": "Mapping of CRA documentation, record retention, and operational controls to AWS Config managed rules and GuardDuty finding types. Supports OCC/FDIC/Federal Reserve examination readiness for CRA performance evaluation.",
+  "last_updated": "2026-05-15",
+  "controls": [
+    {
+      "control_id": "CRA-25.29(a)",
+      "control_name": "CRA Public File — Data Integrity",
+      "description": "The bank must maintain a public file containing required CRA information. Data integrity controls must ensure the public file has not been altered or corrupted since its last update.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-versioning-enabled",
+      "guardduty_finding_types": [
+        "Impact:S3/ObjectDelete.Unusual"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "CRA-25.29(b)",
+      "control_name": "CRA Records — TLS Transmission Security",
+      "description": "CRA performance data, HMDA data, and loan records transmitted to examiners or stored in cloud systems must be protected in transit. TLS required for all CRA-related data transmission.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-ssl-requests-only",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "CRA-25.42(a)",
+      "control_name": "HMDA/CRA Data — Access Controls",
+      "description": "Access to CRA loan data, HMDA data, and community development activity records must be restricted to authorized personnel. Root-level unrestricted access must not exist.",
+      "severity": "CRITICAL",
+      "config_rule": "iam-root-access-key-check",
+      "guardduty_finding_types": [
+        "Policy:IAMUser/RootCredentialUsage"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "CRA-25.42(b)",
+      "control_name": "HMDA/CRA Data — MFA for Authorized Access",
+      "description": "Personnel accessing CRA systems and HMDA data repositories must authenticate using multi-factor authentication to prevent unauthorized modification of examination records.",
+      "severity": "CRITICAL",
+      "config_rule": "mfa-enabled-for-iam-console-access",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "CRA-25.43(a)",
+      "control_name": "CRA Examination Records — Audit Trail",
+      "description": "All access to and modifications of CRA-related data must be logged to support OCC/FDIC examination requests. Audit trail must be continuous and tamper-evident.",
+      "severity": "CRITICAL",
+      "config_rule": "cloudtrail-enabled",
+      "guardduty_finding_types": [
+        "Stealth:IAMUser/CloudTrailLoggingDisabled",
+        "Stealth:IAMUser/LoggingConfigurationModified"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
+    },
+    {
+      "control_id": "CRA-25.43(b)",
+      "control_name": "CRA Records — Encryption at Rest",
+      "description": "CRA loan files, community development records, and HMDA data stored in databases must be encrypted at rest to prevent unauthorized disclosure to third parties.",
+      "severity": "HIGH",
+      "config_rule": "rds-storage-encrypted",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "CRA-25.44",
+      "control_name": "CRA Public Data — No Public Write Access",
+      "description": "CRA performance data and public file materials stored in cloud systems must be protected against unauthorized modification. Public write access to storage buckets must be prohibited.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-public-write-prohibited",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "CRA-25.45",
+      "control_name": "CRA Systems — Network Traffic Monitoring",
+      "description": "Network traffic to systems containing CRA data must be logged and monitored. VPC flow logging enables detection of unauthorized access attempts against CRA record systems.",
+      "severity": "MEDIUM",
+      "config_rule": "vpc-flow-logs-enabled",
+      "guardduty_finding_types": [
+        "Recon:EC2/PortProbeUnprotectedPort"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "CRA-25.46",
+      "control_name": "CRA Systems — Threat Detection",
+      "description": "Automated threat detection must be active on all systems that store or process CRA data to support continuous monitoring requirements during OCC/FDIC examination cycles.",
+      "severity": "HIGH",
+      "config_rule": "guardduty-enabled-centralized",
+      "guardduty_finding_types": [
+        "Recon:IAMUser/NetworkPermissions"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+    },
+    {
+      "control_id": "CRA-25.47",
+      "control_name": "CRA Database — No Public Exposure",
+      "description": "Databases containing CRA loan data, community development records, or HMDA submissions must not be publicly accessible. Publicly accessible RDS instances holding CRA data are a regulatory violation.",
+      "severity": "CRITICAL",
+      "config_rule": "rds-instance-public-access-check",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "CRA-25.48",
+      "control_name": "CRA API Endpoints — TLS Enforcement",
+      "description": "API endpoints used to submit, retrieve, or transmit CRA data must enforce TLS. Unencrypted API traffic handling CRA records is a control deficiency.",
+      "severity": "HIGH",
+      "config_rule": "api-gw-ssl-enabled",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/apigateway-controls.html"
+    },
+    {
+      "control_id": "CRA-25.49",
+      "control_name": "CRA S3 — Public Read Prohibition",
+      "description": "S3 buckets used to store CRA evidence packages, public file documents, or examination materials must not allow public read access.",
+      "severity": "HIGH",
+      "config_rule": "s3-bucket-public-read-prohibited",
+      "guardduty_finding_types": [
+        "Policy:S3/BucketPublicAccessGranted"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    }
+  ]
+}

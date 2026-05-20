@@ -33,6 +33,10 @@ npx playwright test tests/e2e/customer1-journey.spec.js --grep "API contract|pro
 | `PORTAL_URL` | `https://portal.securebase.tximhotep.com` | Portal base URL |
 | `API_URL` | API Gateway prod endpoint | Direct Lambda URL |
 | `SMOKE_EMAIL` | `smoke-test@securebase.tximhotep.com` | Email for full-journey test |
+| `TEST_EMAIL` | _(none)_ | Tenant test user email for compliance E2E |
+| `TEST_PASSWORD` | _(none)_ | Tenant test user password for compliance E2E |
+| `TEST_ADMIN_EMAIL` | _(none)_ | Admin test user email for compliance E2E |
+| `TEST_ADMIN_PASSWORD` | _(none)_ | Admin test user password for compliance E2E |
 
 ## CI
 

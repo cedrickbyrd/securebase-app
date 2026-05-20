@@ -1,37 +1,70 @@
 name: Terraform Apply - SecureBase Workspace
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'terraform/**'
   workflow_dispatch:
     inputs:
-      workspace:
-        description: 'Terraform workspace to apply'
+      confirmed:
+        description: 'Type DEPLOY to confirm production deployment'
         required: true
-        default: 'securebase'
-        type: choice
-        options:
-          - securebase
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  terraform-apply:
-    name: Terraform Apply
+  confirm-production-deploy:
+    name: Validate production confirmation
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      TF_WORKSPACE: ${{ github.event.inputs.workspace || 'securebase' }}
-      
+    steps:
+      - name: Verify manual confirmation token
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "DEPLOY" ]; then
+            echo "Production deployment aborted: set confirmed=DEPLOY to continue." >&2
+            exit 1
+          fi
+
+  staging-smoke-tests:
+    name: Verify staging smoke tests
+    runs-on: ubuntu-latest
+    needs: confirm-production-deploy
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run staging smoke tests
+        env:
+          SMOKE_BASE_URL: ${{ vars.STAGING_SMOKE_BASE_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/staging' }}
+        run: python -m unittest discover -s tests/smoke -p 'test_lambda_endpoints.py' -v
+
+      - name: Output staging summary
+        if: always()
+        run: |
+          echo "### Staging Smoke Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** \`${{ job.status }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Base URL:** \`${{ vars.STAGING_SMOKE_BASE_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/staging' }}\`" >> $GITHUB_STEP_SUMMARY
+
+  production-deploy:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: [confirm-production-deploy, staging-smoke-tests]
+    if: ${{ github.event.inputs.confirmed == 'DEPLOY' }}
+    environment: production
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      TF_WORKSPACE: securebase
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Package Lambda artifacts
+        run: bash ./scripts/package-lambdas.sh
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -50,10 +83,45 @@ jobs:
         working-directory: ./terraform
         run: terraform init
 
+      - name: Import existing AWS resources into Terraform state
+        working-directory: ./terraform
+        run: |
+          # Remove stale state entries that no longer exist in AWS
+          terraform state rm aws_api_gateway_method.auth_options || true
+          terraform state rm aws_api_gateway_method.validate_session_get || true
+          terraform state rm aws_api_gateway_method.validate_session_options || true
+          terraform state rm aws_api_gateway_method.stripe_webhook_post || true
+          terraform state rm aws_api_gateway_method.stripe_webhook_options || true
+          terraform state rm aws_api_gateway_resource.auth_login || true
+          terraform state rm aws_api_gateway_resource.pilot_availability || true
+
+          # Import existing resources not yet in state
+          import_if_missing() {
+            local resource=$1
+            local id=$2
+            if terraform state show "$resource" > /dev/null 2>&1; then
+              echo "already in state, skipping: $resource"
+            else
+              echo "importing: $resource ($id)"
+              terraform import -var-file=terraform.tfvars "$resource" "$id" || true
+            fi
+          }
+
+          import_if_missing aws_api_gateway_resource.auth              9xyetu7zq3/sfrsaw
+          import_if_missing aws_api_gateway_resource.auth_login        9xyetu7zq3/ogsr28
+          import_if_missing aws_api_gateway_resource.checkout          9xyetu7zq3/qlr2au
+          import_if_missing aws_api_gateway_resource.signup            9xyetu7zq3/01ulet
+          import_if_missing aws_api_gateway_resource.pilot             9xyetu7zq3/65tx0m
+          import_if_missing aws_api_gateway_resource.validate_session  9xyetu7zq3/wlmeaf
+          import_if_missing aws_api_gateway_resource.stripe_webhook    9xyetu7zq3/uyk609
+          import_if_missing aws_iam_role.validate_session_lambda       securebase-validate-session-role
+          import_if_missing aws_iam_role.stripe_webhook_lambda         securebase-stripe-webhook-role
+          import_if_missing aws_iam_role.pilot_availability_lambda     securebase-pilot-availability-role
+
       - name: Terraform Plan
         id: plan
         working-directory: ./terraform
-        run: terraform plan -no-color -input=false -out=tfplan
+        run: terraform plan -no-color -input=false -out=tfplan -var-file=terraform.tfvars
 
       - name: Terraform Apply
         id: apply
@@ -63,9 +131,10 @@ jobs:
       - name: Output Summary
         if: always()
         run: |
-          echo "### Terraform Apply Summary" >> $GITHUB_STEP_SUMMARY
+          echo "### Production Terraform Apply Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Workspace:** \`${{ env.TF_WORKSPACE }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** \`${{ steps.apply.outcome }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**Region:** \`${{ env.AWS_REGION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Confirmation:** \`${{ github.event.inputs.confirmed }}\`" >> $GITHUB_STEP_SUMMARY

@@ -401,6 +401,22 @@ resource "aws_dynamodb_table" "cost_forecasts" {
   })
 }
 
+# Cloud Connections table — cross-account IAM role management
+resource "aws_dynamodb_table" "cloud_connections" {
+  name         = "securebase-cloud-connections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "customer_id"
+
+  attribute {
+    name = "customer_id"
+    type = "S"
+  }
+
+  tags = merge(var.tags, {
+    Name = "securebase-cloud-connections"
+  })
+}
+
 # ============================================
 # KMS Keys for Encryption
 # ============================================

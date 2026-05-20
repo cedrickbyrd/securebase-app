@@ -1,136 +1,28 @@
 {
   "framework": "SOC2",
   "version": "2017",
-  "description": "Mapping of SOC 2 Trust Services Criteria (CC controls) to AWS Config managed rule names.",
-  "last_updated": "2026-05-08",
+  "description": "SOC 2 Trust Services Criteria mappings for AWS Config managed rules.",
+  "last_updated": "2026-05-17",
   "controls": [
-    {
-      "control_id": "CC6.1",
-      "control_name": "Logical and Physical Access Controls — Identification and Authentication",
-      "description": "The entity implements logical access security measures to protect against threats from sources outside its system boundaries.",
-      "severity": "CRITICAL",
-      "config_rule": "mfa-enabled-for-iam-console-access",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-5"
-    },
-    {
-      "control_id": "CC6.2",
-      "control_name": "Logical and Physical Access Controls — New User Registration",
-      "description": "Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users.",
-      "severity": "HIGH",
-      "config_rule": "iam-password-policy",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-9"
-    },
-    {
-      "control_id": "CC6.3",
-      "control_name": "Logical and Physical Access Controls — Role-Based Access",
-      "description": "The entity authorizes, modifies, or removes access based on roles and responsibilities.",
-      "severity": "HIGH",
-      "config_rule": "iam-no-inline-policy-check",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-16"
-    },
-    {
-      "control_id": "CC6.4",
-      "control_name": "Logical and Physical Access Controls — Access Restriction",
-      "description": "The entity restricts physical access to facilities and protected information assets.",
-      "severity": "MEDIUM",
-      "config_rule": "iam-root-access-key-check",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-4"
-    },
-    {
-      "control_id": "CC6.5",
-      "control_name": "Logical and Physical Access Controls — Credential Rotation",
-      "description": "The entity discontinues logical and physical protections over physical assets only after the ability to read or modify information is removed.",
-      "severity": "HIGH",
-      "config_rule": "access-keys-rotated",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-3"
-    },
-    {
-      "control_id": "CC6.6",
-      "control_name": "Logical and Physical Access Controls — Boundary Protection",
-      "description": "The entity implements logical access security measures to protect against threats from sources outside its system boundaries.",
-      "severity": "HIGH",
-      "config_rule": "s3-bucket-public-read-prohibited",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-2"
-    },
-    {
-      "control_id": "CC6.7",
-      "control_name": "Logical and Physical Access Controls — Data Transmission",
-      "description": "The entity restricts the transmission, movement, and removal of information to authorized internal and external users.",
-      "severity": "HIGH",
-      "config_rule": "s3-bucket-ssl-requests-only",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-5"
-    },
-    {
-      "control_id": "CC6.8",
-      "control_name": "Logical and Physical Access Controls — Malicious Software Prevention",
-      "description": "The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software.",
-      "severity": "CRITICAL",
-      "config_rule": "guardduty-enabled-centralized",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-1"
-    },
-    {
-      "control_id": "CC7.1",
-      "control_name": "System Operations — System Component Configuration",
-      "description": "To meet its objectives, the entity uses detection and monitoring procedures to identify changes to configurations.",
-      "severity": "HIGH",
-      "config_rule": "cloudtrail-enabled",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html#cloudtrail-1"
-    },
-    {
-      "control_id": "CC7.2",
-      "control_name": "System Operations — Anomaly Detection",
-      "description": "The entity monitors system components and the operation of those components for anomalies that are indicative of malicious acts.",
-      "severity": "HIGH",
-      "config_rule": "cloudwatch-alarm-action-check",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html"
-    },
-    {
-      "control_id": "CC7.3",
-      "control_name": "System Operations — Incident Response",
-      "description": "The entity evaluates security events to determine whether they could or have resulted in a failure of the entity to meet its objectives.",
-      "severity": "HIGH",
-      "config_rule": "securityhub-enabled",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/"
-    },
-    {
-      "control_id": "CC8.1",
-      "control_name": "Change Management — Infrastructure Changes",
-      "description": "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure components.",
-      "severity": "MEDIUM",
-      "config_rule": "vpc-flow-logs-enabled",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-6"
-    },
-    {
-      "control_id": "CC9.1",
-      "control_name": "Risk Mitigation — Risk Assessment",
-      "description": "The entity identifies, selects, and develops risk mitigation activities.",
-      "severity": "MEDIUM",
-      "config_rule": "root-account-mfa-enabled",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-9"
-    },
-    {
-      "control_id": "CC9.2",
-      "control_name": "Risk Mitigation — Encryption at Rest",
-      "description": "The entity assesses and manages risks associated with vendors and business partners.",
-      "severity": "HIGH",
-      "config_rule": "encrypted-volumes",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-3"
-    },
-    {
-      "control_id": "CC9.3",
-      "control_name": "Risk Mitigation — Database Encryption",
-      "description": "The entity manages risks associated with storing sensitive data in database systems.",
-      "severity": "HIGH",
-      "config_rule": "rds-storage-encrypted",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html#rds-3"
-    },
-    {
-      "control_id": "CC9.4",
-      "control_name": "Risk Mitigation — Secrets Management",
-      "description": "The entity manages rotation of credentials stored in secrets management systems.",
-      "severity": "HIGH",
-      "config_rule": "secretsmanager-rotation-enabled-check",
-      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/secretsmanager-controls.html"
-    }
+    {"rule_name": "cloudtrail-enabled", "config_rule": "cloudtrail-enabled", "control_id": "CC7.2", "control_name": "System Monitoring", "framework": "SOC2", "severity": "Critical", "description": "CloudTrail must be enabled to provide immutable security audit trails."},
+    {"rule_name": "cloudtrail-s3-dataevents-enabled", "config_rule": "cloudtrail-s3-dataevents-enabled", "control_id": "CC7.2", "control_name": "System Monitoring", "framework": "SOC2", "severity": "High", "description": "CloudTrail S3 data events must be enabled to track object-level access activity."},
+    {"rule_name": "cloudtrail-log-file-validation-enabled", "config_rule": "cloudtrail-log-file-validation-enabled", "control_id": "CC7.2", "control_name": "System Monitoring", "framework": "SOC2", "severity": "High", "description": "CloudTrail log file validation must be enabled to detect tampering."},
+    {"rule_name": "guardduty-enabled-centralized", "config_rule": "guardduty-enabled-centralized", "control_id": "CC7.1", "control_name": "Anomaly Detection", "framework": "SOC2", "severity": "Critical", "description": "GuardDuty must be centralized and enabled for managed threat detection."},
+    {"rule_name": "iam-password-policy", "config_rule": "iam-password-policy", "control_id": "CC6.1", "control_name": "Logical Access Controls", "framework": "SOC2", "severity": "High", "description": "IAM password policy must enforce secure password complexity and lifecycle settings."},
+    {"rule_name": "iam-root-access-key-check", "config_rule": "iam-root-access-key-check", "control_id": "CC6.1", "control_name": "Logical Access Controls", "framework": "SOC2", "severity": "Critical", "description": "Root access keys must not exist to prevent unmanaged privileged credentials."},
+    {"rule_name": "iam-user-mfa-enabled", "config_rule": "iam-user-mfa-enabled", "control_id": "CC6.2", "control_name": "Authentication", "framework": "SOC2", "severity": "High", "description": "MFA must be enabled for IAM users to enforce strong authentication."},
+    {"rule_name": "root-account-mfa-enabled", "config_rule": "root-account-mfa-enabled", "control_id": "CC6.2", "control_name": "Authentication", "framework": "SOC2", "severity": "Critical", "description": "MFA must be enabled for the root account to protect break-glass access."},
+    {"rule_name": "s3-bucket-public-read-prohibited", "config_rule": "s3-bucket-public-read-prohibited", "control_id": "CC6.6", "control_name": "Data Access Restriction", "framework": "SOC2", "severity": "Critical", "description": "S3 buckets must prohibit public read access to prevent unauthorized disclosure."},
+    {"rule_name": "s3-bucket-public-write-prohibited", "config_rule": "s3-bucket-public-write-prohibited", "control_id": "CC6.6", "control_name": "Data Access Restriction", "framework": "SOC2", "severity": "Critical", "description": "S3 buckets must prohibit public write access to protect data integrity."},
+    {"rule_name": "s3-bucket-ssl-requests-only", "config_rule": "s3-bucket-ssl-requests-only", "control_id": "CC6.7", "control_name": "Transmission Protection", "framework": "SOC2", "severity": "High", "description": "S3 buckets must enforce TLS-only transport for requests."},
+    {"rule_name": "encrypted-volumes", "config_rule": "encrypted-volumes", "control_id": "CC6.7", "control_name": "Encryption at Rest", "framework": "SOC2", "severity": "High", "description": "EBS volumes must be encrypted to protect data at rest."},
+    {"rule_name": "rds-storage-encrypted", "config_rule": "rds-storage-encrypted", "control_id": "CC6.7", "control_name": "Encryption at Rest", "framework": "SOC2", "severity": "High", "description": "RDS storage encryption is required to secure database data at rest."},
+    {"rule_name": "vpc-flow-logs-enabled", "config_rule": "vpc-flow-logs-enabled", "control_id": "CC7.2", "control_name": "Network Monitoring", "framework": "SOC2", "severity": "High", "description": "VPC flow logs must be enabled for network telemetry and investigation."},
+    {"rule_name": "restricted-ssh", "config_rule": "restricted-ssh", "control_id": "CC6.6", "control_name": "Network Access Restriction", "framework": "SOC2", "severity": "High", "description": "Security groups must restrict inbound SSH from untrusted sources."},
+    {"rule_name": "restricted-common-ports", "config_rule": "restricted-common-ports", "control_id": "CC6.6", "control_name": "Network Access Restriction", "framework": "SOC2", "severity": "High", "description": "Common administrative ports must be restricted from broad ingress exposure."},
+    {"rule_name": "access-keys-rotated", "config_rule": "access-keys-rotated", "control_id": "CC6.3", "control_name": "Credential Lifecycle", "framework": "SOC2", "severity": "High", "description": "IAM access keys must rotate every 90 days to reduce credential compromise risk."},
+    {"rule_name": "secretsmanager-rotation-enabled-check", "config_rule": "secretsmanager-rotation-enabled-check", "control_id": "CC6.3", "control_name": "Credential Lifecycle", "framework": "SOC2", "severity": "High", "description": "Secrets Manager secrets must have automatic rotation enabled."},
+    {"rule_name": "s3-bucket-server-side-encryption-enabled", "config_rule": "s3-bucket-server-side-encryption-enabled", "control_id": "CC6.7", "control_name": "Encryption at Rest", "framework": "SOC2", "severity": "High", "description": "S3 buckets must use server-side encryption for stored objects."},
+    {"rule_name": "s3-bucket-versioning-enabled", "config_rule": "s3-bucket-versioning-enabled", "control_id": "CC8.1", "control_name": "Change Management", "framework": "SOC2", "severity": "Medium", "description": "S3 bucket versioning must be enabled to support rollback and change traceability."}
   ]
 }

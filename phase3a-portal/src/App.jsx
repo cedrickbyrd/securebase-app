@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { initializeSessionTracking } from './utils/analytics';
 import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
@@ -15,6 +15,9 @@ import AlertManagement from './components/AlertManagement';
 import HIPAADashboard from './components/HIPAADashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
+import EvidencePackages from './components/EvidencePackages';
+import CloudConnection from './components/CloudConnection';
+import ComplianceTrend from './components/ComplianceTrend';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
 import ThankYou from './pages/ThankYou';
@@ -41,20 +44,53 @@ const DEMO_EMAIL       = 'demo@securebase.tximhotep.com';
 const DEMO_CUSTOMER_ID = 'a0000000-0000-0000-0000-000000000001';
 const DEMO_ORG_NAME    = 'Acme Corporation';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
-    if ((import.meta.env.VITE_DEMO_MODE === 'true' || demoParam) && !localStorage.getItem('sessionToken')) {
-      localStorage.setItem('demo_mode', 'true');
-      localStorage.setItem('demo_user', JSON.stringify({ email: DEMO_EMAIL, customerId: DEMO_CUSTOMER_ID, orgName: DEMO_ORG_NAME }));
-    }
-    return !!sessionStorage.getItem('sessionToken') || !!localStorage.getItem('sessionToken') || isDemoMode();
-  });
+// Full-page wrapper for ComplianceTrend
+function ComplianceTrendPage() {
+  return (
+    <div style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1.5rem' }}>
+      <ComplianceTrend defaultFramework="HIPAA" days={90} compact={false} />
+    </div>
+  );
+}
 
-  useEffect(() => { initializeSessionTracking(); }, []);
+const ONBOARDING_EXEMPT_PATHS = [
+  '/cloud-connection', '/login', '/accept-invite', '/forgot-password',
+  '/reset-password', '/onboarding', '/admin',
+];
+
+function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNeedsOnboarding }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated || isDemoMode()) return;
+    const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
+    if (userRole === 'admin') return;
+    if (ONBOARDING_EXEMPT_PATHS.some(p => location.pathname.startsWith(p))) return;
+
+    const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    fetch('/api/cloud-connection/status', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: controller.signal,
+    })
+      .then(res => {
+        if (!res.ok) { setNeedsOnboarding(true); return; }
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.connected === false) setNeedsOnboarding(true);
+        if (data && data.connected === true) setNeedsOnboarding(false);
+      })
+      .catch(() => { /* non-blocking: default to allowing access on network error/timeout */ })
+      .finally(() => clearTimeout(timeoutId));
+
+    return () => { clearTimeout(timeoutId); controller.abort(); };
+  }, [isAuthenticated, location.pathname, setNeedsOnboarding]);
 
   return (
-    <Router>
+    <>
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         {/* ─ Auth ─ */}
@@ -67,14 +103,17 @@ function App() {
         <Route path="/onboarding"      element={<OnboardingRoute />} />
 
         {/* ─ Protected ─ */}
-        <Route path="/dashboard"       element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : (isAuthenticated ? <Dashboard />           : <Navigate to="/login" />)} />
-        <Route path="/demo-dashboard"  element={isAuthenticated ? <DemoDashboard />                                                                    : <Navigate to="/login" />} />
-        <Route path="/compliance"      element={<Compliance isPublic={!isAuthenticated} />} />
-        <Route path="/fintech-portal"  element={isAuthenticated ? <TexasExaminerPortal />                                                               : <Navigate to="/login" />} />
-        <Route path="/hipaa-dashboard" element={isAuthenticated ? <HIPAADashboard />                                                                    : <Navigate to="/login" />} />
-        <Route path="/sre-dashboard"   element={isAuthenticated ? <SREDashboardWrapper />                                                               : <Navigate to="/login" />} />
-        <Route path="/alerts"          element={isAuthenticated ? <AlertManagement />                                                                   : <Navigate to="/login" />} />
-        <Route path="/admin"           element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard"           element={isDemoMode() ? <Navigate to="/demo-dashboard" replace /> : isAuthenticated ? (needsOnboarding ? <Navigate to="/cloud-connection" replace /> : <Dashboard />) : <Navigate to="/login" />} />
+        <Route path="/demo-dashboard"      element={isAuthenticated ? <DemoDashboard />                                                                  : <Navigate to="/login" />} />
+        <Route path="/compliance"          element={<Compliance isPublic={!isAuthenticated} />} />
+        <Route path="/compliance/trend"    element={isAuthenticated ? <ComplianceTrendPage />                                                            : <Navigate to="/login" />} />
+        <Route path="/fintech-portal"      element={isAuthenticated ? <TexasExaminerPortal />                                                             : <Navigate to="/login" />} />
+        <Route path="/hipaa-dashboard"     element={isAuthenticated ? <HIPAADashboard />                                                                  : <Navigate to="/login" />} />
+        <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
+        <Route path="/alerts"              element={isAuthenticated ? <AlertManagement />                                                                 : <Navigate to="/login" />} />
+        <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />
+        <Route path="/cloud-connection"    element={isAuthenticated ? <CloudConnection />                                                                  : <Navigate to="/login" />} />
+        <Route path="/admin"               element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
 
         {/* ─ Public ─ */}
         <Route path="/pricing"                      element={<Pricing />} />
@@ -86,6 +125,32 @@ function App() {
         <Route path="/setup"                        element={<Setup />} />
         <Route path="/"                             element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
+    const demoParam = new URLSearchParams(window.location.search).get('demo') === 'true';
+    if ((import.meta.env.VITE_DEMO_MODE === 'true' || demoParam) && !localStorage.getItem('sessionToken')) {
+      localStorage.setItem('demo_mode', 'true');
+      localStorage.setItem('demo_user', JSON.stringify({ email: DEMO_EMAIL, customerId: DEMO_CUSTOMER_ID, orgName: DEMO_ORG_NAME }));
+    }
+    return !!sessionStorage.getItem('sessionToken') || !!localStorage.getItem('sessionToken') || isDemoMode();
+  });
+
+  const [needsOnboarding, setNeedsOnboarding] = React.useState(false);
+
+  useEffect(() => { initializeSessionTracking(); }, []);
+
+  return (
+    <Router>
+      <AppInner
+        isAuthenticated={isAuthenticated}
+        setIsAuthenticated={setIsAuthenticated}
+        needsOnboarding={needsOnboarding}
+        setNeedsOnboarding={setNeedsOnboarding}
+      />
     </Router>
   );
 }
