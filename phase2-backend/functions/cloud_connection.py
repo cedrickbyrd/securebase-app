@@ -14,6 +14,7 @@ Env vars:
   CONNECTIONS_TABLE     securebase-cloud-connections
   SECUREBASE_ACCOUNT_ID 731184206915
   SECUREBASE_ROLE_NAME  SecureBaseComplianceScanner   (role in OUR account that assumes customer role)
+  COMPLIANCE_SCORE_FUNCTION_NAME securebase-dev-compliance-score
   CORS_ORIGIN           https://portal.securebase.tximhotep.com
   LOG_LEVEL             DEBUG|INFO|WARNING|ERROR
 """
@@ -40,6 +41,7 @@ _SECUREBASE_ACCOUNT_ID = os.environ.get('SECUREBASE_ACCOUNT_ID', '731184206915')
 _SECUREBASE_ROLE_NAME  = os.environ.get('SECUREBASE_ROLE_NAME', 'SecureBaseComplianceScanner')
 _CORS_ORIGIN           = os.environ.get('CORS_ORIGIN', 'https://portal.securebase.tximhotep.com')
 _AWS_SCANNER_FUNCTION  = os.environ.get('AWS_SCANNER_FUNCTION_NAME', 'securebase-aws-scanner')
+_COMPLIANCE_SCORE_FUNCTION = os.environ.get('COMPLIANCE_SCORE_FUNCTION_NAME', 'securebase-dev-compliance-score')
 
 _CORS_HEADERS = {
     'Content-Type': 'application/json',
@@ -240,9 +242,26 @@ def verify_connection(event: dict, request_id: str) -> dict:
                 })
             )
             logger.info(f"Initial scan triggered for {customer_id}")
-        except Exception as e:
-            logger.warning(f"Could not trigger initial scan: {e}")
+        except ClientError as e:
+            logger.warning(f"Could not trigger initial scan via {_AWS_SCANNER_FUNCTION}: {e}")
             # Non-fatal — scan will run on next schedule
+
+        # Trigger initial compliance score snapshot asynchronously
+        try:
+            lambda_client = boto3.client('lambda')
+            lambda_client.invoke(
+                FunctionName=_COMPLIANCE_SCORE_FUNCTION,
+                InvocationType='Event',
+                Payload=json.dumps({
+                    'customer_id': customer_id,
+                    'role_arn': role_arn,
+                    'source': 'cloud_connection_onboarding',
+                })
+            )
+            logger.info(f"Initial compliance score triggered for {customer_id}")
+        except ClientError as e:
+            logger.warning(f"Could not trigger initial compliance score via {_COMPLIANCE_SCORE_FUNCTION}: {e}")
+            # Non-fatal — score will be recalculated by scheduler or API trigger
 
         return _resp(200, {
             'connected':   True,

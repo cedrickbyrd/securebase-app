@@ -2,12 +2,22 @@
 # Stores secrets in SSM (consistent with all other SecureBase Lambdas)
 #
 # SSM parameters to create before terraform apply:
+#   /securebase/stripe/secret_key      → Stripe secret key (server-side API)
 #   /securebase/stripe/webhook_secret   → Stripe Dashboard → Webhooks → Signing secret
-#   /securebase/ga4/api_secret          → GA4 Admin → Data Streams → Measurement Protocol API secrets
 
 locals {
   webhook_function_name = var.stripe_webhook_lambda_name
   webhook_zip           = "${path.module}/../lambda/stripe_webhook.zip"
+}
+
+data "aws_ssm_parameter" "stripe_secret_key" {
+  name            = var.stripe_secret_key_ssm_parameter_name
+  with_decryption = true
+}
+
+data "aws_ssm_parameter" "stripe_webhook_secret" {
+  name            = var.stripe_webhook_secret_ssm_parameter_name
+  with_decryption = true
 }
 
 resource "aws_lambda_function" "stripe_webhook" {
@@ -18,6 +28,14 @@ resource "aws_lambda_function" "stripe_webhook" {
   runtime          = "python3.12"
   role             = aws_iam_role.stripe_webhook_lambda.arn
   timeout          = 30
+
+  environment {
+    variables = {
+      # Do not log these env vars in Lambda output.
+      STRIPE_SECRET_KEY     = data.aws_ssm_parameter.stripe_secret_key.value
+      STRIPE_WEBHOOK_SECRET = data.aws_ssm_parameter.stripe_webhook_secret.value
+    }
+  }
 
   tags = {
     Project = "SecureBase"
@@ -43,28 +61,10 @@ resource "aws_iam_role_policy_attachment" "stripe_webhook_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy" "stripe_webhook_ssm" {
-  name = "${local.webhook_function_name}-ssm"
-  role = aws_iam_role.stripe_webhook_lambda.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = ["ssm:GetParameter"]
-      Resource = [
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/secret_key",
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/stripe/webhook_secret",
-        "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/securebase/ga4/api_secret",
-      ]
-    }]
-  })
-}
-
 resource "aws_api_gateway_resource" "stripe_webhook" {
   rest_api_id = var.rest_api_id
   parent_id   = var.root_resource_id
-  path_part   = "stripe-webhook"
+  path_part   = "webhook"
 }
 
 resource "aws_api_gateway_method" "stripe_webhook_post" {
@@ -128,5 +128,6 @@ resource "aws_lambda_permission" "apigw_stripe_webhook" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.stripe_webhook.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/*/POST/stripe-webhook"
+  # Keep api_stage_name aligned with the deployed API Gateway stage.
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/${var.api_stage_name}/POST/webhook"
 }

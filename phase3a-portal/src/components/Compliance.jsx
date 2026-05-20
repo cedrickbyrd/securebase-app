@@ -3,8 +3,6 @@ import { demoAwareApiService } from '../services/demoApiService';
 import { isDemoMode, mockComplianceData, mockTexasComplianceData } from '../utils/demoData';
 import { logoutDemo } from '../services/jwtService';
 import { trackPageView, trackPageEngagement, incrementPagesViewed, trackAssessmentCTAClick, trackCTAClick, trackWave3HighValueAction } from '../utils/analytics';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { usePersonalization } from '../hooks/usePersonalization';
 import LeadCaptureForm from './LeadCaptureForm';
 import SocialProof from './SocialProof';
@@ -39,10 +37,10 @@ export default function Compliance({ isPublic = false }) {
   const [findings, setFindings] = useState([]);
   const [texasData, setTexasData] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const [secondsViewed, setSecondsViewed] = useState(0);
   const startTimeRef = useRef(null);
-  const reportRef = useRef(null);
 
   const isTexasTier = isPublic || TEXAS_FINTECH_TIERS.has(getCustomerTier()) || isDemoMode();
   const isFFIECTier = FFIEC_TIERS.has(getCustomerTier()) || isDemoMode();
@@ -116,43 +114,33 @@ export default function Compliance({ isPublic = false }) {
   };
 
   const handleDownloadReport = async () => {
+    setDownloading(true);
+    setDownloadError('');
+
     try {
-      setDownloading(true);
-      
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+      const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+      const res = await fetch('/api/compliance/findings', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      // Handle multi-page PDFs
-      let heightLeft = pdfHeight;
-      let position = 0;
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
       }
-      
-      pdf.save(`SecureBase-SOC2-Compliance-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+
+      a.href = url;
+      a.download = `securebase-compliance-report-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Error generating PDF:', err);
-      alert('Failed to generate PDF. Please try again.');
+      console.error('Failed to download compliance report:', err);
+      setDownloadError('Download failed. Please try again.');
     } finally {
       setDownloading(false);
     }
@@ -250,15 +238,30 @@ export default function Compliance({ isPublic = false }) {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{PORTAL_NARRATIVE.complianceHeadline}</h1>
           <p className="text-gray-600">{PORTAL_NARRATIVE.complianceSubheadline}</p>
+          {!isPublic && downloadError && (
+            <p className="mt-2 text-sm text-red-600" role="alert" aria-live="polite">{downloadError}</p>
+          )}
         </div>
-        {!isPublic && (
-          <button
-            onClick={handleLogout}
-            className="shrink-0 text-sm font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-lg transition"
-          >
-            Logout
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {!isPublic && (
+            <button
+              onClick={handleDownloadReport}
+              disabled={downloading}
+              aria-label="Download compliance findings report"
+              className="inline-flex items-center rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {downloading ? 'Generating…' : '⬇ Download Report'}
+            </button>
+          )}
+          {!isPublic && (
+            <button
+              onClick={handleLogout}
+              className="text-sm font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-lg transition"
+            >
+              Logout
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mb-6 bg-white rounded-lg shadow p-6">
@@ -300,34 +303,7 @@ export default function Compliance({ isPublic = false }) {
         </div>
       )}
 
-      {/* PDF Download Button */}
-      <div className="mb-6">
-        <button
-          onClick={handleDownloadReport}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          {downloading ? (
-            <>
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Generating PDF...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Download Compliance Report (PDF)
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Report Content — also captured in PDF */}
-      <div ref={reportRef} style={{ backgroundColor: 'white', padding: '20px' }}>
+      <div className="bg-white p-5">
         {/* Overall Score */}
         <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200">
           <div className="flex items-center justify-between">
