@@ -137,7 +137,10 @@ export default function ComplianceTrend({ days = 90 }) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+      <div
+        className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm"
+        data-testid="compliance-error-banner"
+      >
         {error}
       </div>
     );
@@ -168,8 +171,13 @@ export default function ComplianceTrend({ days = 90 }) {
           const data = frameworkData?.[framework] || {};
           const delta = data.score_delta_7d;
           const deltaLabel = delta === null || delta === undefined ? '—' : `${delta > 0 ? '+' : ''}${delta} pts`;
+          const frameworkId = framework.toLowerCase();
           return (
-            <div key={framework} className="rounded-xl border border-gray-200 bg-white p-4">
+            <div
+              key={framework}
+              className="rounded-xl border border-gray-200 bg-white p-4"
+              data-testid={`framework-row-${frameworkId}`}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-gray-500">{framework}</p>
