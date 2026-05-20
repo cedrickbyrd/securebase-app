@@ -96,6 +96,7 @@ export default function CloudConnection() {
 
   // Step 3 result
   const [verifyResult, setVerifyResult] = useState(null);
+  const [scanPending, setScanPending]   = useState(false);
 
   // Load existing connection on mount
   useEffect(() => {
@@ -120,6 +121,7 @@ export default function CloudConnection() {
   const handleInit = async () => {
     setLoading(true);
     setError('');
+    setScanPending(false); // reset if user starts a new connection flow
     try {
       const data = await apiService.post('/cloud-connection/init', {});
       setExternalId(data.external_id);
@@ -143,7 +145,21 @@ export default function CloudConnection() {
       const data = await apiService.post('/cloud-connection/verify', { role_arn: roleArn.trim(), external_id: externalId });
       setVerifyResult(data);
       setStatus(data.connected ? 'connected' : 'error');
-      if (data.connected) setStep(3);
+      if (data.connected) {
+        setStep(3);
+        const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+        // Raw fetch used intentionally: fire-and-forget — must never block the UI or bubble errors.
+        fetch('/api/scan/trigger', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ source: 'cloud_connection_onboarding' }),
+        }).catch(() => { /* non-blocking */ });
+        setScanPending(true);
+        sessionStorage.setItem('scanPending', 'true');
+      }
       else setError(data.error || 'Role verification failed. Check that the trust policy and external ID are correct.');
     } catch (e) {
       setStatus('error');
@@ -333,6 +349,12 @@ export default function CloudConnection() {
               <li>Findings trigger alerts per your notification settings</li>
             </ul>
           </div>
+
+          {scanPending && (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-blue-800 text-sm">
+              Your compliance posture is being calculated. Check back in a few minutes.
+            </div>
+          )}
 
           <a
             href="/hipaa-dashboard"
