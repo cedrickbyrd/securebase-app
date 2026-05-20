@@ -44,6 +44,16 @@ test.describe('SecureBase - Compliance Scores E2E', () => {
     const ffiecRow = page.locator('[data-testid="framework-row-ffiec"]');
     await expect(ffiecRow).toBeVisible();
     await expect(ffiecRow.locator('.status-badge')).toContainText('Attention Required');
+
+    const soc2Row = page.locator('[data-testid="framework-row-soc2"]');
+    await expect(soc2Row).toBeVisible();
+    await expect(soc2Row.locator('.score-display')).toContainText('96%');
+    await expect(soc2Row.locator('.status-badge')).toContainText('Compliant');
+
+    const hipaaRow = page.locator('[data-testid="framework-row-hipaa"]');
+    await expect(hipaaRow).toBeVisible();
+    await expect(hipaaRow.locator('.score-display')).toContainText('100%');
+    await expect(hipaaRow.locator('.status-badge')).toContainText('Compliant');
   });
 });
 
