@@ -160,7 +160,7 @@ export default function Compliance({ isPublic = false }) {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4" data-testid="compliance-error-banner">
           <div className="flex">
             <div className="flex-shrink-0">
               <span className="text-2xl">⚠️</span>
@@ -303,27 +303,31 @@ export default function Compliance({ isPublic = false }) {
         </div>
       )}
 
-      <div className="bg-white p-5">
-        {/* Overall Score */}
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
-              <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-bold text-blue-600">
-                  {complianceData?.overallScore || 0}%
-                </span>
-                <span className="text-gray-600">
-                  ({complianceData?.passedControls || 0} of {complianceData?.totalControls || 0} controls)
-                </span>
+        <div className="bg-white p-5">
+          {/* Overall Score */}
+          <div
+            className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200"
+            data-testid="overall-score-card"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
+                <div className="flex items-baseline gap-2" data-testid="score-display">
+                  <span className="text-6xl font-bold text-blue-600">
+                    {complianceData?.overallScore || 0}%
+                  </span>
+                  <span className="text-gray-600">
+                    ({complianceData?.passedControls || 0} of {complianceData?.totalControls || 0} controls)
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  ✅ {complianceData?.criticalFindings || 0} Critical |
+                  {' '}✅ {complianceData?.highFindings || 0} High |
+                  {' '}⚠️ {complianceData?.mediumFindings || 0} Medium
+                </p>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
-                ✅ {complianceData?.criticalFindings || 0} Critical | 
-                {' '}✅ {complianceData?.highFindings || 0} High | 
-                {' '}⚠️ {complianceData?.mediumFindings || 0} Medium
-              </p>
+              <div className="text-6xl">📊</div>
             </div>
-            <div className="text-6xl">📊</div>
           </div>
         </div>
 
@@ -394,7 +398,11 @@ export default function Compliance({ isPublic = false }) {
 
         {/* FFIEC CAT Dashboard (fintech_elite tier) */}
         {isFFIECTier && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #d97706' }}>
+          <div
+            className="bg-white rounded-lg shadow p-6 mb-6"
+            style={{ borderLeft: '4px solid #d97706' }}
+            data-testid="framework-row-ffiec"
+          >
             <FFIECCATDashboard
               onEvidenceExport={(domain) => {
                 const label = domain ? domain.name : 'All Domains';
