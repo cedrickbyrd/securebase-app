@@ -16,9 +16,7 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 
 test.describe('SecureBase - Compliance Scores E2E', () => {
   test('should display accurate compliance score states from the API', async ({ page }) => {
-    let complianceScoresCalled = false;
     await page.route('**/api/compliance/scores', async (route) => {
-      complianceScoresCalled = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -37,8 +35,10 @@ test.describe('SecureBase - Compliance Scores E2E', () => {
       });
     });
 
-    await page.goto(`${BASE_URL}/dashboard`);
-    expect(complianceScoresCalled).toBe(true);
+    await Promise.all([
+      page.waitForResponse('**/api/compliance/scores'),
+      page.goto(`${BASE_URL}/dashboard`),
+    ]);
 
     const overallScoreCard = page.locator('[data-testid="overall-score-card"]');
     await expect(overallScoreCard).toBeVisible();
@@ -62,9 +62,7 @@ test.describe('SecureBase - Compliance Scores E2E', () => {
 
 test.describe('SecureBase - Compliance Scores E2E (Failure Handling)', () => {
   test('should handle API failure degradation elegantly', async ({ page }) => {
-    let complianceScoresCalled = false;
     await page.route('**/api/compliance/scores', async (route) => {
-      complianceScoresCalled = true;
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
@@ -72,8 +70,10 @@ test.describe('SecureBase - Compliance Scores E2E (Failure Handling)', () => {
       });
     });
 
-    await page.goto(`${BASE_URL}/dashboard`);
-    expect(complianceScoresCalled).toBe(true);
+    await Promise.all([
+      page.waitForResponse('**/api/compliance/scores'),
+      page.goto(`${BASE_URL}/dashboard`),
+    ]);
     await expect(page).toHaveURL(/\/dashboard(?:\/)?$/);
 
     const errorBanner = page.locator('[data-testid="compliance-error-banner"]');
