@@ -53,7 +53,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps
 
       - name: Build portal (demo mode for E2E)
         run: npm run build
@@ -61,6 +61,18 @@ jobs:
           VITE_DEMO_MODE: 'true'
           VITE_USE_MOCK_API: 'true'
           VITE_API_BASE_URL: 'http://localhost:5173'
+
+      - name: Run Playwright compliance tests
+        working-directory: phase3a-portal
+        env:
+          CI: true
+          PORTAL_URL: https://portal.securebase.tximhotep.com
+          TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.PLAYWRIGHT_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.PLAYWRIGHT_ADMIN_PASSWORD }}
+        run: |
+          npx playwright test tests/e2e/compliance-score-endpoints.spec.js --reporter=list
 
       - name: Start portal preview server
         run: npx vite preview --port 5173 &
