@@ -1,11 +1,11 @@
 """
 Phase 6.2 — Compliance Score Recalculator Lambda.
 
-Runs daily at 02:00 UTC via an EventBridge scheduled rule.  For each active
-tenant, it queries AWS Config, Security Hub, and GuardDuty to determine which
-compliance controls are passing or failing, maps findings to SOC 2 / HIPAA /
-FedRAMP controls using JSON mapping files, calculates a weighted score (0–100),
-and writes a daily snapshot to DynamoDB (``securebase-compliance-scores`` table).
+Runs daily at 02:00 UTC via an EventBridge scheduled rule. It queries AWS
+Config compliance controls, calculates weighted SOC 2 / HIPAA / FedRAMP scores,
+and writes snapshots to DynamoDB (``securebase-compliance-scores`` table).
+When invoked with ``role_arn``, it assumes the customer role and performs
+cross-account scoring.
 
 Handler:
     ``compliance_score_recalculator.lambda_handler``
@@ -18,8 +18,9 @@ Event Schema:
 
     Optionally pass:
     {
-        "customer_id": "<uuid>",   # recalculate for one tenant only
-        "dry_run": true            # compute scores but skip DynamoDB write
+        "customer_id": "<uuid>",                  # defaults to "platform"
+        "role_arn": "arn:aws:iam::...:role/...", # optional cross-account scan
+        "dry_run": true                           # compute scores but skip DynamoDB write
     }
 
 Environment Variables:
@@ -29,6 +30,7 @@ Environment Variables:
     RDS_DATABASE              Database name (default: securebase)
     RDS_USER                  Application database user
     AWS_DEFAULT_REGION        AWS region for API calls (default: us-east-1)
+    SECUREBASE_EXTERNAL_ID    Required for cross-account AssumeRole when role_arn is provided
     LOG_LEVEL                 DEBUG | INFO | WARNING | ERROR (default: INFO)
 
 Scoring Model:
@@ -49,21 +51,14 @@ Python: 3.11
 import json
 import logging
 import os
-import sys
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-
-# Import shared database utilities from the Lambda layer.
-sys.path.insert(0, '/opt/python')
-from db_utils import (
-    query_many,
-    DatabaseError,
-)
 
 # ---------------------------------------------------------------------------
 # Logging — structured JSON for CloudWatch Logs Insights
@@ -89,14 +84,10 @@ def _log(level: str, message: str, **kwargs: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
-# AWS SDK clients
+# AWS SDK resources
 # ---------------------------------------------------------------------------
 
-config_client = boto3.client('config')
-securityhub_client = boto3.client('securityhub')
-guardduty_client = boto3.client('guardduty')
 dynamodb = boto3.resource('dynamodb')
-s3_client = boto3.client('s3')
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -104,6 +95,9 @@ s3_client = boto3.client('s3')
 
 COMPLIANCE_SCORES_TABLE = os.environ.get(
     'COMPLIANCE_SCORES_TABLE', 'securebase-compliance-scores'
+)
+CONTROL_VIOLATION_TABLE = os.environ.get(
+    'CONTROL_VIOLATION_TABLE', 'control_violation_log'
 )
 MAPPINGS_BUCKET = os.environ.get('MAPPINGS_BUCKET', '')
 
@@ -130,7 +124,7 @@ _LOCAL_MAPPINGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'compliance'
 # ---------------------------------------------------------------------------
 
 
-def _load_mapping(framework: str) -> Dict[str, Any]:
+def _load_mapping(framework: str, s3_client: Any) -> Dict[str, Any]:
     """Load the compliance control mapping JSON for a given framework.
 
     Tries S3 first (if MAPPINGS_BUCKET is configured), then falls back to the
@@ -170,7 +164,7 @@ def _load_mapping(framework: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _get_config_compliance(rule_names: List[str]) -> Dict[str, str]:
+def _get_config_compliance(rule_names: List[str], config_client: Any) -> Dict[str, str]:
     """Query AWS Config for the compliance status of specific rules.
 
     Args:
@@ -258,7 +252,7 @@ def _calculate_weighted_score(
 
 
 # ---------------------------------------------------------------------------
-# DynamoDB write
+# DynamoDB writes
 # ---------------------------------------------------------------------------
 
 
@@ -269,6 +263,7 @@ def _write_score_to_dynamodb(
     violations: Dict[str, int],
     controls_total: int,
     controls_passing: int,
+    cloudwatch_client: Any,
     dry_run: bool = False,
 ) -> None:
     """Write the daily compliance score to DynamoDB.
@@ -283,6 +278,7 @@ def _write_score_to_dynamodb(
         violations:       Dict of violation counts by severity.
         controls_total:   Total number of controls evaluated.
         controls_passing: Number of passing controls.
+        cloudwatch_client: boto3 CloudWatch client from invocation session.
         dry_run:          If True, log the item but skip the actual write.
     """
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
@@ -313,10 +309,101 @@ def _write_score_to_dynamodb(
         return
 
     table = dynamodb.Table(COMPLIANCE_SCORES_TABLE)
+    try:
+        previous = table.query(
+            KeyConditionExpression=(
+                Key('PK').eq(f'CUSTOMER#{customer_id}')
+                & Key('SK').begins_with(f'FRAMEWORK#{framework}#DATE#')
+            ),
+            ScanIndexForward=False,
+            Limit=1,
+        ).get('Items', [])
+        if previous:
+            previous_score = float(previous[0].get('score', 0))
+            drop = round(previous_score - score, 2)
+            if drop > 10:
+                _log(
+                    'warning',
+                    'compliance_score_drop_gt_10',
+                    customer_id=customer_id,
+                    framework=framework,
+                    previous_score=previous_score,
+                    current_score=score,
+                    score_drop=drop,
+                )
+                try:
+                    cloudwatch_client.put_metric_data(
+                        Namespace='SecureBase/Compliance',
+                        MetricData=[{
+                            'MetricName': 'ComplianceScoreDrop',
+                            'Dimensions': [
+                                {'Name': 'TenantId', 'Value': customer_id},
+                                {'Name': 'Framework', 'Value': framework},
+                            ],
+                            'Value': abs(drop),
+                            'Unit': 'Count',
+                        }],
+                    )
+                except ClientError as cw_exc:
+                    _log(
+                        'warning',
+                        'Failed to publish ComplianceScoreDrop metric',
+                        error=str(cw_exc),
+                        customer_id=customer_id,
+                        framework=framework,
+                    )
+    except ClientError as exc:
+        # Best-effort check: a query failure should not block writing today's score.
+        _log(
+            'warning',
+            'Failed to evaluate score drop',
+            error=str(exc),
+            customer_id=customer_id,
+            framework=framework,
+        )
+
     table.put_item(Item=item)
     _log('info', 'compliance score written to DynamoDB',
          customer_id=customer_id, framework=framework, score=score,
          controls_total=controls_total, controls_passing=controls_passing)
+
+
+def _write_control_violations_to_dynamodb(
+    customer_id: str,
+    framework: str,
+    controls: List[Dict[str, Any]],
+    compliance_map: Dict[str, str],
+    dry_run: bool = False,
+) -> None:
+    """Write per-control status snapshots to the control_violation_log table."""
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    now = datetime.now(timezone.utc)
+    table = dynamodb.Table(CONTROL_VIOLATION_TABLE)
+
+    for control in controls:
+        item = {
+            'PK': f'CUSTOMER#{customer_id}',
+            'SK': f"CONTROL#{framework}#{control.get('control_id', 'UNKNOWN')}#DATE#{today}",
+            'customer_id': customer_id,
+            'framework': framework,
+            'recorded_date': today,
+            'control_id': control.get('control_id'),
+            'control_name': control.get('control_name'),
+            'control_description': control.get('description'),
+            'aws_config_rule': control.get('config_rule'),
+            'severity': str(control.get('severity', 'MEDIUM')).upper(),
+            'status': compliance_map.get(control.get('config_rule', ''), 'INSUFFICIENT_DATA'),
+            'remediation_url': control.get('remediation_url'),
+            'calculated_at': now.isoformat(),
+            'ttl': int(
+                (now.replace(year=now.year + 1)).timestamp()
+            ),
+        }
+
+        if dry_run:
+            continue
+
+        table.put_item(Item=item)
 
 
 # ---------------------------------------------------------------------------
@@ -326,6 +413,7 @@ def _write_score_to_dynamodb(
 
 def _score_tenant(
     customer_id: str,
+    session: boto3.Session,
     dry_run: bool = False,
 ) -> Dict[str, float]:
     """Run compliance scoring for all three frameworks for a single tenant.
@@ -338,10 +426,13 @@ def _score_tenant(
         Dict mapping framework → score (0–100).
     """
     scores: Dict[str, float] = {}
+    config_client = session.client('config')
+    s3_client = session.client('s3')
+    cloudwatch_client = session.client('cloudwatch')
 
     for framework in ('SOC2', 'HIPAA', 'FedRAMP'):
         try:
-            mapping = _load_mapping(framework)
+            mapping = _load_mapping(framework, s3_client)
         except FileNotFoundError as exc:
             _log('warning', 'Mapping file not found, skipping framework',
                  customer_id=customer_id, framework=framework, error=str(exc))
@@ -350,7 +441,7 @@ def _score_tenant(
         controls: List[Dict[str, Any]] = mapping.get('controls', [])
         rule_names = [c['config_rule'] for c in controls if c.get('config_rule')]
 
-        compliance_map = _get_config_compliance(rule_names)
+        compliance_map = _get_config_compliance(rule_names, config_client)
         score, violations = _calculate_weighted_score(controls, compliance_map)
 
         controls_passing = sum(
@@ -366,6 +457,14 @@ def _score_tenant(
                 violations=violations,
                 controls_total=len(controls),
                 controls_passing=controls_passing,
+                cloudwatch_client=cloudwatch_client,
+                dry_run=dry_run,
+            )
+            _write_control_violations_to_dynamodb(
+                customer_id=customer_id,
+                framework=framework,
+                controls=controls,
+                compliance_map=compliance_map,
                 dry_run=dry_run,
             )
         except ClientError as exc:
@@ -383,7 +482,7 @@ def _score_tenant(
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Lambda entry point — recalculate compliance scores for all (or one) tenant.
+    """Lambda entry point — recalculate compliance scores for platform/customer.
 
     Args:
         event:   EventBridge scheduled event or manual invocation payload.
@@ -396,49 +495,52 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             - ``errors``            (list): List of error messages for failed tenants.
     """
     request_id = getattr(context, 'aws_request_id', str(uuid.uuid4()))
+    event = event or {}
     dry_run: bool = bool(event.get('dry_run', False))
-    target_customer: Optional[str] = event.get('customer_id')
+    target_customer: str = event.get('customer_id') or 'platform'
+    role_arn: Optional[str] = event.get('role_arn')
 
     _log('info', 'compliance_score_recalculator invoked',
          request_id=request_id,
          dry_run=dry_run,
-         target_customer=target_customer or 'all')
+         target_customer=target_customer,
+         role_mode='cross_account' if role_arn else 'platform')
 
-    # ------------------------------------------------------------------
-    # Load customer list
-    # ------------------------------------------------------------------
-    try:
-        if target_customer:
-            rows = query_many(
-                "SELECT id FROM customers WHERE id = %s AND status = 'active'",
-                (target_customer,),
-            )
-        else:
-            rows = query_many(
-                "SELECT id FROM customers WHERE status = 'active'",
-            )
-    except DatabaseError as exc:
-        _log('error', 'Failed to load customer list', error=str(exc))
-        raise RuntimeError(f"Database error loading customers: {exc}") from exc
-
-    customer_ids = [str(row['id']) for row in (rows or [])]
-    _log('info', 'customers loaded for scoring', count=len(customer_ids))
-
-    # ------------------------------------------------------------------
-    # Score each tenant
-    # ------------------------------------------------------------------
     all_scores: Dict[str, Dict[str, float]] = {}
     errors: List[str] = []
 
-    for customer_id in customer_ids:
-        try:
-            scores = _score_tenant(customer_id, dry_run=dry_run)
-            all_scores[customer_id] = scores
-        except Exception as exc:  # noqa: BLE001
-            error_msg = f"customer_id={customer_id}: {exc}"
-            _log('error', 'Failed to score tenant',
-                 customer_id=customer_id, error=str(exc))
-            errors.append(error_msg)
+    try:
+        if role_arn:
+            external_id = os.environ.get('SECUREBASE_EXTERNAL_ID', '').strip()
+            if not external_id:
+                raise RuntimeError('SECUREBASE_EXTERNAL_ID environment variable must be configured (non-empty) for cross-account scoring')
+            sts = boto3.client('sts')
+            assumed = sts.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=f'securebase-scan-{target_customer}',
+                ExternalId=external_id,
+            )
+            creds = assumed['Credentials']
+            session = boto3.Session(
+                aws_access_key_id=creds['AccessKeyId'],
+                aws_secret_access_key=creds['SecretAccessKey'],
+                aws_session_token=creds['SessionToken'],
+            )
+        else:
+            session = boto3.Session()
+    except ClientError as exc:
+        _log('error', 'Failed to initialize AWS session',
+             customer_id=target_customer, error=str(exc))
+        raise
+
+    try:
+        scores = _score_tenant(target_customer, session=session, dry_run=dry_run)
+        all_scores[target_customer] = scores
+    except Exception as exc:  # noqa: BLE001
+        error_msg = f"customer_id={target_customer}: {exc}"
+        _log('error', 'Failed to score tenant',
+             customer_id=target_customer, error=str(exc))
+        errors.append(error_msg)
 
     _log('info', 'compliance_score_recalculator complete',
          tenants_processed=len(all_scores),

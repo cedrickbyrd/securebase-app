@@ -1,417 +1,174 @@
-"""
-Unit tests for Phase 6.2 compliance_history_api Lambda.
+"""Unit tests for phase6-backend/functions/compliance_history_api.py."""
 
-Tests cover:
-- GET /tenant/compliance/history happy path (all frameworks, single framework)
-- Missing customer_id returns 401
-- Invalid framework parameter returns 400
-- Invalid days parameter returns 400
-- days boundary values (1 and 365)
-- DynamoDB ClientError returns 503
-- Empty history returns empty list with null summary values
-- Summary calculation: latest, min, max, avg, trend
-- OPTIONS pre-flight returns 200
-- Non-GET method returns 405
-- Decimal values from DynamoDB serialised correctly
-"""
-
+import importlib
 import json
 import os
 import sys
+import unittest
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-# ---------------------------------------------------------------------------
-# Path setup — add phase6-backend/functions to sys.path
-# ---------------------------------------------------------------------------
+from botocore.exceptions import ClientError
 
 FUNCTIONS_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'phase6-backend', 'functions')
 )
-sys.path.insert(0, FUNCTIONS_DIR)
+if FUNCTIONS_DIR not in sys.path:
+    sys.path.insert(0, FUNCTIONS_DIR)
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_context(request_id: str = 'test-request-id-hist') -> MagicMock:
+def _ctx() -> MagicMock:
     ctx = MagicMock()
-    ctx.aws_request_id = request_id
+    ctx.aws_request_id = 'test-request-id'
     return ctx
 
 
-def _make_event(
-    method: str = 'GET',
-    customer_id: str = 'cust-uuid-001',
-    qs: dict = None,
-) -> dict:
-    """Build a minimal API Gateway proxy event."""
+def _event(qs=None, authorizer=None, method='GET'):
+    auth_payload = {'customer_id': 'tenant-123'} if authorizer is None else authorizer
     return {
         'httpMethod': method,
         'queryStringParameters': qs or {},
         'requestContext': {
-            'authorizer': {
-                'customer_id': customer_id,
-            }
-        },
-        'headers': {
-            'Content-Type': 'application/json',
+            'authorizer': auth_payload,
         },
     }
 
 
-# Sample DynamoDB items returned by the mock table
-_SAMPLE_ITEMS = [
-    {
-        'PK': 'CUSTOMER#cust-uuid-001',
-        'SK': 'FRAMEWORK#SOC2#DATE#2026-05-12',
-        'customer_id': 'cust-uuid-001',
-        'framework': 'SOC2',
-        'score_date': '2026-05-12',
-        'score': Decimal('95.5'),
-        'controls_total': 16,
-        'controls_passing': 15,
-        'controls_failing': 1,
-        'critical_violations': 0,
-        'high_violations': 1,
-        'medium_violations': 0,
-        'low_violations': 0,
-        'calculated_at': '2026-05-12T02:05:00+00:00',
-    },
-    {
-        'PK': 'CUSTOMER#cust-uuid-001',
-        'SK': 'FRAMEWORK#SOC2#DATE#2026-05-05',
-        'customer_id': 'cust-uuid-001',
-        'framework': 'SOC2',
-        'score_date': '2026-05-05',
-        'score': Decimal('90.0'),
-        'controls_total': 16,
-        'controls_passing': 14,
-        'controls_failing': 2,
-        'critical_violations': 0,
-        'high_violations': 2,
-        'medium_violations': 0,
-        'low_violations': 0,
-        'calculated_at': '2026-05-05T02:05:00+00:00',
-    },
-]
-
-
-def _mock_table(items: list) -> MagicMock:
-    """Return a mock DynamoDB table whose query() returns the given items."""
-    mock = MagicMock()
-    mock.query.return_value = {'Items': items}
-    return mock
-
-
-# ---------------------------------------------------------------------------
-# Load the module under test (with boto3 patched at import time)
-# ---------------------------------------------------------------------------
-
-
 def _load_module():
-    """Import (or reload) compliance_history_api with boto3 stubbed."""
-    import importlib
     import compliance_history_api
-    importlib.reload(compliance_history_api)
-    return compliance_history_api
+    return importlib.reload(compliance_history_api)
 
 
-# ---------------------------------------------------------------------------
-# Tests: authentication
-# ---------------------------------------------------------------------------
+class ComplianceHistoryApiTests(unittest.TestCase):
+    def setUp(self):
+        self.score_items = [
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#SOC2#DATE#2026-05-17', 'framework': 'SOC2', 'score_date': '2026-05-17', 'score': Decimal('84')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#SOC2#DATE#2026-05-10', 'framework': 'SOC2', 'score_date': '2026-05-10', 'score': Decimal('78')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#SOC2#DATE#2026-04-17', 'framework': 'SOC2', 'score_date': '2026-04-17', 'score': Decimal('79')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#HIPAA#DATE#2026-05-17', 'framework': 'HIPAA', 'score_date': '2026-05-17', 'score': Decimal('72')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#HIPAA#DATE#2026-04-17', 'framework': 'HIPAA', 'score_date': '2026-04-17', 'score': Decimal('72')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#FedRAMP#DATE#2026-05-17', 'framework': 'FedRAMP', 'score_date': '2026-05-17', 'score': Decimal('55')},
+            {'PK': 'CUSTOMER#tenant-123', 'SK': 'FRAMEWORK#FedRAMP#DATE#2026-04-17', 'framework': 'FedRAMP', 'score_date': '2026-04-17', 'score': Decimal('60')},
+        ]
+        self.violation_items = [
+            {
+                'PK': 'CUSTOMER#tenant-123',
+                'SK': 'CONTROL#SOC2#CC6.1#DATE#2026-05-17',
+                'framework': 'SOC2',
+                'control_id': 'CC6.1',
+                'control_name': 'Logical and Physical Access Controls',
+                'rule_name': 'iam-user-mfa-enabled',
+                'severity': 'CRITICAL',
+                'status': 'NON_COMPLIANT',
+                'recorded_date': '2026-05-15',
+            },
+            {
+                'PK': 'CUSTOMER#tenant-123',
+                'SK': 'CONTROL#HIPAA#164.312#DATE#2026-05-17',
+                'framework': 'HIPAA',
+                'control_id': 'HIPAA-164.312(b)',
+                'control_name': 'Audit Controls',
+                'rule_name': 'cloudtrail-enabled',
+                'severity': 'HIGH',
+                'status': 'NON_COMPLIANT',
+                'recorded_date': '2026-05-14',
+            },
+        ]
 
-
-class TestAuth:
-    def test_missing_customer_id_returns_401(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-
-        event = {
-            'httpMethod': 'GET',
-            'queryStringParameters': {},
-            'requestContext': {'authorizer': {}},
-            'headers': {},
-        }
-        result = mod.lambda_handler(event, _make_context())
-        assert result['statusCode'] == 401
-        body = json.loads(result['body'])
-        assert 'Unauthorized' in body['error']
-
-    def test_customer_id_from_authorizer(self):
+    def _build_module_with_tables(self, score_table_side_effect=None, violation_table_side_effect=None):
         with patch('boto3.resource') as mock_resource:
-            mock_resource.return_value.Table.return_value = _mock_table(_SAMPLE_ITEMS)
             mod = _load_module()
             mod.dynamodb = mock_resource.return_value
 
-        mod.dynamodb.Table.return_value = _mock_table(_SAMPLE_ITEMS)
-        result = mod.lambda_handler(_make_event(), _make_context())
-        assert result['statusCode'] == 200
+            score_table = MagicMock()
+            if score_table_side_effect:
+                score_table.query.side_effect = score_table_side_effect
+            else:
+                score_table.query.return_value = {'Items': self.score_items}
 
-    def test_customer_id_from_query_string_fallback(self):
-        """customer_id in query string is accepted when authorizer is absent."""
-        with patch('boto3.resource') as mock_resource:
-            mock_resource.return_value.Table.return_value = _mock_table(_SAMPLE_ITEMS)
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
+            violation_table = MagicMock()
+            if violation_table_side_effect:
+                violation_table.query.side_effect = violation_table_side_effect
+            else:
+                violation_table.query.return_value = {'Items': self.violation_items}
 
-        mod.dynamodb.Table.return_value = _mock_table(_SAMPLE_ITEMS)
-        event = {
-            'httpMethod': 'GET',
-            'queryStringParameters': {'customer_id': 'cust-qs-001'},
-            'requestContext': {},
-            'headers': {},
-        }
-        result = mod.lambda_handler(event, _make_context())
-        assert result['statusCode'] == 200
+            def select_table(name):
+                if name == mod.COMPLIANCE_SCORES_TABLE:
+                    return score_table
+                if name == mod.CONTROL_VIOLATIONS_TABLE:
+                    return violation_table
+                raise AssertionError(f'unexpected table {name}')
 
+            mod.dynamodb.Table.side_effect = select_table
+            return mod
 
-# ---------------------------------------------------------------------------
-# Tests: HTTP method handling
-# ---------------------------------------------------------------------------
+    def test_unauthenticated_request_returns_401(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(authorizer={}), _ctx())
+        self.assertEqual(result['statusCode'], 401)
 
-
-class TestHttpMethods:
-    def test_options_returns_200(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler({'httpMethod': 'OPTIONS'}, _make_context())
-        assert result['statusCode'] == 200
-
-    def test_post_returns_405(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler({'httpMethod': 'POST'}, _make_context())
-        assert result['statusCode'] == 405
-
-
-# ---------------------------------------------------------------------------
-# Tests: query parameter validation
-# ---------------------------------------------------------------------------
-
-
-class TestQueryParams:
     def test_invalid_framework_returns_400(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler(
-            _make_event(qs={'framework': 'PCI_DSS'}), _make_context()
-        )
-        assert result['statusCode'] == 400
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(qs={'framework': 'PCI'}), _ctx())
+        self.assertEqual(result['statusCode'], 400)
+
+    def test_invalid_days_returns_400(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(qs={'days': '45'}), _ctx())
+        self.assertEqual(result['statusCode'], 400)
+
+    def test_all_frameworks_response_shape(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(qs={'days': '90', 'framework': 'all'}), _ctx())
+        self.assertEqual(result['statusCode'], 200)
+
         body = json.loads(result['body'])
-        assert 'Invalid framework' in body['error']
+        self.assertEqual(body['tenant_id'], 'tenant-123')
+        self.assertIn('generated_at', body)
+        self.assertIn('frameworks', body)
+        self.assertEqual(set(body['frameworks'].keys()), {'SOC2', 'HIPAA', 'FedRAMP'})
 
-    def test_valid_frameworks_accepted(self):
-        for fw in ('SOC2', 'HIPAA', 'FedRAMP', 'CIS'):
-            with patch('boto3.resource') as mock_resource:
-                mod = _load_module()
-                mod.dynamodb = mock_resource.return_value
-                mod.dynamodb.Table.return_value = _mock_table([])
-                result = mod.lambda_handler(
-                    _make_event(qs={'framework': fw}), _make_context()
-                )
-            assert result['statusCode'] == 200, f"Framework {fw} should be valid"
+        soc2 = body['frameworks']['SOC2']
+        self.assertEqual(soc2['current_score'], 84.0)
+        self.assertEqual(soc2['status'], 'Passing')
+        self.assertEqual(soc2['trend'], 'Improving')
+        self.assertIn('history', soc2)
+        self.assertIn('violations', soc2)
+        self.assertEqual(soc2['violations'][0]['control_id'], 'CC6.1')
 
-    def test_framework_case_insensitive(self):
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table([])
-            result = mod.lambda_handler(
-                _make_event(qs={'framework': 'soc2'}), _make_context()
-            )
-        assert result['statusCode'] == 200
+        hipaa = body['frameworks']['HIPAA']
+        self.assertEqual(hipaa['status'], 'At Risk')
 
-    def test_invalid_days_string_returns_400(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler(
-            _make_event(qs={'days': 'thirty'}), _make_context()
-        )
-        assert result['statusCode'] == 400
+        fedramp = body['frameworks']['FedRAMP']
+        self.assertEqual(fedramp['status'], 'Failing')
+        self.assertEqual(fedramp['trend'], 'Declining')
 
-    def test_days_zero_returns_400(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler(
-            _make_event(qs={'days': '0'}), _make_context()
-        )
-        assert result['statusCode'] == 400
-
-    def test_days_366_returns_400(self):
-        with patch('boto3.resource'):
-            mod = _load_module()
-        result = mod.lambda_handler(
-            _make_event(qs={'days': '366'}), _make_context()
-        )
-        assert result['statusCode'] == 400
-
-    def test_days_1_is_valid(self):
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table([])
-            result = mod.lambda_handler(
-                _make_event(qs={'days': '1'}), _make_context()
-            )
-        assert result['statusCode'] == 200
-
-    def test_days_365_is_valid(self):
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table([])
-            result = mod.lambda_handler(
-                _make_event(qs={'days': '365'}), _make_context()
-            )
-        assert result['statusCode'] == 200
-
-
-# ---------------------------------------------------------------------------
-# Tests: response structure
-# ---------------------------------------------------------------------------
-
-
-class TestResponseStructure:
-    def _call(self, items=None, qs=None):
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table(items or _SAMPLE_ITEMS)
-            result = mod.lambda_handler(_make_event(qs=qs), _make_context())
-        return result, json.loads(result['body'])
-
-    def test_200_returned_with_items(self):
-        result, _ = self._call()
-        assert result['statusCode'] == 200
-
-    def test_body_has_required_keys(self):
-        _, body = self._call()
-        for key in ('customer_id', 'framework', 'days', 'history', 'summary'):
-            assert key in body, f"Missing key: {key}"
-
-    def test_history_items_have_expected_fields(self):
-        _, body = self._call()
-        assert len(body['history']) > 0
-        item = body['history'][0]
-        for field in ('date', 'framework', 'score', 'controls_total',
-                      'controls_passing', 'controls_failing',
-                      'critical_violations', 'high_violations',
-                      'medium_violations', 'low_violations', 'calculated_at'):
-            assert field in item, f"History item missing field: {field}"
-
-    def test_decimal_values_serialised_as_float(self):
-        _, body = self._call()
-        score = body['history'][0]['score']
-        assert isinstance(score, float)
-        assert score == 95.5
-
-    def test_framework_filter_reflected_in_response(self):
-        _, body = self._call(qs={'framework': 'HIPAA'})
-        assert body['framework'] == 'HIPAA'
-
-    def test_empty_history_returns_empty_list(self):
-        _, body = self._call(items=[])
-        assert body['history'] == []
-        assert body['summary']['latest_score'] is None
-
-    def test_default_days_is_90(self):
-        _, body = self._call()
-        assert body['days'] == 90
-
-    def test_custom_days_reflected(self):
-        _, body = self._call(qs={'days': '30'})
-        assert body['days'] == 30
-
-
-# ---------------------------------------------------------------------------
-# Tests: summary calculation
-# ---------------------------------------------------------------------------
-
-
-class TestSummaryCalculation:
-    def _call_summary(self, items):
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table(items)
-            result = mod.lambda_handler(_make_event(), _make_context())
-        return json.loads(result['body'])['summary']
-
-    def test_latest_score_is_first_items_score(self):
-        summary = self._call_summary(_SAMPLE_ITEMS)
-        assert summary['latest_score'] == pytest.approx(95.5, abs=0.01)
-
-    def test_min_max_avg_computed_correctly(self):
-        summary = self._call_summary(_SAMPLE_ITEMS)
-        # Scores: 95.5 and 90.0
-        assert summary['min_score'] == pytest.approx(90.0, abs=0.01)
-        assert summary['max_score'] == pytest.approx(95.5, abs=0.01)
-        assert summary['avg_score'] == pytest.approx(92.75, abs=0.01)
-
-    def test_single_item_summary(self):
-        items = [_SAMPLE_ITEMS[0]]
-        summary = self._call_summary(items)
-        assert summary['latest_score'] == pytest.approx(95.5, abs=0.01)
-        assert summary['min_score'] == pytest.approx(95.5, abs=0.01)
-        assert summary['max_score'] == pytest.approx(95.5, abs=0.01)
-
-    def test_trend_values_are_valid(self):
-        summary = self._call_summary(_SAMPLE_ITEMS)
-        assert summary['trend'] in ('improving', 'stable', 'degrading')
-
-    def test_empty_items_summary_has_null_scores(self):
-        summary = self._call_summary([])
-        assert summary['latest_score'] is None
-        assert summary['min_score'] is None
-        assert summary['max_score'] is None
-        assert summary['avg_score'] is None
-        assert summary['trend'] == 'stable'
-
-
-# ---------------------------------------------------------------------------
-# Tests: error handling
-# ---------------------------------------------------------------------------
-
-
-class TestErrorHandling:
-    def test_dynamodb_client_error_returns_503(self):
-        from botocore.exceptions import ClientError
-
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mock_table = MagicMock()
-            mock_table.query.side_effect = ClientError(
-                {'Error': {'Code': 'ProvisionedThroughputExceededException',
-                           'Message': 'Rate exceeded'}},
-                'Query',
-            )
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = mock_table
-
-            result = mod.lambda_handler(_make_event(), _make_context())
-
-        assert result['statusCode'] == 503
+    def test_framework_filter_returns_single_framework(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(qs={'framework': 'SOC2', 'days': '30'}), _ctx())
+        self.assertEqual(result['statusCode'], 200)
         body = json.loads(result['body'])
-        assert 'unavailable' in body['error'].lower()
+        self.assertEqual(list(body['frameworks'].keys()), ['SOC2'])
 
-    def test_null_query_string_parameters(self):
-        """queryStringParameters=None (omitted from event) is handled gracefully."""
-        with patch('boto3.resource') as mock_resource:
-            mod = _load_module()
-            mod.dynamodb = mock_resource.return_value
-            mod.dynamodb.Table.return_value = _mock_table(_SAMPLE_ITEMS)
+    def test_options_returns_200(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler({'httpMethod': 'OPTIONS'}, _ctx())
+        self.assertEqual(result['statusCode'], 200)
 
-            event = {
-                'httpMethod': 'GET',
-                'queryStringParameters': None,
-                'requestContext': {'authorizer': {'customer_id': 'cust-001'}},
-                'headers': {},
-            }
-            result = mod.lambda_handler(event, _make_context())
+    def test_non_get_returns_405(self):
+        mod = self._build_module_with_tables()
+        result = mod.lambda_handler(_event(method='POST'), _ctx())
+        self.assertEqual(result['statusCode'], 405)
 
-        assert result['statusCode'] == 200
+    def test_dynamodb_error_returns_503(self):
+        err = ClientError(
+            {'Error': {'Code': 'ProvisionedThroughputExceededException', 'Message': 'Rate exceeded'}},
+            'Query',
+        )
+        mod = self._build_module_with_tables(score_table_side_effect=err)
+        result = mod.lambda_handler(_event(), _ctx())
+        self.assertEqual(result['statusCode'], 503)
+
+
+if __name__ == '__main__':
+    unittest.main()

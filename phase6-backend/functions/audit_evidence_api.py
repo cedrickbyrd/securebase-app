@@ -51,9 +51,8 @@ from botocore.exceptions import ClientError
 # Shared Lambda layer utilities
 sys.path.insert(0, '/opt/python')
 from db_utils import (
-    get_connection_pool,
-    set_rls_context,
-    execute_query,
+    query_many,
+    query_one,
     get_api_key_by_prefix,
     DatabaseError,
 )
@@ -141,10 +140,7 @@ def _authenticate(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        pool = get_connection_pool()
-        with pool.getconn() as conn:
-            customer = get_api_key_by_prefix(conn, raw_key)
-            pool.putconn(conn)
+        customer = get_api_key_by_prefix(raw_key)
         return customer
     except DatabaseError:
         return None
@@ -188,24 +184,19 @@ def _handle_list(
     values.extend([limit, offset])
 
     try:
-        pool = get_connection_pool()
-        with pool.getconn() as conn:
-            set_rls_context(conn, customer_id)
-            rows = execute_query(
-                conn,
-                f"""
-                SELECT id, package_name, framework, status, date_range_start,
-                       date_range_end, log_count, package_size_bytes,
-                       sha256_manifest, created_at
-                FROM evidence_packages
-                WHERE {where_sql}
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-                """,
-                tuple(values),
-                fetch=True,
-            )
-            pool.putconn(conn)
+        # Tenant isolation is enforced via the customer_id WHERE clause below.
+        rows = query_many(
+            f"""
+            SELECT id, package_name, framework, status, date_range_start,
+                   date_range_end, log_count, package_size_bytes,
+                   sha256_manifest, created_at
+            FROM evidence_packages
+            WHERE {where_sql}
+            ORDER BY created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            tuple(values),
+        )
     except DatabaseError as exc:
         _log('error', 'DB query failed in list_evidence', error=str(exc))
         return _error(500, 'Database error listing evidence packages')
@@ -242,21 +233,17 @@ def _handle_get(
         API Gateway response with package details and pre-signed download URL.
     """
     try:
-        pool = get_connection_pool()
-        with pool.getconn() as conn:
-            set_rls_context(conn, customer_id)
-            row = query_one(
-                conn,
-                """
-                SELECT id, package_name, s3_bucket, s3_key, sha256_manifest,
-                       framework, date_range_start, date_range_end, log_count,
-                       package_size_bytes, status, retention_until, created_at
-                FROM evidence_packages
-                WHERE id = %s AND customer_id = %s
-                """,
-                (package_id, customer_id),
-            )
-            pool.putconn(conn)
+        # Tenant isolation is enforced via the customer_id WHERE clause below.
+        row = query_one(
+            """
+            SELECT id, package_name, s3_bucket, s3_key, sha256_manifest,
+                   framework, date_range_start, date_range_end, log_count,
+                   package_size_bytes, status, retention_until, created_at
+            FROM evidence_packages
+            WHERE id = %s AND customer_id = %s
+            """,
+            (package_id, customer_id),
+        )
     except DatabaseError as exc:
         _log('error', 'DB query failed in get_evidence', error=str(exc))
         return _error(500, 'Database error retrieving evidence package')
@@ -297,6 +284,7 @@ def _handle_generate(
     event: Dict[str, Any],
     customer_id: str,
     user_id: Optional[str],
+    organization_name: Optional[str],
 ) -> Dict:
     """Handle POST /admin/evidence/generate — asynchronously trigger packaging.
 
@@ -329,6 +317,7 @@ def _handle_generate(
         'date_range_start': date_range_start,
         'date_range_end': date_range_end,
         'requested_by': user_id,
+        'organization_name': organization_name,
     }
     request_id = str(uuid.uuid4())
 
@@ -392,6 +381,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict:
 
     customer_id: str = str(customer['id'])
     user_id: Optional[str] = customer.get('user_id')
+    organization_name: Optional[str] = (
+        customer.get('organization_name')
+        or customer.get('name')
+        or customer.get('company_name')
+    )
 
     # ------------------------------------------------------------------
     # Route dispatch
@@ -412,6 +406,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict:
 
     if method == 'POST' and len(path_parts) == 3 and path_parts[2] == 'generate':
         # POST /admin/evidence/generate
-        return _handle_generate(event, customer_id, user_id)
+        return _handle_generate(event, customer_id, user_id, organization_name)
 
     return _error(404, f"Route not found: {method} {path}")
