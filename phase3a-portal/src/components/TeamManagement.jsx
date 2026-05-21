@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import { buildDeterministicFallbackId, getAvatarColor, getInitials } from '../utils/teamUtils';
 
-const AVATAR_COLORS = ['#0f4c81', '#1a73e8', '#0d9488', '#7c3aed', '#dc2626', '#d97706'];
 const ROLE_OPTIONS = ['admin', 'analyst', 'auditor', 'viewer'];
 
 const MOCK_USERS = [
@@ -26,28 +26,13 @@ function getTokenHeaders() {
   };
 }
 
-function toInitials(name = '') {
-  const words = String(name).trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '??';
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
-}
-
-function getAvatarColor(seed = '') {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = seed.charCodeAt(index) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
 function normalizeUser(user) {
   return {
-    id: user.id || user.user_id || `user-${Math.random().toString(36).slice(2)}`,
+    id: user.id || user.user_id || buildDeterministicFallbackId('user', `${user.email || ''}-${user.name || user.full_name || ''}`),
     name: user.name || user.full_name || user.email?.split('@')[0] || 'Unknown User',
     email: user.email || '',
     role: String(user.role || 'viewer').toLowerCase(),
-    avatar_initials: user.avatar_initials || toInitials(user.name || user.full_name || user.email || ''),
+    avatar_initials: user.avatar_initials || getInitials(user.name || user.full_name || user.email || ''),
     joined_at: user.joined_at || user.created_at || null,
     invite_pending: Boolean(user.invite_pending),
   };
@@ -109,7 +94,8 @@ export default function TeamManagement() {
         if (active) {
           setUsers(normalized.length > 0 ? normalized : MOCK_USERS.map(normalizeUser));
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to load users, using fallback data.', error);
         if (active) {
           setUsers(MOCK_USERS.map(normalizeUser));
         }
@@ -148,7 +134,8 @@ export default function TeamManagement() {
         headers: getTokenHeaders(),
         body: JSON.stringify({ role }),
       });
-    } catch {
+    } catch (error) {
+      console.error('Failed to update user role in API; retaining optimistic UI state.', error);
       // Keep optimistic state for frontend-only sprint behavior.
     }
   };
@@ -337,7 +324,7 @@ export default function TeamManagement() {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                           <span className="avatar-circle" style={{ background: getAvatarColor(`${user.name}-${user.email}`) }}>
-                            {user.avatar_initials || toInitials(user.name)}
+                            {user.avatar_initials || getInitials(user.name)}
                           </span>
                           <div>
                             <div style={{ fontWeight: 600, color: '#111827' }}>{user.name}</div>
