@@ -186,7 +186,8 @@ export default function HIPAADashboard() {
         const findingsData = await findingsRes.json();
         const normalizedFindings = normalizeFindings(findingsData);
         setFindings(normalizedFindings.length > 0 ? normalizedFindings : MOCK_FINDINGS);
-      } catch (_) {
+      } catch (error) {
+        console.error('HIPAA findings fetch failed, using fallback findings.', error);
         const fallbackFindings = normalizeFindings(compliancePayload?.findings || []);
         setFindings(fallbackFindings.length > 0 ? fallbackFindings : MOCK_FINDINGS);
       }
@@ -281,7 +282,7 @@ export default function HIPAADashboard() {
         body: JSON.stringify({ status }),
       });
     } catch (_) {
-      // Optimistic update is retained for demo environments.
+      // Optimistic update is intentionally retained even when the PATCH request fails.
     }
   };
 
@@ -850,7 +851,7 @@ function normalizeFindings(payload) {
   if (!Array.isArray(source)) return [];
 
   return source.map((finding, index) => ({
-    id: finding.id || `finding-${index}`,
+    id: finding.id || `${finding.control || 'control'}-${finding.title || 'finding'}-${index}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     severity: String(finding.severity || 'low').toLowerCase(),
     title: finding.title || 'Untitled finding',
     description: finding.description || finding.remediation || 'No description available.',

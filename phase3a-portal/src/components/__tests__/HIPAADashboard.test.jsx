@@ -156,14 +156,14 @@ describe('HIPAADashboard Component', () => {
     vi.clearAllMocks();
     localStorage.setItem('customerTier', 'healthcare');
     localStorage.removeItem('hipaa_jump_to_findings');
-    vi.stubGlobal('fetch', vi.fn((url) => {
+    vi.stubGlobal('fetch', vi.fn((url, options) => {
       if (url === '/api/hipaa/compliance') {
         return Promise.resolve({ ok: true, json: async () => mockHIPAAData });
       }
       if (url === '/api/hipaa/findings') {
         return Promise.resolve({ ok: true, json: async () => mockFindingsApiResponse });
       }
-      if (String(url).startsWith('/api/hipaa/findings/')) {
+      if (String(url).startsWith('/api/hipaa/findings/') && options?.method === 'PATCH') {
         return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
       }
       return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
@@ -328,7 +328,7 @@ describe('HIPAADashboard Component', () => {
 
   it('should show error state if sreService throws', async () => {
     const { sreService } = await import('../../services/sreService');
-    fetch.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 500 }));
+    globalThis.fetch.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 500 }));
     sreService.getHIPAACompliance.mockRejectedValueOnce(new Error('Network error'));
 
     render(<HIPAADashboard />);
