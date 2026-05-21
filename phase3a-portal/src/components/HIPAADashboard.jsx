@@ -71,6 +71,60 @@ const MOCK_HISTORY = [
   { date: '2026-05-13', score: 84, controls_passing: 42, high_findings: 4 },
 ];
 
+const FRAMEWORKS = ['hipaa', 'soc2', 'pcidss'];
+
+const MOCK_FRAMEWORKS = [
+  { id: 'hipaa', name: 'HIPAA', description: 'Health Insurance Portability & Accountability Act', score: 84, controls_passing: 42, high_findings: 4, color: '#0f4c81', icon: '🏥' },
+  { id: 'soc2', name: 'SOC 2', description: 'Service Organization Control 2', score: 76, controls_passing: 38, high_findings: 6, color: '#7c3aed', icon: '🔐' },
+  { id: 'pcidss', name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', score: 91, controls_passing: 54, high_findings: 1, color: '#0d9488', icon: '💳' },
+];
+
+const MOCK_SOC2_FINDINGS = [
+  { id: 's001', severity: 'high', title: 'Insufficient Access Review Process', description: 'Quarterly access reviews are not being conducted for privileged accounts.', control: 'SOC 2 CC6.2', status: 'open', remediation_steps: ['Define access review policy', 'Schedule quarterly reviews in calendar', 'Document review outcomes in audit log'] },
+  { id: 's002', severity: 'high', title: 'Missing Incident Response Plan', description: 'No formal incident response plan exists or has been tested in the last 12 months.', control: 'SOC 2 CC7.3', status: 'open', remediation_steps: ['Draft incident response policy', 'Assign IRP owner', 'Conduct tabletop exercise'] },
+  { id: 's003', severity: 'medium', title: 'Change Management Controls Not Documented', description: 'Software deployment process lacks formal change approval documentation.', control: 'SOC 2 CC8.1', status: 'in_progress', remediation_steps: ['Implement change request ticketing', 'Require approval sign-off before deploys'] },
+];
+
+const MOCK_PCIDSS_FINDINGS = [
+  { id: 'p001', severity: 'critical', title: 'Cardholder Data Stored Unencrypted in Logs', description: 'Application logs contain truncated PANs that exceed PCI-DSS retention requirements.', control: 'PCI-DSS Req 3.4', status: 'open', remediation_steps: ['Audit all log outputs for PAN data', 'Implement log scrubbing middleware', 'Rotate and purge existing affected logs'] },
+  { id: 'p002', severity: 'medium', title: 'Firewall Rule Review Overdue', description: 'Network firewall rules have not been reviewed in over 6 months.', control: 'PCI-DSS Req 1.3', status: 'in_progress', remediation_steps: ['Schedule firewall rule audit', 'Remove unused/overly permissive rules', 'Document approved ruleset'] },
+];
+
+const MOCK_SOC2_HISTORY = [
+  { date: '2026-04-01', score: 68, controls_passing: 32, high_findings: 9 },
+  { date: '2026-04-15', score: 71, controls_passing: 34, high_findings: 8 },
+  { date: '2026-05-01', score: 74, controls_passing: 36, high_findings: 7 },
+  { date: '2026-05-13', score: 76, controls_passing: 38, high_findings: 6 },
+];
+
+const MOCK_PCIDSS_HISTORY = [
+  { date: '2026-04-01', score: 85, controls_passing: 50, high_findings: 3 },
+  { date: '2026-04-15', score: 87, controls_passing: 51, high_findings: 2 },
+  { date: '2026-05-01', score: 89, controls_passing: 53, high_findings: 2 },
+  { date: '2026-05-13', score: 91, controls_passing: 54, high_findings: 1 },
+];
+
+const FRAMEWORK_STANDARD_REFERENCES = {
+  hipaa: '45 CFR Parts 160 and 164',
+  soc2: 'AICPA Trust Services Criteria',
+  pcidss: 'PCI DSS v4.0',
+};
+
+const FRAMEWORK_FALLBACKS = {
+  hipaa: {
+    findings: MOCK_FINDINGS,
+    history: MOCK_HISTORY,
+  },
+  soc2: {
+    findings: MOCK_SOC2_FINDINGS,
+    history: MOCK_SOC2_HISTORY,
+  },
+  pcidss: {
+    findings: MOCK_PCIDSS_FINDINGS,
+    history: MOCK_PCIDSS_HISTORY,
+  },
+};
+
 function getMockSchedule() {
   const fallbackEmail = localStorage.getItem('userEmail') || 'user@example.com';
   return {
@@ -79,6 +133,45 @@ function getMockSchedule() {
     email_notify: true,
     notify_email: fallbackEmail,
   };
+}
+
+function getStoredActiveFramework() {
+  const framework = String(localStorage.getItem('active_framework') || 'hipaa').toLowerCase();
+  return FRAMEWORKS.includes(framework) ? framework : 'hipaa';
+}
+
+function normalizeFrameworkOverview(payload) {
+  const source = Array.isArray(payload) ? payload : payload?.data || [];
+  if (!Array.isArray(source) || source.length === 0) return MOCK_FRAMEWORKS;
+  return source
+    .map((framework) => {
+      const id = String(framework.id || '').toLowerCase();
+      const fallback = MOCK_FRAMEWORKS.find((item) => item.id === id);
+      if (!fallback) return null;
+      return {
+        ...fallback,
+        name: framework.name || fallback.name,
+        score: toNumber(framework.score, fallback.score),
+        controls_passing: toNumber(framework.controls_passing ?? framework.controlsPassing, fallback.controls_passing),
+        high_findings: toNumber(framework.high_findings ?? framework.highFindings, fallback.high_findings),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getFrameworkMeta(frameworkId, frameworks = MOCK_FRAMEWORKS) {
+  return frameworks.find((framework) => framework.id === frameworkId) || MOCK_FRAMEWORKS[0];
+}
+
+function buildFrameworkComplianceFallback(frameworkId, frameworks = MOCK_FRAMEWORKS) {
+  const framework = getFrameworkMeta(frameworkId, frameworks);
+  return normalizeCompliancePayload({
+    overallScore: framework.score,
+    controlsPassing: framework.controls_passing,
+    highFindings: framework.high_findings,
+    findings: FRAMEWORK_FALLBACKS[frameworkId]?.findings || MOCK_FINDINGS,
+    lastAssessmentDate: new Date().toISOString(),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -163,6 +256,8 @@ export default function HIPAADashboard() {
   const [findings, setFindings] = useState([]);
   const [history, setHistory] = useState(MOCK_HISTORY);
   const [schedule, setSchedule] = useState(getMockSchedule());
+  const [frameworks, setFrameworks] = useState(MOCK_FRAMEWORKS);
+  const [activeFramework, setActiveFramework] = useState(getStoredActiveFramework());
   const [teamMembers, setTeamMembers] = useState(MOCK_USERS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [statusToastId, setStatusToastId] = useState('');
@@ -174,6 +269,9 @@ export default function HIPAADashboard() {
   const isHealthcareTier = effectiveTier === 'healthcare';
   const currentUser = teamMembers.find((user) => String(user.email || '').toLowerCase() === currentUserEmail);
   const currentUserRole = currentUser?.role || 'admin';
+  const activeFrameworkMeta = getFrameworkMeta(activeFramework, frameworks);
+  const frameworkName = activeFrameworkMeta.name;
+  const frameworkIcon = activeFrameworkMeta.icon;
 
   const handleLogout = async () => {
     await logoutDemo();
@@ -197,14 +295,29 @@ export default function HIPAADashboard() {
         ...(token && { Authorization: `Bearer ${token}` }),
       };
 
+      try {
+        const frameworksRes = await fetch('/api/frameworks', { headers });
+        if (!frameworksRes.ok) throw new Error(`frameworks_fetch_failed:${frameworksRes.status}`);
+        const frameworksData = await frameworksRes.json();
+        const normalizedFrameworks = normalizeFrameworkOverview(frameworksData);
+        setFrameworks(normalizedFrameworks.length > 0 ? normalizedFrameworks : MOCK_FRAMEWORKS);
+      } catch (frameworksError) {
+        console.error('Framework overview fetch failed, using fallback frameworks.', frameworksError);
+        setFrameworks(MOCK_FRAMEWORKS);
+      }
+
       let compliancePayload;
       try {
-        const complianceRes = await fetch('/api/hipaa/compliance', { headers });
-        if (!complianceRes.ok) throw new Error(`HIPAA compliance fetch failed: ${complianceRes.status}`);
+        const complianceRes = await fetch(`/api/${activeFramework}/compliance`, { headers });
+        if (!complianceRes.ok) throw new Error(`framework_compliance_fetch_failed:${complianceRes.status}`);
         const complianceData = await complianceRes.json();
         compliancePayload = normalizeCompliancePayload(complianceData?.data || complianceData);
       } catch (_) {
-        compliancePayload = normalizeCompliancePayload(await sreService.getHIPAACompliance());
+        if (activeFramework === 'hipaa') {
+          compliancePayload = normalizeCompliancePayload(await sreService.getHIPAACompliance());
+        } else {
+          compliancePayload = buildFrameworkComplianceFallback(activeFramework);
+        }
       }
 
       setData(compliancePayload);
@@ -215,15 +328,17 @@ export default function HIPAADashboard() {
       }
 
       try {
-        const findingsRes = await fetch('/api/hipaa/findings', { headers });
-        if (!findingsRes.ok) throw new Error(`HIPAA findings fetch failed: ${findingsRes.status}`);
+        const findingsRes = await fetch(`/api/${activeFramework}/findings`, { headers });
+        if (!findingsRes.ok) throw new Error(`framework_findings_fetch_failed:${findingsRes.status}`);
         const findingsData = await findingsRes.json();
         const normalizedFindings = normalizeFindings(findingsData);
-        setFindings(normalizedFindings.length > 0 ? normalizedFindings : MOCK_FINDINGS);
+        const fallbackFindings = FRAMEWORK_FALLBACKS[activeFramework]?.findings || MOCK_FINDINGS;
+        setFindings(normalizedFindings.length > 0 ? normalizedFindings : fallbackFindings);
       } catch (error) {
-        console.error('HIPAA findings fetch failed, using fallback findings.', error);
+        console.error('Framework findings fetch failed, using fallback findings.', error);
         const fallbackFindings = normalizeFindings(compliancePayload?.findings || []);
-        setFindings(fallbackFindings.length > 0 ? fallbackFindings : MOCK_FINDINGS);
+        const frameworkFallbackFindings = FRAMEWORK_FALLBACKS[activeFramework]?.findings || MOCK_FINDINGS;
+        setFindings(fallbackFindings.length > 0 ? fallbackFindings : frameworkFallbackFindings);
       }
 
       try {
@@ -246,33 +361,34 @@ export default function HIPAADashboard() {
       }
 
       try {
-        const historyRes = await fetch('/api/hipaa/compliance/history', { headers });
-        if (!historyRes.ok) throw new Error(`HIPAA history fetch failed: ${historyRes.status}`);
+        const historyRes = await fetch(`/api/${activeFramework}/compliance/history`, { headers });
+        if (!historyRes.ok) throw new Error(`framework_history_fetch_failed:${historyRes.status}`);
         const historyData = await historyRes.json();
         const normalizedHistory = normalizeHistory(historyData);
-        setHistory(normalizedHistory.length > 0 ? normalizedHistory : MOCK_HISTORY);
+        const frameworkFallbackHistory = FRAMEWORK_FALLBACKS[activeFramework]?.history || MOCK_HISTORY;
+        setHistory(normalizedHistory.length > 0 ? normalizedHistory : frameworkFallbackHistory);
       } catch (historyError) {
-        console.error('HIPAA compliance history fetch failed, using fallback history.', historyError);
-        setHistory(MOCK_HISTORY);
+        console.error('Framework compliance history fetch failed, using fallback history.', historyError);
+        setHistory(FRAMEWORK_FALLBACKS[activeFramework]?.history || MOCK_HISTORY);
       }
 
       try {
-        const scheduleRes = await fetch('/api/hipaa/schedule', { headers });
-        if (!scheduleRes.ok) throw new Error(`HIPAA schedule fetch failed: ${scheduleRes.status}`);
+        const scheduleRes = await fetch(`/api/${activeFramework}/schedule`, { headers });
+        if (!scheduleRes.ok) throw new Error(`framework_schedule_fetch_failed:${scheduleRes.status}`);
         const scheduleData = await scheduleRes.json();
         setSchedule(normalizeSchedule(scheduleData));
       } catch (scheduleError) {
-        console.error('HIPAA schedule fetch failed, using fallback schedule.', scheduleError);
-        const persistedSchedule = readScheduleFromLocalStorage();
+        console.error('Framework schedule fetch failed, using fallback schedule.', scheduleError);
+        const persistedSchedule = readScheduleFromLocalStorage(activeFramework);
         setSchedule(normalizeSchedule(persistedSchedule || getMockSchedule()));
       }
     } catch (err) {
-      console.error('Failed to load HIPAA compliance data:', err);
-      setError('Failed to load HIPAA compliance data. Please try again.');
+      console.error('Failed to load compliance data:', err);
+      setError('Failed to load compliance data. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [isHealthcareTier]);
+  }, [activeFramework, isHealthcareTier]);
 
   useEffect(() => {
     trackPageView('HIPAA Dashboard', '/hipaa-dashboard');
@@ -281,10 +397,17 @@ export default function HIPAADashboard() {
   }, [loadData]);
 
   useEffect(() => {
+    localStorage.setItem('active_framework', activeFramework);
+    setActiveFilter('all');
+  }, [activeFramework]);
+
+  useEffect(() => {
     if (!isHealthcareTier) return;
     const shouldJumpToFindings = localStorage.getItem('hipaa_jump_to_findings') === 'true';
     if (shouldJumpToFindings) {
       localStorage.removeItem('hipaa_jump_to_findings');
+      setActiveFramework('hipaa');
+      localStorage.setItem('active_framework', 'hipaa');
       setJumpToFindingsOnLoad(true);
       setActiveFilter('critical');
       setActiveTab('findings');
@@ -310,12 +433,12 @@ export default function HIPAADashboard() {
     trackHIPAARoute('/hipaa-dashboard', 'evidence_export');
 
     setTimeout(() => {
-      const report = generateAuditorReport(data);
+      const report = generateAuditorReport(data, activeFrameworkMeta);
       const blob = new Blob([report], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `HIPAA-Compliance-Report-${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `${String(activeFrameworkMeta.name || 'HIPAA').replace(/\s+/g, '-')}-Compliance-Report-${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -327,12 +450,12 @@ export default function HIPAADashboard() {
   const handleDownloadEvidence = () => {
     const orgName = localStorage.getItem('orgName') || 'Organization';
     const date = new Date().toISOString().split('T')[0];
-    const content = generateEvidenceReport(orgName, date, findings, data?.overallScore ?? 0);
+    const content = generateEvidenceReport(orgName, date, findings, data?.overallScore ?? 0, activeFrameworkMeta);
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${orgName}-HIPAA-Evidence-${date}.txt`;
+    a.download = `${orgName}-${activeFrameworkMeta.id.toUpperCase()}-Evidence-${date}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -351,13 +474,13 @@ export default function HIPAADashboard() {
     window.setTimeout(() => setStatusToastId(''), 2000);
 
     try {
-      await fetch(`/api/hipaa/findings/${encodeURIComponent(id)}`, {
+      await fetch(`/api/${activeFramework}/findings/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ status }),
       });
     } catch (error) {
-      console.error('Failed to update HIPAA finding status in API; retaining optimistic UI state.', error);
+      console.error('Failed to update finding status in API; retaining optimistic UI state.', error);
       // Optimistic update is intentionally retained even when the PATCH request fails.
     }
   };
@@ -379,13 +502,13 @@ export default function HIPAADashboard() {
     window.setTimeout(() => setAssignmentToast({ id: '', message: '' }), 2000);
 
     try {
-      await fetch(`/api/hipaa/findings/${encodeURIComponent(id)}`, {
+      await fetch(`/api/${activeFramework}/findings/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ assigned_to: assignedTo || null }),
       });
     } catch (error) {
-      console.error('Failed to assign HIPAA finding in API; retaining optimistic UI state.', error);
+      console.error('Failed to assign finding in API; retaining optimistic UI state.', error);
     }
   };
 
@@ -398,15 +521,15 @@ export default function HIPAADashboard() {
     const payload = { cadence, email_notify, notify_email };
 
     try {
-      const res = await fetch('/api/hipaa/schedule', {
+      const res = await fetch(`/api/${activeFramework}/schedule`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`HIPAA schedule save failed: ${res.status}`);
+      if (!res.ok) throw new Error(`framework schedule save failed: ${res.status}`);
     } catch (scheduleSaveError) {
       console.error('Failed to save schedule to API; saving fallback to localStorage.', scheduleSaveError);
-      localStorage.setItem('hipaa_schedule', JSON.stringify(payload));
+      localStorage.setItem(`${activeFramework}_schedule`, JSON.stringify(payload));
     }
 
     setSchedule({
@@ -421,8 +544,8 @@ export default function HIPAADashboard() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏥</div>
-          <p style={{ color: '#6b7280' }}>Loading HIPAA compliance data…</p>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{frameworkIcon}</div>
+          <p style={{ color: '#6b7280' }}>Loading {frameworkName} compliance data…</p>
         </div>
       </div>
     );
@@ -442,7 +565,7 @@ export default function HIPAADashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* Header */}
-      <header style={{ background: 'linear-gradient(135deg, #0f4c81 0%, #1a73e8 100%)', color: '#fff', padding: '1.5rem 2rem' }}>
+      <header style={{ background: `linear-gradient(135deg, ${activeFrameworkMeta.color} 0%, #1a73e8 100%)`, color: '#fff', padding: '1.5rem 2rem' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
@@ -452,11 +575,29 @@ export default function HIPAADashboard() {
               >
                 ← Dashboard
               </button>
-              <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>🏥 HIPAA Compliance Dashboard</h1>
+              <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>{frameworkIcon} {frameworkName} Compliance Dashboard</h1>
               <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: '0.9rem' }}>
                 <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 8px', fontSize: '0.75rem', marginRight: 8, fontWeight: 600 }}>Now viewing: Healthcare Tier</span>
                 HealthCorp Medical Systems · Last assessment: {formatDate(data.lastAssessmentDate)}
               </p>
+            </div>
+            <div className="framework-switcher">
+              {frameworks.map((framework) => {
+                const isActive = framework.id === activeFramework;
+                return (
+                  <button
+                    key={framework.id}
+                    className={`framework-tab ${isActive ? 'active' : ''}`}
+                    style={isActive ? { background: framework.color } : undefined}
+                    onClick={() => setActiveFramework(framework.id)}
+                    type="button"
+                  >
+                    <span>{framework.icon}</span>
+                    <span>{framework.name}</span>
+                    <span className="framework-score-badge">{framework.score}%</span>
+                  </button>
+                );
+              })}
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {isHealthcareTier && (
@@ -546,6 +687,7 @@ export default function HIPAADashboard() {
             findings={findings}
             history={history}
             schedule={schedule}
+            frameworkMeta={activeFrameworkMeta}
             findingsRef={findingsRef}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
@@ -855,6 +997,7 @@ function FindingsTab({
   findings,
   history,
   schedule,
+  frameworkMeta,
   findingsRef,
   activeFilter,
   setActiveFilter,
@@ -887,7 +1030,7 @@ function FindingsTab({
       <div style={cardStyle}>
         <h2 style={sectionHead}>Findings</h2>
         <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
-          HIPAA findings workflow is available for healthcare tier customers.
+          Compliance findings workflow is available for healthcare tier customers.
         </p>
       </div>
     );
@@ -938,6 +1081,7 @@ function FindingsTab({
         history={history}
         findings={findings}
         score={toNumber(data?.overallScore, 0)}
+        frameworkMeta={frameworkMeta}
       />
 
       <div ref={findingsListRef} className="findings-filter-bar">
@@ -1042,7 +1186,7 @@ function FindingsTab({
 // Sprint 3: Compliance report + schedule
 // ---------------------------------------------------------------------------
 
-function ComplianceReport({ history, findings, score }) {
+function ComplianceReport({ history, findings, score, frameworkMeta }) {
   const [tooltip, setTooltip] = useState(null);
   const orgName = localStorage.getItem('orgName') || 'Organization';
   const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -1053,7 +1197,7 @@ function ComplianceReport({ history, findings, score }) {
   const handleDownloadReport = () => {
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) return;
-    reportWindow.document.write(generateComplianceReportHTML(orgName, now, points, findings, score));
+    reportWindow.document.write(generateComplianceReportHTML(orgName, now, points, findings, score, frameworkMeta));
     reportWindow.document.close();
     reportWindow.print();
   };
@@ -1061,12 +1205,12 @@ function ComplianceReport({ history, findings, score }) {
   return (
     <section className="trend-chart-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
-        <h2 style={{ ...sectionHead, margin: 0 }}>Compliance Report</h2>
+        <h2 style={{ ...sectionHead, margin: 0 }}>{frameworkMeta?.name || 'HIPAA'} Compliance Report</h2>
         <button style={btnPrimary} onClick={handleDownloadReport}>Download Compliance Report (PDF)</button>
       </div>
 
       <div style={{ position: 'relative' }}>
-        <svg width="100%" height="180" viewBox="0 0 720 180" role="img" aria-label="HIPAA compliance score trend">
+        <svg width="100%" height="180" viewBox="0 0 720 180" role="img" aria-label={`${frameworkMeta?.name || 'HIPAA'} compliance score trend`}>
           <g>
             {[25, 50, 75, 100].map((value) => {
               const y = chart.yFor(value);
@@ -1263,7 +1407,7 @@ function EvidenceTab({ data, onExport, exporting }) {
           <div>
             <h2 style={{ margin: '0 0 6px', fontSize: '1.2rem', color: '#111827' }}>Auditor Evidence Package</h2>
             <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem' }}>
-              Download a comprehensive HTML report suitable for HIPAA auditors and OCR investigations.
+              Download a comprehensive HTML report suitable for compliance audits and executive reviews.
             </p>
           </div>
           <button
@@ -1315,7 +1459,7 @@ function normalizeFindings(payload) {
     severity: String(finding.severity || 'low').toLowerCase(),
     title: finding.title || 'Untitled finding',
     description: finding.description || finding.remediation || 'No description available.',
-    control: finding.control || 'HIPAA control',
+    control: finding.control || 'Compliance control',
     status: String(finding.status || 'open').toLowerCase(),
     assigned_to: finding.assigned_to || finding.assignedTo || null,
     remediation_steps: Array.isArray(finding.remediation_steps)
@@ -1416,9 +1560,9 @@ function normalizeSchedule(payload) {
   };
 }
 
-function readScheduleFromLocalStorage() {
+function readScheduleFromLocalStorage(frameworkId = 'hipaa') {
   try {
-    const stored = localStorage.getItem('hipaa_schedule');
+    const stored = localStorage.getItem(`${frameworkId}_schedule`);
     if (!stored) return null;
     return JSON.parse(stored);
   } catch (_) {
@@ -1551,15 +1695,21 @@ function statusBadgeStyle(status) {
   };
 }
 
-function generateEvidenceReport(org, date, findings, score) {
+function generateEvidenceReport(org, date, findings, score, frameworkMeta = MOCK_FRAMEWORKS[0]) {
   const openFindings = findings.filter((finding) => finding.status !== 'resolved');
   const resolvedFindings = findings.filter((finding) => finding.status === 'resolved');
+  const frameworkName = frameworkMeta?.name || 'HIPAA';
+  const frameworkKey = frameworkMeta?.id || 'hipaa';
+  const standardReference = FRAMEWORK_STANDARD_REFERENCES[frameworkKey] || FRAMEWORK_STANDARD_REFERENCES.hipaa;
   return `
-HIPAA COMPLIANCE EVIDENCE PACKAGE
+${frameworkName.toUpperCase()} COMPLIANCE EVIDENCE PACKAGE
 ==================================
 Organization: ${org}
 Generated: ${date}
 Overall Score: ${score}%
+Framework: ${frameworkName}
+Description: ${frameworkMeta?.description || ''}
+Applicable Standard: ${standardReference}
 
 OPEN FINDINGS
 -------------
@@ -1575,9 +1725,12 @@ ${resolvedFindings.map((finding) =>
 `.trim();
 }
 
-function generateComplianceReportHTML(org, date, history, findings, score) {
+function generateComplianceReportHTML(org, date, history, findings, score, frameworkMeta = MOCK_FRAMEWORKS[0]) {
   const safeOrg = escHtml(org);
   const safeDate = escHtml(date);
+  const frameworkName = frameworkMeta?.name || 'HIPAA';
+  const frameworkId = frameworkMeta?.id || 'hipaa';
+  const standardReference = FRAMEWORK_STANDARD_REFERENCES[frameworkId] || FRAMEWORK_STANDARD_REFERENCES.hipaa;
   const openFindings = findings.filter((finding) => finding.status !== 'resolved');
 
   return `
@@ -1585,7 +1738,7 @@ function generateComplianceReportHTML(org, date, history, findings, score) {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${safeOrg} HIPAA Compliance Report — ${safeDate}</title>
+  <title>${safeOrg} ${escHtml(frameworkName)} Compliance Report — ${safeDate}</title>
   <style>
     body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; color: #111827; }
     h1 { color: #0f4c81; border-bottom: 2px solid #0f4c81; padding-bottom: 0.5rem; }
@@ -1602,9 +1755,10 @@ function generateComplianceReportHTML(org, date, history, findings, score) {
   </style>
 </head>
 <body>
-  <h1>HIPAA Compliance Report</h1>
+  <h1>${escHtml(frameworkName)} Compliance Report</h1>
   <p><strong>Organization:</strong> ${safeOrg}</p>
   <p><strong>Generated:</strong> ${safeDate}</p>
+  <p><strong>Applicable Standard:</strong> ${escHtml(standardReference)}</p>
   <p><strong>Overall Score:</strong> <span class="score">${escHtml(String(score))}%</span></p>
 
   <h2>Score Trend</h2>
@@ -1721,8 +1875,9 @@ function severityColor(severity) {
   return '#1d4ed8';
 }
 
-function generateAuditorReport(data) {
+function generateAuditorReport(data, frameworkMeta = MOCK_FRAMEWORKS[0]) {
   const now = new Date().toLocaleString();
+  const frameworkName = frameworkMeta?.name || 'HIPAA';
   const { safeguards, baaCompliance, training, riskAssessment, findings, phiLocations } = data;
 
   const controlRows = (controls) => (controls || []).map(c =>
@@ -1743,7 +1898,7 @@ function generateAuditorReport(data) {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>HIPAA Compliance Evidence Report</title>
+  <title>${escHtml(frameworkName)} Compliance Evidence Report</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; color: #111; line-height: 1.5; }
     h1 { color: #0f4c81; border-bottom: 2px solid #0f4c81; padding-bottom: 0.5rem; }
@@ -1758,7 +1913,7 @@ function generateAuditorReport(data) {
   </style>
 </head>
 <body>
-  <h1>🏥 HIPAA Compliance Evidence Report</h1>
+  <h1>${escHtml(frameworkMeta?.icon || '🏥')} ${escHtml(frameworkName)} Compliance Evidence Report</h1>
   <p class="meta">Generated: ${escHtml(now)} · HealthCorp Medical Systems · SecureBase Platform</p>
   <p class="meta">Overall Score: <span class="score">${escHtml(String(data.overallScore))}%</span> · Risk Level: <strong style="text-transform:capitalize">${escHtml(data.riskLevel)}</strong></p>
 
@@ -1805,7 +1960,7 @@ function generateAuditorReport(data) {
   </table>
 
   <footer>
-    <p>Generated by SecureBase HIPAA Compliance Dashboard · All data is current as of the above timestamp.</p>
+    <p>Generated by SecureBase ${escHtml(frameworkName)} Compliance Dashboard · All data is current as of the above timestamp.</p>
     <p>For questions, contact compliance@healthcorp.example.com</p>
   </footer>
 </body>
