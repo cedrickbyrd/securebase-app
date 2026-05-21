@@ -146,7 +146,7 @@ const mockScheduleApiResponse = {
   cadence: 'weekly',
   next_run: '2026-05-28T00:00:00Z',
   email_notify: true,
-  notify_email: 'matthew.matturro@trinetx.com',
+  notify_email: 'user@example.com',
 };
 
 vi.mock('../../services/sreService', () => ({
@@ -168,8 +168,8 @@ describe('HIPAADashboard Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem('customerTier', 'healthcare');
-    localStorage.setItem('orgName', 'TriNetX');
-    localStorage.setItem('userEmail', 'matthew.matturro@trinetx.com');
+    localStorage.setItem('orgName', 'Test Organization');
+    localStorage.setItem('userEmail', 'user@example.com');
     localStorage.removeItem('hipaa_jump_to_findings');
     vi.stubGlobal('fetch', vi.fn((url, options) => {
       if (url === '/api/hipaa/compliance') {
