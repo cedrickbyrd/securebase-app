@@ -16,6 +16,12 @@ const JWT_EXPIRY   = process.env.JWT_EXPIRY   || "1h";
 const APP_URL      = process.env.APP_URL       || "https://portal.securebase.tximhotep.com";
 const FROM_EMAIL   = process.env.FROM_EMAIL    || "onboarding@tximhotep.com";
 const TOKEN_TTL_H  = 24; // hours
+// Brute-force protection: lock account after this many consecutive bad passwords.
+const MAX_FAILED_ATTEMPTS = parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS || "5", 10);
+// Account lockout window in seconds (default 15 minutes).
+const LOCKOUT_TTL_S = parseInt(process.env.LOCKOUT_DURATION_SECONDS || "900", 10);
+// Portal origin used for CORS — must be explicit (never "*") to support credentials.
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "https://portal.securebase.tximhotep.com";
 const ACCEPT_INVITE_PATH_PATTERN = /(?:^|\/)accept-invite(?:\/|$)/;
 const INVITE_PATH_PATTERN = /(?:^|\/)invite(?:\/|$)/;
 
@@ -23,7 +29,7 @@ const response = (statusCode, body) => ({
   statusCode,
   headers: {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": process.env.CORS_ORIGIN || "*",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   },
@@ -35,6 +41,49 @@ const response = (statusCode, body) => ({
 const getUser = async (email) => {
   const r = await db.send(new GetItemCommand({ TableName: USERS_TABLE, Key: marshall({ email }) }));
   return r.Item ? unmarshall(r.Item) : null;
+};
+
+/**
+ * Increment the failed-login counter for an email.
+ * If the counter reaches MAX_FAILED_ATTEMPTS the record gains a
+ * `locked_until` epoch (seconds) so subsequent calls return early.
+ */
+const recordFailedLogin = async (email) => {
+  const now = Math.floor(Date.now() / 1000);
+  const lockedUntil = now + LOCKOUT_TTL_S;
+  await db.send(new UpdateItemCommand({
+    TableName: USERS_TABLE,
+    Key: marshall({ email }),
+    UpdateExpression:
+      "SET failed_login_attempts = if_not_exists(failed_login_attempts, :zero) + :one, " +
+      "locked_until = if_not_exists(locked_until, :unlocked)",
+    ExpressionAttributeValues: marshall({
+      ":zero": 0,
+      ":one": 1,
+      ":unlocked": 0,
+    }),
+  }));
+  // Re-read to decide whether we just tripped the lockout threshold.
+  const updated = await getUser(email);
+  const attempts = (updated?.failed_login_attempts) || 0;
+  if (attempts >= MAX_FAILED_ATTEMPTS) {
+    await db.send(new UpdateItemCommand({
+      TableName: USERS_TABLE,
+      Key: marshall({ email }),
+      UpdateExpression: "SET locked_until = :lu",
+      ExpressionAttributeValues: marshall({ ":lu": lockedUntil }),
+    }));
+  }
+};
+
+/** Reset the failed-login counter and clear any lockout on a successful login. */
+const clearFailedLogins = async (email) => {
+  await db.send(new UpdateItemCommand({
+    TableName: USERS_TABLE,
+    Key: marshall({ email }),
+    UpdateExpression: "SET failed_login_attempts = :zero REMOVE locked_until",
+    ExpressionAttributeValues: marshall({ ":zero": 0 }),
+  }));
 };
 
 const generateToken = () => crypto.randomBytes(32).toString("hex");
@@ -108,8 +157,33 @@ const login = async (body) => {
   // Return 401 for both "user not found" and "invited but not yet activated" —
   // never leak which case applies (prevents user enumeration)
   if (!user || !user.password_hash) return response(401, { message: "Invalid credentials" });
+
+  // Check account lockout before bcrypt to avoid timing side-channel
+  const now = Math.floor(Date.now() / 1000);
+  if (user.locked_until && user.locked_until > now) {
+    const retryAfter = user.locked_until - now;
+    return {
+      statusCode: 429,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": CORS_ORIGIN,
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Retry-After": String(retryAfter),
+      },
+      body: JSON.stringify({ message: "Too many failed login attempts. Please try again later." }),
+    };
+  }
+
   const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) return response(401, { message: "Invalid credentials" });
+  if (!match) {
+    await recordFailedLogin(email);
+    return response(401, { message: "Invalid credentials" });
+  }
+
+  // Successful auth — clear brute-force counters
+  await clearFailedLogins(email);
+
   if (user.mfa_enabled) {
     if (!totp_code) return response(200, { mfa_required: true });
     const valid = authenticator.verify({ token: totp_code, secret: user.mfa_secret });
@@ -191,7 +265,7 @@ const invite = async (body) => {
     link,
   );
   await sendEmail(email, "Activate your SecureBase account", html);
-  console.log(`Invite sent to ${email}`);
+  console.log("Invite sent [redacted]");
   return response(200, { message: "Invite sent" });
 };
 
@@ -258,7 +332,8 @@ const mfaSetup = async (body) => {
   if (!body || !body.email) return response(400, { message: "Email required" });
   const { email } = body;
   const user = await getUser(email);
-  if (!user) return response(404, { message: "User not found" });
+  // Return 400 (not 404) to avoid disclosing whether the account exists.
+  if (!user) return response(400, { message: "MFA setup not available" });
   const secret  = authenticator.generateSecret();
   const otpauth = authenticator.keyuri(email, "SecureBase", secret);
   await db.send(new UpdateItemCommand({
@@ -299,7 +374,7 @@ export const handler = async (event) => {
       return {
         statusCode: 200,
         headers: {
-          "Access-Control-Allow-Origin": process.env.CORS_ORIGIN || "*",
+          "Access-Control-Allow-Origin": CORS_ORIGIN,
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
