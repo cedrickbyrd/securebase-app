@@ -13,6 +13,7 @@ import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
 import AlertManagement from './components/AlertManagement';
 import HIPAADashboard from './components/HIPAADashboard';
+import TeamManagement from './components/TeamManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import EvidencePackages from './components/EvidencePackages';
@@ -109,6 +110,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
         <Route path="/compliance/trend"    element={isAuthenticated ? <ComplianceTrendPage />                                                            : <Navigate to="/login" />} />
         <Route path="/fintech-portal"      element={isAuthenticated ? <TexasExaminerPortal />                                                             : <Navigate to="/login" />} />
         <Route path="/hipaa-dashboard"     element={isAuthenticated ? <HIPAADashboard />                                                                  : <Navigate to="/login" />} />
+        <Route path="/team"                element={isAuthenticated ? <TeamManagement />                                                                   : <Navigate to="/login" />} />
         <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
         <Route path="/alerts"              element={isAuthenticated ? <AlertManagement />                                                                 : <Navigate to="/login" />} />
         <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />

@@ -653,6 +653,13 @@ function Dashboard() {
               <div className="metric-content"><h3>HIPAA Compliance</h3><p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>View Dashboard →</p></div>
             </div>
           )}
+
+          {isHealthcareTier && (
+            <div className="metric-card clickable" onClick={() => navigate('/team')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/team')} aria-label="Team">
+              <div className="metric-icon" style={{ background: '#eef2ff' }}>👥</div>
+              <div className="metric-content"><h3>Team</h3><p className="metric-value" style={{ color: '#4338ca', fontSize: '0.95rem' }}>Manage Members →</p></div>
+            </div>
+          )}
         </section>
 
         {/* Two Column Layout */}
