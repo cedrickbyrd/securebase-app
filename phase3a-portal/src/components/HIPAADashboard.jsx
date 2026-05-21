@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
 import { logoutDemo } from '../services/jwtService';
+import { buildDeterministicFallbackId, getAvatarColor, getInitials } from '../utils/teamUtils';
 import './Dashboard.css';
 
 // ---------------------------------------------------------------------------
@@ -11,7 +12,12 @@ import './Dashboard.css';
 
 /** Delay (ms) before the export download triggers — gives the UX spinner time to render */
 const EXPORT_GENERATION_DELAY_MS = 1200;
-const FINDING_FILTERS = ['all', 'critical', 'high', 'medium', 'low', 'resolved'];
+const FINDING_FILTERS = ['all', 'critical', 'high', 'medium', 'low', 'resolved', 'mine'];
+const MOCK_USERS = [
+  { id: 'u001', name: 'Matthew Matturro', email: 'Matthew.matturro@trinetx.com', role: 'admin', avatar_initials: 'MM', joined_at: '2026-04-01T00:00:00Z' },
+  { id: 'u002', name: 'Sarah Chen', email: 'sarah.chen@trinetx.com', role: 'analyst', avatar_initials: 'SC', joined_at: '2026-04-15T00:00:00Z' },
+  { id: 'u003', name: 'David Park', email: 'david.park@trinetx.com', role: 'auditor', avatar_initials: 'DP', joined_at: '2026-05-01T00:00:00Z' },
+];
 const MOCK_FINDINGS = [
   {
     id: 'f001',
@@ -157,12 +163,17 @@ export default function HIPAADashboard() {
   const [findings, setFindings] = useState([]);
   const [history, setHistory] = useState(MOCK_HISTORY);
   const [schedule, setSchedule] = useState(getMockSchedule());
+  const [teamMembers, setTeamMembers] = useState(MOCK_USERS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [statusToastId, setStatusToastId] = useState('');
+  const [assignmentToast, setAssignmentToast] = useState({ id: '', message: '' });
   const [scheduleSavedToast, setScheduleSavedToast] = useState(false);
   const [jumpToFindingsOnLoad, setJumpToFindingsOnLoad] = useState(false);
+  const currentUserEmail = (localStorage.getItem('userEmail') || '').toLowerCase();
   const effectiveTier = (localStorage.getItem('customerTier') || 'healthcare').toLowerCase();
   const isHealthcareTier = effectiveTier === 'healthcare';
+  const currentUser = teamMembers.find((user) => String(user.email || '').toLowerCase() === currentUserEmail);
+  const currentUserRole = currentUser?.role || 'admin';
 
   const handleLogout = async () => {
     await logoutDemo();
@@ -213,6 +224,25 @@ export default function HIPAADashboard() {
         console.error('HIPAA findings fetch failed, using fallback findings.', error);
         const fallbackFindings = normalizeFindings(compliancePayload?.findings || []);
         setFindings(fallbackFindings.length > 0 ? fallbackFindings : MOCK_FINDINGS);
+      }
+
+      try {
+        const usersRes = await fetch('/api/users', { headers });
+        if (!usersRes.ok) {
+          const usersError = new Error(`users_fetch_failed:${usersRes.status}`);
+          usersError.status = usersRes.status;
+          throw usersError;
+        }
+        const usersData = await usersRes.json();
+        const normalizedUsers = normalizeUsers(usersData);
+        setTeamMembers(normalizedUsers.length > 0 ? normalizedUsers : MOCK_USERS);
+      } catch (usersError) {
+        if ([404, 500].includes(usersError?.status)) {
+          setTeamMembers(MOCK_USERS);
+        } else {
+          console.error('Users fetch failed, using fallback users.', usersError);
+          setTeamMembers(MOCK_USERS);
+        }
       }
 
       try {
@@ -332,6 +362,33 @@ export default function HIPAADashboard() {
     }
   };
 
+  const handleAssignFinding = async (id, assignedTo) => {
+    const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+
+    const assignedUser = teamMembers.find((user) => user.id === assignedTo);
+    const assignedLabel = assignedUser?.name || 'Unassigned';
+
+    setFindings((previousFindings) => previousFindings.map((finding) => (
+      finding.id === id ? { ...finding, assigned_to: assignedTo || null } : finding
+    )));
+    setAssignmentToast({ id, message: `✓ Assigned to ${assignedLabel}` });
+    window.setTimeout(() => setAssignmentToast({ id: '', message: '' }), 2000);
+
+    try {
+      await fetch(`/api/hipaa/findings/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ assigned_to: assignedTo || null }),
+      });
+    } catch (error) {
+      console.error('Failed to assign HIPAA finding in API; retaining optimistic UI state.', error);
+    }
+  };
+
   const handleSaveSchedule = async ({ cadence, email_notify, notify_email }) => {
     const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
     const headers = {
@@ -402,6 +459,23 @@ export default function HIPAADashboard() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {isHealthcareTier && (
+                <button
+                  onClick={() => navigate('/team')}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: 8,
+                    padding: '0.6rem 1.1rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  👥 Team
+                </button>
+              )}
               {isHealthcareTier && (
                 <button
                   onClick={handleDownloadEvidence}
@@ -476,10 +550,15 @@ export default function HIPAADashboard() {
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
             onStatusUpdate={handleStatusUpdate}
+            onAssignFinding={handleAssignFinding}
             onSaveSchedule={handleSaveSchedule}
             statusToastId={statusToastId}
+            assignmentToast={assignmentToast}
             scheduleSavedToast={scheduleSavedToast}
             isHealthcareTier={isHealthcareTier}
+            teamMembers={teamMembers}
+            currentUserEmail={currentUserEmail}
+            currentUserRole={currentUserRole}
           />
         )}
         {activeTab === 'evidence' && <EvidenceTab data={data} onExport={handleExport} exporting={exporting} />}
@@ -780,14 +859,28 @@ function FindingsTab({
   activeFilter,
   setActiveFilter,
   onStatusUpdate,
+  onAssignFinding,
   onSaveSchedule,
   statusToastId,
+  assignmentToast,
   scheduleSavedToast,
-  isHealthcareTier
+  isHealthcareTier,
+  teamMembers,
+  currentUserEmail,
+  currentUserRole,
 }) {
   const [expandedId, setExpandedId] = useState(null);
-  const counts = getFilterCounts(findings);
-  const filteredFindings = filterFindings(findings, activeFilter);
+  const findingsListRef = useRef(null);
+  const currentUserId = teamMembers.find((user) => String(user.email || '').toLowerCase() === currentUserEmail)?.id;
+  const counts = getFilterCounts(findings, currentUserId);
+  const filteredFindings = filterFindings(findings, activeFilter, currentUserId);
+  const openFindings = findings.filter((finding) => finding.status !== 'resolved');
+  const ownershipRows = teamMembers.map((member) => ({
+    user: member,
+    findingCount: openFindings.filter((finding) => finding.assigned_to === member.id).length,
+  }));
+  const unassignedFindingsCount = openFindings.filter((finding) => !finding.assigned_to).length;
+  const showOwnershipWidget = ['admin', 'analyst'].includes(String(currentUserRole || '').toLowerCase());
 
   if (!isHealthcareTier) {
     return (
@@ -815,6 +908,30 @@ function FindingsTab({
           <div style={{ color: '#6b7280', fontSize: '0.78rem', marginBottom: 4 }}>High Findings</div>
           <div style={{ color: '#b45309', fontSize: '1.8rem', fontWeight: 800 }}>{toNumber(data?.highFindings, 0)}</div>
         </div>
+        {showOwnershipWidget && (
+          <div className="ownership-widget">
+            <div style={{ fontWeight: 700, color: '#111827', marginBottom: '0.4rem' }}>👥 Remediation Ownership</div>
+            {ownershipRows.map(({ user, findingCount }) => (
+              <div key={user.id} className="ownership-row">
+                <span className="avatar-circle avatar-mini" style={{ background: getAvatarColor(user.name || user.email) }}>
+                  {user.avatar_initials || getInitials(user.name || user.email)}
+                </span>
+                <span style={{ color: '#374151' }}>{findingCount} finding{findingCount === 1 ? '' : 's'}</span>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFilter('all');
+                findingsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="view-all-btn"
+              style={{ marginTop: '0.4rem' }}
+            >
+              {unassignedFindingsCount} unassigned → Assign
+            </button>
+          </div>
+        )}
       </div>
 
       <ComplianceReport
@@ -823,7 +940,7 @@ function FindingsTab({
         score={toNumber(data?.overallScore, 0)}
       />
 
-      <div className="findings-filter-bar">
+      <div ref={findingsListRef} className="findings-filter-bar">
         {FINDING_FILTERS.map((filter) => (
           <button
             key={filter}
@@ -837,6 +954,7 @@ function FindingsTab({
 
       {filteredFindings.map((finding) => {
         const isExpanded = expandedId === finding.id;
+        const assignedUser = teamMembers.find((member) => member.id === finding.assigned_to);
         return (
           <div key={finding.id} className="finding-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -850,6 +968,28 @@ function FindingsTab({
             <h3 style={{ margin: '0.75rem 0 0.35rem', fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{finding.title}</h3>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{finding.description}</p>
 
+            <div className="assign-dropdown">
+              <span>Assigned to:</span>
+              <select
+                aria-label={`Assign owner for ${finding.title}`}
+                className="assign-select"
+                value={finding.assigned_to || ''}
+                onChange={(event) => onAssignFinding(finding.id, event.target.value)}
+              >
+                <option value="">Unassigned</option>
+                {teamMembers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    [{user.avatar_initials || getInitials(user.name || user.email)}] {user.name}
+                  </option>
+                ))}
+              </select>
+              {finding.assigned_to && (
+                <span style={{ color: '#374151', fontSize: '0.78rem' }}>
+                  {assignedUser ? `${assignedUser.avatar_initials || getInitials(assignedUser.name || assignedUser.email)} ${assignedUser.name}` : 'Unassigned'}
+                </span>
+              )}
+            </div>
+
             <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               {finding.status === 'open' && (
                 <button onClick={() => onStatusUpdate(finding.id, 'in_progress')} style={inlineActionButtonStyle}>
@@ -862,6 +1002,7 @@ function FindingsTab({
                 </button>
               )}
               {statusToastId === finding.id && <span className="status-toast">✓ Status updated</span>}
+              {assignmentToast.id === finding.id && <span className="status-toast">{assignmentToast.message}</span>}
             </div>
 
             <button
@@ -1176,9 +1317,24 @@ function normalizeFindings(payload) {
     description: finding.description || finding.remediation || 'No description available.',
     control: finding.control || 'HIPAA control',
     status: String(finding.status || 'open').toLowerCase(),
+    assigned_to: finding.assigned_to || finding.assignedTo || null,
     remediation_steps: Array.isArray(finding.remediation_steps)
       ? finding.remediation_steps
       : (finding.remediation ? [finding.remediation] : ['Review and remediate this control.'])
+  }));
+}
+
+function normalizeUsers(payload) {
+  const source = Array.isArray(payload) ? payload : payload?.users || payload?.data || [];
+  if (!Array.isArray(source)) return [];
+
+  return source.map((user, index) => ({
+    id: user.id || user.user_id || buildDeterministicFallbackId('user', `${user.email || ''}-${index}`),
+    name: user.name || user.full_name || user.email?.split('@')[0] || 'Unknown User',
+    email: user.email || '',
+    role: String(user.role || 'viewer').toLowerCase(),
+    avatar_initials: user.avatar_initials || getInitials(user.name || user.full_name || user.email || ''),
+    joined_at: user.joined_at || user.created_at || null,
   }));
 }
 
@@ -1337,13 +1493,14 @@ function getTrendSummary(history) {
   };
 }
 
-function filterFindings(findings, activeFilter) {
+function filterFindings(findings, activeFilter, currentUserId) {
   if (activeFilter === 'all') return findings;
   if (activeFilter === 'resolved') return findings.filter((finding) => finding.status === 'resolved');
+  if (activeFilter === 'mine') return findings.filter((finding) => finding.assigned_to && finding.assigned_to === currentUserId);
   return findings.filter((finding) => finding.severity === activeFilter);
 }
 
-function getFilterCounts(findings) {
+function getFilterCounts(findings, currentUserId) {
   return {
     all: findings.length,
     critical: findings.filter((finding) => finding.severity === 'critical').length,
@@ -1351,12 +1508,14 @@ function getFilterCounts(findings) {
     medium: findings.filter((finding) => finding.severity === 'medium').length,
     low: findings.filter((finding) => finding.severity === 'low').length,
     resolved: findings.filter((finding) => finding.status === 'resolved').length,
+    mine: findings.filter((finding) => finding.assigned_to && finding.assigned_to === currentUserId).length,
   };
 }
 
 function filterLabel(filter) {
   if (filter === 'all') return 'All';
   if (filter === 'resolved') return 'Resolved';
+  if (filter === 'mine') return 'Mine';
   return filter.charAt(0).toUpperCase() + filter.slice(1);
 }
 
