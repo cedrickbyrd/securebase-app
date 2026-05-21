@@ -22,6 +22,12 @@ const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.
 const FIRST_RUN_SCORE_FALLBACK = 84;
 const FIRST_RUN_HIGH_FINDINGS_FALLBACK = 4;
 const FIRST_RUN_CONTROLS_PASSING_FALLBACK = 42;
+const SUPPORTED_FRAMEWORK_IDS = ['hipaa', 'soc2', 'pcidss'];
+const MOCK_FRAMEWORKS = [
+  { id: 'hipaa', name: 'HIPAA', description: 'Health Insurance Portability & Accountability Act', score: 84, controls_passing: 42, high_findings: 4, color: '#0f4c81', icon: '🏥' },
+  { id: 'soc2', name: 'SOC 2', description: 'Service Organization Control 2', score: 76, controls_passing: 38, high_findings: 6, color: '#7c3aed', icon: '🔐' },
+  { id: 'pcidss', name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', score: 91, controls_passing: 54, high_findings: 1, color: '#0d9488', icon: '💳' },
+];
 
 function getCustomerTier() {
   return localStorage.getItem('customerTier') || '';
@@ -76,6 +82,37 @@ function getControlsPassingCount(source) {
     ?? FIRST_RUN_CONTROLS_PASSING_FALLBACK,
     FIRST_RUN_CONTROLS_PASSING_FALLBACK
   );
+}
+
+function normalizeFrameworks(payload) {
+  const source = Array.isArray(payload) ? payload : payload?.data || [];
+  if (!Array.isArray(source) || source.length === 0) return MOCK_FRAMEWORKS;
+  const normalized = source
+    .map((framework) => {
+      const id = String(framework.id || '').toLowerCase();
+      const fallback = MOCK_FRAMEWORKS.find((item) => item.id === id);
+      if (!fallback) return null;
+      return {
+        ...fallback,
+        name: framework.name || fallback.name,
+        score: clampScore(toSafeNumber(framework.score, fallback.score)),
+        controls_passing: toSafeNumber(framework.controls_passing ?? framework.controlsPassing, fallback.controls_passing),
+        high_findings: toSafeNumber(framework.high_findings ?? framework.highFindings, fallback.high_findings),
+      };
+    })
+    .filter(Boolean);
+  return normalized.length > 0 ? normalized : MOCK_FRAMEWORKS;
+}
+
+function getLowestFramework(frameworks = MOCK_FRAMEWORKS) {
+  if (!Array.isArray(frameworks) || frameworks.length === 0) return MOCK_FRAMEWORKS[0];
+  return frameworks.reduce((lowest, current) => (current.score < lowest.score ? current : lowest), frameworks[0]);
+}
+
+function getScoreBadgeColor(score) {
+  if (score < 75) return { background: '#fee2e2', color: '#b91c1c' };
+  if (score < 90) return { background: '#fef3c7', color: '#92400e' };
+  return { background: '#dcfce7', color: '#166534' };
 }
 
 function formatLastAssessed(lastAssessed) {
@@ -146,6 +183,8 @@ function Dashboard() {
   const [showFirstRunOverlay, setShowFirstRunOverlay] = useState(false);
   const [animatedOverlayScore, setAnimatedOverlayScore] = useState(0);
   const [hipaaMetric, setHipaaMetric] = useState(null);
+  const [frameworks, setFrameworks] = useState(MOCK_FRAMEWORKS);
+  const [frameworkProgressAnimated, setFrameworkProgressAnimated] = useState(false);
   const [hipaaMetricLoading, setHipaaMetricLoading] = useState(false);
   const [hipaaMetricError, setHipaaMetricError] = useState('');
   const [toasts, setToasts] = useState([]);
@@ -163,6 +202,8 @@ function Dashboard() {
   const hipaaHighFindings = getHighFindingsCount(hipaaMetric || compliance);
   const hipaaControlsPassing = getControlsPassingCount(hipaaMetric || compliance);
   const organizationName = customer?.name || customer?.orgName || localStorage.getItem('orgName') || 'Your Organization';
+  const lowestFramework = getLowestFramework(frameworks);
+  const lowestFrameworkBadgeColors = getScoreBadgeColor(lowestFramework.score);
 
   const overlayRiskLevel = firstRunTargetScore >= 90
     ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
@@ -192,19 +233,23 @@ function Dashboard() {
     if (checkDemoMode()) {
       const mockMetrics = await fetchData('/metrics');
       setMetrics(mockMetrics);
+      setFrameworks(MOCK_FRAMEWORKS);
       setLoading(false);
       return;
     }
     try {
+      const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const requests = [
         apiService.getMetrics(),
         apiService.getInvoices(),
         apiService.getApiKeys(),
         apiService.getComplianceStatus(),
-        apiService.getTickets({ status: 'open', limit: 5 })
+        apiService.getTickets({ status: 'open', limit: 5 }),
+        fetch('/api/frameworks', { headers })
       ];
       if (hasTexasCompliance) requests.push(demoAwareApiService.getFintechComplianceStatus());
-      const [metricsData, invoicesData, keysData, complianceData, ticketsData, texasData] = await Promise.all(requests);
+      const [metricsData, invoicesData, keysData, complianceData, ticketsData, frameworksResponse, texasData] = await Promise.all(requests);
       setMetrics(metricsData);
       const invoicesArray = invoicesData?.data || invoicesData;
       const keysArray = keysData?.data || keysData;
@@ -213,6 +258,12 @@ function Dashboard() {
       setApiKeys(Array.isArray(keysArray) ? keysArray : []);
       setCompliance(complianceData);
       setTickets(Array.isArray(ticketsArray) ? ticketsArray.slice(0, 5) : []);
+      if (frameworksResponse?.ok) {
+        const frameworksPayload = await frameworksResponse.json();
+        setFrameworks(normalizeFrameworks(frameworksPayload));
+      } else {
+        setFrameworks(MOCK_FRAMEWORKS);
+      }
       if (texasData) setTexasCompliance(texasData.data || texasData);
 
       const hasSeenFirstRun = localStorage.getItem('hipaa_first_run_seen') === 'true';
@@ -221,6 +272,7 @@ function Dashboard() {
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
+      setFrameworks(MOCK_FRAMEWORKS);
     } finally {
       setLoading(false);
     }
@@ -305,9 +357,15 @@ function Dashboard() {
   };
 
   const handleFirstRunReview = () => {
+    localStorage.setItem('active_framework', 'hipaa');
     navigate('/hipaa-dashboard');
     localStorage.setItem('hipaa_jump_to_findings', 'true');
     markFirstRunSeen();
+  };
+
+  const handleViewFrameworkDetails = (frameworkId) => {
+    localStorage.setItem('active_framework', SUPPORTED_FRAMEWORK_IDS.includes(frameworkId) ? frameworkId : 'hipaa');
+    navigate('/hipaa-dashboard');
   };
 
   const handleFirstRunExport = async () => {
@@ -366,6 +424,12 @@ function Dashboard() {
       active = false;
     };
   }, [isHealthcareTier]);
+
+  useEffect(() => {
+    setFrameworkProgressAnimated(false);
+    const timer = window.setTimeout(() => setFrameworkProgressAnimated(true), 10);
+    return () => window.clearTimeout(timer);
+  }, [frameworks]);
 
   // Scan step animation
   const [currentStep, setCurrentStep] = useState(0);
@@ -514,6 +578,38 @@ function Dashboard() {
 
         {isDemoMode && customer && customerIndex !== null && (
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
+        )}
+
+        {isHealthcareTier && (
+          <section className="dashboard-card" style={{ marginBottom: '1.5rem' }}>
+            <div className="card-header">
+              <h2>Compliance Frameworks</h2>
+            </div>
+            <div className="card-content">
+              <div className="framework-cards-grid">
+                {frameworks.map((framework) => (
+                  <div key={framework.id} className="framework-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, color: '#111827' }}>{framework.icon} {framework.name}</span>
+                      <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 700 }}>Score: {framework.score}%</span>
+                    </div>
+                    <div className="framework-progress-bar">
+                      <div
+                        className="framework-progress-fill"
+                        style={{ width: `${frameworkProgressAnimated ? framework.score : 0}%`, background: framework.color }}
+                      />
+                    </div>
+                    <p style={{ margin: '0.4rem 0 0.75rem', fontSize: '0.82rem', color: '#6b7280' }}>
+                      {framework.high_findings} high finding{framework.high_findings === 1 ? '' : 's'}
+                    </p>
+                    <button className="view-all-btn" onClick={() => handleViewFrameworkDetails(framework.id)}>
+                      View Details →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         )}
 
         {personalization.isWave3 && (
@@ -814,8 +910,17 @@ function Dashboard() {
             {showsHIPAADashboard && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
                 <div className="card-header">
-                  <h2>🏥 HIPAA Compliance</h2>
-                  <button className="view-all-btn" onClick={() => navigate('/hipaa-dashboard')}>Open HIPAA Dashboard →</button>
+                  <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    📊 Compliance
+                    <span
+                      className="nav-score-badge"
+                      style={{ background: lowestFrameworkBadgeColors.background, color: lowestFrameworkBadgeColors.color }}
+                      title={`Lowest score: ${lowestFramework.name} (${lowestFramework.score}%)`}
+                    >
+                      {lowestFramework.score}%
+                    </span>
+                  </h2>
+                  <button className="view-all-btn" onClick={() => handleViewFrameworkDetails(localStorage.getItem('active_framework') || 'hipaa')}>Open Compliance Dashboard →</button>
                 </div>
                 <div className="card-content">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
