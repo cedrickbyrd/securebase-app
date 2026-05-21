@@ -12,16 +12,19 @@ Tables (env vars):
   USERS_TABLE    securebase-users    PK: email (S)
 
 Env vars:
-  JWT_SECRET       Secrets Manager secret name (or raw secret)
-  TOKENS_TABLE     DynamoDB table for invite/session tokens
-  USERS_TABLE      DynamoDB table for user records
-  CORS_ORIGIN      Allowed origin
-  LOG_LEVEL        DEBUG|INFO|WARNING|ERROR
+  JWT_SECRET               Secrets Manager secret name (or raw secret)
+  TOKENS_TABLE             DynamoDB table for invite/session tokens
+  USERS_TABLE              DynamoDB table for user records
+  CORS_ORIGIN              Allowed origin
+  LOG_LEVEL                DEBUG|INFO|WARNING|ERROR
+  ACTIVATION_SNS_TOPIC_ARN SNS topic ARN for first-activation/first-login events
+                           (optional; omit to disable activation alerts)
 """
 
 import os
 import json
 import uuid
+import hashlib
 import logging
 import boto3
 from datetime import datetime, timezone, timedelta
@@ -36,10 +39,13 @@ logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO'))
 # AWS clients
 ddb = boto3.resource('dynamodb')
 secrets_client = boto3.client('secretsmanager')
+_sns_client    = boto3.client('sns')
 
 # Table handles
 _tokens_table = ddb.Table(os.environ.get('TOKENS_TABLE', 'securebase-tokens'))
 _users_table  = ddb.Table(os.environ.get('USERS_TABLE',  'securebase-users'))
+
+_ACTIVATION_TOPIC_ARN = os.environ.get('ACTIVATION_SNS_TOPIC_ARN', '')
 
 _CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'https://portal.securebase.tximhotep.com')
 
@@ -134,6 +140,62 @@ def _store_password(email: str, password: str, user: dict) -> None:
     })
 
 
+def _publish_activation_event(email: str, event_type: str, metadata: dict) -> None:
+    """Publish a customer activation event to SNS for admin tracking (best-effort).
+
+    The raw email is never included in the SNS payload; a SHA-256 prefix is used
+    as a privacy-safe correlation ID that operators can verify locally.
+    """
+    if not _ACTIVATION_TOPIC_ARN:
+        return
+    try:
+        # Use a truncated SHA-256 hash as a correlation ID — never raw email (PII)
+        correlation_id = hashlib.sha256(email.encode()).hexdigest()[:16]
+        message = json.dumps({
+            'event_type':     event_type,
+            'correlation_id': correlation_id,
+            'timestamp':      datetime.now(timezone.utc).isoformat(),
+            **metadata,
+        })
+        _sns_client.publish(
+            TopicArn=_ACTIVATION_TOPIC_ARN,
+            Subject=f"[SecureBase] Customer {event_type.replace('_', ' ').title()} [{correlation_id}]",
+            Message=message,
+            MessageAttributes={
+                'event_type': {
+                    'DataType': 'String',
+                    'StringValue': event_type,
+                },
+            },
+        )
+        logger.info(f"Activation event published: {event_type} [corr={correlation_id}]")
+    except Exception as e:
+        logger.warning(f"Could not publish activation event [{event_type}]: {e}")
+
+
+def _record_first_login(email: str, user: dict) -> None:
+    """Record first-login timestamp and publish activation event (best-effort).
+
+    Uses a DynamoDB conditional write so concurrent requests cannot double-fire.
+    """
+    try:
+        _users_table.update_item(
+            Key={'email': email},
+            UpdateExpression='SET first_login_at = :t',
+            ExpressionAttributeValues={':t': datetime.now(timezone.utc).isoformat()},
+            ConditionExpression='attribute_not_exists(first_login_at)',
+        )
+        _publish_activation_event(email, 'first_login', {
+            'plan': user.get('plan', 'standard'),
+            'tier': user.get('pilot_tier', user.get('plan', 'standard')),
+        })
+    except ClientError as e:
+        if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+            logger.warning(f"Could not record first login for {email}: {e}")
+    except Exception as e:
+        logger.warning(f"Could not record first login for {email}: {e}")
+
+
 # ── Route handlers ────────────────────────────────────────────────────────────
 
 def accept_invite(event: dict, request_id: str) -> dict:
@@ -208,6 +270,12 @@ def accept_invite(event: dict, request_id: str) -> dict:
 
     logger.info(f"Invite accepted + password set: {email} plan={user.get('plan')} [{request_id}]")
 
+    # Publish best-effort activation event for admin tracking/compliance audit
+    _publish_activation_event(email, 'invite_accepted', {
+        'plan': user.get('plan', 'standard'),
+        'tier': user.get('pilot_tier', user.get('plan', 'standard')),
+    })
+
     # Return 'token' and 'user' — matches what AcceptInvite.jsx expects
     return _resp(200, {
         'token': session_token,
@@ -252,6 +320,10 @@ def login(event: dict, request_id: str) -> dict:
 
     session_token = _mint_jwt(email, user)
     logger.info(f"Login success: {email} [{request_id}]")
+
+    # Track first login for audit/compliance (best-effort, conditional write)
+    if not user.get('first_login_at'):
+        _record_first_login(email, user)
 
     return _resp(200, {
         'token': session_token,

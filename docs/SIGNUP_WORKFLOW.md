@@ -530,6 +530,19 @@ aws lambda update-function-configuration \
     ONBOARDING_TOPIC_ARN=arn:aws:sns:...:infrastructure,
     PORTAL_URL=https://portal.securebase.tximhotep.com
   }"
+
+# securebase-auth-v2 (auth Lambda)
+# ACTIVATION_SNS_TOPIC_ARN enables invite-accepted + first-login SNS events for admin tracking.
+# Omit the variable (or set to empty string) to disable activation alerts.
+aws lambda update-function-configuration \
+  --function-name securebase-production-auth-v2 \
+  --environment Variables="{
+    TOKENS_TABLE=securebase-tokens,
+    USERS_TABLE=securebase-users,
+    JWT_SECRET=securebase-jwt-production,
+    CORS_ORIGIN=https://portal.securebase.tximhotep.com,
+    ACTIVATION_SNS_TOPIC_ARN=arn:aws:sns:us-east-1:ACCOUNT_ID:securebase-production-customer-activations
+  }"
 ```
 
 ## Monitoring
@@ -547,6 +560,31 @@ aws lambda update-function-configuration \
 - `/aws/lambda/securebase-create-checkout-session`
 - `/aws/lambda/securebase-stripe-webhook`
 - `/aws/lambda/securebase-trigger-onboarding`
+- `/aws/lambda/securebase-production-auth-v2` — filter `"Invite accepted"` for activation events; filter `"first_login"` for first-login events
+
+### Customer Activation SNS Events
+
+When `ACTIVATION_SNS_TOPIC_ARN` is set on the auth Lambda, two structured JSON events
+are published to that SNS topic:
+
+| `event_type`      | Trigger                                      |
+|-------------------|----------------------------------------------|
+| `invite_accepted` | Customer accepts invite link and sets password |
+| `first_login`     | Customer logs in for the first time           |
+
+**Example SNS message payload:**
+```json
+{
+  "event_type": "invite_accepted",
+  "correlation_id": "a3f8c1d2e4b56789",
+  "timestamp": "2026-05-20T15:00:00+00:00",
+  "plan": "standard",
+  "tier": ""
+}
+```
+
+Subscribe the SNS topic to email, PagerDuty, or a Lambda to build a real-time
+activation dashboard or trigger downstream compliance audit workflows.
 
 ### Alarms
 
