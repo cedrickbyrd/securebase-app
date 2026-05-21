@@ -16,6 +16,7 @@ import PersonalizedBanner from './PersonalizedBanner';
 import { usePersonalization } from '../hooks/usePersonalization';
 import ComplianceTrend from './ComplianceTrend';
 import EvidencePackages from './EvidencePackages';
+import { areAlertsConfigured } from './AlertSettings';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -167,6 +168,15 @@ ${resolvedFindings.map((finding) =>
 `.trim();
 }
 
+function readStoredAlertSettings() {
+  try {
+    const raw = localStorage.getItem('alert_settings');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const personalization = usePersonalization();
@@ -204,6 +214,7 @@ function Dashboard() {
   const organizationName = customer?.name || customer?.orgName || localStorage.getItem('orgName') || 'Your Organization';
   const lowestFramework = getLowestFramework(frameworks);
   const lowestFrameworkBadgeColors = getScoreBadgeColor(lowestFramework.score);
+  const alertsConfigured = areAlertsConfigured(readStoredAlertSettings());
 
   const overlayRiskLevel = firstRunTargetScore >= 90
     ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
@@ -676,9 +687,15 @@ function Dashboard() {
             <div className="metric-content"><h3>SRE Dashboard</h3><p className="metric-value">Infrastructure</p></div>
           </div>
 
-          <div className="metric-card clickable" onClick={() => navigate('/alerts')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/alerts')} aria-label="Alert Management">
+          <div className="metric-card clickable" onClick={() => navigate('/alerts')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/alerts')} aria-label="Alerts Settings">
             <div className="metric-icon" style={{ background: '#fef9c3' }}>🔔</div>
-            <div className="metric-content"><h3>Alert Management</h3><p className="metric-value">Operations</p></div>
+            <div className="metric-content">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                Alerts 🔔
+                {!alertsConfigured && <span className="alerts-unconfigured-dot" aria-label="Alerts not configured" />}
+              </h3>
+              <p className="metric-value">Operations</p>
+            </div>
           </div>
 
           {/* Phase 6.1 — Audit Evidence */}
