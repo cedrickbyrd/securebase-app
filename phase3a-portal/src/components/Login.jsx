@@ -176,7 +176,12 @@ function Login({ setAuth }) {
                 <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="white"/>
               </svg>
             </div>
-            <h1>{BRANDING.productName}</h1>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1a202c' }}>{BRANDING.productName}</h1>
+            {!isDemo && (
+              <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#0f4c81', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '2px' }}>
+                HIPAA · HEALTHCARE COMPLIANCE
+              </div>
+            )}
             <p className="subtitle">{isDemo ? `🎯 ${PORTAL_NARRATIVE.platformTitle}` : PORTAL_NARRATIVE.platformTagline}</p>
           </div>
 
@@ -201,10 +206,16 @@ function Login({ setAuth }) {
               <button type="submit" className="login-button" disabled={loading}>
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
+              {!isDemo && (
+                <div style={{ textAlign: 'center', fontSize: '11px', color: '#9ca3af', letterSpacing: '0.4px', marginTop: '1.5rem', marginBottom: '6px' }}>
+                  🔒 HIPAA&nbsp; · &nbsp;SOC 2&nbsp; · &nbsp;FedRAMP&nbsp; · &nbsp;AES-256
+                </div>
+              )}
               {/* Forgot password link */}
-              <div style={{ textAlign: 'center', marginTop: '12px' }}>
-                <Link to="/forgot-password" style={{ color: '#6b7280', fontSize: '14px', textDecoration: 'none' }}>
-                  Forgot your password?
+              <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                {!isDemo && <span style={{ color: '#6b7280', fontSize: '14px' }}>Trouble signing in? </span>}
+                <Link to="/forgot-password" style={{ color: isDemo ? '#6b7280' : '#1a73e8', fontSize: '14px', textDecoration: 'none', fontWeight: isDemo ? '400' : '600' }}>
+                  {isDemo ? 'Forgot your password?' : 'Reset your password →'}
                 </Link>
               </div>
             </form>
@@ -212,8 +223,10 @@ function Login({ setAuth }) {
 
           {step === 'mfa' && (
             <form onSubmit={handleMFA} className="login-form">
-              <h2>Two-Factor Authentication</h2>
+              <div style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '8px' }}>🔐</div>
+              <h2>Verify Your Identity</h2>
               <p className="mfa-instructions">Enter the 6-digit code from your authenticator app.</p>
+              <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '1.5rem' }}>Your account is protected with HIPAA-grade two-factor authentication.</p>
               {error && <div className="error-message"><span className="error-icon">⚠️</span> {error}</div>}
               <div className="form-group">
                 <label htmlFor="totpCode">Authenticator Code</label>
@@ -226,12 +239,6 @@ function Login({ setAuth }) {
             </form>
           )}
 
-          {step === 'credentials' && (
-            <div className="login-footer" style={{ marginBottom: '0.25rem' }}>
-              New customer?{' '}
-              <a href="/pricing" style={{ fontWeight: '700', color: '#667eea' }}>View Pricing →</a>
-            </div>
-          )}
           <div className="login-footer">
             © {BRANDING.year} {BRANDING.copyrightHolder}. All rights reserved. •{' '}
             <a href={BRANDING.privacyPolicyUrl}>Privacy</a> •{' '}
