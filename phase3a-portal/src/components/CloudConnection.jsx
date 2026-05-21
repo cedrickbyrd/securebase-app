@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
 
 // ── Step indicators ──────────────────────────────────────────────────────────
@@ -7,6 +7,20 @@ const STEPS = [
   { id: 1, label: 'Generate credentials' },
   { id: 2, label: 'Deploy IAM role' },
   { id: 3, label: 'Verify connection' },
+];
+
+const VALUE_PREVIEW_CARDS = [
+  { label: 'HIPAA Posture Score', value: '87' },
+  { label: 'Open Findings', value: '14' },
+  { label: 'Controls Passing', value: '42/48' },
+];
+
+const SCAN_PROGRESS_STEPS = [
+  'Role verified',
+  'Analyzing IAM policies',
+  'Auditing S3 bucket configurations',
+  'Mapping VPC endpoints',
+  'Calculating HIPAA posture score',
 ];
 
 function StepIndicator({ current }) {
@@ -97,6 +111,7 @@ export default function CloudConnection() {
   // Step 3 result
   const [verifyResult, setVerifyResult] = useState(null);
   const [scanPending, setScanPending]   = useState(false);
+  const [scanProgressIndex, setScanProgressIndex] = useState(0);
 
   // Load existing connection on mount
   useEffect(() => {
@@ -115,6 +130,27 @@ export default function CloudConnection() {
       })
       .catch(() => {}); // no existing connection — silent
   }, []);
+
+  useEffect(() => {
+    if (!(scanPending && step === 3 && verifyResult?.connected)) {
+      setScanProgressIndex(0);
+      return undefined;
+    }
+
+    setScanProgressIndex(1);
+
+    const interval = setInterval(() => {
+      setScanProgressIndex(prev => {
+        if (prev >= SCAN_PROGRESS_STEPS.length - 1) {
+          clearInterval(interval);
+          return SCAN_PROGRESS_STEPS.length;
+        }
+        return prev + 1;
+      });
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [scanPending, step, verifyResult?.connected]);
 
   // ── Step 1: generate external ID ─────────────────────────────────────────
 
@@ -180,6 +216,28 @@ export default function CloudConnection() {
       `&param_SecureBasePrincipalArn=${encodeURIComponent(securebaseArn)}`
     : '#';
 
+  const teamMailtoSubject = 'SecureBase AWS Role Deployment — Action Required';
+  const teamMailtoBody = [
+    'Hi team,',
+    '',
+    'Please deploy the SecureBase read-only IAM role in our AWS account.',
+    '',
+    `CloudFormation template URL: ${cfnTemplateUrl}`,
+    'Stack name: SecureBaseReadOnlyRole',
+    `External ID: ${externalId}`,
+    `SecureBase principal ARN: ${securebaseArn}`,
+    `One-click launch URL: ${cfnLaunchUrl}`,
+    '',
+    'Deployment steps:',
+    '1. Open the one-click launch URL above or deploy the template URL directly in CloudFormation.',
+    '2. Confirm the stack name is SecureBaseReadOnlyRole.',
+    '3. After deployment completes, go to CloudFormation → Stacks → SecureBaseReadOnlyRole → Outputs → RoleArn.',
+    '4. Reply back with the RoleArn output value so we can complete the SecureBase connection.',
+    '',
+    'Security note: this role is read-only, has no write permissions, and all access is auditable via CloudTrail.',
+  ].join('\n');
+  const teamMailtoHref = `mailto:?subject=${encodeURIComponent(teamMailtoSubject)}&body=${encodeURIComponent(teamMailtoBody)}`;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -195,6 +253,31 @@ export default function CloudConnection() {
           We use a read-only cross-account IAM role — we never write to your account.
         </p>
       </div>
+
+      {step === 1 && (
+        <div className="relative mb-6 overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            {VALUE_PREVIEW_CARDS.map(card => (
+              <div key={card.label} className="rounded-xl border border-gray-200 bg-white/90 p-4 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{card.label}</p>
+                <p
+                  className="mt-3 text-3xl font-bold text-gray-900"
+                  style={{ filter: 'blur(6px)', userSelect: 'none' }}
+                >
+                  {card.value}
+                </p>
+                <p className="mt-2 text-xs text-gray-400">Live once your AWS environment is connected</p>
+              </div>
+            ))}
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/55 px-6 text-center">
+            <span className="text-3xl" aria-hidden="true">🔒</span>
+            <p className="mt-3 max-w-md text-sm font-semibold text-gray-800">
+              Connect your AWS environment to unlock your live HIPAA posture
+            </p>
+          </div>
+        </div>
+      )}
 
       <StepIndicator current={step} />
 
@@ -276,6 +359,12 @@ export default function CloudConnection() {
               <div>{`  --capabilities CAPABILITY_NAMED_IAM`}</div>
             </div>
             <CopyButton text={`aws cloudformation create-stack --stack-name SecureBaseReadOnlyRole --template-url ${cfnTemplateUrl} --parameters ParameterKey=ExternalId,ParameterValue=${externalId} ParameterKey=SecureBasePrincipalArn,ParameterValue=${securebaseArn} --capabilities CAPABILITY_NAMED_IAM`} />
+            <a
+              href={teamMailtoHref}
+              className="mt-4 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              📧 Send deployment instructions to my team
+            </a>
           </div>
 
           <div className="mt-6">
@@ -336,9 +425,41 @@ export default function CloudConnection() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">First scan</span>
-              <span className="font-medium text-gray-800">Starting within 15 minutes</span>
+              <span className="font-medium text-gray-800">{scanPending ? 'Scan in progress' : 'Starting within 15 minutes'}</span>
             </div>
           </div>
+
+          {scanPending && (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+              <p className="text-blue-800 text-sm font-medium mb-3">Initial HIPAA scan in progress</p>
+              <div className="space-y-3">
+                {SCAN_PROGRESS_STEPS.map((scanStep, index) => {
+                  const isComplete = index < scanProgressIndex;
+                  const isActive = index === scanProgressIndex;
+                  const icon = isComplete ? '✓' : isActive ? '⟳' : '○';
+                  const textClass = isComplete
+                    ? 'text-gray-900'
+                    : isActive
+                      ? 'text-blue-700'
+                      : 'text-gray-400';
+
+                  return (
+                    <div key={scanStep} className="flex items-center gap-3 text-sm">
+                      <span className={`inline-flex w-5 justify-center ${isActive ? 'animate-spin' : ''}`}>
+                        {icon}
+                      </span>
+                      <span className={textClass}>{scanStep}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {scanProgressIndex >= SCAN_PROGRESS_STEPS.length && (
+                <p className="mt-4 text-sm font-medium text-blue-800">
+                  Your HIPAA dashboard is ready — results populating now
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
             <p className="text-blue-800 text-sm font-medium mb-1">What happens next</p>
@@ -349,12 +470,6 @@ export default function CloudConnection() {
               <li>Findings trigger alerts per your notification settings</li>
             </ul>
           </div>
-
-          {scanPending && (
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-blue-800 text-sm">
-              Your compliance posture is being calculated. Check back in a few minutes.
-            </div>
-          )}
 
           <a
             href="/hipaa-dashboard"
