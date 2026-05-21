@@ -32,7 +32,18 @@ except ImportError:  # pragma: no cover — test environments without the layer
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO'))
 
-AUDIT_TABLE_NAME = os.environ.get('AUDIT_TABLE_NAME', 'activity_feed')
+# Whitelist-validate the table name to guard against environment variable injection.
+_ALLOWED_TABLE_NAMES = frozenset({'activity_feed', 'audit_log', 'audit_logs'})
+_RAW_AUDIT_TABLE = os.environ.get('AUDIT_TABLE_NAME', 'activity_feed')
+if _RAW_AUDIT_TABLE not in _ALLOWED_TABLE_NAMES:
+    logger.warning(
+        'AUDIT_TABLE_NAME %r is not in the allowed set %s — falling back to activity_feed',
+        _RAW_AUDIT_TABLE, _ALLOWED_TABLE_NAMES,
+    )
+    AUDIT_TABLE_NAME = 'activity_feed'
+else:
+    AUDIT_TABLE_NAME = _RAW_AUDIT_TABLE
+
 S3_BUCKET = os.environ.get('AUDIT_LOG_BUCKET', '')
 _s3 = boto3.client('s3') if S3_BUCKET else None
 

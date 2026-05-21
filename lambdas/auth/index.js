@@ -65,7 +65,7 @@ const recordFailedLogin = async (email) => {
   }));
   // Re-read to decide whether we just tripped the lockout threshold.
   const updated = await getUser(email);
-  const attempts = (updated?.failed_login_attempts) || 0;
+  const attempts = updated?.failed_login_attempts || 0;
   if (attempts >= MAX_FAILED_ATTEMPTS) {
     await db.send(new UpdateItemCommand({
       TableName: USERS_TABLE,
