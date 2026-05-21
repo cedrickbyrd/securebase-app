@@ -976,3 +976,174 @@
   border-radius: 999px;
   background: #ef4444;
 }
+
+.findings-filter-bar-wrapper {
+  position: relative;
+}
+
+.findings-filter-bar-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, white);
+  pointer-events: none;
+  opacity: 0;
+}
+
+@media (max-width: 1024px) {
+  .framework-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .exec-framework-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    height: 60px;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #e5e7eb;
+    border-right: none;
+    z-index: 100;
+    background: white;
+  }
+
+  .sidebar .nav-label {
+    display: none;
+  }
+
+  .sidebar .nav-icon {
+    font-size: 1.4rem;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding-bottom: 70px;
+  }
+
+  .framework-switcher {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: white;
+    padding-top: 0.75rem;
+  }
+
+  .framework-tab {
+    flex-shrink: 0;
+  }
+
+  .framework-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-cards-row {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    width: 100%;
+  }
+
+  .findings-filter-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.5rem;
+  }
+
+  .filter-pill {
+    flex-shrink: 0;
+  }
+
+  .findings-filter-bar-wrapper::after {
+    opacity: 1;
+  }
+
+  .team-table thead {
+    display: none;
+  }
+
+  .team-table tr {
+    display: block;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+  }
+
+  .team-table td {
+    display: flex;
+    justify-content: space-between;
+    border: none;
+    padding: 0.3rem 0;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .team-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+  .finding-card {
+    padding: 1rem;
+  }
+
+  .invite-form {
+    flex-direction: column;
+  }
+
+  .cadence-group {
+    width: 100%;
+  }
+
+  .cadence-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .exec-framework-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .score-circle-wrapper {
+    transform: scale(0.85);
+  }
+
+  .board-report-btn {
+    width: 100%;
+  }
+
+  .alert-settings-card {
+    padding: 1.25rem;
+  }
+
+  button,
+  .filter-pill,
+  .cadence-btn,
+  .framework-tab,
+  select,
+  input[type="text"],
+  input[type="email"] {
+    min-height: 44px;
+  }
+}
