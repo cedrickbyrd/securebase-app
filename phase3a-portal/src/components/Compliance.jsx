@@ -54,20 +54,16 @@ export default function Compliance({ isPublic = false }) {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Compliance', timeSpent);
     };
-  }, []); // runs once on mount
+  }, []);
 
-  // 60-second "value absorption" redirect for anonymous visitors
   useEffect(() => {
     if (!isPublic) return;
-
     const tick = setInterval(() => {
       setSecondsViewed((s) => s + 1);
     }, 1000);
-
     const redirect = setTimeout(() => {
       window.location.href = '/signup?intent=lock_pilot_pricing';
     }, 60000);
-
     return () => {
       clearInterval(tick);
       clearTimeout(redirect);
@@ -78,9 +74,6 @@ export default function Compliance({ isPublic = false }) {
     try {
       setLoading(true);
       setError(null);
-
-      // Anonymous visitors get the Texas Fintech Pro demo data directly —
-      // no API call needed, no auth required.
       if (isPublic) {
         const { overallScore, totalControls, passedControls, failedControls,
                 criticalFindings, highFindings, mediumFindings, categories } = mockComplianceData;
@@ -90,18 +83,14 @@ export default function Compliance({ isPublic = false }) {
         setTexasData(mockTexasComplianceData);
         return;
       }
-
       const requests = [
         demoAwareApiService.getComplianceScore(),
-        demoAwareApiService.getComplianceFindings()
+        demoAwareApiService.getComplianceFindings(),
       ];
-
       if (isTexasTier) {
         requests.push(demoAwareApiService.getFintechComplianceStatus());
       }
-
       const [scoreResponse, findingsResponse, texasResponse] = await Promise.all(requests);
-
       setComplianceData(scoreResponse.data);
       setFindings(findingsResponse.data || []);
       if (texasResponse) setTexasData(texasResponse.data);
@@ -116,22 +105,18 @@ export default function Compliance({ isPublic = false }) {
   const handleDownloadReport = async () => {
     setDownloading(true);
     setDownloadError('');
-
     try {
       const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
       const res = await fetch('/api/compliance/findings', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-
       if (!res.ok) {
         throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
       }
-
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-
       a.href = url;
       a.download = `securebase-compliance-report-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
@@ -163,7 +148,7 @@ export default function Compliance({ isPublic = false }) {
         <div className="bg-red-50 border-l-4 border-red-400 p-4" data-testid="compliance-error-banner">
           <div className="flex">
             <div className="flex-shrink-0">
-              <span className="text-2xl">⚠️</span>
+              <span className="text-2xl">warning</span>
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
@@ -174,61 +159,41 @@ export default function Compliance({ isPublic = false }) {
     );
   }
 
-  // Seconds remaining before auto-redirect (only shown to public visitors)
   const secondsLeft = Math.max(0, 60 - secondsViewed);
 
   return (
     <div className="p-6">
-      {/* ── Trust Gate Banner (anonymous visitors only) ─────────────────── */}
       {isPublic && (
         <div className="rounded-xl mb-6 shadow-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)' }}>
           <div className="px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3">
-              <span className="text-2xl mt-0.5">🔐</span>
+              <span className="text-2xl mt-0.5">lock</span>
               <div>
-                <p className="font-bold text-white text-sm leading-snug">
-                  Live Demo Audit — Fintech Pro Framework
-                </p>
-                <p className="text-indigo-300 text-xs mt-0.5">
-                  Texas DOB · SOC 2 Type II · AML/KYC · Digital Asset Segregation
-                </p>
+                <p className="font-bold text-white text-sm leading-snug">Live Demo Audit — Fintech Pro Framework</p>
+                <p className="text-indigo-300 text-xs mt-0.5">Texas DOB · SOC 2 Type II · AML/KYC · Digital Asset Segregation</p>
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               {secondsLeft > 0 && (
-                <span className="text-indigo-300 text-xs hidden sm:block">
-                  Auto-redirecting in {secondsLeft}s
-                </span>
+                <span className="text-indigo-300 text-xs hidden sm:block">Auto-redirecting in {secondsLeft}s</span>
               )}
-              <a
-                href="/signup?intent=lock_pilot_pricing"
-                className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg transition text-sm whitespace-nowrap shadow"
-              >
-                🔒 {PILOT_SPOTS_REMAINING} Pilot Spots Left — Claim Founder Pricing
+              <a href="/signup?intent=lock_pilot_pricing" className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg transition text-sm whitespace-nowrap shadow">
+                {PILOT_SPOTS_REMAINING} Pilot Spots Left — Claim Founder Pricing
               </a>
             </div>
           </div>
-          {/* Progress bar showing time remaining */}
           <div className="h-1 bg-indigo-900">
-            <div
-              className="h-1 bg-yellow-400 transition-all duration-1000"
-              style={{ width: `${(secondsLeft / 60) * 100}%` }}
-            />
+            <div className="h-1 bg-yellow-400 transition-all duration-1000" style={{ width: `${(secondsLeft / 60) * 100}%` }} />
           </div>
         </div>
       )}
 
-      {/* Demo mode banner (authenticated demo users) */}
       {!isPublic && isDemoMode() && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
           <div className="flex">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">🎯</span>
-            </div>
+            <div className="flex-shrink-0"><span className="text-2xl">target</span></div>
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>Demo Mode:</strong> Showing sample compliance data
-              </p>
+              <p className="text-sm text-yellow-700"><strong>Demo Mode:</strong> Showing sample compliance data</p>
             </div>
           </div>
         </div>
@@ -250,14 +215,11 @@ export default function Compliance({ isPublic = false }) {
               aria-label="Download compliance findings report"
               className="inline-flex items-center rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {downloading ? 'Generating…' : '⬇ Download Report'}
+              {downloading ? 'Generating...' : 'Download Report'}
             </button>
           )}
           {!isPublic && (
-            <button
-              onClick={handleLogout}
-              className="text-sm font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-lg transition"
-            >
+            <button onClick={handleLogout} className="text-sm font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-lg transition">
               Logout
             </button>
           )}
@@ -268,279 +230,188 @@ export default function Compliance({ isPublic = false }) {
         <ComplianceTrend defaultFramework="HIPAA" days={90} />
       </div>
 
-      {/* Audit Readiness Assessment CTA */}
       {!isPublic && (
         <div className="mb-6 bg-gradient-to-r from-purple-700 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="font-bold text-lg">🏆 How compliance-ready is your infrastructure?</p>
-              <p className="text-purple-200 text-sm mt-1">
-                Answer 5 questions to benchmark audit defensibility and get an instant readiness score sent to your inbox.
-              </p>
+              <p className="font-bold text-lg">How compliance-ready is your infrastructure?</p>
+              <p className="text-purple-200 text-sm mt-1">Answer 5 questions to benchmark audit defensibility and get an instant readiness score sent to your inbox.</p>
             </div>
             {!showAssessmentForm && (
               <button
-                onClick={() => {
-                  trackAssessmentCTAClick();
-                  setShowAssessmentForm(true);
-                }}
+                onClick={() => { trackAssessmentCTAClick(); setShowAssessmentForm(true); }}
                 className="shrink-0 bg-white text-purple-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-50 transition text-sm whitespace-nowrap"
               >
-                Start Free Assessment →
+                Start Free Assessment
               </button>
             )}
           </div>
           {showAssessmentForm && (
             <div className="mt-5 bg-white rounded-lg p-5">
-              <LeadCaptureForm
-                trigger="assessment"
-                onSuccess={() => setShowAssessmentForm(false)}
-                onDismiss={() => setShowAssessmentForm(false)}
-                compact={false}
-              />
+              <LeadCaptureForm trigger="assessment" onSuccess={() => setShowAssessmentForm(false)} onDismiss={() => setShowAssessmentForm(false)} compact={false} />
             </div>
           )}
         </div>
       )}
 
-        <div className="bg-white p-5">
-          {/* Overall Score */}
-          <div
-            className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200"
-            data-testid="overall-score-card"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
-                <div className="flex items-baseline gap-2" data-testid="score-display">
-                  <span className="text-6xl font-bold text-blue-600">
-                    {complianceData?.overallScore || 0}%
-                  </span>
-                  <span className="text-gray-600">
-                    ({complianceData?.passedControls || 0} of {complianceData?.totalControls || 0} controls)
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  ✅ {complianceData?.criticalFindings || 0} Critical |
-                  {' '}✅ {complianceData?.highFindings || 0} High |
-                  {' '}⚠️ {complianceData?.mediumFindings || 0} Medium
-                </p>
+      <div className="bg-white p-5">
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 mb-6 border-2 border-blue-200" data-testid="overall-score-card">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold mb-2">Overall Compliance Score</h2>
+              <div className="flex items-baseline gap-2" data-testid="score-display">
+                <span className="text-6xl font-bold text-blue-600">{complianceData?.overallScore || 0}%</span>
+                <span className="text-gray-600">({complianceData?.passedControls || 0} of {complianceData?.totalControls || 0} controls)</span>
               </div>
-              <div className="text-6xl">📊</div>
+              <p className="text-sm text-gray-600 mt-2">
+                {complianceData?.criticalFindings || 0} Critical | {complianceData?.highFindings || 0} High | {complianceData?.mediumFindings || 0} Medium
+              </p>
             </div>
+            <div className="text-6xl">chart</div>
           </div>
         </div>
+      </div>
 
-        {/* Categories */}
-        {complianceData?.categories && complianceData.categories.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Trust Service Criteria</h3>
-            <div className="space-y-4">
-              {complianceData.categories.map((cat, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">{cat.name}</span>
-                    <span className="text-sm text-gray-600">
-                      {cat.passed}/{cat.total} controls ({cat.percentage}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className={`h-3 rounded-full ${
-                        cat.percentage >= 95 ? 'bg-green-500' :
-                        cat.percentage >= 90 ? 'bg-blue-500' :
-                        'bg-yellow-500'
-                      }`}
-                      style={{ width: `${cat.percentage}%` }}
-                    />
-                  </div>
+      {complianceData?.categories && complianceData.categories.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Trust Service Criteria</h3>
+          <div className="space-y-4">
+            {complianceData.categories.map((cat, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium">{cat.name}</span>
+                  <span className="text-sm text-gray-600">{cat.passed}/{cat.total} controls ({cat.percentage}%)</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Texas DOB Compliance Section */}
-        {isTexasTier && texasData && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #1e3a5f' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">⭐</span>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Texas DOB Compliance</h3>
-                <p className="text-sm text-gray-500">7 TAC §33 · 31 CFR §1022 · TX HB 1666</p>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${cat.percentage >= 95 ? 'bg-green-500' : cat.percentage >= 90 ? 'bg-blue-500' : 'bg-yellow-500'}`}
+                    style={{ width: `${cat.percentage}%` }}
+                  />
+                </div>
               </div>
-              <span className="inline-block px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
-                {texasData.passingControls}/{texasData.totalControls} controls (100%)
-              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isTexasTier && texasData && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #1e3a5f' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl">star</span>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Texas DOB Compliance</h3>
+              <p className="text-sm text-gray-500">7 TAC 33 · 31 CFR 1022 · TX HB 1666</p>
             </div>
-            <div className="space-y-3">
-              {(texasData.controls || []).map(control => (
-                <div key={control.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-500 font-bold">✅</span>
-                      <span className="font-semibold text-sm">{control.id}:</span>
-                      <span className="text-sm text-gray-700">{control.name}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 ml-6">{control.summary}</p>
-                    <div className="ml-6 mt-1">
-                      <SignatureBadge id={control.id} />
-                    </div>
+            <span className="inline-block px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
+              {texasData.passingControls}/{texasData.totalControls} controls (100%)
+            </span>
+          </div>
+          <div className="space-y-3">
+            {(texasData.controls || []).map(control => (
+              <div key={control.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-500 font-bold">ok</span>
+                    <span className="font-semibold text-sm">{control.id}:</span>
+                    <span className="text-sm text-gray-700">{control.name}</span>
                   </div>
-                  <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">
-                    {new Date(control.lastAssessedAt).toLocaleDateString()}
-                  </span>
+                  <p className="text-xs text-gray-500 ml-6">{control.summary}</p>
+                  <div className="ml-6 mt-1"><SignatureBadge id={control.id} /></div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* FFIEC CAT Dashboard (fintech_elite tier) */}
-        {isFFIECTier && (
-          <div
-            className="bg-white rounded-lg shadow p-6 mb-6"
-            style={{ borderLeft: '4px solid #d97706' }}
-            data-testid="framework-row-ffiec"
-          >
-            <FFIECCATDashboard
-              onEvidenceExport={(domain) => {
-                const label = domain ? domain.name : 'All Domains';
-                alert(`Demo Mode: Examiner evidence package for "${label}" would be generated and KMS-signed in production.`);
-              }}
-            />
-          </div>
-        )}
-
-        {/* FFIEC IT Handbook Control Mapping (fintech_elite tier) */}
-        {isFFIECTier && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <FFIECControlMapping
-              onExportClick={() => {
-                alert('Demo Mode: FFIEC examiner report would be exported as a KMS-signed PDF in production.');
-              }}
-            />
-          </div>
-        )}
-
-        {/* Recent Findings */}
-        {findings && findings.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Findings</h3>
-            <div className="space-y-3">
-              {findings.map((finding) => (
-                <div 
-                  key={finding.id} 
-                  className={`border-l-4 p-4 rounded ${
-                    finding.severity === 'high' ? 'border-red-400 bg-red-50' :
-                    finding.severity === 'medium' ? 'border-yellow-400 bg-yellow-50' :
-                    'border-blue-400 bg-blue-50'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded mb-2 ${
-                        finding.severity === 'high' ? 'text-red-800 bg-red-200' :
-                        finding.severity === 'medium' ? 'text-yellow-800 bg-yellow-200' :
-                        'text-blue-800 bg-blue-200'
-                      }`}>
-                        {finding.severity?.toUpperCase()}
-                      </span>
-                      <p className="font-medium">{finding.title}</p>
-                      {finding.description && (
-                        <p className="text-sm text-gray-600 mt-1">{finding.description}</p>
-                      )}
-                      <p className="text-sm text-gray-500 mt-1">{finding.date}</p>
-                      <div className="mt-1">
-                        <SignatureBadge id={String(finding.id)} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(!findings || findings.length === 0) && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center py-8">
-              <span className="text-6xl mb-4 block">🎉</span>
-              <h3 className="text-xl font-semibold mb-2">All Clear!</h3>
-              <p className="text-gray-600">No compliance findings to address</p>
-            </div>
-          </div>
-        )}
-
-        {/* Bottom CTA — varies by auth state */}
-        <div style={{
-          marginTop: '2rem',
-          background: isPublic
-            ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)'
-            : 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-          border: isPublic ? 'none' : '1px solid #bbf7d0',
-          borderRadius: '0.75rem',
-          padding: '1.75rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.5rem',
-        }}>
-          {isPublic ? (
-            /* Public: hard conversion CTA */
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#fff' }}>
-                  🚀 Ready to own infrastructure like this?
-                </h3>
-                <p style={{ margin: '0', fontSize: '0.9rem', color: '#a5b4fc' }}>
-                  {PILOT_SPOTS_REMAINING} founder pricing spots remaining · $2,000/mo · SOC 2 + Texas DOB ready in 48 hrs
-                </p>
+                <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">{new Date(control.lastAssessedAt).toLocaleDateString()}</span>
               </div>
-              <a
-                href="/signup?intent=lock_pilot_pricing"
-                style={{
-                  display: 'inline-block',
-                  padding: '0.875rem 1.75rem',
-                  background: '#facc15',
-                  color: '#000',
-                  fontWeight: 700,
-                  borderRadius: '0.5rem',
-                  textDecoration: 'none',
-                  fontSize: '0.95rem',
-                  whiteSpace: 'nowrap',
-                }}
-                onClick={() => trackCTAClick('pilot_pricing_bottom', 'compliance_public')}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isFFIECTier && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6" style={{ borderLeft: '4px solid #d97706' }} data-testid="framework-row-ffiec">
+          <FFIECCATDashboard
+            onEvidenceExport={(domain) => {
+              const label = domain ? domain.name : 'All Domains';
+              alert(`Demo Mode: Examiner evidence package for "${label}" would be generated and KMS-signed in production.`);
+            }}
+          />
+        </div>
+      )}
+
+      {isFFIECTier && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <FFIECControlMapping onExportClick={() => alert('Demo Mode: FFIEC examiner report would be exported as a KMS-signed PDF in production.')} />
+        </div>
+      )}
+
+      {findings && findings.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Recent Findings</h3>
+          <div className="space-y-3">
+            {findings.map((finding) => (
+              <div
+                key={finding.id}
+                className={`border-l-4 p-4 rounded ${finding.severity === 'high' ? 'border-red-400 bg-red-50' : finding.severity === 'medium' ? 'border-yellow-400 bg-yellow-50' : 'border-blue-400 bg-blue-50'}`}
               >
-                Claim Your Pilot Spot →
-              </a>
-            </div>
-          ) : (
-            /* Authenticated / demo: assessment lead gen */
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ flex: '1 1 260px' }}>
-                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#065f46' }}>
-                  🔍 How audit-ready is your infrastructure?
-                </h3>
-                <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>
-                  Answer 5 questions and get your personalized compliance readiness score — plus a prioritized remediation roadmap.
-                </p>
-                <SocialProof context="compliance" />
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded mb-2 ${finding.severity === 'high' ? 'text-red-800 bg-red-200' : finding.severity === 'medium' ? 'text-yellow-800 bg-yellow-200' : 'text-blue-800 bg-blue-200'}`}>
+                      {finding.severity?.toUpperCase()}
+                    </span>
+                    <p className="font-medium">{finding.title}</p>
+                    {finding.description && <p className="text-sm text-gray-600 mt-1">{finding.description}</p>}
+                    <p className="text-sm text-gray-500 mt-1">{finding.date}</p>
+                    <div className="mt-1"><SignatureBadge id={String(finding.id)} /></div>
+                  </div>
+                </div>
               </div>
-              <div style={{ width: '100%', maxWidth: '320px', flexShrink: 0 }}>
-                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#065f46' }}>
-                  Get your free audit readiness score:
-                </p>
-                <LeadCaptureForm
-                  trigger="assessment"
-                  onSuccess={() => {
-                    trackCTAClick('compliance_assessment', 'compliance_page');
-                    if (personalization.isWave3) trackWave3HighValueAction('assessment_lead_captured');
-                  }}
-                />
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+      )}
+
+      {(!findings || findings.length === 0) && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-8">
+            <span className="text-6xl mb-4 block">party</span>
+            <h3 className="text-xl font-semibold mb-2">All Clear!</h3>
+            <p className="text-gray-600">No compliance findings to address</p>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: '2rem', background: isPublic ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: isPublic ? 'none' : '1px solid #bbf7d0', borderRadius: '0.75rem', padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {isPublic ? (
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#fff' }}>Ready to own infrastructure like this?</h3>
+              <p style={{ margin: '0', fontSize: '0.9rem', color: '#a5b4fc' }}>{PILOT_SPOTS_REMAINING} founder pricing spots remaining · $2,000/mo · SOC 2 + Texas DOB ready in 48 hrs</p>
+            </div>
+            <a
+              href="/signup?intent=lock_pilot_pricing"
+              style={{ display: 'inline-block', padding: '0.875rem 1.75rem', background: '#facc15', color: '#000', fontWeight: 700, borderRadius: '0.5rem', textDecoration: 'none', fontSize: '0.95rem', whiteSpace: 'nowrap' }}
+              onClick={() => trackCTAClick('pilot_pricing_bottom', 'compliance_public')}
+            >
+              Claim Your Pilot Spot
+            </a>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 700, color: '#065f46' }}>How audit-ready is your infrastructure?</h3>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#047857' }}>Answer 5 questions and get your personalized compliance readiness score — plus a prioritized remediation roadmap.</p>
+              <SocialProof context="compliance" />
+            </div>
+            <div style={{ width: '100%', maxWidth: '320px', flexShrink: 0 }}>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#065f46' }}>Get your free audit readiness score:</p>
+              <LeadCaptureForm
+                trigger="assessment"
+                onSuccess={() => {
+                  trackCTAClick('compliance_assessment', 'compliance_page');
+                  if (personalization.isWave3) trackWave3HighValueAction('assessment_lead_captured');
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
