@@ -499,3 +499,72 @@
     align-items: flex-start;
   }
 }
+
+.findings-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.filter-pill {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #f1f5f9;
+  color: #374151;
+  transition: all 0.15s;
+}
+
+.filter-pill.active {
+  background: #0f4c81;
+  color: white;
+  border-color: #0f4c81;
+}
+
+.finding-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  transition: box-shadow 0.2s;
+}
+
+.finding-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.remediation-steps {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+
+.remediation-steps.expanded {
+  max-height: 500px;
+}
+
+.status-toast {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

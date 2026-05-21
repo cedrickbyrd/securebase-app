@@ -3,7 +3,7 @@
  * Phase 5.3 Healthcare: HIPAA Compliance Dashboard
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import HIPAADashboard from '../HIPAADashboard';
 
@@ -87,22 +87,26 @@ const mockHIPAAData = {
     {
       id: 'hipaa-f001',
       title: 'PHI access review cadence below 90-day requirement',
+      description: 'Quarterly PHI access reviews are overdue.',
       severity: 'medium',
       control: '164.308(a)(3)',
       status: 'open',
       daysOpen: 12,
       owner: 'security@healthcorp.example.com',
-      remediation: 'Schedule quarterly PHI access reviews'
+      remediation: 'Schedule quarterly PHI access reviews',
+      remediation_steps: ['Schedule review', 'Record evidence']
     },
     {
       id: 'hipaa-f003',
       title: 'PagerDuty BAA expiring in 5 days',
+      description: 'BAA renewal window is within 5 days.',
       severity: 'high',
       control: '164.308(b)(1)',
       status: 'open',
       daysOpen: 3,
       owner: 'compliance@healthcorp.example.com',
-      remediation: 'Renew PagerDuty BAA immediately'
+      remediation: 'Renew PagerDuty BAA immediately',
+      remediation_steps: ['Contact vendor', 'Sign updated BAA']
     }
   ],
   phiAccessLog: [
@@ -110,6 +114,27 @@ const mockHIPAAData = {
     { timestamp: '2026-04-18T15:00:00Z', user: 'unknown_ip_scan', action: 'read', resource: 'patient_records', status: 'denied' }
   ]
 };
+
+const mockFindingsApiResponse = [
+  {
+    id: 'hipaa-f100',
+    severity: 'critical',
+    title: 'Unencrypted PHI in S3 Bucket',
+    description: 'A bucket storing PHI is missing default encryption.',
+    control: 'HIPAA §164.312(a)(2)(iv)',
+    status: 'open',
+    remediation_steps: ['Enable SSE-KMS', 'Add deny policy for unencrypted objects']
+  },
+  {
+    id: 'hipaa-f101',
+    severity: 'high',
+    title: 'MFA Not Enforced for Admin Users',
+    description: 'Admin users without MFA detected.',
+    control: 'HIPAA §164.312(d)',
+    status: 'in_progress',
+    remediation_steps: ['Enforce MFA policy']
+  }
+];
 
 vi.mock('../../services/sreService', () => ({
   sreService: {
@@ -129,6 +154,24 @@ vi.mock('../../utils/analytics', () => ({
 describe('HIPAADashboard Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('customerTier', 'healthcare');
+    localStorage.removeItem('hipaa_jump_to_findings');
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (url === '/api/hipaa/compliance') {
+        return Promise.resolve({ ok: true, json: async () => mockHIPAAData });
+      }
+      if (url === '/api/hipaa/findings') {
+        return Promise.resolve({ ok: true, json: async () => mockFindingsApiResponse });
+      }
+      if (String(url).startsWith('/api/hipaa/findings/')) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('should render loading state initially', () => {
@@ -224,8 +267,8 @@ describe('HIPAADashboard Component', () => {
     fireEvent.click(screen.getByText(/⚠️ Findings/i));
 
     await waitFor(() => {
-      expect(screen.getByText(/PHI access review cadence/i)).toBeInTheDocument();
-      expect(screen.getByText(/PagerDuty BAA expiring/i)).toBeInTheDocument();
+      expect(screen.getByText(/Unencrypted PHI in S3 Bucket/i)).toBeInTheDocument();
+      expect(screen.getByText(/MFA Not Enforced for Admin Users/i)).toBeInTheDocument();
     });
   });
 
@@ -235,8 +278,8 @@ describe('HIPAADashboard Component', () => {
     fireEvent.click(screen.getByText(/⚠️ Findings/i));
 
     await waitFor(() => {
-      expect(screen.getByText(/164\.308\(b\)\(1\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/high/i)).toBeInTheDocument();
+      expect(screen.getByText(/HIPAA §164.312\(a\)\(2\)\(iv\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/critical/i)).toBeInTheDocument();
     });
   });
 
@@ -285,6 +328,7 @@ describe('HIPAADashboard Component', () => {
 
   it('should show error state if sreService throws', async () => {
     const { sreService } = await import('../../services/sreService');
+    fetch.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 500 }));
     sreService.getHIPAACompliance.mockRejectedValueOnce(new Error('Network error'));
 
     render(<HIPAADashboard />);
@@ -303,5 +347,43 @@ describe('HIPAADashboard Component', () => {
       expect(trackPageView).toHaveBeenCalledWith('HIPAA Dashboard', '/hipaa-dashboard');
       expect(trackHIPAARoute).toHaveBeenCalledWith('/hipaa-dashboard', 'view');
     });
+  });
+
+  it('auto-jumps to findings and consumes localStorage flag', async () => {
+    localStorage.setItem('hipaa_jump_to_findings', 'true');
+    render(<HIPAADashboard />);
+
+    await waitFor(() => {
+      expect(localStorage.getItem('hipaa_jump_to_findings')).toBeNull();
+      expect(screen.getByRole('button', { name: /Critical \(1\)/i })).toHaveClass('active');
+    });
+  });
+
+  it('updates finding status inline and shows confirmation toast', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    const markResolved = await screen.findAllByRole('button', { name: /Mark Resolved/i });
+    fireEvent.click(markResolved[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/✓ Status updated/i)).toBeInTheDocument();
+    });
+  });
+
+  it('downloads evidence package from dashboard header', async () => {
+    const objectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:hipaa-evidence');
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    render(<HIPAADashboard />);
+    const downloadBtn = await screen.findByRole('button', { name: /Download Evidence Package/i });
+    fireEvent.click(downloadBtn);
+
+    expect(objectUrlSpy).toHaveBeenCalled();
+    expect(revokeSpy).toHaveBeenCalledWith('blob:hipaa-evidence');
+
+    objectUrlSpy.mockRestore();
+    revokeSpy.mockRestore();
   });
 });
