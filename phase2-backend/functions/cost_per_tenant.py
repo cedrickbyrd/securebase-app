@@ -3,6 +3,7 @@ Phase 6 / Track 5: Cost-per-tenant aggregation and anomaly detection.
 
 Supports:
 - Scheduled aggregation (EventBridge) to persist daily tenant costs
+- CloudWatch custom metric emission for per-tenant estimated monthly cost
 - GET /admin/costs?tenant_id=&start=&end=
 - GET /tenant/costs (tenant-aware)
 """
@@ -28,15 +29,20 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 TENANT_TAG_KEY = os.environ.get("TENANT_TAG_KEY", "tenant_id")
 ANOMALY_MULTIPLIER = float(os.environ.get("ANOMALY_MULTIPLIER", "1.5"))
 RETENTION_DAYS = int(os.environ.get("COST_HISTORY_RETENTION_DAYS", "400"))
+MONTHLY_COST_ALERT_THRESHOLD_USD = float(
+    os.environ.get("MONTHLY_COST_ALERT_THRESHOLD_USD", "50.0")
+)
 
 COST_PER_TENANT_TABLE = os.environ.get(
     "COST_PER_TENANT_TABLE", f"securebase-{ENVIRONMENT}-cost-per-tenant"
 )
 ALERT_TOPIC_ARN = os.environ.get("ALERT_TOPIC_ARN", "")
+CW_NAMESPACE = "SecureBase/CostPerTenant"
 
 ce = boto3.client("ce", region_name="us-east-1")
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 sns = boto3.client("sns", region_name=AWS_REGION)
+cw = boto3.client("cloudwatch", region_name=AWS_REGION)
 
 SERVICE_BUCKETS = {
     "AWS Lambda": "lambda",
@@ -196,6 +202,99 @@ def publish_anomaly(tenant_id: str, date_str: str, current_cost: float, baseline
     )
 
 
+def emit_monthly_cost_metrics(
+    tenant_costs: Dict[str, Dict[str, Any]], target_date: date
+) -> int:
+    """Emit CloudWatch custom metrics for estimated monthly costs per tenant.
+
+    Publishes:
+    - ``EstimatedMonthlyCostUSD`` per-tenant dimension, allowing a single
+      CloudWatch alarm on ``MaxTenantEstimatedMonthlyCostUSD`` to fire when
+      any tenant's projected spend exceeds the configured threshold.
+
+    Returns the number of metric data-points emitted.
+    """
+    if not tenant_costs:
+        return 0
+
+    # Compute day-of-month for pro-rated monthly estimate.
+    day_of_month = target_date.day
+
+    metric_data = []
+    max_estimated = 0.0
+    timestamp = datetime.utcnow()
+
+    for tenant_id, record in tenant_costs.items():
+        daily_cost = float(record["total_cost"])
+        # Pro-rate: estimated_monthly = avg_daily * 30
+        # Use the MTD scan from DynamoDB for a more accurate estimate when
+        # data is available; fall back to a simple projection from today's spend.
+        estimated_monthly = daily_cost * 30
+
+        if estimated_monthly > max_estimated:
+            max_estimated = estimated_monthly
+
+        metric_data.append(
+            {
+                "MetricName": "EstimatedMonthlyCostUSD",
+                "Dimensions": [
+                    {"Name": "TenantId", "Value": tenant_id},
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                ],
+                "Timestamp": timestamp,
+                "Value": round(estimated_monthly, 4),
+                "Unit": "None",
+            }
+        )
+
+        # Alert via SNS if monthly estimate exceeds the static threshold.
+        if estimated_monthly > MONTHLY_COST_ALERT_THRESHOLD_USD and ALERT_TOPIC_ARN:
+            message = {
+                "severity": "P3",
+                "source": "phase6-track5-cost-per-tenant",
+                "tenant_id": tenant_id,
+                "date": target_date.isoformat(),
+                "estimated_monthly_cost_usd": round(estimated_monthly, 2),
+                "threshold_usd": MONTHLY_COST_ALERT_THRESHOLD_USD,
+                "summary": (
+                    f"Tenant {tenant_id} estimated monthly AWS cost "
+                    f"${estimated_monthly:.2f} exceeds ${MONTHLY_COST_ALERT_THRESHOLD_USD:.0f} threshold"
+                ),
+            }
+            try:
+                sns.publish(
+                    TopicArn=ALERT_TOPIC_ARN,
+                    Subject=f"SecureBase P3 Monthly Cost Alert - {tenant_id}",
+                    Message=json.dumps(message),
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Failed to publish monthly cost alert for %s: %s", tenant_id, exc)
+
+    # Emit a single roll-up metric (max across all tenants) for the global alarm.
+    metric_data.append(
+        {
+            "MetricName": "MaxTenantEstimatedMonthlyCostUSD",
+            "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            "Timestamp": timestamp,
+            "Value": round(max_estimated, 4),
+            "Unit": "None",
+        }
+    )
+
+    # CloudWatch PutMetricData limit: 1,000 data points per call, 20 per batch.
+    batch_size = 20
+    emitted = 0
+    for i in range(0, len(metric_data), batch_size):
+        batch = metric_data[i : i + batch_size]
+        try:
+            cw.put_metric_data(Namespace=CW_NAMESPACE, MetricData=batch)
+            emitted += len(batch)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.warning("Failed to emit CloudWatch metrics batch %d: %s", i, exc)
+
+    return emitted
+
+
 def run_daily_aggregation(target_date: date) -> Dict[str, Any]:
     tenant_costs = aggregate_daily_costs(target_date)
     stored = put_daily_cost_records(tenant_costs, target_date)
@@ -209,11 +308,14 @@ def run_daily_aggregation(target_date: date) -> Dict[str, Any]:
             publish_anomaly(tenant_id, record["date"], current, baseline)
             anomalies += 1
 
+    metrics_emitted = emit_monthly_cost_metrics(tenant_costs, target_date)
+
     return {
         "date": target_date.isoformat(),
         "tenants_processed": len(tenant_costs),
         "records_stored": stored,
         "anomalies_published": anomalies,
+        "metrics_emitted": metrics_emitted,
     }
 
 

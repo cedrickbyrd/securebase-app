@@ -14,6 +14,8 @@ import { trackPageView, trackPageEngagement, incrementPagesViewed, trackCTAClick
 import { fetchData, isDemoMode as checkDemoMode } from '../utils/fetchData';
 import PersonalizedBanner from './PersonalizedBanner';
 import { usePersonalization } from '../hooks/usePersonalization';
+import ComplianceTrend from './ComplianceTrend';
+import EvidencePackages from './EvidencePackages';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
@@ -32,23 +34,30 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [texasCompliance, setTexasCompliance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scanPending, setScanPending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   const startTimeRef = useRef(null);
 
-  // Determine if current customer has Texas fintech compliance
   const effectiveTier = customer?.tier || getCustomerTier();
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
-  // showsHIPAADashboard: true when the customer tier requires the HIPAA compliance dashboard
-  // (does NOT imply the customer is currently HIPAA-compliant — see /hipaa-dashboard for scores)
   const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
 
   useEffect(() => {
     startTimeRef.current = Date.now();
     trackPageView('Dashboard', '/dashboard');
     incrementPagesViewed();
-    loadDashboardData();
+    const hasPendingScan = sessionStorage.getItem('scanPending') === 'true';
+    if (hasPendingScan) {
+      sessionStorage.removeItem('scanPending');
+      setScanPending(true);
+      setLoading(false);
+    } else {
+      loadDashboardData();
+    }
     return () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       trackPageEngagement('Dashboard', timeSpent);
@@ -62,7 +71,6 @@ function Dashboard() {
       setLoading(false);
       return;
     }
-
     try {
       const requests = [
         apiService.getMetrics(),
@@ -71,19 +79,12 @@ function Dashboard() {
         apiService.getComplianceStatus(),
         apiService.getTickets({ status: 'open', limit: 5 })
       ];
-
-      if (hasTexasCompliance) {
-        requests.push(demoAwareApiService.getFintechComplianceStatus());
-      }
-
+      if (hasTexasCompliance) requests.push(demoAwareApiService.getFintechComplianceStatus());
       const [metricsData, invoicesData, keysData, complianceData, ticketsData, texasData] = await Promise.all(requests);
-
       setMetrics(metricsData);
-      // Handle both wrapped ({ data: [...] }) and unwrapped formats
       const invoicesArray = invoicesData?.data || invoicesData;
       const keysArray = keysData?.data || keysData;
       const ticketsArray = ticketsData?.data || ticketsData;
-      
       setInvoices(Array.isArray(invoicesArray) ? invoicesArray.slice(0, 3) : []);
       setApiKeys(Array.isArray(keysArray) ? keysArray : []);
       setCompliance(complianceData);
@@ -102,14 +103,41 @@ function Dashboard() {
     navigate('/login');
   };
 
-  const handleCriticalAlert = (notification) => {
-    // Add toast for critical notification
-    setToasts(prev => [...prev, notification]);
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+    setDownloadError('');
+
+    try {
+      const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+      const res = await fetch('/api/compliance/findings', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+
+      a.href = url;
+      a.download = `securebase-compliance-report-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download compliance report:', err);
+      setDownloadError('Download failed. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  const handleCriticalAlert = (notification) => setToasts(prev => [...prev, notification]);
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
   if (loading) {
     return (
@@ -120,15 +148,50 @@ function Dashboard() {
     );
   }
 
+  if (scanPending) {
+    return (
+      <div className="dashboard-page">
+        <PersonalizedBanner />
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+        <header className="dashboard-header">
+          <div className="header-content">
+            <div className="header-left">
+              <h1>{PORTAL_NARRATIVE.dashboardHeadline}</h1>
+              <p>Welcome back to {BRANDING.productShortName}</p>
+            </div>
+            <div className="header-right">
+              <NotificationBell onCriticalAlert={handleCriticalAlert} />
+              <button className="logout-button" onClick={handleLogout}>Logout</button>
+            </div>
+          </div>
+        </header>
+
+        <main className="dashboard-main">
+          <div className="dashboard-empty-state">
+            <div className="mx-auto max-w-[480px] px-8 py-16 text-center">
+              <div className="mb-4 text-5xl">🔍</div>
+              <h2 className="mb-3 text-2xl font-bold text-gray-900">
+                Your compliance posture is being calculated
+              </h2>
+              <p className="mb-6 leading-relaxed text-gray-500">
+                SecureBase is scanning your AWS environment. Your compliance score, findings, and evidence packages will appear here within 15 minutes.
+              </p>
+              <p className="text-sm text-gray-400">
+                You can close this tab and come back — we'll have your results ready.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-page">
-      {/* Wave 3 personalized outreach banner */}
       <PersonalizedBanner />
-
-      {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
@@ -137,99 +200,39 @@ function Dashboard() {
           </div>
           <div className="header-right">
             <NotificationBell onCriticalAlert={handleCriticalAlert} />
-            <button className="logout-button" onClick={handleLogout}>
-              Logout
-            </button>
+            <button className="logout-button" onClick={handleLogout}>Logout</button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <section className="narrative-banner">
           <p className="narrative-banner__eyebrow">{PORTAL_NARRATIVE.platformTitle}</p>
           <h2>{PORTAL_NARRATIVE.dashboardSubheadline}</h2>
         </section>
-        {/* Demo Customer Indicator */}
+
         {isDemoMode && customer && customerIndex !== null && (
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
         )}
-        {/* Wave 3 Personalization Hero */}
+
         {personalization.isWave3 && (
-          <section style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            marginBottom: '1.5rem',
-            color: '#fff',
-          }}>
-            {/* Urgency banner */}
+          <section style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '1rem', padding: '2rem', marginBottom: '1.5rem', color: '#fff' }}>
             {personalization.urgencyMessage && (
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '0.5rem',
-                padding: '0.6rem 1rem',
-                marginBottom: '1.25rem',
-                fontSize: '0.875rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-              }}>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '0.6rem 1rem', marginBottom: '1.25rem', fontSize: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <span>{personalization.urgencyMessage}</span>
-                {personalization.urgencyExpiry && (
-                  <span style={{ opacity: 0.85 }}>⏰ {personalization.urgencyExpiry}</span>
-                )}
+                {personalization.urgencyExpiry && <span style={{ opacity: 0.85 }}>⏰ {personalization.urgencyExpiry}</span>}
               </div>
             )}
-
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Hero copy */}
               <div style={{ flex: '1 1 280px' }}>
-                <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.3 }}>
-                  {personalization.heroHeading}
-                </h2>
-                <p style={{ margin: '0 0 1rem', opacity: 0.9, fontSize: '0.95rem' }}>
-                  {personalization.heroParagraph}
-                </p>
-                <p style={{ margin: '0 0 1rem', opacity: 0.8, fontSize: '0.82rem' }}>
-                  {personalization.socialProof}
-                </p>
-                <button
-                  onClick={() => {
-                    trackCTAClick('wave3_primary_cta', 'dashboard_hero');
-                    trackWave3HighValueAction('primary_cta_clicked');
-                  }}
-                  style={{
-                    background: '#fff',
-                    color: '#764ba2',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    padding: '0.7rem 1.25rem',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {personalization.primaryCTA}
-                </button>
+                <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.3 }}>{personalization.heroHeading}</h2>
+                <p style={{ margin: '0 0 1rem', opacity: 0.9, fontSize: '0.95rem' }}>{personalization.heroParagraph}</p>
+                <p style={{ margin: '0 0 1rem', opacity: 0.8, fontSize: '0.82rem' }}>{personalization.socialProof}</p>
+                <button onClick={() => { trackCTAClick('wave3_primary_cta', 'dashboard_hero'); trackWave3HighValueAction('primary_cta_clicked'); }} style={{ background: '#fff', color: '#764ba2', border: 'none', borderRadius: '0.5rem', padding: '0.7rem 1.25rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>{personalization.primaryCTA}</button>
               </div>
-
-              {/* Inline lead capture */}
-              <div style={{
-                flex: '1 1 260px',
-                background: 'rgba(255,255,255,0.12)',
-                borderRadius: '0.75rem',
-                padding: '1.25rem',
-              }}>
-                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
-                  Get a personalized demo →
-                </p>
-                <LeadCaptureForm
-                  trigger="demo"
-                  onSuccess={() => trackWave3HighValueAction('demo_lead_captured')}
-                />
+              <div style={{ flex: '1 1 260px', background: 'rgba(255,255,255,0.12)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Get a personalized demo →</p>
+                <LeadCaptureForm trigger="demo" onSuccess={() => trackWave3HighValueAction('demo_lead_captured')} />
               </div>
             </div>
           </section>
@@ -238,9 +241,7 @@ function Dashboard() {
         {/* Metrics Grid */}
         <section className="metrics-grid">
           <div className="metric-card">
-            <div className="metric-icon" style={{ background: '#e6f2ff' }}>
-              💳
-            </div>
+            <div className="metric-icon" style={{ background: '#e6f2ff' }}>💳</div>
             <div className="metric-content">
               <h3>Monthly Charge</h3>
               <p className="metric-value">${metrics?.monthlyCharge?.toLocaleString() || '0'}</p>
@@ -248,9 +249,7 @@ function Dashboard() {
           </div>
 
           <div className="metric-card">
-            <div className="metric-icon" style={{ background: '#f0fdf4' }}>
-              🔑
-            </div>
+            <div className="metric-icon" style={{ background: '#f0fdf4' }}>🔑</div>
             <div className="metric-content">
               <h3>Active API Keys</h3>
               <p className="metric-value">{apiKeys?.filter(k => k.status === 'active').length || 0}</p>
@@ -268,104 +267,75 @@ function Dashboard() {
           </div>
 
           <div className="metric-card">
-            <div className="metric-icon" style={{ background: '#fef2f2' }}>
-              🎫
-            </div>
+            <div className="metric-icon" style={{ background: '#fef2f2' }}>🎫</div>
             <div className="metric-content">
               <h3>Open Tickets</h3>
               <p className="metric-value">{tickets?.length || 0}</p>
             </div>
           </div>
 
-          <div
-            className="metric-card clickable"
-            onClick={() => navigate('/sre-dashboard')}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/sre-dashboard')}
-            aria-label="Navigate to SRE Dashboard"
-          >
-            <div className="metric-icon" style={{ background: '#eff6ff' }}>
-              🖥️
-            </div>
+          <div className="metric-card clickable" onClick={() => navigate('/sre-dashboard')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/sre-dashboard')} aria-label="SRE Dashboard">
+            <div className="metric-icon" style={{ background: '#eff6ff' }}>🖥️</div>
+            <div className="metric-content"><h3>SRE Dashboard</h3><p className="metric-value">Infrastructure</p></div>
+          </div>
+
+          <div className="metric-card clickable" onClick={() => navigate('/alerts')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/alerts')} aria-label="Alert Management">
+            <div className="metric-icon" style={{ background: '#fef9c3' }}>🔔</div>
+            <div className="metric-content"><h3>Alert Management</h3><p className="metric-value">Operations</p></div>
+          </div>
+
+          {/* Phase 6.1 — Audit Evidence */}
+          <div className="metric-card clickable" onClick={() => navigate('/evidence')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/evidence')} aria-label="Audit Evidence Packages" style={{ borderLeft: '3px solid #1e3a5f' }}>
+            <div className="metric-icon" style={{ background: '#e8f0fe' }}>🔒</div>
             <div className="metric-content">
-              <h3>SRE Dashboard</h3>
-              <p className="metric-value">Infrastructure</p>
+              <h3>Audit Evidence</h3>
+              <p className="metric-value" style={{ color: '#1e3a5f', fontSize: '0.9rem' }}>Download Packages →</p>
             </div>
           </div>
 
-          <div
-            className="metric-card clickable"
-            onClick={() => navigate('/alerts')}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/alerts')}
-            aria-label="Navigate to Alert Management"
-          >
-            <div className="metric-icon" style={{ background: '#fef9c3' }}>
-              🔔
-            </div>
+          {/* Phase 6.2 — Compliance Trend */}
+          <div className="metric-card clickable" onClick={() => navigate('/compliance/trend')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/compliance/trend')} aria-label="Compliance Score Trend" style={{ borderLeft: '3px solid #0f4c81' }}>
+            <div className="metric-icon" style={{ background: '#eff6ff' }}>📈</div>
             <div className="metric-content">
-              <h3>Alert Management</h3>
-              <p className="metric-value">Operations</p>
+              <h3>Compliance Trend</h3>
+              <p className="metric-value" style={{ color: '#0f4c81', fontSize: '0.9rem' }}>90-Day History →</p>
+            </div>
+          </div>
+
+          {/* Cloud Connection — cross-account IAM role */}
+          <div className="metric-card clickable" onClick={() => navigate('/cloud-connection')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/cloud-connection')} aria-label="Cloud Connection">
+            <div className="metric-icon" style={{ background: '#f0f4ff' }}>☁️</div>
+            <div className="metric-content">
+              <h3>Cloud Connection</h3>
+              <p className="metric-value" style={{ color: '#3b5bdb', fontSize: '0.9rem' }}>Connect AWS Account →</p>
             </div>
           </div>
 
           {hasTexasCompliance && (
-            <div
-              className="metric-card clickable"
-              onClick={() => navigate('/fintech-portal')}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/fintech-portal')}
-              aria-label="Navigate to Texas Examiner Portal"
-            >
-              <div className="metric-icon" style={{ background: '#eff6ff' }}>
-                ⭐
-              </div>
+            <div className="metric-card clickable" onClick={() => navigate('/fintech-portal')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/fintech-portal')} aria-label="Texas Examiner Portal">
+              <div className="metric-icon" style={{ background: '#eff6ff' }}>⭐</div>
               <div className="metric-content">
                 <h3>Texas DOB Compliance</h3>
                 <p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>
-                  {texasCompliance
-                    ? `${texasCompliance.passingControls}/${texasCompliance.totalControls} controls`
-                    : '5/5 controls'}
+                  {texasCompliance ? `${texasCompliance.passingControls}/${texasCompliance.totalControls} controls` : '5/5 controls'}
                 </p>
               </div>
             </div>
           )}
 
           {showsHIPAADashboard && (
-            <div
-              className="metric-card clickable"
-              onClick={() => navigate('/hipaa-dashboard')}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/hipaa-dashboard')}
-              aria-label="Navigate to HIPAA Compliance Dashboard"
-            >
-              <div className="metric-icon" style={{ background: '#ecfdf5' }}>
-                🏥
-              </div>
-              <div className="metric-content">
-                <h3>HIPAA Compliance</h3>
-                <p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>
-                  View Dashboard →
-                </p>
-              </div>
+            <div className="metric-card clickable" onClick={() => navigate('/hipaa-dashboard')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/hipaa-dashboard')} aria-label="HIPAA Dashboard">
+              <div className="metric-icon" style={{ background: '#ecfdf5' }}>🏥</div>
+              <div className="metric-content"><h3>HIPAA Compliance</h3><p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>View Dashboard →</p></div>
             </div>
           )}
         </section>
 
         {/* Two Column Layout */}
         <div className="dashboard-columns">
-          {/* Left Column */}
           <div className="dashboard-column">
-            {/* Recent Invoices */}
             <section className="dashboard-card">
-              <div className="card-header">
-                <h2>Recent Invoices</h2>
-                <button className="view-all-btn">View All →</button>
-              </div>
+              <div className="card-header"><h2>Recent Invoices</h2><button className="view-all-btn">View All →</button></div>
               <div className="card-content">
                 {invoices.length > 0 ? (
                   <div className="invoices-list">
@@ -382,47 +352,32 @@ function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="empty-state">No invoices found</p>
-                )}
+                ) : <p className="empty-state">No invoices found</p>}
               </div>
             </section>
 
-            {/* API Keys Summary */}
             <section className="dashboard-card">
-              <div className="card-header">
-                <h2>API Keys</h2>
-                <button className="view-all-btn">Manage →</button>
-              </div>
+              <div className="card-header"><h2>API Keys</h2><button className="view-all-btn">Manage →</button></div>
               <div className="card-content">
                 {apiKeys.length > 0 ? (
                   <div className="api-keys-list">
                     {apiKeys.slice(0, 3).map((key) => (
                       <div key={key.id} className="api-key-item">
-                        <div className="key-info">
-                          <p className="key-name">{key.name}</p>
-                          <p className="key-preview">{key.key_preview}</p>
-                        </div>
+                        <div className="key-info"><p className="key-name">{key.name}</p><p className="key-preview">{key.key_preview}</p></div>
                         <span className={`status-badge ${key.status}`}>{key.status}</span>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="empty-state">No API keys found</p>
-                )}
+                ) : <p className="empty-state">No API keys found</p>}
               </div>
             </section>
           </div>
 
-          {/* Right Column */}
           <div className="dashboard-column">
-            {/* Compliance Overview */}
             <section className="dashboard-card">
               <div className="card-header">
                 <h2>Compliance Overview</h2>
-                <button className="view-all-btn" onClick={() => navigate('/compliance')}>
-                  View Details →
-                </button>
+                <button className="view-all-btn" onClick={() => navigate('/compliance')}>View Details →</button>
               </div>
               <div className="card-content">
                 {compliance ? (
@@ -437,32 +392,35 @@ function Dashboard() {
                       </div>
                     </div>
                     <div className="compliance-stats">
-                      <div className="stat">
-                        <span className="stat-value" style={{ color: '#10b981' }}>{compliance.passing || 0}</span>
-                        <span className="stat-label">Passing</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-value" style={{ color: '#f59e0b' }}>{compliance.warning || 0}</span>
-                        <span className="stat-label">Warning</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-value" style={{ color: '#ef4444' }}>{compliance.failing || 0}</span>
-                        <span className="stat-label">Failing</span>
-                      </div>
+                      <div className="stat"><span className="stat-value" style={{ color: '#10b981' }}>{compliance.passing || 0}</span><span className="stat-label">Passing</span></div>
+                      <div className="stat"><span className="stat-value" style={{ color: '#f59e0b' }}>{compliance.warning || 0}</span><span className="stat-label">Warning</span></div>
+                      <div className="stat"><span className="stat-value" style={{ color: '#ef4444' }}>{compliance.failing || 0}</span><span className="stat-label">Failing</span></div>
                     </div>
                   </div>
-                ) : (
-                  <p className="empty-state">No compliance data available</p>
-                )}
+                ) : <p className="empty-state">No compliance data available</p>}
               </div>
             </section>
 
-            {/* Support Tickets */}
-            <section className="dashboard-card">
+            <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
               <div className="card-header">
-                <h2>Recent Tickets</h2>
-                <button className="view-all-btn">View All →</button>
+                <h2>Audit Evidence</h2>
+                <div className="flex items-center gap-3">
+                  <button className="view-all-btn" onClick={handleDownloadReport} disabled={downloading} aria-label="Download compliance findings report">
+                    {downloading ? 'Generating…' : '⬇ Download Report'}
+                  </button>
+                  <button className="view-all-btn" onClick={() => navigate('/evidence')}>Full View →</button>
+                </div>
               </div>
+              {downloadError && (
+                <p className="px-6 pt-3 text-sm text-red-600" role="alert" aria-live="polite">{downloadError}</p>
+              )}
+              <div className="card-content">
+                <EvidencePackages embedded />
+              </div>
+            </section>
+
+            <section className="dashboard-card">
+              <div className="card-header"><h2>Recent Tickets</h2><button className="view-all-btn">View All →</button></div>
               <div className="card-content">
                 {tickets.length > 0 ? (
                   <div className="tickets-list">
@@ -479,95 +437,73 @@ function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="empty-state">No open tickets</p>
-                )}
+                ) : <p className="empty-state">No open tickets</p>}
               </div>
             </section>
 
-            {/* Texas DOB Compliance (fintech_pro / fintech_elite) */}
+            {/* Phase 6.2 — Compliance Trend (compact inline) */}
+            <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
+              <div className="card-header">
+                <h2>📈 Compliance Trend</h2>
+                <button className="view-all-btn" onClick={() => navigate('/compliance/trend')}>Full View →</button>
+              </div>
+              <div className="card-content">
+                <ComplianceTrend defaultFramework="HIPAA" days={90} compact={true} />
+              </div>
+            </section>
+
             {hasTexasCompliance && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
                 <div className="card-header">
                   <h2>⭐ Texas DOB Compliance</h2>
-                  <button
-                    className="view-all-btn"
-                    onClick={() => navigate('/fintech-portal')}
-                  >
-                    Access Examiner Portal →
-                  </button>
+                  <button className="view-all-btn" onClick={() => navigate('/fintech-portal')}>Access Examiner Portal →</button>
                 </div>
                 <div className="card-content">
                   {texasCompliance ? (
                     <div>
                       <div className="compliance-status" style={{ marginBottom: '1rem' }}>
                         <div className="status-indicator passing" style={{ background: '#f0fdf4' }}>✅</div>
-                        <div>
-                          <p className="status-label">Texas DOB Status</p>
-                          <p className="status-value" style={{ color: '#10b981' }}>
-                            {texasCompliance.passingControls}/{texasCompliance.totalControls} Controls Passing
-                          </p>
-                        </div>
+                        <div><p className="status-label">Texas DOB Status</p><p className="status-value" style={{ color: '#10b981' }}>{texasCompliance.passingControls}/{texasCompliance.totalControls} Controls Passing</p></div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {(texasCompliance.controls || []).slice(0, 3).map(ctrl => (
                           <div key={ctrl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#f8fafc', borderRadius: 6 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>
-                              ✅ {ctrl.id}
-                            </span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>✅ {ctrl.id}</span>
                             <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{ctrl.name}</span>
                           </div>
                         ))}
-                        {(texasCompliance.controls || []).length > 3 && (
-                          <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', margin: '0.25rem 0 0' }}>
-                            +{(texasCompliance.controls || []).length - 3} more controls
-                          </p>
-                        )}
+                        {(texasCompliance.controls || []).length > 3 && <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', margin: '0.25rem 0 0' }}>+{(texasCompliance.controls || []).length - 3} more controls</p>}
                       </div>
                     </div>
-                  ) : (
-                    <p className="empty-state">Loading Texas compliance data…</p>
-                  )}
+                  ) : <p className="empty-state">Loading Texas compliance data…</p>}
                 </div>
               </section>
             )}
 
-            {/* HIPAA Compliance (healthcare / government) */}
             {showsHIPAADashboard && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
                 <div className="card-header">
                   <h2>🏥 HIPAA Compliance</h2>
-                  <button
-                    className="view-all-btn"
-                    onClick={() => navigate('/hipaa-dashboard')}
-                  >
-                    Open HIPAA Dashboard →
-                  </button>
+                  <button className="view-all-btn" onClick={() => navigate('/hipaa-dashboard')}>Open HIPAA Dashboard →</button>
                 </div>
                 <div className="card-content">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {/* TODO: replace these summary values with sreService.getHIPAACompliance() once
-                        a hipaaCompliance state variable is added to Dashboard — see HIPAADashboard.jsx */}
                     {[
-                      { label: 'Administrative Safeguards', pct: 90, passed: 18, total: 20 },
-                      { label: 'Physical Safeguards', pct: 92.9, passed: 13, total: 14 },
-                      { label: 'Technical Safeguards', pct: 83.3, passed: 20, total: 24 }
+                      { label: 'Administrative Safeguards', pct: 90,   passed: 18, total: 20 },
+                      { label: 'Physical Safeguards',       pct: 92.9, passed: 13, total: 14 },
+                      { label: 'Technical Safeguards',      pct: 83.3, passed: 20, total: 24 },
                     ].map(sg => (
                       <div key={sg.label} style={{ padding: '0.6rem', background: '#f8fafc', borderRadius: 6 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>{sg.label}</span>
-                          <span style={{ fontSize: '0.82rem', color: sg.pct >= 90 ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
-                            {sg.passed}/{sg.total}
-                          </span>
+                          <span style={{ fontSize: '0.82rem', color: sg.pct >= 90 ? '#10b981' : '#f59e0b', fontWeight: 700 }}>{sg.passed}/{sg.total}</span>
                         </div>
                         <div style={{ height: 6, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${sg.pct}%`, background: sg.pct >= 90 ? '#10b981' : '#f59e0b', borderRadius: 999 }} />
                         </div>
                       </div>
                     ))}
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
-                      BAA on file · PHI encrypted at rest &amp; in transit
-                    </p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>BAA on file · PHI encrypted at rest &amp; in transit</p>
                   </div>
                 </div>
               </section>

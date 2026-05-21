@@ -88,7 +88,7 @@ jobs:
       - name: Install test dependencies
         run: |
           pip install --upgrade pip
-          pip install pytest pytest-cov pytest-mock boto3 moto[s3,dynamodb,config,guardduty]
+          pip install pytest pytest-cov pytest-mock boto3 reportlab moto[s3,dynamodb,config,guardduty]
 
       - name: Run Phase 6 unit tests
         run: |

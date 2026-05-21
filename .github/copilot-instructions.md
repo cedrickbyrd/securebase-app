@@ -1303,3 +1303,22 @@ This keeps credentials secure and maintains SOC 2 compliance."
 **Last Updated:** 2026-04-14  
 **Maintained By:** Cedrick Byrd (cedrickbyrd)  
 **Questions?** Open an issue in the repository.
+
+# GitHub Copilot Instructions — SecureBase App
+
+This repository contains the source code for SecureBase, a sovereign infrastructure platform designed to automate SOC 2, HIPAA, and FFIEC compliance. Follow these explicit project guidelines, architectural boundaries, and ecosystem conventions for all code generation, refactoring, and workspace analysis tasks.
+
+## 1. Core Technology Stack & Conventions
+- **Frontend Architecture:** Built using React, Vite, and Node.js.
+- **Styling & UI:** Maintain clean, component-driven modular patterns. 
+- **Package Management:** Always use `npm`. If installing charting or data visualization packages, explicitly append specific peer-dependency overrides.
+  - *Strict Rule:* When adding or updating chart functionality, use the following exact flags: `npm install react-chartjs-2 chart.js --save --legacy-peer-deps`. Do not omit `--legacy-peer-deps`.
+
+## 2. Infrastructure & Deployment Edge Cases
+- **Edge Distribution Provider:** The application is deployed and distributed globally via **Netlify**.
+- **Provider Constraints:** Ensure all routing configurations, redirect rules (e.g., `_redirects` or `netlify.toml`), and environment variable definitions conform strictly to Netlify edge platform specifications. Do not generate configuration baselines optimized for alternative edge providers (such as Vercel).
+
+## 3. Compliance & Architectural Standards
+- **Sovereign Design Patterns:** Code modifications must align with automated continuous compliance standards (SOC 2, HIPAA, and FFIEC frameworks).
+- **Data Integrity & Security:** Ensure data parsing, API communications, and state synchronization mechanics incorporate robust sanitization, strict error handling boundary wrappers, and clear audit-trail readiness.
+- **Scope Limitation:** Keep refactoring minimal and surgical. Match the established formatting, variable naming conventions, and modular setup present in the workspace.

@@ -223,8 +223,32 @@ module "api_gateway" {
   session_management_lambda_name       = module.lambda_functions.session_management_name
   sre_metrics_lambda_invoke_arn = var.sre_metrics_lambda_invoke_arn
   sre_metrics_lambda_name       = var.sre_metrics_lambda_name
+  audit_evidence_lambda_arn            = module.phase6_lambdas.audit_evidence_api_arn
+  audit_evidence_lambda_invoke_arn     = module.phase6_lambdas.audit_evidence_api_invoke_arn
+  audit_evidence_lambda_name           = module.phase6_lambdas.audit_evidence_api_name
+  compliance_history_lambda_arn        = module.phase6_lambdas.compliance_history_api_arn
+  compliance_history_lambda_invoke_arn = module.phase6_lambdas.compliance_history_api_invoke_arn
+  compliance_history_lambda_name       = module.phase6_lambdas.compliance_history_api_name
   tags = merge(var.tags, { Phase = "Phase3-API" })
-  depends_on = [module.lambda_functions]
+  depends_on = [module.lambda_functions, module.phase6_lambdas]
+}
+
+# ============================================================================
+# Phase 6.1/6.2 — Audit Evidence API + Compliance History API Lambdas
+# ============================================================================
+
+module "phase6_lambdas" {
+  source                     = "./modules/phase6-lambda-functions"
+  environment                = var.environment
+  audit_evidence_api_zip     = "${path.module}/files/phase6/audit_evidence_api.zip"
+  compliance_history_api_zip = "${path.module}/files/phase6/compliance_history_api.zip"
+  evidence_bucket_name       = module.phase6_audit_logging.evidence_bucket_name
+  evidence_kms_key_arn       = module.phase6_audit_logging.kms_key_arn
+  rds_proxy_endpoint         = module.phase2_database.rds_proxy_endpoint
+  private_subnet_ids         = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
+  security_group_ids         = [module.phase2_database.lambda_security_group_id]
+  tags                       = merge(var.tags, { Phase = "6" })
+  depends_on                 = [module.phase6_audit_logging, module.phase2_database]
 }
 
 # ============================================================================

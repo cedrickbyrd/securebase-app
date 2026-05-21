@@ -614,7 +614,15 @@ export const sreService = {
    * Needed by: Trellis AI, HealthSync (Healthcare tier)
    */
   async getHIPAACompliance() {
-    return getMockHIPAACompliance();
+    const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+    const res = await fetch('/api/compliance/hipaa', {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    if (!res.ok) throw new Error(`HIPAA compliance fetch failed: ${res.status}`);
+    return res.json();
   },
 
   /**

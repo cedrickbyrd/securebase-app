@@ -7,6 +7,14 @@ resource "aws_api_gateway_deployment" "main" {
   rest_api_id = var.rest_api_id
   triggers = {
     redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.auth,
+      aws_api_gateway_method.auth_post,
+      aws_api_gateway_integration.auth_post,
+      aws_api_gateway_method.auth_options,
+      aws_api_gateway_integration.auth_options,
+      aws_api_gateway_method_response.auth_options_200,
+      aws_api_gateway_integration_response.auth_options,
+      aws_lambda_permission.apigw_auth,
       aws_api_gateway_resource.auth_login,
       aws_api_gateway_method.auth_login_post,
       aws_api_gateway_integration.auth_login,
@@ -23,10 +31,30 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.onboarding_status_get,
       aws_api_gateway_integration.onboarding_status_get,
       aws_lambda_permission.apigw_onboarding_status,
+      aws_api_gateway_resource.checkout,
+      aws_api_gateway_method.checkout_post,
+      aws_api_gateway_integration.checkout_post,
+      aws_api_gateway_method.checkout_options,
+      aws_api_gateway_integration.checkout_options,
+      aws_lambda_permission.apigw_checkout,
+      aws_api_gateway_resource.stripe_webhook,
+      aws_api_gateway_method.stripe_webhook_post,
+      aws_api_gateway_integration.stripe_webhook_post,
+      aws_api_gateway_method.stripe_webhook_options,
+      aws_api_gateway_integration.stripe_webhook_options,
+      aws_api_gateway_method_response.stripe_webhook_options_200,
+      aws_api_gateway_integration_response.stripe_webhook_options,
+      aws_lambda_permission.apigw_stripe_webhook,
     ]))
   }
   lifecycle { create_before_destroy = true }
   depends_on = [
+    aws_api_gateway_method.auth_post,
+    aws_api_gateway_integration.auth_post,
+    aws_api_gateway_method.auth_options,
+    aws_api_gateway_integration.auth_options,
+    aws_api_gateway_method_response.auth_options_200,
+    aws_api_gateway_integration_response.auth_options,
     aws_api_gateway_method.auth_login_post,
     aws_api_gateway_integration.auth_login,
     aws_api_gateway_method.signup_post,
@@ -35,6 +63,16 @@ resource "aws_api_gateway_deployment" "main" {
     aws_api_gateway_integration.verify_email_post,
     aws_api_gateway_method.onboarding_status_get,
     aws_api_gateway_integration.onboarding_status_get,
+    aws_api_gateway_method.checkout_post,
+    aws_api_gateway_integration.checkout_post,
+    aws_api_gateway_method.checkout_options,
+    aws_api_gateway_integration.checkout_options,
+    aws_api_gateway_method.stripe_webhook_post,
+    aws_api_gateway_integration.stripe_webhook_post,
+    aws_api_gateway_method.stripe_webhook_options,
+    aws_api_gateway_integration.stripe_webhook_options,
+    aws_api_gateway_method_response.stripe_webhook_options_200,
+    aws_api_gateway_integration_response.stripe_webhook_options,
   ]
 }
 resource "aws_api_gateway_stage" "main" {

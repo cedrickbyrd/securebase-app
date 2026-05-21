@@ -17,223 +17,177 @@ variable "tags" {
   default     = {}
 }
 
-# ============================================================================
-# Lambda Function ARNs and Names
-# ============================================================================
-
 variable "auth_lambda_arn" {
-  description = "ARN of the authentication Lambda function"
-  type        = string
+  type = string
 }
 
 variable "auth_lambda_name" {
-  description = "Name of the authentication Lambda function"
-  type        = string
+  type = string
 }
 
 variable "health_check_lambda_arn" {
-  description = "ARN of the health check Lambda function"
-  type        = string
+  type = string
 }
 
 variable "health_check_lambda_name" {
-  description = "Name of the health check Lambda function"
-  type        = string
+  type = string
 }
 
 variable "webhook_lambda_arn" {
-  description = "ARN of the webhook manager Lambda function"
-  type        = string
+  type = string
 }
 
 variable "webhook_lambda_name" {
-  description = "Name of the webhook manager Lambda function"
-  type        = string
+  type = string
 }
 
 variable "billing_lambda_arn" {
-  description = "ARN of the billing worker Lambda function"
-  type        = string
+  type = string
 }
 
 variable "billing_lambda_name" {
-  description = "Name of the billing worker Lambda function"
-  type        = string
+  type = string
 }
 
 variable "support_lambda_arn" {
-  description = "ARN of the support tickets Lambda function"
-  type        = string
+  type = string
 }
 
 variable "support_lambda_name" {
-  description = "Name of the support tickets Lambda function"
-  type        = string
+  type = string
 }
 
 variable "forecasting_lambda_arn" {
-  description = "ARN of the cost forecasting Lambda function"
-  type        = string
+  type = string
 }
 
 variable "forecasting_lambda_name" {
-  description = "Name of the cost forecasting Lambda function"
-  type        = string
+  type = string
 }
 
 variable "analytics_lambda_arn" {
-  description = "ARN of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "analytics_lambda_name" {
-  description = "Name of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "analytics_lambda_invoke_arn" {
-  description = "Invoke ARN of the analytics/reporting Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
-# RBAC Lambda Functions (Phase 4 Component 2)
-
 variable "user_management_lambda_arn" {
-  description = "ARN of the user management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "user_management_lambda_name" {
-  description = "Name of the user management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "user_management_lambda_invoke_arn" {
-  description = "Invoke ARN of the user management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "session_management_lambda_arn" {
-  description = "ARN of the session management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "session_management_lambda_name" {
-  description = "Name of the session management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "session_management_lambda_invoke_arn" {
-  description = "Invoke ARN of the session management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "permission_management_lambda_arn" {
-  description = "ARN of the permission management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "permission_management_lambda_name" {
-  description = "Name of the permission management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
 variable "permission_management_lambda_invoke_arn" {
-  description = "Invoke ARN of the permission management Lambda function"
-  type        = string
-  default     = null
+  type    = string
+  default = null
 }
 
-# ============================================================================
-# Security and Performance Settings
-# ============================================================================
-
 variable "log_retention_days" {
-  description = "CloudWatch log retention period in days"
-  type        = number
-  default     = 30
+  type    = number
+  default = 30
 }
 
 variable "default_rate_limit" {
-  description = "Default API rate limit (requests per second)"
-  type        = number
-  default     = 100
+  type    = number
+  default = 100
 }
 
 variable "default_burst_limit" {
-  description = "Default API burst limit (concurrent requests)"
-  type        = number
-  default     = 200
+  type    = number
+  default = 200
 }
 
 variable "error_threshold_4xx" {
-  description = "Threshold for 4XX error alarm"
-  type        = number
-  default     = 100
+  type    = number
+  default = 100
 }
 
 variable "error_threshold_5xx" {
-  description = "Threshold for 5XX error alarm"
-  type        = number
-  default     = 10
+  type    = number
+  default = 10
 }
 
 variable "latency_threshold_ms" {
-  description = "Latency threshold in milliseconds for alarm"
-  type        = number
-  default     = 5000
+  type    = number
+  default = 5000
 }
 
 variable "allowed_origins" {
-  description = "List of allowed CORS origins"
-  type        = list(string)
-  default     = ["https://portal.securebase.com"]
+  type    = list(string)
+  default = ["https://portal.securebase.com"]
 }
 
 variable "portal_origin" {
-  description = "Primary portal origin used in API Gateway gateway responses (must be a specific origin, not wildcard, because credentials are included)"
+  description = "Primary portal origin used in API Gateway gateway responses"
   type        = string
   default     = "https://securebase.tximhotep.com"
 }
 
 variable "submit_lead_lambda_arn" {
-  description = "ARN of the submit_lead Lambda function"
-  type        = string
+  type = string
 }
 
 variable "submit_lead_lambda_name" {
-  description = "Name of the submit_lead Lambda function"
-  type        = string
+  type = string
 }
 
 variable "demo_auth_lambda_arn" {
-  description = "ARN of the demo_auth Lambda function"
-  type        = string
+  type = string
 }
 
 variable "demo_auth_lambda_invoke_arn" {
-  description = "Invoke ARN of the demo_auth Lambda function (used in API Gateway integration URI)"
-  type        = string
+  type = string
 }
 
 variable "demo_auth_lambda_name" {
-  description = "Name of the demo_auth Lambda function"
-  type        = string
+  type = string
 }
 
 # ============================================================================
-# Phase 6 Compliance Lambdas — optional, provisioned by phase6-compliance module
+# Phase 6 Compliance Lambdas
 # ============================================================================
 
 variable "soc2_collector_lambda_arn" {
@@ -287,17 +241,71 @@ variable "vendor_risk_lambda_name" {
 }
 
 # ============================================================================
-# Phase 5.3 SRE Metrics Lambda — optional; wires /sre/* routes when provided
+# Phase 6.1 — Audit Evidence API Lambda
+# ============================================================================
+
+variable "audit_evidence_lambda_arn" {
+  description = "ARN of the audit_evidence_api Lambda. Set to null to skip /admin/evidence routes."
+  type        = string
+  default     = null
+}
+
+variable "audit_evidence_lambda_invoke_arn" {
+  description = "Invoke ARN of the audit_evidence_api Lambda."
+  type        = string
+  default     = null
+}
+
+variable "audit_evidence_lambda_name" {
+  description = "Name of the audit_evidence_api Lambda."
+  type        = string
+  default     = null
+}
+
+# ============================================================================
+# Phase 6.2 — Compliance History API Lambda
+# ============================================================================
+
+variable "compliance_history_lambda_arn" {
+  description = "ARN of the compliance_history_api Lambda. Set to null to skip /tenant/compliance/history route."
+  type        = string
+  default     = null
+}
+
+variable "compliance_history_lambda_invoke_arn" {
+  description = "Invoke ARN of the compliance_history_api Lambda."
+  type        = string
+  default     = null
+}
+
+variable "compliance_history_lambda_name" {
+  description = "Name of the compliance_history_api Lambda."
+  type        = string
+  default     = null
+}
+
+# ============================================================================
+# Phase 5.3 SRE Metrics Lambda
 # ============================================================================
 
 variable "sre_metrics_lambda_invoke_arn" {
-  description = "Invoke ARN of the SRE metrics Lambda function (used in /sre/* API Gateway integrations). Set to null to skip SRE routes — existing deployments are unaffected."
+  description = "Invoke ARN of the SRE metrics Lambda. Set to null to skip /sre/* routes."
   type        = string
   default     = null
 }
 
 variable "sre_metrics_lambda_name" {
-  description = "Name of the SRE metrics Lambda function (used for Lambda permission resource). Required when sre_metrics_lambda_invoke_arn is set."
+  description = "Name of the SRE metrics Lambda."
+  type        = string
+  default     = null
+}
+
+# ============================================================================
+# Phase 6 route parent resource IDs
+# ============================================================================
+
+variable "tenant_compliance_resource_id" {
+  description = "API Gateway resource ID for /tenant/compliance. Required to wire /tenant/compliance/history."
   type        = string
   default     = null
 }
