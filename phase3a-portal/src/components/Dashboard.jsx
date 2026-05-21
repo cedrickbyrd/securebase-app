@@ -32,6 +32,10 @@ function toSafeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function clampScore(score, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, score));
+}
+
 function getHIPAAScore(source) {
   if (!source) return FIRST_RUN_SCORE_FALLBACK;
   return toSafeNumber(
@@ -42,6 +46,13 @@ function getHIPAAScore(source) {
     ?? FIRST_RUN_SCORE_FALLBACK,
     FIRST_RUN_SCORE_FALLBACK
   );
+}
+
+function getFirstRunScore(metrics, compliance) {
+  if (metrics?.overallScore !== undefined && metrics?.overallScore !== null) {
+    return toSafeNumber(metrics.overallScore, FIRST_RUN_SCORE_FALLBACK);
+  }
+  return getHIPAAScore(compliance);
 }
 
 function getHighFindingsCount(source) {
@@ -110,14 +121,12 @@ function Dashboard() {
   const isHealthcareTier = effectiveTier === CUSTOMER_TIERS.HEALTHCARE;
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
   const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
-  const firstRunTargetScore = Math.max(
-    0,
-    Math.min(100, getHIPAAScore({ overallScore: metrics?.overallScore, overall_score: compliance?.overall_score }))
-  );
+  const firstRunTargetScore = clampScore(getFirstRunScore(metrics, compliance));
   const hipaaLastAssessed = formatLastAssessed(hipaaMetric?.last_assessed || compliance?.last_assessed);
-  const hipaaLiveScore = Math.max(0, Math.min(100, getHIPAAScore(hipaaMetric || compliance)));
+  const hipaaLiveScore = clampScore(getHIPAAScore(hipaaMetric || compliance));
   const hipaaHighFindings = getHighFindingsCount(hipaaMetric || compliance);
   const hipaaControlsPassing = getControlsPassingCount(hipaaMetric || compliance);
+  const organizationName = customer?.name || customer?.orgName || localStorage.getItem('orgName') || 'Your Organization';
 
   const overlayRiskLevel = firstRunTargetScore >= 90
     ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
@@ -222,7 +231,6 @@ function Dashboard() {
 
   const handleCriticalAlert = (notification) => setToasts(prev => [...prev, notification]);
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
-  const handleExportReport = handleDownloadReport;
 
   const markFirstRunSeen = () => {
     localStorage.setItem('hipaa_first_run_seen', 'true');
@@ -236,8 +244,8 @@ function Dashboard() {
   };
 
   const handleFirstRunExport = async () => {
-    if (typeof handleExportReport === 'function') {
-      await handleExportReport();
+    if (typeof handleDownloadReport === 'function') {
+      await handleDownloadReport();
     } else {
       console.log('export triggered');
     }
@@ -273,13 +281,13 @@ function Dashboard() {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!response.ok) {
-          throw new Error(`HIPAA metric request failed: ${response.status}`);
+          throw new Error(`HIPAA metric request failed: ${response.status} ${response.statusText}`);
         }
         const payload = await response.json();
         if (!active) return;
         setHipaaMetric(payload?.data || payload);
       } catch (error) {
-        console.error('Failed to load HIPAA compliance metric:', error);
+        console.error('Failed to load HIPAA compliance metric.');
         if (active) setHipaaMetricError('Unable to refresh HIPAA metric. Showing last known values.');
       } finally {
         if (active) setHipaaMetricLoading(false);
@@ -770,7 +778,7 @@ function Dashboard() {
             <div style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '0.5rem' }}>🎉</div>
             <h2 style={{ margin: 0, textAlign: 'center', fontSize: '1.6rem', fontWeight: 800, color: '#111827' }}>Your HIPAA Assessment is Ready</h2>
             <p style={{ margin: '0.6rem 0 1.5rem', textAlign: 'center', fontSize: '0.82rem', color: '#6b7280' }}>
-              {(localStorage.getItem('orgName') || 'Your Organization')} · Healthcare Tier
+              {organizationName} · Healthcare Tier
             </p>
 
             <div style={{ background: 'linear-gradient(135deg, #0f4c81 0%, #1a73e8 100%)', borderRadius: '14px', padding: '1.5rem', color: '#fff', marginBottom: '1rem' }}>
