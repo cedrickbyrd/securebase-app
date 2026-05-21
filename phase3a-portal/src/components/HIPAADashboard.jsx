@@ -1451,7 +1451,14 @@ function generateComplianceReportHTML(org, date, history, findings, score) {
   <h2>Score Trend</h2>
   <table>
     <tr><th>Date</th><th>Score</th><th>Controls Passing</th><th>High Findings</th></tr>
-    ${history.map((h) => `<tr><td>${escHtml(new Date(h.date).toLocaleDateString('en-US'))}</td><td>${escHtml(String(h.score))}%</td><td>${escHtml(String(h.controls_passing))}</td><td>${escHtml(String(h.high_findings))}</td></tr>`).join('')}
+    ${history.map((h) => `
+      <tr>
+        <td>${escHtml(new Date(h.date).toLocaleDateString('en-US'))}</td>
+        <td>${escHtml(String(h.score))}%</td>
+        <td>${escHtml(String(h.controls_passing))}</td>
+        <td>${escHtml(String(h.high_findings))}</td>
+      </tr>
+    `).join('')}
   </table>
 
   <h2>Open Findings</h2>
