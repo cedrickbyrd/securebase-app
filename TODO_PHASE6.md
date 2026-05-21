@@ -93,39 +93,6 @@
 
 ---
 
-## Track 3 — Alerting & Incident Response ✅ Complete
-
-### Terraform Infrastructure
-- [x] `terraform/modules/alerting/sns_topics.tf` — SNS topics for alarm routing
-- [x] `terraform/modules/alerting/cloudwatch_alarms.tf` — CloudWatch alarm definitions
-- [x] `terraform/modules/alerting/pagerduty_integration.tf` — PagerDuty/Opsgenie wiring
-- [x] `terraform/modules/alerting/variables.tf`
-- [x] `terraform/modules/alerting/outputs.tf`
-
-### Lambda Functions
-- [x] `src/lambdas/alerting/runbook_executor.py` — maintenance mode, runbook matching, step execution
-- [x] `src/lambdas/alerting/alarm_aggregator.py` — SNS event parsing, DynamoDB persistence, MTTA/MTTR
-- [x] `src/lambdas/alerting/chaos_drill.py` — maintenance mode toggle, Lambda throttle/restore
-
-### Frontend
-- [x] `phase3a-portal/src/components/admin/AlertingDashboard.jsx`
-
-### Tests
-- [x] `tests/phase6/test_alerting_track3.py` — full coverage for all three Lambda functions
-
----
-
-## Track 4 — Provisioning & Drift Detection ✅ Complete
-
-### Lambda Functions
-- [x] `src/lambdas/provisioning/drift_detector.py` — Terraform plan drift parsing and severity classification
-- [x] `src/lambdas/provisioning/tenant_provisioner.py` — API key generation and tenant setup
-
-### Tests
-- [x] `tests/phase6/test_track6_provisioning.py` — parse_plan_summary, classify_drift, generate_api_key
-
----
-
 ## 🔴 DEFERRED — Component 6.3 — Scalability to 10,000+ Concurrent Users
 
 > **Deferred:** May 15, 2026  
