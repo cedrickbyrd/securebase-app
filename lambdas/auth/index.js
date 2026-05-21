@@ -129,9 +129,12 @@ const login = async (body) => {
     } catch (err) {
       if (err?.name === "ConditionalCheckFailedException") {
         const latestUser = await getUser(email);
-        user.first_login_at = latestUser?.first_login_at || firstLoginAt;
+        if (!latestUser?.first_login_at) {
+          throw new Error("first_login_at exists but could not be read after conditional write failure");
+        }
+        user.first_login_at = latestUser.first_login_at;
       } else {
-        console.error("Failed to set first_login_at:", err);
+        console.error(`Failed to set first_login_at for ${email}:`, err);
         throw err;
       }
     }
