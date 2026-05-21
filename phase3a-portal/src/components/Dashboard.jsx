@@ -94,6 +94,42 @@ function formatLastAssessed(lastAssessed) {
   return assessedDate.toLocaleDateString();
 }
 
+function normalizeHipaaFindingsForEvidence(payload) {
+  const source = Array.isArray(payload) ? payload : payload?.findings || payload?.data || [];
+  if (!Array.isArray(source)) return [];
+  return source.map((finding) => ({
+    severity: String(finding.severity || 'low').toLowerCase(),
+    title: finding.title || 'Untitled finding',
+    description: finding.description || finding.remediation || 'No description available.',
+    control: finding.control || 'HIPAA control',
+    status: String(finding.status || 'open').toLowerCase(),
+  }));
+}
+
+function generateHipaaEvidenceReport(org, date, findings, score) {
+  const openFindings = findings.filter((finding) => finding.status !== 'resolved');
+  const resolvedFindings = findings.filter((finding) => finding.status === 'resolved');
+  return `
+HIPAA COMPLIANCE EVIDENCE PACKAGE
+==================================
+Organization: ${org}
+Generated: ${date}
+Overall Score: ${score}%
+
+OPEN FINDINGS
+-------------
+${openFindings.map((finding) =>
+  `[${String(finding.severity).toUpperCase()}] ${finding.title}\nControl: ${finding.control}\n${finding.description}`
+).join('\n\n')}
+
+RESOLVED CONTROLS
+-----------------
+${resolvedFindings.map((finding) =>
+  `✓ ${finding.title} (${finding.control})`
+).join('\n')}
+`.trim();
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const personalization = usePersonalization();
@@ -201,6 +237,37 @@ function Dashboard() {
     setDownloadError('');
 
     try {
+      if (isHealthcareTier) {
+        const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+        const findingsRes = await fetch('/api/hipaa/findings', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+        const findingsPayload = findingsRes.ok
+          ? await findingsRes.json()
+          : (hipaaMetric?.findings || compliance?.findings || []);
+        const findings = normalizeHipaaFindingsForEvidence(findingsPayload);
+        const reportDate = new Date().toISOString().split('T')[0];
+        const report = generateHipaaEvidenceReport(
+          organizationName,
+          reportDate,
+          findings,
+          clampScore(getHIPAAScore(hipaaMetric || compliance))
+        );
+        const blob = new Blob([report], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${organizationName}-HIPAA-Evidence-${reportDate}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+
       const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
       const res = await fetch('/api/compliance/findings', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
