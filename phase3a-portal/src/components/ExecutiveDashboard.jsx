@@ -393,7 +393,6 @@ export default function ExecutiveDashboard() {
               </div>
               <div style={{ height: 12, borderRadius: 999, background: 'linear-gradient(to right, #16a34a, #dc2626)', position: 'relative' }}>
                 <span
-                  aria-label="Risk score marker"
                   style={{
                     position: 'absolute',
                     top: -6,
@@ -405,6 +404,9 @@ export default function ExecutiveDashboard() {
                     borderRadius: 4,
                   }}
                 />
+                <span style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+                  Risk marker positioned at {overallScore} on a 0 to 100 scale.
+                </span>
               </div>
             </div>
             <p style={{ margin: 0, color: '#4b5563' }}>
@@ -428,6 +430,7 @@ export default function ExecutiveDashboard() {
                   localStorage.setItem('active_framework', id);
                   navigate('/hipaa-dashboard');
                 }}
+                aria-label={`${FRAMEWORK_META[id]?.name || framework.name} framework score ${Math.round(Number(framework.score || 0))} percent, trending ${delta >= 0 ? 'up' : 'down'} from ${trend[0]} to ${trend[trend.length - 1]}`}
                 style={{ textAlign: 'left', cursor: 'pointer' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
