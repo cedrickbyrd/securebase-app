@@ -29,6 +29,19 @@ const MOCK_FRAMEWORKS = [
   { id: 'soc2', name: 'SOC 2', description: 'Service Organization Control 2', score: 76, controls_passing: 38, high_findings: 6, color: '#7c3aed', icon: '🔐' },
   { id: 'pcidss', name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', score: 91, controls_passing: 54, high_findings: 1, color: '#0d9488', icon: '💳' },
 ];
+const MOCK_USERS = [
+  { email: 'matthew.matturro@trinetx.com', role: 'admin' },
+  { email: 'sarah.chen@trinetx.com', role: 'analyst' },
+  { email: 'david.park@trinetx.com', role: 'auditor' },
+];
+
+function getTokenHeaders() {
+  const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 function getCustomerTier() {
   return localStorage.getItem('customerTier') || '';
@@ -198,6 +211,7 @@ function Dashboard() {
   const [hipaaMetricLoading, setHipaaMetricLoading] = useState(false);
   const [hipaaMetricError, setHipaaMetricError] = useState('');
   const [toasts, setToasts] = useState([]);
+  const [isExecutiveAdmin, setIsExecutiveAdmin] = useState(false);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   const startTimeRef = useRef(null);
@@ -435,6 +449,30 @@ function Dashboard() {
       active = false;
     };
   }, [isHealthcareTier]);
+
+  useEffect(() => {
+    let active = true;
+    const currentUserEmail = (localStorage.getItem('userEmail') || '').toLowerCase();
+    const loadUserRole = async () => {
+      try {
+        const response = await fetch('/api/users', {
+          method: 'GET',
+          headers: getTokenHeaders(),
+        });
+        if (!response.ok) throw new Error(`users_fetch_failed:${response.status}`);
+        const users = await response.json();
+        const matched = (Array.isArray(users) ? users : []).find(
+          (user) => String(user.email || '').toLowerCase() === currentUserEmail,
+        );
+        if (active) setIsExecutiveAdmin(String(matched?.role || '').toLowerCase() === 'admin');
+      } catch {
+        const fallback = MOCK_USERS.find((user) => user.email.toLowerCase() === currentUserEmail);
+        if (active) setIsExecutiveAdmin(String(fallback?.role || '').toLowerCase() === 'admin');
+      }
+    };
+    loadUserRole();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     setFrameworkProgressAnimated(false);
@@ -771,6 +809,13 @@ function Dashboard() {
             <div className="metric-card clickable" onClick={() => navigate('/team')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/team')} aria-label="Team">
               <div className="metric-icon" style={{ background: '#eef2ff' }}>👥</div>
               <div className="metric-content"><h3>Team</h3><p className="metric-value" style={{ color: '#4338ca', fontSize: '0.95rem' }}>Manage Members →</p></div>
+            </div>
+          )}
+
+          {isHealthcareTier && isExecutiveAdmin && (
+            <div className="metric-card clickable" onClick={() => navigate('/executive')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/executive')} aria-label="Executive View">
+              <div className="metric-icon" style={{ background: '#e0f2fe' }}>📊</div>
+              <div className="metric-content"><h3>Executive View</h3><p className="metric-value" style={{ color: '#0f4c81', fontSize: '0.95rem' }}>Board Summary →</p></div>
             </div>
           )}
         </section>

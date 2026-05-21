@@ -322,7 +322,7 @@ export default function TeamManagement() {
                   const isCurrentUser = user.email.toLowerCase() === currentUserEmail;
                   return (
                     <tr key={user.id}>
-                      <td>
+                      <td data-label="Member">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                           <span className="avatar-circle" style={{ background: getAvatarColor(`${user.name}-${user.email}`) }}>
                             {user.avatar_initials || getInitials(user.name)}
@@ -337,14 +337,14 @@ export default function TeamManagement() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Role">
                         <span className="role-badge" style={roleBadgeStyles[user.role] || roleBadgeStyles.viewer}>
                           {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </span>
                       </td>
-                      <td style={{ color: '#4b5563' }}>{user.email}</td>
-                      <td style={{ color: '#6b7280' }}>{user.joined_at ? new Date(user.joined_at).toLocaleDateString() : '—'}</td>
-                      <td>
+                      <td data-label="Email" style={{ color: '#4b5563' }}>{user.email}</td>
+                      <td data-label="Joined" style={{ color: '#6b7280' }}>{user.joined_at ? new Date(user.joined_at).toLocaleDateString() : '—'}</td>
+                      <td data-label="Actions">
                         {isCurrentUser || user.id === currentUserId ? (
                           <span className="role-badge" style={{ background: '#dbeafe', color: '#1e40af' }}>[You]</span>
                         ) : removingUserId === user.id ? (

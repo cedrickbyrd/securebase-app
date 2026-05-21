@@ -15,6 +15,7 @@ import AlertSettings from './components/AlertSettings';
 import HIPAADashboard from './components/HIPAADashboard';
 import TeamManagement from './components/TeamManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
+import ExecutiveDashboard from './components/ExecutiveDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
 import EvidencePackages from './components/EvidencePackages';
 import CloudConnection from './components/CloudConnection';
@@ -113,6 +114,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
         <Route path="/team"                element={isAuthenticated ? <TeamManagement />                                                                   : <Navigate to="/login" />} />
         <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
         <Route path="/alerts"              element={isAuthenticated ? <AlertSettings />                                                                  : <Navigate to="/login" />} />
+        <Route path="/executive"           element={isAuthenticated ? <ExecutiveDashboard />                                                              : <Navigate to="/login" />} />
         <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />
         <Route path="/cloud-connection"    element={isAuthenticated ? <CloudConnection />                                                                  : <Navigate to="/login" />} />
         <Route path="/admin"               element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
