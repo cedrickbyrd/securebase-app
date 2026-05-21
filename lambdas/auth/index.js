@@ -117,13 +117,24 @@ const login = async (body) => {
   }
   if (!user.first_login_at) {
     const firstLoginAt = new Date().toISOString();
-    await db.send(new UpdateItemCommand({
-      TableName: USERS_TABLE,
-      Key: marshall({ email }),
-      UpdateExpression: "SET first_login_at = :t",
-      ExpressionAttributeValues: marshall({ ":t": firstLoginAt }),
-    }));
-    user.first_login_at = firstLoginAt;
+    try {
+      await db.send(new UpdateItemCommand({
+        TableName: USERS_TABLE,
+        Key: marshall({ email }),
+        UpdateExpression: "SET first_login_at = :t",
+        ConditionExpression: "attribute_not_exists(first_login_at)",
+        ExpressionAttributeValues: marshall({ ":t": firstLoginAt }),
+      }));
+      user.first_login_at = firstLoginAt;
+    } catch (err) {
+      if (err?.name === "ConditionalCheckFailedException") {
+        const latestUser = await getUser(email);
+        user.first_login_at = latestUser?.first_login_at || firstLoginAt;
+      } else {
+        console.error("Failed to set first_login_at:", err);
+        throw err;
+      }
+    }
   }
   const token = jwt.sign(
     { sub: user.email, role: user.role || "user", mfa_enabled: !!user.mfa_enabled },
