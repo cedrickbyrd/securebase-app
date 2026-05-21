@@ -404,6 +404,7 @@ export default function HIPAADashboard() {
   };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(() => window.matchMedia('(max-width: 640px)').matches);
   const [activeTab, setActiveTab] = useState('overview');
   const [activeSafeguard, setActiveSafeguard] = useState('administrative');
   const [exporting, setExporting] = useState(false);
@@ -518,6 +519,13 @@ export default function HIPAADashboard() {
     trackHIPAARoute('/hipaa-dashboard', 'view');
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)');
+    const onChange = (event) => setIsMobileView(event.matches);
+    media.addEventListener?.('change', onChange);
+    return () => media.removeEventListener?.('change', onChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('active_framework', activeFramework);
@@ -892,6 +900,7 @@ export default function HIPAADashboard() {
             teamMembers={teamMembers}
             currentUserEmail={currentUserEmail}
             currentUserRole={currentUserRole}
+            isMobileView={isMobileView}
           />
         )}
         {activeTab === 'evidence' && <EvidenceTab data={data} onExport={handleExport} exporting={exporting} />}
@@ -1203,6 +1212,7 @@ function FindingsTab({
   teamMembers,
   currentUserEmail,
   currentUserRole,
+  isMobileView,
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const [remediationStates, setRemediationStates] = useState({});
@@ -1518,7 +1528,7 @@ function FindingsTab({
               onClick={(event) => {
                 const nextExpandedId = isExpanded ? null : finding.id;
                 setExpandedId(nextExpandedId);
-                if (nextExpandedId && window.matchMedia('(max-width: 640px)').matches) {
+                if (nextExpandedId && isMobileView) {
                   event.currentTarget.closest('.finding-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
               }}
