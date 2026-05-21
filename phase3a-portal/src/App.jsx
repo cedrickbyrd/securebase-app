@@ -11,7 +11,7 @@ import OnboardingProgress from './components/OnboardingProgress';
 import Compliance from './components/Compliance';
 import TexasExaminerPortal from './components/TexasExaminerPortal';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
-import AlertManagement from './components/AlertManagement';
+import AlertSettings from './components/AlertSettings';
 import HIPAADashboard from './components/HIPAADashboard';
 import TeamManagement from './components/TeamManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -112,7 +112,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
         <Route path="/hipaa-dashboard"     element={isAuthenticated ? <HIPAADashboard />                                                                  : <Navigate to="/login" />} />
         <Route path="/team"                element={isAuthenticated ? <TeamManagement />                                                                   : <Navigate to="/login" />} />
         <Route path="/sre-dashboard"       element={isAuthenticated ? <SREDashboardWrapper />                                                             : <Navigate to="/login" />} />
-        <Route path="/alerts"              element={isAuthenticated ? <AlertManagement />                                                                 : <Navigate to="/login" />} />
+        <Route path="/alerts"              element={isAuthenticated ? <AlertSettings />                                                                  : <Navigate to="/login" />} />
         <Route path="/evidence"            element={isAuthenticated ? <EvidencePackages />                                                                : <Navigate to="/login" />} />
         <Route path="/cloud-connection"    element={isAuthenticated ? <CloudConnection />                                                                  : <Navigate to="/login" />} />
         <Route path="/admin"               element={isAuthenticated ? ((localStorage.getItem('userRole') || '').toLowerCase() === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" replace />) : <Navigate to="/login" />} />
