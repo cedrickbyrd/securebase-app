@@ -19,6 +19,7 @@ function Login({ setAuth }) {
   const [password, setPassword]   = useState('');
   const [totpCode, setTotpCode]   = useState('');
   const [error, setError]         = useState('');
+  const [invitePending, setInvitePending] = useState(null);
   const [loading, setLoading]     = useState(false);
   const [copiedField, setCopied]  = useState(null);
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ function Login({ setAuth }) {
   }, []);
 
   const handleCredentials = async (e) => {
-    e.preventDefault(); setError(''); setLoading(true);
+    e.preventDefault(); setError(''); setInvitePending(null); setLoading(true);
     try {
       if (isDemo && email === DEMO_EMAIL && password === DEMO_PASSWORD) { authenticateDemoUser(); return; }
       const res = await apiService.authenticate(email, password);
@@ -60,7 +61,14 @@ function Login({ setAuth }) {
       else if (res.token)   { trackDemoLogin(); setAuth(true); navigate('/dashboard'); }
       else                  { setError('Invalid credentials'); }
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      if (err?.code === 'invite_pending') {
+        setInvitePending({
+          message: err.message || "You haven't activated your account yet. Check your email for your invite link and click it to set your password.",
+          redirect: err.redirect || '/accept-invite',
+        });
+      } else {
+        setError(err.message || 'Authentication failed');
+      }
     } finally { setLoading(false); }
   };
 
@@ -193,6 +201,21 @@ function Login({ setAuth }) {
                   style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: '700', cursor: 'pointer', marginBottom: '1.25rem' }}>
                   🚀 Enter Demo (One Click)
                 </button>
+              )}
+              {invitePending && (
+                <div style={{ background: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', borderRadius: '10px', padding: '12px', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '14px', marginBottom: '10px' }}>
+                    ⚠️ {invitePending.message}
+                  </div>
+                  <button
+                    type="button"
+                    className="login-button"
+                    onClick={() => navigate(invitePending.redirect)}
+                    style={{ marginTop: '2px' }}
+                  >
+                    Go to activation page →
+                  </button>
+                </div>
               )}
               {error && <div className="error-message"><span className="error-icon">⚠️</span> {error}</div>}
               <div className="form-group">

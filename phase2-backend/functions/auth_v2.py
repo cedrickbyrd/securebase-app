@@ -117,6 +117,20 @@ def _get_user_record(email: str) -> dict | None:
     return resp.get('Item')
 
 
+def _has_active_invite(email: str) -> bool:
+    """Best-effort check for an active invite token for this email."""
+    try:
+        resp = _tokens_table.scan(
+            FilterExpression='email = :e AND #s = :s',
+            ExpressionAttributeValues={':e': email, ':s': 'active'},
+            ExpressionAttributeNames={'#s': 'status'},
+        )
+        return bool(resp.get('Items'))
+    except Exception as e:
+        logger.warning(f"Could not check pending invite for {email}: {e}")
+        return False
+
+
 def _mark_token_used(token: str) -> None:
     try:
         _tokens_table.update_item(
@@ -308,6 +322,13 @@ def login(event: dict, request_id: str) -> dict:
     user = _get_user_record(email)
     if not user:
         logger.warning(f"Login attempt for unknown email: {email} [{request_id}]")
+        if _has_active_invite(email):
+            return _resp(403, {
+                'error': 'invite_pending',
+                'message': 'Please activate your account using your invite link before logging in.',
+                'redirect': '/accept-invite',
+                'request_id': request_id,
+            })
         return _resp(401, {'error': 'Invalid email or password', 'request_id': request_id})
 
     pw_hash = user.get('password_hash', '')

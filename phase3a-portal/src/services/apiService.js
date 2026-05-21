@@ -24,9 +24,20 @@ class ApiService {
           window.location.href = '/login';
           throw new Error('Session expired. Please log in again.');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        let errorBody = {};
+        try {
+          errorBody = await response.json();
+        } catch {
+          errorBody = {};
+        }
+        const requestError = new Error(errorBody.message || `HTTP error! status: ${response.status}`);
+        requestError.status = response.status;
+        requestError.errorCode = errorBody.error;
+        requestError.redirect = errorBody.redirect;
+        throw requestError;
+      }
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
@@ -53,6 +64,14 @@ class ApiService {
       }
       return response;
     } catch (error) {
+      if (error.status === 403 && error.errorCode === 'invite_pending') {
+        const invitePendingError = new Error(
+          error.message || "You haven't activated your account yet. Check your email for your invite link and click it to set your password."
+        );
+        invitePendingError.code = 'invite_pending';
+        invitePendingError.redirect = error.redirect || '/accept-invite';
+        throw invitePendingError;
+      }
       throw new Error(
         error.message.includes('fetch')
           ? 'Network error. Please check your connection and try again.'
