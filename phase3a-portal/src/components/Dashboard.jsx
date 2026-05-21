@@ -119,7 +119,7 @@ Overall Score: ${score}%
 OPEN FINDINGS
 -------------
 ${openFindings.map((finding) =>
-  `[${finding.severity.toUpperCase()}] ${finding.title}\nControl: ${finding.control}\n${finding.description}`
+  `[${String(finding.severity).toUpperCase()}] ${finding.title}\nControl: ${finding.control}\n${finding.description}`
 ).join('\n\n')}
 
 RESOLVED CONTROLS
