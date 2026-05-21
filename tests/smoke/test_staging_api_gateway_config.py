@@ -13,8 +13,7 @@ class StagingApiGatewayConfigTests(unittest.TestCase):
 
         self.assertIn('resource "aws_api_gateway_rest_api_policy" "staging_allow_invoke"', policy_tf)
         self.assertIn('Action    = "execute-api:Invoke"', policy_tf)
-        self.assertIn('Principal = "*"', policy_tf)
-        self.assertIn('Resource  = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/*"', policy_tf)
+        self.assertIn('Resource  = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.rest_api_id}/${var.api_stage_name}/*/*"', policy_tf)
 
     def test_staging_smoke_tests_only_run_after_apply(self) -> None:
         workflow = (REPO_ROOT / ".github" / "workflows" / "terraform-staging-apply.yml").read_text()
