@@ -136,6 +136,19 @@ const mockFindingsApiResponse = [
   }
 ];
 
+const mockHistoryApiResponse = [
+  { date: '2026-04-01', score: 71, controls_passing: 36, high_findings: 7 },
+  { date: '2026-04-08', score: 74, controls_passing: 38, high_findings: 6 },
+  { date: '2026-05-13', score: 84, controls_passing: 42, high_findings: 4 },
+];
+
+const mockScheduleApiResponse = {
+  cadence: 'weekly',
+  next_run: '2026-05-28T00:00:00Z',
+  email_notify: true,
+  notify_email: 'matthew.matturro@trinetx.com',
+};
+
 vi.mock('../../services/sreService', () => ({
   sreService: {
     getHIPAACompliance: vi.fn(() => Promise.resolve(mockHIPAAData))
@@ -155,6 +168,8 @@ describe('HIPAADashboard Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem('customerTier', 'healthcare');
+    localStorage.setItem('orgName', 'TriNetX');
+    localStorage.setItem('userEmail', 'matthew.matturro@trinetx.com');
     localStorage.removeItem('hipaa_jump_to_findings');
     vi.stubGlobal('fetch', vi.fn((url, options) => {
       if (url === '/api/hipaa/compliance') {
@@ -164,6 +179,15 @@ describe('HIPAADashboard Component', () => {
         return Promise.resolve({ ok: true, json: async () => mockFindingsApiResponse });
       }
       if (String(url).startsWith('/api/hipaa/findings/') && options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      if (url === '/api/hipaa/compliance/history') {
+        return Promise.resolve({ ok: true, json: async () => mockHistoryApiResponse });
+      }
+      if (url === '/api/hipaa/schedule' && (!options?.method || options?.method === 'GET')) {
+        return Promise.resolve({ ok: true, json: async () => mockScheduleApiResponse });
+      }
+      if (url === '/api/hipaa/schedule' && options?.method === 'POST') {
         return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
       }
       return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
@@ -370,6 +394,89 @@ describe('HIPAADashboard Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/✓ Status updated/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders compliance report and assessment schedule in findings section', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Compliance Report/i)).toBeInTheDocument();
+      expect(screen.getByText(/Assessment Schedule/i)).toBeInTheDocument();
+      expect(screen.getByText(/Weekly/i)).toBeInTheDocument();
+    });
+  });
+
+  it('updates next run preview when cadence changes', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Monthly$/i }));
+
+    expect(screen.getByText(/Next assessment will run on:/i)).toBeInTheDocument();
+  });
+
+  it('shows trend tooltip when hovering chart data points', async () => {
+    const { container } = render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('circle').length).toBeGreaterThan(0);
+    });
+    fireEvent.mouseEnter(container.querySelectorAll('circle')[0]);
+    expect(screen.getByText(/Apr .*2026.*%/i)).toBeInTheDocument();
+  });
+
+  it('falls back to localStorage when schedule save API fails and shows toast', async () => {
+    globalThis.fetch.mockImplementation((url, options) => {
+      if (url === '/api/hipaa/compliance') return Promise.resolve({ ok: true, json: async () => mockHIPAAData });
+      if (url === '/api/hipaa/findings') return Promise.resolve({ ok: true, json: async () => mockFindingsApiResponse });
+      if (url === '/api/hipaa/compliance/history') return Promise.resolve({ ok: true, json: async () => mockHistoryApiResponse });
+      if (url === '/api/hipaa/schedule' && (!options?.method || options?.method === 'GET')) {
+        return Promise.resolve({ ok: true, json: async () => mockScheduleApiResponse });
+      }
+      if (url === '/api/hipaa/schedule' && options?.method === 'POST') {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      if (String(url).startsWith('/api/hipaa/findings/') && options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
+    });
+
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Save Schedule/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/✓ Schedule saved/i)).toBeInTheDocument();
+      expect(localStorage.getItem('hipaa_schedule')).toBeTruthy();
+    });
+  });
+
+  it('opens print dialog for compliance report download', async () => {
+    const reportWindowMock = {
+      document: { write: vi.fn(), close: vi.fn() },
+      print: vi.fn(),
+    };
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(reportWindowMock);
+
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(await screen.findByRole('button', { name: /Download Compliance Report/i }));
+
+    expect(windowOpenSpy).toHaveBeenCalled();
+    expect(reportWindowMock.document.write).toHaveBeenCalled();
+    expect(reportWindowMock.print).toHaveBeenCalled();
+
+    windowOpenSpy.mockRestore();
   });
 
   it('downloads evidence package from dashboard header', async () => {
