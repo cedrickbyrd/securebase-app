@@ -115,12 +115,30 @@ const login = async (body) => {
     const valid = authenticator.verify({ token: totp_code, secret: user.mfa_secret });
     if (!valid) return response(401, { message: "Invalid TOTP code" });
   }
+  if (!user.first_login_at) {
+    const firstLoginAt = new Date().toISOString();
+    await db.send(new UpdateItemCommand({
+      TableName: USERS_TABLE,
+      Key: marshall({ email }),
+      UpdateExpression: "SET first_login_at = :t",
+      ExpressionAttributeValues: marshall({ ":t": firstLoginAt }),
+    }));
+    user.first_login_at = firstLoginAt;
+  }
   const token = jwt.sign(
     { sub: user.email, role: user.role || "user", mfa_enabled: !!user.mfa_enabled },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRY },
   );
-  return response(200, { token, user: { email: user.email, role: user.role, mfa_enabled: user.mfa_enabled } });
+  return response(200, {
+    token,
+    user: {
+      email: user.email,
+      role: user.role,
+      mfa_enabled: user.mfa_enabled,
+      first_login_at: user.first_login_at || null,
+    },
+  });
 };
 
 const register = async (body) => {
