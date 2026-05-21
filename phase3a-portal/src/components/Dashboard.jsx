@@ -151,7 +151,7 @@ function Dashboard() {
       });
     }, 2200);
     return () => clearInterval(timer);
-  }, [scanPending]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scanPending]);
 
   if (loading) {
     return (
@@ -183,9 +183,6 @@ function Dashboard() {
 
         <main className="dashboard-main">
           <div className="dashboard-empty-state">
-            <style dangerouslySetInnerHTML={{ __html: `
-              @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-            ` }} />
             <div style={{ maxWidth: '560px', margin: '0 auto', padding: '3rem 1.5rem' }}>
               {/* Spinner */}
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>

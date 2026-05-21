@@ -15,10 +15,10 @@ function getPasswordStrength(pwd) {
 
 function getFirstName(emailOrNull) {
   const email = emailOrNull || localStorage.getItem('userEmail') || '';
-  const local = email.split('@')[0] || '';
-  const first = local.split('.')[0] || '';
-  const cap   = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
-  if (/^[a-zA-Z]+$/.test(cap) && cap.length >= 2 && cap.length <= 20) return cap;
+  const localPart = email.split('@')[0] || '';
+  const firstName = localPart.split('.')[0] || '';
+  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+  if (/^[a-zA-Z]+$/.test(capitalizedName) && capitalizedName.length >= 2 && capitalizedName.length <= 20) return capitalizedName;
   return null;
 }
 
@@ -95,11 +95,7 @@ export default function AcceptInvite({ setAuth }) {
 
           {success ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-                @keyframes progressSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
-              ` }} />
-              <div style={{ fontSize: '64px', marginBottom: '12px', display: 'inline-block', animation: 'pulse 1.2s ease infinite' }}>✅</div>
+              <div style={{ fontSize: '64px', marginBottom: '12px', display: 'inline-block', animation: 'iconPulse 1.2s ease infinite' }}>✅</div>
               <h2 style={{ color: '#1a202c', marginBottom: '0.25rem' }}>
                 {firstName ? `Hello, ${firstName}!` : "You're in!"}
               </h2>
