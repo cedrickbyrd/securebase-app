@@ -228,12 +228,16 @@ export default function HIPAADashboard() {
 
       try {
         const usersRes = await fetch('/api/users', { headers });
-        if (!usersRes.ok) throw new Error(`users_fetch_failed:${usersRes.status}`);
+        if (!usersRes.ok) {
+          const usersError = new Error(`users_fetch_failed:${usersRes.status}`);
+          usersError.status = usersRes.status;
+          throw usersError;
+        }
         const usersData = await usersRes.json();
         const normalizedUsers = normalizeUsers(usersData);
         setTeamMembers(normalizedUsers.length > 0 ? normalizedUsers : MOCK_USERS);
       } catch (usersError) {
-        if (String(usersError.message || '').includes('users_fetch_failed:404') || String(usersError.message || '').includes('users_fetch_failed:500')) {
+        if ([404, 500].includes(usersError?.status)) {
           setTeamMembers(MOCK_USERS);
         } else {
           console.error('Users fetch failed, using fallback users.', usersError);
@@ -950,6 +954,7 @@ function FindingsTab({
 
       {filteredFindings.map((finding) => {
         const isExpanded = expandedId === finding.id;
+        const assignedUser = teamMembers.find((member) => member.id === finding.assigned_to);
         return (
           <div key={finding.id} className="finding-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -980,10 +985,7 @@ function FindingsTab({
               </select>
               {finding.assigned_to && (
                 <span style={{ color: '#374151', fontSize: '0.78rem' }}>
-                  {(() => {
-                    const assignedUser = teamMembers.find((member) => member.id === finding.assigned_to);
-                    return assignedUser ? `${assignedUser.avatar_initials || getInitials(assignedUser.name || assignedUser.email)} ${assignedUser.name}` : 'Unassigned';
-                  })()}
+                  {assignedUser ? `${assignedUser.avatar_initials || getInitials(assignedUser.name || assignedUser.email)} ${assignedUser.name}` : 'Unassigned'}
                 </span>
               )}
             </div>

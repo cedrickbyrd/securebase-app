@@ -177,7 +177,8 @@ export default function TeamManagement() {
         headers: getTokenHeaders(),
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       });
-    } catch {
+    } catch (error) {
+      console.error('Invite API failed; adding pending invite row as graceful fallback.', error);
       // Graceful degradation: pending row is still added.
     }
 
