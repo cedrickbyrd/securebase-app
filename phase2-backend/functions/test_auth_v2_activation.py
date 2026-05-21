@@ -345,5 +345,52 @@ class TestLoginFirstLoginTracking(unittest.TestCase):
         auth_v2._sns_client.publish.assert_not_called()
 
 
+class TestLoginInvitePending(unittest.TestCase):
+    """login unknown-email behavior with pending invites."""
+
+    def setUp(self):
+        self._orig_tokens = auth_v2._tokens_table
+        self._orig_users = auth_v2._users_table
+        auth_v2._tokens_table = MagicMock()
+        auth_v2._users_table = MagicMock()
+
+    def tearDown(self):
+        auth_v2._tokens_table = self._orig_tokens
+        auth_v2._users_table = self._orig_users
+
+    def test_unknown_email_with_active_invite_returns_invite_pending(self):
+        auth_v2._users_table.get_item.return_value = {}
+        auth_v2._tokens_table.scan.return_value = {"Items": [{"email": "invitee@example.com", "status": "active"}]}
+
+        event = {
+            "httpMethod": "POST",
+            "path": "/auth/login",
+            "body": json.dumps({"email": "invitee@example.com", "password": "pass"}),
+            "requestContext": {"requestId": "req-006"},
+        }
+        resp = auth_v2.login(event, "req-006")
+        body = json.loads(resp["body"])
+
+        self.assertEqual(resp["statusCode"], 403)
+        self.assertEqual(body["error"], "invite_pending")
+        self.assertEqual(body["redirect"], "/accept-invite")
+
+    def test_unknown_email_without_active_invite_stays_generic_401(self):
+        auth_v2._users_table.get_item.return_value = {}
+        auth_v2._tokens_table.scan.return_value = {"Items": []}
+
+        event = {
+            "httpMethod": "POST",
+            "path": "/auth/login",
+            "body": json.dumps({"email": "nobody@example.com", "password": "pass"}),
+            "requestContext": {"requestId": "req-007"},
+        }
+        resp = auth_v2.login(event, "req-007")
+        body = json.loads(resp["body"])
+
+        self.assertEqual(resp["statusCode"], 401)
+        self.assertEqual(body["error"], "Invalid email or password")
+
+
 if __name__ == "__main__":
     unittest.main()
