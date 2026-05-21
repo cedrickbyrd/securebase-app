@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
 import { logoutDemo } from '../services/jwtService';
+import { buildDeterministicFallbackId, getAvatarColor, getInitials } from '../utils/teamUtils';
 import './Dashboard.css';
 
 // ---------------------------------------------------------------------------
@@ -908,8 +909,8 @@ function FindingsTab({
             <div style={{ fontWeight: 700, color: '#111827', marginBottom: '0.4rem' }}>👥 Remediation Ownership</div>
             {ownershipRows.map(({ user, findingCount }) => (
               <div key={user.id} className="ownership-row">
-                <span className="avatar-circle" style={{ width: 24, height: 24, fontSize: '0.62rem', background: avatarColor(user.name || user.email) }}>
-                  {user.avatar_initials || initialsForName(user.name || user.email)}
+                <span className="avatar-circle avatar-mini" style={{ background: getAvatarColor(user.name || user.email) }}>
+                  {user.avatar_initials || getInitials(user.name || user.email)}
                 </span>
                 <span style={{ color: '#374151' }}>{findingCount} finding{findingCount === 1 ? '' : 's'}</span>
               </div>
@@ -965,6 +966,7 @@ function FindingsTab({
             <div className="assign-dropdown">
               <span>Assigned to:</span>
               <select
+                aria-label={`Assign owner for ${finding.title}`}
                 className="assign-select"
                 value={finding.assigned_to || ''}
                 onChange={(event) => onAssignFinding(finding.id, event.target.value)}
@@ -972,7 +974,7 @@ function FindingsTab({
                 <option value="">Unassigned</option>
                 {teamMembers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    [{user.avatar_initials || initialsForName(user.name || user.email)}] {user.name}
+                    [{user.avatar_initials || getInitials(user.name || user.email)}] {user.name}
                   </option>
                 ))}
               </select>
@@ -980,7 +982,7 @@ function FindingsTab({
                 <span style={{ color: '#374151', fontSize: '0.78rem' }}>
                   {(() => {
                     const assignedUser = teamMembers.find((member) => member.id === finding.assigned_to);
-                    return assignedUser ? `${assignedUser.avatar_initials || initialsForName(assignedUser.name || assignedUser.email)} ${assignedUser.name}` : 'Unassigned';
+                    return assignedUser ? `${assignedUser.avatar_initials || getInitials(assignedUser.name || assignedUser.email)} ${assignedUser.name}` : 'Unassigned';
                   })()}
                 </span>
               )}
@@ -1324,30 +1326,14 @@ function normalizeUsers(payload) {
   const source = Array.isArray(payload) ? payload : payload?.users || payload?.data || [];
   if (!Array.isArray(source)) return [];
 
-  return source.map((user) => ({
-    id: user.id || user.user_id || `user-${Math.random().toString(36).slice(2)}`,
+  return source.map((user, index) => ({
+    id: user.id || user.user_id || buildDeterministicFallbackId('user', `${user.email || ''}-${index}`),
     name: user.name || user.full_name || user.email?.split('@')[0] || 'Unknown User',
     email: user.email || '',
     role: String(user.role || 'viewer').toLowerCase(),
-    avatar_initials: user.avatar_initials || initialsForName(user.name || user.full_name || user.email || ''),
+    avatar_initials: user.avatar_initials || getInitials(user.name || user.full_name || user.email || ''),
     joined_at: user.joined_at || user.created_at || null,
   }));
-}
-
-function initialsForName(name = '') {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
-}
-
-function avatarColor(seed = '') {
-  const colors = ['#0f4c81', '#1a73e8', '#0d9488', '#7c3aed', '#dc2626', '#d97706'];
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
 }
 
 function toNumber(value, fallback) {

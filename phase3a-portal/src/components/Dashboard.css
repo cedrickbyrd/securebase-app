@@ -609,6 +609,12 @@
   flex-shrink: 0;
 }
 
+.avatar-circle.avatar-mini {
+  width: 24px;
+  height: 24px;
+  font-size: 0.62rem;
+}
+
 .role-badge {
   display: inline-block;
   padding: 0.25rem 0.65rem;

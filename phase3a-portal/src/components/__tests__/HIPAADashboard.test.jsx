@@ -518,7 +518,7 @@ describe('HIPAADashboard Component', () => {
     await waitFor(() => screen.getByText(/⚠️ Findings/i));
     fireEvent.click(screen.getByText(/⚠️ Findings/i));
 
-    const [findingAssignmentSelect] = await screen.findAllByRole('combobox');
+    const findingAssignmentSelect = await screen.findByLabelText(/Assign owner for Unencrypted PHI in S3 Bucket/i);
     fireEvent.change(findingAssignmentSelect, { target: { value: 'u002' } });
 
     await waitFor(() => {
