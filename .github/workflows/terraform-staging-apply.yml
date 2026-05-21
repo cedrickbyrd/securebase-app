@@ -74,6 +74,8 @@ jobs:
           echo "Staging Terraform apply is scaffolded but disabled until staging infrastructure variables and imports are ready."
 
       - name: Run Lambda smoke tests
+        if: ${{ vars.ENABLE_STAGING_TERRAFORM_APPLY == 'true' }}
+        id: smoke
         env:
           SMOKE_BASE_URL: ${{ env.STAGING_API_URL }}
         run: python -m unittest discover -s tests/smoke -p 'test_lambda_endpoints.py' -v
@@ -85,5 +87,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Plan status:** \`${{ steps.plan.outcome }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Apply status:** \`${{ steps.apply.outcome || 'skipped' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Smoke test status:** \`${{ steps.smoke.outcome || 'skipped' }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Smoke test URL:** \`${{ env.STAGING_API_URL }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
