@@ -187,7 +187,7 @@ resource "aws_lambda_function" "dr_drill" {
   runtime          = "python3.12"
   filename         = data.archive_file.dr_drill.output_path
   source_code_hash = data.archive_file.dr_drill.output_base64sha256
-  timeout          = 1020  # 17 min: 15 min RTO target + 2 min buffer for validation and S3 report upload
+  timeout          = 900   # AWS Lambda max (15 min) — RTO target; 2 min buffer removed to stay within hard limit
   memory_size      = 256
 
   environment {
