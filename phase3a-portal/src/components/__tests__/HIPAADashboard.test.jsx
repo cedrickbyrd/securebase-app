@@ -149,6 +149,37 @@ const mockScheduleApiResponse = {
   notify_email: 'user@example.com',
 };
 
+const mockFrameworksApiResponse = [
+  { id: 'hipaa', name: 'HIPAA', score: 84, controls_passing: 42, high_findings: 4 },
+  { id: 'soc2', name: 'SOC 2', score: 76, controls_passing: 38, high_findings: 6 },
+  { id: 'pcidss', name: 'PCI-DSS', score: 91, controls_passing: 54, high_findings: 1 },
+];
+
+const mockSoc2Compliance = {
+  overallScore: 76,
+  controlsPassing: 38,
+  highFindings: 6,
+  riskLevel: 'medium',
+  lastAssessmentDate: '2026-05-13T00:00:00Z',
+};
+
+const mockSoc2Findings = [
+  {
+    id: 's001',
+    severity: 'high',
+    title: 'Insufficient Access Review Process',
+    description: 'Quarterly access reviews are not being conducted for privileged accounts.',
+    control: 'SOC 2 CC6.2',
+    status: 'open',
+    remediation_steps: ['Define access review policy'],
+  },
+];
+
+const mockSoc2History = [
+  { date: '2026-04-01', score: 68, controls_passing: 32, high_findings: 9 },
+  { date: '2026-05-13', score: 76, controls_passing: 38, high_findings: 6 },
+];
+
 const mockUsersApiResponse = [
   { id: 'u001', name: 'User Example', email: 'user@example.com', role: 'admin', avatar_initials: 'UE', joined_at: '2026-04-01T00:00:00Z' },
   { id: 'u002', name: 'Sarah Chen', email: 'sarah.chen@trinetx.com', role: 'analyst', avatar_initials: 'SC', joined_at: '2026-04-15T00:00:00Z' },
@@ -175,8 +206,12 @@ describe('HIPAADashboard Component', () => {
     localStorage.setItem('customerTier', 'healthcare');
     localStorage.setItem('orgName', 'Test Organization');
     localStorage.setItem('userEmail', 'user@example.com');
+    localStorage.setItem('active_framework', 'hipaa');
     localStorage.removeItem('hipaa_jump_to_findings');
     vi.stubGlobal('fetch', vi.fn((url, options) => {
+      if (url === '/api/frameworks') {
+        return Promise.resolve({ ok: true, json: async () => mockFrameworksApiResponse });
+      }
       if (url === '/api/hipaa/compliance') {
         return Promise.resolve({ ok: true, json: async () => mockHIPAAData });
       }
@@ -193,6 +228,24 @@ describe('HIPAADashboard Component', () => {
         return Promise.resolve({ ok: true, json: async () => mockScheduleApiResponse });
       }
       if (url === '/api/hipaa/schedule' && options?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      if (url === '/api/soc2/compliance') {
+        return Promise.resolve({ ok: true, json: async () => mockSoc2Compliance });
+      }
+      if (url === '/api/soc2/findings') {
+        return Promise.resolve({ ok: true, json: async () => mockSoc2Findings });
+      }
+      if (url === '/api/soc2/compliance/history') {
+        return Promise.resolve({ ok: true, json: async () => mockSoc2History });
+      }
+      if (url === '/api/soc2/schedule' && (!options?.method || options?.method === 'GET')) {
+        return Promise.resolve({ ok: true, json: async () => mockScheduleApiResponse });
+      }
+      if (url === '/api/soc2/schedule' && options?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      if (String(url).startsWith('/api/soc2/findings/') && options?.method === 'PATCH') {
         return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
       }
       if (url === '/api/users') {
@@ -366,7 +419,7 @@ describe('HIPAADashboard Component', () => {
     render(<HIPAADashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load HIPAA compliance data/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load compliance data/i)).toBeInTheDocument();
     });
   });
 
@@ -528,5 +581,51 @@ describe('HIPAADashboard Component', () => {
         expect.objectContaining({ method: 'PATCH' }),
       );
     });
+  });
+
+  it('renders framework switcher tabs with score badges', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /HIPAA 84%/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /SOC 2 76%/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /PCI-DSS 91%/i })).toBeInTheDocument();
+    });
+  });
+
+  it('switches framework, updates title, and resets findings filter to all', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(await screen.findByRole('button', { name: /Critical \(1\)/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /SOC 2 76%/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/SOC 2 Compliance Dashboard/i)).toBeInTheDocument();
+      expect(localStorage.getItem('active_framework')).toBe('soc2');
+      expect(screen.getByRole('button', { name: /All \(1\)/i })).toHaveClass('active');
+      expect(screen.getByText(/Insufficient Access Review Process/i)).toBeInTheDocument();
+    });
+  });
+
+  it('downloads framework-scoped evidence package filename for selected framework', async () => {
+    const objectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:soc2-evidence');
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const appendSpy = vi.spyOn(document.body, 'appendChild');
+
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByRole('button', { name: /SOC 2 76%/i }));
+    fireEvent.click(screen.getByRole('button', { name: /SOC 2 76%/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Download Evidence Package/i }));
+
+    await waitFor(() => {
+      const downloadAnchor = appendSpy.mock.calls.find(([node]) => node?.tagName === 'A')?.[0];
+      expect(downloadAnchor?.download).toMatch(/Test Organization-SOC2-Evidence-/);
+      expect(revokeSpy).toHaveBeenCalledWith('blob:soc2-evidence');
+    });
+
+    appendSpy.mockRestore();
+    objectUrlSpy.mockRestore();
+    revokeSpy.mockRestore();
   });
 });
