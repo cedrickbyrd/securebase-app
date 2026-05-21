@@ -856,3 +856,123 @@
   white-space: nowrap;
   z-index: 10;
 }
+
+/* Alert Banner */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.alert-banner.critical { background: #fee2e2; border-left: 4px solid #dc2626; color: #991b1b; }
+.alert-banner.high { background: #fef3c7; border-left: 4px solid #d97706; color: #92400e; }
+.alert-banner.score_drop { background: #e0f2fe; border-left: 4px solid #0284c7; color: #075985; }
+
+/* Auto-Remediate */
+.auto-remediate-btn {
+  background: linear-gradient(135deg, #0f4c81, #1a73e8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.auto-remediate-btn:hover { opacity: 0.9; }
+
+.remediation-confirm-panel {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.1rem;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.remediation-progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.remediation-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0f4c81, #1a73e8);
+  border-radius: 999px;
+  transition: width 3s ease;
+}
+
+.remediation-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Activity Log */
+.activity-log {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 2rem;
+}
+
+.activity-log-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.activity-log-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #f9fafb;
+  font-size: 0.875rem;
+}
+
+.activity-log-row:last-child { border-bottom: none; }
+
+/* Alert Settings */
+.alert-settings-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.75rem;
+  max-width: 600px;
+}
+
+.alert-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.alerts-unconfigured-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+}

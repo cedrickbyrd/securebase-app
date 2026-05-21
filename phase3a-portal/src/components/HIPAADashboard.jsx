@@ -126,6 +126,64 @@ const FRAMEWORK_FALLBACKS = {
   },
 };
 
+const MOCK_ALERT = {
+  id: 'alert001',
+  type: 'critical',
+  message: 'New critical finding detected: "Unencrypted PHI in S3 Bucket" (HIPAA §164.312)',
+  timestamp: new Date().toISOString(),
+  read: false,
+};
+
+const AUTO_REMEDIABLE = {
+  'Unencrypted PHI in S3 Bucket': { type: 's3_encryption', label: 'Enable S3 Encryption' },
+  'MFA Not Enforced for Admin Users': { type: 'iam_mfa', label: 'Enforce MFA via SCP' },
+  'CloudTrail Logging Disabled in us-west-2': { type: 'cloudtrail_enable', label: 'Enable CloudTrail' },
+  'Cardholder Data Stored Unencrypted in Logs': { type: 'log_scrub', label: 'Enable Log Scrubbing' },
+  'Firewall Rule Review Overdue': { type: 'firewall_review', label: 'Initiate Rule Review' },
+};
+
+const REMEDIATION_DETAILS = {
+  s3_encryption: {
+    bullets: [
+      'Enable SSE-KMS encryption on affected S3 bucket',
+      'Apply bucket policy to deny unencrypted uploads',
+    ],
+    successLabel: 'S3 encryption enabled',
+  },
+  iam_mfa: {
+    bullets: [
+      'Enforce MFA for IAM admin principals via SCP update',
+      'Flag non-compliant admin users for immediate enrollment',
+    ],
+    successLabel: 'MFA enforcement enabled',
+  },
+  cloudtrail_enable: {
+    bullets: [
+      'Enable multi-region CloudTrail trail for audit events',
+      'Turn on log file validation and secure delivery to S3',
+    ],
+    successLabel: 'CloudTrail enabled',
+  },
+  log_scrub: {
+    bullets: [
+      'Enable log scrubbing pattern set for cardholder data fields',
+      'Apply retention update to remove previously exposed records',
+    ],
+    successLabel: 'Log scrubbing enabled',
+  },
+  firewall_review: {
+    bullets: [
+      'Initiate firewall rule review workflow with approvers',
+      'Queue stale rules for disable/remove recommendation',
+    ],
+    successLabel: 'Firewall review initiated',
+  },
+};
+
+const MOCK_REMEDIATION_LOG = [
+  { id: 'job001', type: 'cloudtrail_enable', label: 'CloudTrail enabled', framework: 'HIPAA', status: 'complete', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+];
+
 function getMockSchedule() {
   const fallbackEmail = localStorage.getItem('userEmail') || 'user@example.com';
   return {
@@ -239,6 +297,67 @@ function formatDateTime(iso) {
   return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function formatRelativeTime(iso) {
+  if (!iso) return 'Unknown';
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return 'Unknown';
+  const diffMinutes = Math.floor((Date.now() - then) / 60000);
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+}
+
+function readPendingAlerts() {
+  try {
+    const raw = localStorage.getItem('pending_alerts');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistPendingAlerts(alerts) {
+  localStorage.setItem('pending_alerts', JSON.stringify(alerts));
+}
+
+function readRemediationLog() {
+  try {
+    const raw = localStorage.getItem('remediation_log');
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem('remediation_log', JSON.stringify(MOCK_REMEDIATION_LOG));
+      return MOCK_REMEDIATION_LOG;
+    }
+    return parsed;
+  } catch {
+    localStorage.setItem('remediation_log', JSON.stringify(MOCK_REMEDIATION_LOG));
+    return MOCK_REMEDIATION_LOG;
+  }
+}
+
+function alertBannerIcon(type) {
+  if (type === 'critical') return '🚨';
+  if (type === 'high') return '⚠️';
+  return '📉';
+}
+
+function hasConfiguredAlertSettings() {
+  try {
+    const raw = localStorage.getItem('alert_settings');
+    if (!raw) return false;
+    const settings = JSON.parse(raw);
+    const hasSlack = Boolean(String(settings?.slack_webhook || '').trim());
+    const hasEmail = Boolean(settings?.email_notify && String(settings?.notify_email || '').trim());
+    return hasSlack || hasEmail;
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -267,6 +386,7 @@ export default function HIPAADashboard() {
   const [assignmentToast, setAssignmentToast] = useState({ id: '', message: '' });
   const [scheduleSavedToast, setScheduleSavedToast] = useState(false);
   const [jumpToFindingsOnLoad, setJumpToFindingsOnLoad] = useState(false);
+  const [pendingAlerts, setPendingAlerts] = useState([]);
   const currentUserEmail = (localStorage.getItem('userEmail') || '').toLowerCase();
   const effectiveTier = (localStorage.getItem('customerTier') || 'healthcare').toLowerCase();
   const isHealthcareTier = effectiveTier === 'healthcare';
@@ -424,6 +544,23 @@ export default function HIPAADashboard() {
     }, 100);
     return () => clearTimeout(timer);
   }, [activeTab, jumpToFindingsOnLoad]);
+
+  useEffect(() => {
+    const existing = readPendingAlerts();
+    if (existing.length === 0 && localStorage.getItem('pending_alerts_seeded') !== 'true') {
+      persistPendingAlerts([MOCK_ALERT]);
+      localStorage.setItem('pending_alerts_seeded', 'true');
+      setPendingAlerts([MOCK_ALERT]);
+      return;
+    }
+    setPendingAlerts(existing.filter((alert) => !alert.read));
+  }, []);
+
+  const dismissPendingAlert = (alertId) => {
+    const remaining = readPendingAlerts().filter((alert) => alert.id !== alertId);
+    persistPendingAlerts(remaining);
+    setPendingAlerts(remaining.filter((alert) => !alert.read));
+  };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -621,6 +758,27 @@ export default function HIPAADashboard() {
               )}
               {isHealthcareTier && (
                 <button
+                  onClick={() => navigate('/alerts')}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: 8,
+                    padding: '0.6rem 1.1rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  Alerts 🔔
+                  {!hasConfiguredAlertSettings() && <span className="alerts-unconfigured-dot" aria-label="Alerts not configured" />}
+                </button>
+              )}
+              {isHealthcareTier && (
+                <button
                   onClick={handleDownloadEvidence}
                   style={{
                     background: '#fff',
@@ -680,6 +838,19 @@ export default function HIPAADashboard() {
 
       {/* Content */}
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
+        {pendingAlerts.map((alert) => (
+          <div key={alert.id} className={`alert-banner ${alert.type}`}>
+            <span>{alertBannerIcon(alert.type)} {alert.message}</span>
+            <button
+              type="button"
+              onClick={() => dismissPendingAlert(alert.id)}
+              style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', cursor: 'pointer' }}
+              aria-label={`Dismiss alert ${alert.id}`}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
         {activeTab === 'overview' && <OverviewTab data={data} />}
         {activeTab === 'safeguards' && <SafeguardsTab data={data} activeSafeguard={activeSafeguard} setActiveSafeguard={setActiveSafeguard} />}
         {activeTab === 'phi' && <PHITab data={data} />}
@@ -700,6 +871,7 @@ export default function HIPAADashboard() {
             assignmentToast={assignmentToast}
             scheduleSavedToast={scheduleSavedToast}
             isHealthcareTier={isHealthcareTier}
+            activeFramework={activeFramework}
             teamMembers={teamMembers}
             currentUserEmail={currentUserEmail}
             currentUserRole={currentUserRole}
@@ -1010,11 +1182,14 @@ function FindingsTab({
   assignmentToast,
   scheduleSavedToast,
   isHealthcareTier,
+  activeFramework,
   teamMembers,
   currentUserEmail,
   currentUserRole,
 }) {
   const [expandedId, setExpandedId] = useState(null);
+  const [remediationStates, setRemediationStates] = useState({});
+  const [remediationLog, setRemediationLog] = useState(readRemediationLog());
   const findingsListRef = useRef(null);
   const currentUserId = teamMembers.find((user) => String(user.email || '').toLowerCase() === currentUserEmail)?.id;
   const counts = getFilterCounts(findings, currentUserId);
@@ -1026,6 +1201,105 @@ function FindingsTab({
   }));
   const unassignedFindingsCount = openFindings.filter((finding) => !finding.assigned_to).length;
   const showOwnershipWidget = ['admin', 'analyst'].includes(String(currentUserRole || '').toLowerCase());
+
+  useEffect(() => {
+    localStorage.setItem('remediation_log', JSON.stringify(remediationLog.slice(0, 10)));
+  }, [remediationLog]);
+
+  const upsertRemediationLogEntry = (entry) => {
+    setRemediationLog((previous) => {
+      const next = [entry, ...previous.filter((item) => item.id !== entry.id)];
+      return next.slice(0, 10);
+    });
+  };
+
+  const handleAutoRemediationConfirm = async (finding) => {
+    const remediationMeta = AUTO_REMEDIABLE[finding.title];
+    if (!remediationMeta) return;
+
+    setRemediationStates((prev) => ({
+      ...prev,
+      [finding.id]: { phase: 'running', progress: 0, type: remediationMeta.type, label: remediationMeta.label },
+    }));
+
+    let jobId = `job_${Date.now()}`;
+    try {
+      const response = await fetch(`/api/remediation/${encodeURIComponent(activeFramework)}/findings/${encodeURIComponent(finding.id)}/autofix`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken')
+            ? { Authorization: `Bearer ${sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken')}` }
+            : {}),
+        },
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        jobId = payload?.job_id || jobId;
+      } else {
+        throw new Error(`remediation_failed:${response.status}`);
+      }
+    } catch {
+      setRemediationStates((prev) => {
+        const { [finding.id]: _, ...rest } = prev;
+        return rest;
+      });
+      return;
+    }
+
+    const frameworkLabel = String(frameworkMeta?.name || activeFramework || 'HIPAA').toUpperCase();
+    upsertRemediationLogEntry({
+      id: jobId,
+      type: remediationMeta.type,
+      label: `${REMEDIATION_DETAILS[remediationMeta.type]?.successLabel || remediationMeta.label} queued`,
+      framework: frameworkLabel,
+      status: 'running',
+      timestamp: new Date().toISOString(),
+    });
+
+    window.setTimeout(() => {
+      setRemediationStates((prev) => ({
+        ...prev,
+        [finding.id]: {
+          phase: 'running',
+          progress: 100,
+          type: remediationMeta.type,
+          label: remediationMeta.label,
+          jobId,
+        },
+      }));
+    }, 30);
+
+    window.setTimeout(() => {
+      onStatusUpdate(finding.id, 'resolved');
+      setRemediationStates((prev) => ({
+        ...prev,
+        [finding.id]: {
+          phase: 'success',
+          progress: 100,
+          type: remediationMeta.type,
+          label: remediationMeta.label,
+          jobId,
+        },
+      }));
+
+      upsertRemediationLogEntry({
+        id: jobId,
+        type: remediationMeta.type,
+        label: REMEDIATION_DETAILS[remediationMeta.type]?.successLabel || remediationMeta.label,
+        framework: frameworkLabel,
+        status: 'complete',
+        timestamp: new Date().toISOString(),
+      });
+
+      window.setTimeout(() => {
+        setRemediationStates((prev) => {
+          const { [finding.id]: _, ...rest } = prev;
+          return rest;
+        });
+      }, 5000);
+    }, 3000);
+  };
 
   if (!isHealthcareTier) {
     return (
@@ -1101,6 +1375,10 @@ function FindingsTab({
       {filteredFindings.map((finding) => {
         const isExpanded = expandedId === finding.id;
         const assignedUser = teamMembers.find((member) => member.id === finding.assigned_to);
+        const autoRemediation = AUTO_REMEDIABLE[finding.title];
+        const remediationState = remediationStates[finding.id];
+        const canAutoRemediate = Boolean(autoRemediation) && finding.status !== 'resolved';
+        const remediationDescription = autoRemediation ? REMEDIATION_DETAILS[autoRemediation.type] : null;
         return (
           <div key={finding.id} className="finding-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -1151,6 +1429,72 @@ function FindingsTab({
               {assignmentToast.id === finding.id && <span className="status-toast">{assignmentToast.message}</span>}
             </div>
 
+            {canAutoRemediate && !remediationState?.phase && (
+              <button
+                type="button"
+                className="auto-remediate-btn"
+                style={{ marginTop: '0.7rem' }}
+                onClick={() => {
+                  setRemediationStates((prev) => ({
+                    ...prev,
+                    [finding.id]: { phase: 'confirm', progress: 0, type: autoRemediation.type, label: autoRemediation.label },
+                  }));
+                }}
+              >
+                ⚡ Auto-Remediate
+              </button>
+            )}
+
+            {remediationState?.phase === 'confirm' && remediationDescription && (
+              <div className="remediation-confirm-panel">
+                <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: '#111827' }}>⚡ Auto-Remediate: {autoRemediation.label}</div>
+                <div style={{ color: '#374151', marginBottom: '0.5rem' }}>
+                  This will apply the following change to your AWS account:
+                </div>
+                <ul style={{ margin: '0 0 0.6rem', paddingLeft: '1.1rem', color: '#374151' }}>
+                  {remediationDescription.bullets.map((bullet) => (
+                    <li key={`${finding.id}-${bullet}`}>{bullet}</li>
+                  ))}
+                </ul>
+                <div style={{ color: '#92400e', marginBottom: '0.6rem', fontWeight: 600 }}>⚠ This action cannot be undone automatically.</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button type="button" className="auto-remediate-btn" onClick={() => handleAutoRemediationConfirm(finding)}>
+                    Confirm &amp; Apply
+                  </button>
+                  <button
+                    type="button"
+                    style={inlineActionButtonStyle}
+                    onClick={() => {
+                      setRemediationStates((prev) => {
+                        const { [finding.id]: _, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {remediationState?.phase === 'running' && (
+              <div style={{ marginTop: '0.7rem' }}>
+                <div style={{ color: '#0f4c81', fontSize: '0.85rem', fontWeight: 600 }}>
+                  ⚡ Remediation in progress... [{Math.round(remediationState.progress)}%]
+                </div>
+                <div className="remediation-progress-bar">
+                  <div className="remediation-progress-fill" style={{ width: `${remediationState.progress}%` }} />
+                </div>
+              </div>
+            )}
+
+            {remediationState?.phase === 'success' && (
+              <div className="remediation-success" style={{ marginTop: '0.75rem' }}>
+                ✅ Remediation complete — {REMEDIATION_DETAILS[remediationState.type]?.successLabel || remediationState.label}
+                <div style={{ marginTop: '0.2rem', fontWeight: 500 }}>Finding marked as resolved.</div>
+              </div>
+            )}
+
             <button
               onClick={() => setExpandedId(isExpanded ? null : finding.id)}
               style={{ marginTop: '0.8rem', background: 'none', border: 'none', color: '#0f4c81', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', padding: 0 }}
@@ -1180,6 +1524,18 @@ function FindingsTab({
         onSave={onSaveSchedule}
         showSaveToast={scheduleSavedToast}
       />
+
+      <section className="activity-log">
+        <div className="activity-log-header">⚡ Remediation Activity</div>
+        {remediationLog.slice(0, 10).map((entry) => (
+          <div key={entry.id} className="activity-log-row">
+            <span>{entry.status === 'complete' ? '✅' : entry.status === 'failed' ? '❌' : '⏳'}</span>
+            <span style={{ flex: 1, color: '#374151' }}>{entry.label}</span>
+            <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600 }}>{entry.framework}</span>
+            <span style={{ fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>{formatRelativeTime(entry.timestamp)}</span>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }

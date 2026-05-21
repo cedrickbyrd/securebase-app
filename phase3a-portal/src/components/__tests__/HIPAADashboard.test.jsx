@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import HIPAADashboard from '../HIPAADashboard';
 
 // ---------------------------------------------------------------------------
@@ -208,6 +208,9 @@ describe('HIPAADashboard Component', () => {
     localStorage.setItem('userEmail', 'user@example.com');
     localStorage.setItem('active_framework', 'hipaa');
     localStorage.removeItem('hipaa_jump_to_findings');
+    localStorage.removeItem('pending_alerts');
+    localStorage.removeItem('pending_alerts_seeded');
+    localStorage.removeItem('remediation_log');
     vi.stubGlobal('fetch', vi.fn((url, options) => {
       if (url === '/api/frameworks') {
         return Promise.resolve({ ok: true, json: async () => mockFrameworksApiResponse });
@@ -220,6 +223,9 @@ describe('HIPAADashboard Component', () => {
       }
       if (String(url).startsWith('/api/hipaa/findings/') && options?.method === 'PATCH') {
         return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      if (String(url).startsWith('/api/remediation/hipaa/findings/') && options?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ job_id: `job_${Date.now()}`, status: 'running' }) });
       }
       if (url === '/api/hipaa/compliance/history') {
         return Promise.resolve({ ok: true, json: async () => mockHistoryApiResponse });
@@ -444,6 +450,21 @@ describe('HIPAADashboard Component', () => {
     });
   });
 
+  it('seeds and dismisses in-app alert banner', async () => {
+    render(<HIPAADashboard />);
+
+    const banner = await screen.findByText(/New critical finding detected/i);
+    expect(banner).toBeInTheDocument();
+
+    const dismissButton = screen.getByRole('button', { name: /Dismiss alert alert001/i });
+    fireEvent.click(dismissButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/New critical finding detected/i)).not.toBeInTheDocument();
+      expect(localStorage.getItem('pending_alerts')).toBe('[]');
+    });
+  });
+
   it('updates finding status inline and shows confirmation toast', async () => {
     render(<HIPAADashboard />);
     await waitFor(() => screen.getByText(/⚠️ Findings/i));
@@ -455,6 +476,34 @@ describe('HIPAADashboard Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/✓ Status updated/i)).toBeInTheDocument();
     });
+  });
+
+  it('runs auto-remediation flow and writes remediation activity', async () => {
+    vi.useFakeTimers();
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    fireEvent.click(await screen.findByRole('button', { name: /⚡ Auto-Remediate/i }));
+    expect(screen.getByText(/Auto-Remediate: Enable S3 Encryption/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirm & Apply/i }));
+    expect(screen.getByText(/Remediation in progress/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(3100);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Remediation complete — S3 encryption enabled/i)).toBeInTheDocument();
+      expect(screen.getByText(/⚡ Remediation Activity/i)).toBeInTheDocument();
+      expect(screen.getByText(/S3 encryption enabled/i)).toBeInTheDocument();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(5100);
+    });
+    vi.useRealTimers();
   });
 
   it('renders compliance report and assessment schedule in findings section', async () => {
