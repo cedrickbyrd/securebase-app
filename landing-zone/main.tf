@@ -238,17 +238,18 @@ module "api_gateway" {
 # ============================================================================
 
 module "phase6_lambdas" {
-  source                     = "./modules/phase6-lambda-functions"
-  environment                = var.environment
-  audit_evidence_api_zip     = "${path.module}/files/phase6/audit_evidence_api.zip"
-  compliance_history_api_zip = "${path.module}/files/phase6/compliance_history_api.zip"
-  evidence_bucket_name       = module.phase6_audit_logging.evidence_bucket_name
-  evidence_kms_key_arn       = module.phase6_audit_logging.kms_key_arn
-  rds_proxy_endpoint         = module.phase2_database.rds_proxy_endpoint
-  private_subnet_ids         = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
-  security_group_ids         = [module.phase2_database.lambda_security_group_id]
-  tags                       = merge(var.tags, { Phase = "6" })
-  depends_on                 = [module.phase6_audit_logging, module.phase2_database]
+  source                             = "./modules/phase6-lambda-functions"
+  environment                        = var.environment
+  audit_evidence_api_zip             = "${path.module}/files/phase6/audit_evidence_api.zip"
+  compliance_history_api_zip         = "${path.module}/files/phase6/compliance_history_api.zip"
+  compliance_score_recalculator_zip  = "${path.module}/files/phase6/compliance_score_recalculator.zip"
+  evidence_bucket_name               = module.phase6_audit_logging.evidence_bucket_name
+  evidence_kms_key_arn               = module.phase6_audit_logging.kms_key_arn
+  rds_proxy_endpoint                 = module.phase2_database.rds_proxy_endpoint
+  private_subnet_ids                 = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
+  security_group_ids                 = [module.phase2_database.lambda_security_group_id]
+  tags                               = merge(var.tags, { Phase = "6" })
+  depends_on                         = [module.phase6_audit_logging, module.phase2_database]
 }
 
 # ============================================================================
