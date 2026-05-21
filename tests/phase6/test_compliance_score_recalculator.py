@@ -105,13 +105,17 @@ class TestMappingFiles:
         'fedramp_mapping.json',
     ])
     def test_each_control_has_required_fields(self, filename):
-        """Every control must have 'control_id', 'severity', and 'config_rule'."""
+        """Every control must include required compliance metadata fields."""
         filepath = os.path.join(COMPLIANCE_DIR, filename)
         with open(filepath) as fh:
             data = json.load(fh)
         for ctrl in data['controls']:
             cid = ctrl.get('control_id', '(unknown)')
             assert ctrl.get('control_id'), f"{filename}: control missing 'control_id'"
+            assert ctrl.get('rule_name'), f"{filename}: {cid} missing 'rule_name'"
+            assert ctrl.get('framework'), f"{filename}: {cid} missing 'framework'"
+            assert ctrl.get('control_name'), f"{filename}: {cid} missing 'control_name'"
+            assert ctrl.get('description'), f"{filename}: {cid} missing 'description'"
             assert ctrl.get('severity'), f"{filename}: {cid} missing 'severity'"
             assert ctrl.get('config_rule'), f"{filename}: {cid} missing 'config_rule'"
 
@@ -122,7 +126,7 @@ class TestMappingFiles:
     ])
     def test_severity_values_are_valid(self, filename):
         """Each control's severity must be one of the recognised values."""
-        valid = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'}
+        valid = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'}
         filepath = os.path.join(COMPLIANCE_DIR, filename)
         with open(filepath) as fh:
             data = json.load(fh)
@@ -234,6 +238,7 @@ class TestWriteScoreToDynamoDB:
             violations={'CRITICAL': 1, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0},
             controls_total=10,
             controls_passing=9,
+            cloudwatch_client=MagicMock(),
             dry_run=True,
         )
         mock_table.put_item.assert_not_called()
@@ -252,6 +257,7 @@ class TestWriteScoreToDynamoDB:
             violations={'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 1, 'LOW': 0},
             controls_total=12,
             controls_passing=11,
+            cloudwatch_client=MagicMock(),
             dry_run=False,
         )
 
@@ -266,6 +272,35 @@ class TestWriteScoreToDynamoDB:
         assert item['controls_failing'] == 1
         assert 'ttl' in item
 
+    def test_control_violations_written_with_expected_key(self):
+        """Per-control snapshots are written to control_violation_log table."""
+        mod = self._setup()
+        mock_table = MagicMock()
+        mod.dynamodb = MagicMock()
+        mod.dynamodb.Table.return_value = mock_table
+
+        mod._write_control_violations_to_dynamodb(
+            customer_id='tenant-id',
+            framework='HIPAA',
+            controls=[{
+                'control_id': 'HIPAA-164.312(b)',
+                'control_name': 'Audit Controls',
+                'description': 'Audit logging controls',
+                'severity': 'CRITICAL',
+                'config_rule': 'cloudtrail-enabled',
+                'remediation_url': 'https://example.com/fix',
+            }],
+            compliance_map={'cloudtrail-enabled': 'NON_COMPLIANT'},
+            dry_run=False,
+        )
+
+        mock_table.put_item.assert_called_once()
+        item = mock_table.put_item.call_args.kwargs['Item']
+        assert item['PK'] == 'CUSTOMER#tenant-id'
+        assert item['SK'].startswith('CONTROL#HIPAA#HIPAA-164.312(b)#DATE#')
+        assert item['status'] == 'NON_COMPLIANT'
+        assert item['severity'] == 'CRITICAL'
+
 
 # ---------------------------------------------------------------------------
 # Tests: lambda_handler
@@ -274,86 +309,88 @@ class TestWriteScoreToDynamoDB:
 class TestLambdaHandler:
     """Integration-level tests for compliance_score_recalculator.lambda_handler."""
 
-    def _make_mock_db(self, customers=None):
-        mock_db = MagicMock()
-        mock_db.query_many.return_value = customers or [
-            {'id': 'tenant-aaa'},
-            {'id': 'tenant-bbb'},
-        ]
-        return mock_db
-
-    def test_handler_returns_tenant_count(self):
-        """handler must return tenants_processed equal to number of active tenants."""
-        mock_db = self._make_mock_db(customers=[{'id': 'tenant-aaa'}, {'id': 'tenant-bbb'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_defaults_to_platform_customer(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={'SOC2': 90.0, 'HIPAA': 85.0}):
+                               return_value={'SOC2': 90.0, 'HIPAA': 85.0}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
                 result = compliance_score_recalculator.lambda_handler({}, _make_context())
 
-        assert result['tenants_processed'] == 2
+        assert result['tenants_processed'] == 1
+        assert result['scores']['platform']['SOC2'] == 90.0
         assert 'errors' in result
         assert result['errors'] == []
+        mock_session.assert_called_once()
+        called_args, called_kwargs = mock_score.call_args
+        assert called_args[0] == 'platform'
+        assert called_kwargs['dry_run'] is False
+        assert called_kwargs['session'] is mock_session.return_value
 
     def test_handler_with_dry_run(self):
         """dry_run=True is passed through to _score_tenant."""
-        mock_db = self._make_mock_db(customers=[{'id': 'tenant-ccc'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={}) as mock_score:
+                               return_value={}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
                 compliance_score_recalculator.lambda_handler(
                     {'dry_run': True}, _make_context()
                 )
-            mock_score.assert_called_once_with('tenant-ccc', dry_run=True)
+            called_args, called_kwargs = mock_score.call_args
+            assert called_args[0] == 'platform'
+            assert called_kwargs['dry_run'] is True
+            assert called_kwargs['session'] is mock_session.return_value
 
-    def test_handler_records_errors_but_continues(self):
-        """Errors for individual tenants are recorded and processing continues."""
-        mock_db = self._make_mock_db(
-            customers=[{'id': 'tenant-ok'}, {'id': 'tenant-bad'}]
-        )
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_records_errors(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
-            def side_effect(customer_id, dry_run=False):
-                if customer_id == 'tenant-bad':
-                    raise RuntimeError('Simulated AWS API failure')
-                return {'SOC2': 95.0}
-
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               side_effect=side_effect):
+                               side_effect=RuntimeError('Simulated AWS API failure')), \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()):
                 result = compliance_score_recalculator.lambda_handler({}, _make_context())
 
-        # tenant-ok processed successfully; tenant-bad recorded as error
-        assert result['tenants_processed'] == 1
+        assert result['tenants_processed'] == 0
         assert len(result['errors']) == 1
-        assert 'tenant-bad' in result['errors'][0]
+        assert 'platform' in result['errors'][0]
 
-    def test_handler_single_tenant_target(self):
-        """customer_id in event restricts scoring to a single tenant."""
-        mock_db = self._make_mock_db(customers=[{'id': 'target-tenant'}])
-        with patch('boto3.client'), patch('boto3.resource'), \
-             patch.dict('sys.modules', {'db_utils': mock_db}):
+    def test_handler_assumes_role_when_role_arn_is_provided(self):
+        with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
 
             with patch.object(compliance_score_recalculator, '_score_tenant',
-                               return_value={'SOC2': 80.0}) as mock_score:
+                               return_value={'SOC2': 80.0}) as mock_score, \
+                 patch('compliance_score_recalculator.boto3.client') as mock_boto_client, \
+                 patch('compliance_score_recalculator.boto3.Session',
+                       return_value=MagicMock()) as mock_session:
+                mock_boto_client.return_value.assume_role.return_value = {
+                    'Credentials': {
+                        'AccessKeyId': 'ak',
+                        'SecretAccessKey': 'sk',
+                        'SessionToken': 'st',
+                    }
+                }
                 result = compliance_score_recalculator.lambda_handler(
-                    {'customer_id': 'target-tenant'}, _make_context()
+                    {'customer_id': 'target-tenant', 'role_arn': 'arn:aws:iam::123:role/SecureBaseReadOnlyRole'},
+                    _make_context(),
                 )
 
         assert result['tenants_processed'] == 1
-        mock_score.assert_called_once_with('target-tenant', dry_run=False)
+        called_args, called_kwargs = mock_score.call_args
+        assert called_args[0] == 'target-tenant'
+        assert called_kwargs['dry_run'] is False
+        assert called_kwargs['session'] is mock_session.return_value

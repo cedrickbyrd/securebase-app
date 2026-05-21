@@ -73,36 +73,33 @@ PHASE 5.3: Multi-Region DR, Alerting & Cost Optimization 🔨
 
 PHASE 6: Compliance Automation & Operations Scale 🔨
 ├─ Status: IN PROGRESS (started May 2026)
-├─ Track 1 — 6.1 Immutable Audit Logging: ✅ Substantially Complete
+├─ 6.1 Immutable Audit Logging + Evidence Baseline: ✅ Complete (May 17, 2026)
 │  ├─ Terraform: phase6-audit-logging module (S3 Object Lock COMPLIANCE, Macie, KMS)
-│  ├─ Wired into environments/dev
 │  ├─ Lambda: audit_log_packager.py, audit_evidence_api.py
-│  ├─ Lambdas: evidence_collector.py, audit_log_validator.py, controls_monitor.py, report_generator.py
+│  ├─ Portal: EvidencePackages.jsx, ExportEvidence.jsx, evidenceApiService.js
 │  ├─ DB migration: 001_audit_evidence_tables.sql
-│  ├─ Tests: test_audit_log_packager.py, test_track1_compliance_lambdas.py
-│  └─ Remaining: API Gateway wiring, Macie findings_filter, lambda packaging script
-├─ Track 2 — 6.2 Compliance Automation: ✅ Substantially Complete
+│  └─ Tests: test_audit_log_packager.py, test_track1_compliance_lambdas.py
+├─ 6.1.1 Scheduled Evidence Runs (Repeatable Vault): ✅ Complete (May 17, 2026)
+│  ├─ EventBridge per-tenant cron (weekly/monthly/manual)
+│  ├─ Portal schedule selector + "Next scheduled run" display
+│  └─ Gap detection on missed runs
+├─ 6.2 Compliance Automation: 🔨 In Progress
 │  ├─ Terraform: phase6-compliance module (26 Config rules, HIPAA + NIST 800-53 packs)
-│  ├─ Wired into environments/dev
 │  ├─ Lambda: compliance_score_recalculator.py, compliance_history_api.py
+│  ├─ Portal: ComplianceTrend.jsx (90-day chart)
 │  ├─ Framework mappings: soc2_mapping.json, hipaa_mapping.json, fedramp_mapping.json
-│  ├─ DB migration: 002_compliance_score_history.sql
-│  ├─ Tests: test_compliance_score_recalculator.py, test_compliance_history_api.py
 │  └─ Remaining: EventBridge wiring, API GW wiring, conformance pack template URLs
 ├─ Track 3 — Alerting & Incident Response: ✅ Complete
-│  ├─ Terraform: terraform/modules/alerting/ (SNS, CloudWatch alarms, PagerDuty)
+│  ├─ Terraform: terraform/modules/alerting/ (SNS, CloudWatch, PagerDuty)
 │  ├─ Lambda: runbook_executor.py, alarm_aggregator.py, chaos_drill.py
-│  ├─ Portal: AlertingDashboard.jsx
 │  └─ Tests: test_alerting_track3.py
 ├─ Track 4 — Provisioning & Drift Detection: ✅ Complete
 │  ├─ Lambda: drift_detector.py, tenant_provisioner.py
 │  └─ Tests: test_track6_provisioning.py
-├─ Track 5 — 6.3 Scalability (10k+ users): 🔨 In Progress
-│  ├─ Load test: tests/phase6/load_test_10k_users.py (scaffolded)
-│  └─ Remaining: provisioned concurrency TF, API GW caching TF, DynamoDB GSIs, Aurora ACU tuning, SQS queues
-├─ Track 6 — 6.4 Build Debt Cleanup: 📅 Planned
-└─ Track 7 — 6.5 Developer Experience: 📅 Planned
-    See: PHASE6_SCOPE.md | TODO_PHASE6.md
+├─ 6.3 Scalability (10k+ users): 🔴 DEFERRED (trigger: TriNetX conversion)
+├─ 6.4 Build Debt Cleanup: 🔴 DEFERRED (trigger: TriNetX conversion)
+├─ 6.5 Developer Experience: 🔴 DEFERRED (trigger: TriNetX converts + 2nd engineer)
+└─ See: PHASE6_SCOPE.md | TODO_PHASE6.md
 ```
 
 ---

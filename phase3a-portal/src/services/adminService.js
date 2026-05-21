@@ -1,17 +1,8 @@
 import api from './api';
 
-class AdminService {
-  constructor() {
-    this.metricsCache = null;
-    this.cacheTimestamp = 0;
-    this.cacheTtlMs = 60000;
-    this.inFlightMetricsRequest = null;
-  }
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
-  async getMetricsSnapshot(forceRefresh = false) {
-    if (this.inFlightMetricsRequest) {
-      return this.inFlightMetricsRequest;
-    }
+const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
 // ── Mock data: alerting dashboard (Phase 6 / Track 3) ─────────────────────────
 
@@ -101,6 +92,43 @@ const mockMttaMetrics = {
   sample_count: 14,
 };
 
+const mockServicesByCost = [
+  { name: 'Aurora Serverless v2', cost: 4820 },
+  { name: 'Lambda', cost: 2310 },
+  { name: 'API Gateway', cost: 1540 },
+  { name: 'S3', cost: 890 },
+  { name: 'CloudFront', cost: 640 },
+];
+
+// ── Mock data: cross-tenant compliance scores (Phase 6.2 / Track 4) ──────────
+
+const mockComplianceScores = {
+  generated_at: new Date().toISOString(),
+  tenants: [
+    {
+      tenant_id: 'tenant-uuid-001',
+      tenant_display_name: 'Customer #1',
+      SOC2:    { score: 96, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 98, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 92, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+    {
+      tenant_id: 'tenant-uuid-002',
+      tenant_display_name: 'Customer #2',
+      SOC2:    { score: 93, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 68, status: 'At Risk',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 91, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+    {
+      tenant_id: 'tenant-uuid-003',
+      tenant_display_name: 'Customer #3',
+      SOC2:    { score: 54, status: 'Critical', last_calculated: '2026-05-17T02:06:00+00:00' },
+      HIPAA:   { score: 94, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+      FedRAMP: { score: 95, status: 'Passing',  last_calculated: '2026-05-17T02:06:00+00:00' },
+    },
+  ],
+};
+
 const mockData = {
   overview: {
     activeTenants: 142,
@@ -179,6 +207,71 @@ const mockData = {
   },
 };
 
+// ── Mock data: vault (Phase 6.1 / Track 4) ────────────────────────────────────
+
+const mockVaultData = {
+  totalPackages: 47,
+  totalSizeBytes: 831000000,
+  packagerSuccessRate24h: 98.3,
+  lastPackage: {
+    tenantId: 'blue-cross',
+    tenantName: 'Blue Cross Healthcare',
+    createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+  },
+  tenants: [
+    {
+      tenantId: 'blue-cross',
+      tenantName: 'Blue Cross Healthcare',
+      packageCount: 14,
+      lastGenerated: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+      totalSizeBytes: 280000000,
+      frameworks: ['HIPAA', 'SOC2'],
+      packages: [
+        { id: 'pkg-bc-1', packageName: 'hipaa-2026-04-30', framework: 'HIPAA', sizeBytes: 42000000, status: 'complete', createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
+        { id: 'pkg-bc-2', packageName: 'soc2-2026-04-30', framework: 'SOC2', sizeBytes: 38000000, status: 'complete', createdAt: new Date(Date.now() - 1000 * 60 * 110).toISOString() },
+      ],
+    },
+    {
+      tenantId: 'goldman-fin',
+      tenantName: 'Goldman Financial',
+      packageCount: 18,
+      lastGenerated: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      totalSizeBytes: 360000000,
+      frameworks: ['SOC2', 'FedRAMP'],
+      packages: [
+        { id: 'pkg-gf-1', packageName: 'soc2-2026-04-30', framework: 'SOC2', sizeBytes: 55000000, status: 'complete', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
+        { id: 'pkg-gf-2', packageName: 'fedramp-2026-04-30', framework: 'FedRAMP', sizeBytes: 61000000, status: 'complete', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString() },
+      ],
+    },
+    {
+      tenantId: 'acme-gov',
+      tenantName: 'Acme Government Solutions',
+      packageCount: 15,
+      lastGenerated: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+      totalSizeBytes: 191000000,
+      frameworks: ['FedRAMP', 'HIPAA'],
+      packages: [
+        { id: 'pkg-ag-1', packageName: 'fedramp-2026-04-30', framework: 'FedRAMP', sizeBytes: 48000000, status: 'complete', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
+      ],
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AdminService {
+  constructor() {
+    this.metricsCache = null;
+    this.cacheTimestamp = 0;
+    this.cacheTtlMs = 60000;
+    this.inFlightMetricsRequest = null;
+  }
+
+  async getMetricsSnapshot(forceRefresh = false) {
+    if (this.inFlightMetricsRequest) {
+      return this.inFlightMetricsRequest;
+    }
+
     this.inFlightMetricsRequest = api.get('/admin/metrics')
       .then((payload) => {
         this.metricsCache = payload || {};
@@ -207,6 +300,11 @@ const mockData = {
     return data.security || {};
   }
 
+  async getCustomerAnalytics(forceRefresh = false) {
+    const data = await this.getMetricsSnapshot(forceRefresh);
+    return data.customers || {};
+  }
+
   async getCostManagement(params = {}) {
     if (USE_MOCK) return clone(mockData.costs);
     const query = new URLSearchParams(
@@ -214,11 +312,6 @@ const mockData = {
     );
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return api.get(`/admin/costs${suffix}`);
-  }
-
-  async getCostManagement(forceRefresh = false) {
-    const data = await this.getMetricsSnapshot(forceRefresh);
-    return data.costs || {};
   }
 
   async getOperationsStatus(forceRefresh = false) {
@@ -246,6 +339,68 @@ const mockData = {
     return api.get('/admin/alarms/mtta-mttr');
   }
 
+  // ── Phase 6.2 / Track 4: Cross-tenant Compliance Scores ──────────────────
+
+  async getComplianceScores() {
+    if (USE_MOCK) return clone(mockComplianceScores);
+    return api.get('/admin/compliance/scores');
+  }
+
+  // ── Phase 6.1 / Track 4: Vault Visibility ─────────────────────────────────
+
+  async getVaultSummary() {
+    if (USE_MOCK) return clone(mockVaultData);
+    const data = await api.get('/admin/evidence?limit=1000');
+    const packages = data.packages || [];
+
+    // Aggregate per-tenant from the flat package list
+    const tenantMap = new Map();
+    let totalSizeBytes = 0;
+    let lastPackage = null;
+
+    for (const pkg of packages) {
+      const tid = pkg.tenant_id || pkg.tenantId || 'unknown';
+      const tName = pkg.tenant_name || pkg.tenantName || tid;
+      if (!tenantMap.has(tid)) {
+        tenantMap.set(tid, {
+          tenantId: tid,
+          tenantName: tName,
+          packageCount: 0,
+          lastGenerated: null,
+          totalSizeBytes: 0,
+          frameworks: new Set(),
+          packages: [],
+        });
+      }
+      const tenant = tenantMap.get(tid);
+      tenant.packageCount += 1;
+      tenant.totalSizeBytes += pkg.size_bytes || 0;
+      tenant.frameworks.add(pkg.framework);
+      tenant.packages.push(pkg);
+      if (!tenant.lastGenerated || pkg.created_at > tenant.lastGenerated) {
+        tenant.lastGenerated = pkg.created_at;
+      }
+      totalSizeBytes += pkg.size_bytes || 0;
+      if (!lastPackage || pkg.created_at > lastPackage.createdAt) {
+        lastPackage = { tenantId: tid, tenantName: tName, createdAt: pkg.created_at };
+      }
+    }
+
+    const tenants = Array.from(tenantMap.values()).map((t) => ({
+      ...t,
+      frameworks: Array.from(t.frameworks),
+    }));
+    tenants.sort((a, b) => (b.lastGenerated || '').localeCompare(a.lastGenerated || ''));
+
+    return {
+      totalPackages: packages.length,
+      totalSizeBytes,
+      packagerSuccessRate24h: data.packagerSuccessRate24h ?? null,
+      lastPackage,
+      tenants,
+    };
+  }
+
   async getPlatformMetrics() {
     const [
       overview,
@@ -255,7 +410,6 @@ const mockData = {
       costs,
       operations,
       alerts,
-      health,
     ] = await Promise.all([
       this.getSystemOverview(),
       this.getInfrastructureHealth(),
@@ -264,7 +418,6 @@ const mockData = {
       this.getCostManagement(),
       this.getOperationsStatus(),
       this.getRecentAlerts(),
-      this.getSystemHealth(),
     ]);
 
     return {
@@ -275,7 +428,6 @@ const mockData = {
       costs,
       operations,
       alerts,
-      health,
     };
   }
 }

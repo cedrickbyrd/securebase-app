@@ -1,0 +1,162 @@
+{
+  "framework": "FDICIA",
+  "standard": "FDICIA Part 363 — Annual Independent Audits and Reporting Requirements / Internal Controls Over Financial Reporting",
+  "description": "Mapping of FDICIA Part 363 internal control requirements to AWS Config managed rules and GuardDuty finding types. Applies to insured depository institutions with total assets of $500 million or more.",
+  "last_updated": "2026-05-15",
+  "controls": [
+    {
+      "control_id": "FDICIA-363.2(a)",
+      "control_name": "Management Assessment — Internal Controls Over Financial Reporting",
+      "description": "Management must assess the effectiveness of internal controls over financial reporting, including controls over the safeguarding of assets and the reliability of financial records.",
+      "severity": "CRITICAL",
+      "config_rule": "cloudtrail-enabled",
+      "guardduty_finding_types": [
+        "Stealth:IAMUser/CloudTrailLoggingDisabled",
+        "Stealth:IAMUser/LoggingConfigurationModified"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudtrail-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.2(b)",
+      "control_name": "Auditor Attestation — Internal Control Assessment",
+      "description": "Independent public accountant must attest to and report separately on management's assertions about internal controls. Requires tamper-evident audit evidence chain.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-versioning-enabled",
+      "guardduty_finding_types": [
+        "Impact:S3/ObjectDelete.Unusual"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.3",
+      "control_name": "Access Controls — Segregation of Duties",
+      "description": "Internal controls must ensure segregation of duties for financial systems. No single user should have unrestricted access to create, authorize, and record financial transactions.",
+      "severity": "CRITICAL",
+      "config_rule": "iam-root-access-key-check",
+      "guardduty_finding_types": [
+        "Policy:IAMUser/RootCredentialUsage"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.4(a)",
+      "control_name": "Multifactor Authentication — Privileged Access",
+      "description": "Controls must prevent unauthorized access to financial systems and customer data. MFA required for all console and privileged access.",
+      "severity": "CRITICAL",
+      "config_rule": "mfa-enabled-for-iam-console-access",
+      "guardduty_finding_types": [
+        "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.4(b)",
+      "control_name": "Root Account Controls",
+      "description": "Root/superuser account usage must be controlled and monitored. Root access key must not exist for any production financial system.",
+      "severity": "CRITICAL",
+      "config_rule": "root-account-mfa-enabled",
+      "guardduty_finding_types": [
+        "Policy:IAMUser/RootCredentialUsage"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.5",
+      "control_name": "Data Encryption — Financial Records at Rest",
+      "description": "Financial records and customer data must be encrypted at rest to prevent unauthorized disclosure and ensure data integrity.",
+      "severity": "CRITICAL",
+      "config_rule": "rds-storage-encrypted",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.6",
+      "control_name": "Data Encryption — Financial Records in Transit",
+      "description": "Financial data transmitted over networks must be encrypted using TLS. Non-TLS connections to financial systems must be denied.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-ssl-requests-only",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.7",
+      "control_name": "Network Security — Flow Logging",
+      "description": "Network traffic to and from financial systems must be logged and monitored for anomalous activity. VPC flow logs required.",
+      "severity": "HIGH",
+      "config_rule": "vpc-flow-logs-enabled",
+      "guardduty_finding_types": [
+        "Trojan:EC2/DNSDataExfiltration",
+        "UnauthorizedAccess:EC2/MetadataDNSRebind"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.8",
+      "control_name": "Threat Detection — Continuous Monitoring",
+      "description": "Continuous monitoring controls must detect and alert on threats to financial systems. Automated threat detection required.",
+      "severity": "HIGH",
+      "config_rule": "guardduty-enabled-centralized",
+      "guardduty_finding_types": [
+        "Recon:IAMUser/NetworkPermissions",
+        "Recon:IAMUser/ResourcePermissions"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html"
+    },
+    {
+      "control_id": "FDICIA-363.9",
+      "control_name": "IAM Policy Controls — No Inline Policies",
+      "description": "Identity and access management controls must follow least-privilege principles. Inline IAM policies bypass centralized governance and must not exist.",
+      "severity": "HIGH",
+      "config_rule": "iam-no-inline-policy-check",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.10",
+      "control_name": "Access Key Rotation — 90-Day Policy",
+      "description": "Access credentials for financial systems must be rotated regularly. Keys older than 90 days represent a control deficiency under FDICIA internal control standards.",
+      "severity": "HIGH",
+      "config_rule": "access-keys-rotated",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.11",
+      "control_name": "Database Public Access Prohibition",
+      "description": "Financial databases must not be publicly accessible. Public RDS instances represent a material weakness in internal controls over financial reporting.",
+      "severity": "CRITICAL",
+      "config_rule": "rds-instance-public-access-check",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.12",
+      "control_name": "Secrets Management — Rotation Controls",
+      "description": "Credentials and secrets used to access financial systems must be automatically rotated. Manual credential management is a control deficiency.",
+      "severity": "HIGH",
+      "config_rule": "secretsmanager-rotation-enabled-check",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/secretsmanager-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.13",
+      "control_name": "API Security — TLS Enforcement",
+      "description": "All API endpoints serving financial data must enforce TLS. Unencrypted API traffic to financial systems is a reportable control deficiency.",
+      "severity": "HIGH",
+      "config_rule": "api-gw-ssl-enabled",
+      "guardduty_finding_types": [],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/apigateway-controls.html"
+    },
+    {
+      "control_id": "FDICIA-363.14",
+      "control_name": "S3 Public Access Prohibition — Financial Data",
+      "description": "S3 buckets containing financial records or audit evidence must block all public access. Public S3 exposure of financial data is a material weakness.",
+      "severity": "CRITICAL",
+      "config_rule": "s3-bucket-public-read-prohibited",
+      "guardduty_finding_types": [
+        "Policy:S3/BucketPublicAccessGranted"
+      ],
+      "remediation_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html"
+    }
+  ]
+}
