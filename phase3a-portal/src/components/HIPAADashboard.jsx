@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
 import { logoutDemo } from '../services/jwtService';
+import './Dashboard.css';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -10,6 +11,49 @@ import { logoutDemo } from '../services/jwtService';
 
 /** Delay (ms) before the export download triggers — gives the UX spinner time to render */
 const EXPORT_GENERATION_DELAY_MS = 1200;
+const FINDING_FILTERS = ['all', 'critical', 'high', 'medium', 'low', 'resolved'];
+const MOCK_FINDINGS = [
+  {
+    id: 'f001',
+    severity: 'critical',
+    title: 'Unencrypted PHI in S3 Bucket',
+    description: 'S3 bucket "trinetx-patient-data" does not have server-side encryption enabled.',
+    control: 'HIPAA §164.312(a)(2)(iv)',
+    status: 'open',
+    remediation_steps: [
+      'Navigate to S3 console and select the bucket',
+      'Go to Properties → Default encryption',
+      'Enable SSE-S3 or SSE-KMS encryption',
+      'Apply bucket policy to deny unencrypted uploads'
+    ]
+  },
+  {
+    id: 'f002',
+    severity: 'high',
+    title: 'MFA Not Enforced for Admin Users',
+    description: '3 IAM admin users do not have MFA enabled, violating access control requirements.',
+    control: 'HIPAA §164.312(d)',
+    status: 'open',
+    remediation_steps: [
+      'Go to IAM → Users and identify users without MFA',
+      'Enforce MFA via IAM policy or AWS Organizations SCP',
+      'Notify affected users to enroll their MFA device'
+    ]
+  },
+  {
+    id: 'f003',
+    severity: 'high',
+    title: 'CloudTrail Logging Disabled in us-west-2',
+    description: 'AWS CloudTrail is not enabled in the us-west-2 region, creating an audit gap.',
+    control: 'HIPAA §164.312(b)',
+    status: 'in_progress',
+    remediation_steps: [
+      'Open CloudTrail in the AWS console',
+      'Create a new trail covering all regions',
+      'Enable log file validation and S3 delivery'
+    ]
+  }
+];
 
 // ---------------------------------------------------------------------------
 // Helper components
@@ -55,20 +99,6 @@ function StatusPill({ status }) {
   );
 }
 
-function SeverityPill({ severity }) {
-  const map = {
-    high: { bg: '#fee2e2', color: '#991b1b' },
-    medium: { bg: '#fef3c7', color: '#92400e' },
-    low: { bg: '#dbeafe', color: '#1e40af' }
-  };
-  const s = map[severity] || { bg: '#f3f4f6', color: '#374151' };
-  return (
-    <span style={{ padding: '2px 10px', borderRadius: 999, background: s.bg, color: s.color, fontWeight: 600, fontSize: '0.78rem', textTransform: 'capitalize' }}>
-      {severity}
-    </span>
-  );
-}
-
 function ProgressBar({ value, color = '#10b981' }) {
   return (
     <div style={{ height: 8, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden', width: '100%' }}>
@@ -103,6 +133,13 @@ const TAB_LABELS = {
 export default function HIPAADashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const findingsRef = useRef(null);
+  const [findings, setFindings] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [statusToastId, setStatusToastId] = useState('');
+  const [jumpToFindingsOnLoad, setJumpToFindingsOnLoad] = useState(false);
+  const effectiveTier = (localStorage.getItem('customerTier') || 'healthcare').toLowerCase();
+  const isHealthcareTier = effectiveTier === 'healthcare';
 
   const handleLogout = async () => {
     await logoutDemo();
@@ -120,21 +157,72 @@ export default function HIPAADashboard() {
     try {
       setLoading(true);
       setError(null);
-      const result = await sreService.getHIPAACompliance();
-      setData(result);
+      const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      };
+
+      let compliancePayload;
+      try {
+        const complianceRes = await fetch('/api/hipaa/compliance', { headers });
+        if (!complianceRes.ok) throw new Error(`HIPAA compliance fetch failed: ${complianceRes.status}`);
+        const complianceData = await complianceRes.json();
+        compliancePayload = complianceData?.data || complianceData;
+      } catch (_) {
+        compliancePayload = await sreService.getHIPAACompliance();
+      }
+
+      setData(compliancePayload);
+
+      if (!isHealthcareTier) {
+        setFindings(compliancePayload?.findings || []);
+        return;
+      }
+
+      try {
+        const findingsRes = await fetch('/api/hipaa/findings', { headers });
+        if (!findingsRes.ok) throw new Error(`HIPAA findings fetch failed: ${findingsRes.status}`);
+        const findingsData = await findingsRes.json();
+        const normalizedFindings = normalizeFindings(findingsData);
+        setFindings(normalizedFindings.length > 0 ? normalizedFindings : MOCK_FINDINGS);
+      } catch (_) {
+        const fallbackFindings = normalizeFindings(compliancePayload?.findings || []);
+        setFindings(fallbackFindings.length > 0 ? fallbackFindings : MOCK_FINDINGS);
+      }
     } catch (err) {
       console.error('Failed to load HIPAA compliance data:', err);
       setError('Failed to load HIPAA compliance data. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isHealthcareTier]);
 
   useEffect(() => {
     trackPageView('HIPAA Dashboard', '/hipaa-dashboard');
     trackHIPAARoute('/hipaa-dashboard', 'view');
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!isHealthcareTier) return;
+    const shouldJumpToFindings = localStorage.getItem('hipaa_jump_to_findings') === 'true';
+    if (shouldJumpToFindings) {
+      localStorage.removeItem('hipaa_jump_to_findings');
+      setJumpToFindingsOnLoad(true);
+      setActiveFilter('critical');
+      setActiveTab('findings');
+    }
+  }, [isHealthcareTier]);
+
+  useEffect(() => {
+    if (!jumpToFindingsOnLoad || activeTab !== 'findings') return;
+    const timer = setTimeout(() => {
+      findingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setJumpToFindingsOnLoad(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeTab, jumpToFindingsOnLoad]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -158,6 +246,43 @@ export default function HIPAADashboard() {
       URL.revokeObjectURL(url);
       setExporting(false);
     }, EXPORT_GENERATION_DELAY_MS);
+  };
+
+  const handleDownloadEvidence = () => {
+    const orgName = localStorage.getItem('orgName') || 'Organization';
+    const date = new Date().toISOString().split('T')[0];
+    const content = generateEvidenceReport(orgName, date, findings, data?.overallScore ?? 0);
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${orgName}-HIPAA-Evidence-${date}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleStatusUpdate = async (id, status) => {
+    const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+
+    setFindings((previous) => previous.map((finding) => (finding.id === id ? { ...finding, status } : finding)));
+    setStatusToastId(id);
+    window.setTimeout(() => setStatusToastId(''), 2000);
+
+    try {
+      await fetch(`/api/hipaa/findings/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status }),
+      });
+    } catch (_) {
+      // Optimistic update is retained for demo environments.
+    }
   };
 
   if (loading) {
@@ -202,6 +327,23 @@ export default function HIPAADashboard() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {isHealthcareTier && (
+                <button
+                  onClick={handleDownloadEvidence}
+                  style={{
+                    background: '#fff',
+                    color: '#0f4c81',
+                    border: '2px solid #0f4c81',
+                    borderRadius: 8,
+                    padding: '0.6rem 1.2rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  Download Evidence Package
+                </button>
+              )}
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.75rem 1.5rem' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{data.overallScore}%</div>
                 <div style={{ fontSize: '0.78rem', opacity: 0.85, marginTop: 2 }}>Overall Score</div>
@@ -249,7 +391,17 @@ export default function HIPAADashboard() {
         {activeTab === 'overview' && <OverviewTab data={data} />}
         {activeTab === 'safeguards' && <SafeguardsTab data={data} activeSafeguard={activeSafeguard} setActiveSafeguard={setActiveSafeguard} />}
         {activeTab === 'phi' && <PHITab data={data} />}
-        {activeTab === 'findings' && <FindingsTab data={data} />}
+        {activeTab === 'findings' && (
+          <FindingsTab
+            findings={findings}
+            findingsRef={findingsRef}
+            activeFilter={activeFilter}
+            setActiveFilter={setActiveFilter}
+            onStatusUpdate={handleStatusUpdate}
+            statusToastId={statusToastId}
+            isHealthcareTier={isHealthcareTier}
+          />
+        )}
         {activeTab === 'evidence' && <EvidenceTab data={data} onExport={handleExport} exporting={exporting} />}
       </main>
     </div>
@@ -539,53 +691,88 @@ function PHITab({ data }) {
 // Tab: Findings
 // ---------------------------------------------------------------------------
 
-function FindingsTab({ data }) {
-  const { findings } = data;
+function FindingsTab({ findings, findingsRef, activeFilter, setActiveFilter, onStatusUpdate, statusToastId, isHealthcareTier }) {
+  const [expandedId, setExpandedId] = useState(null);
+  const counts = getFilterCounts(findings);
+  const filteredFindings = filterFindings(findings, activeFilter);
 
-  const criticalCount = findings.filter(f => f.severity === 'high' && f.status === 'open').length;
-  const openCount = findings.filter(f => f.status === 'open').length;
-  const inProgressCount = findings.filter(f => f.status === 'in_progress').length;
+  if (!isHealthcareTier) {
+    return (
+      <div style={cardStyle}>
+        <h2 style={sectionHead}>Findings</h2>
+        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
+          HIPAA findings workflow is available for healthcare tier customers.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
-        {[
-          { label: 'Total Findings', value: findings.length, color: '#374151', bg: '#f3f4f6' },
-          { label: 'Open', value: openCount, color: '#dc2626', bg: '#fee2e2' },
-          { label: 'In Progress', value: inProgressCount, color: '#1d4ed8', bg: '#dbeafe' },
-          { label: 'High Severity', value: criticalCount, color: '#dc2626', bg: '#fee2e2' }
-        ].map(s => (
-          <div key={s.label} style={{ ...cardStyle, background: s.bg, textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>{s.label}</div>
-          </div>
+    <div ref={findingsRef} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="findings-filter-bar">
+        {FINDING_FILTERS.map((filter) => (
+          <button
+            key={filter}
+            className={`filter-pill ${activeFilter === filter ? 'active' : ''}`}
+            onClick={() => setActiveFilter(filter)}
+          >
+            {filterLabel(filter)} ({counts[filter] ?? 0})
+          </button>
         ))}
       </div>
 
-      {/* Finding cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {findings.map(f => (
-          <div key={f.id} style={{ ...cardStyle, borderLeft: `4px solid ${f.severity === 'high' ? '#ef4444' : f.severity === 'medium' ? '#f59e0b' : '#3b82f6'}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                  <SeverityPill severity={f.severity} />
-                  <StatusPill status={f.status} />
-                  <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#9ca3af' }}>{f.control}</span>
-                </div>
-                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>{f.title}</h3>
-                <p style={{ margin: '0 0 6px', fontSize: '0.82rem', color: '#374151' }}>
-                  <strong>Remediation:</strong> {f.remediation}
-                </p>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
-                  Owner: {f.owner} · Open {f.daysOpen} day{f.daysOpen !== 1 ? 's' : ''}
-                </p>
+      {filteredFindings.map((finding) => {
+        const isExpanded = expandedId === finding.id;
+        return (
+          <div key={finding.id} className="finding-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={severityBadgeStyle(finding.severity)}>{finding.severity}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#6b7280' }}>{finding.control}</span>
               </div>
+              <span style={statusBadgeStyle(finding.status)}>{statusLabel(finding.status)}</span>
+            </div>
+
+            <h3 style={{ margin: '0.75rem 0 0.35rem', fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{finding.title}</h3>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{finding.description}</p>
+
+            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {finding.status === 'open' && (
+                <button onClick={() => onStatusUpdate(finding.id, 'in_progress')} style={inlineActionButtonStyle}>
+                  Mark In Progress
+                </button>
+              )}
+              {(finding.status === 'open' || finding.status === 'in_progress') && (
+                <button onClick={() => onStatusUpdate(finding.id, 'resolved')} style={inlineActionButtonStyle}>
+                  Mark Resolved
+                </button>
+              )}
+              {statusToastId === finding.id && <span className="status-toast">✓ Status updated</span>}
+            </div>
+
+            <button
+              onClick={() => setExpandedId(isExpanded ? null : finding.id)}
+              style={{ marginTop: '0.8rem', background: 'none', border: 'none', color: '#0f4c81', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', padding: 0 }}
+            >
+              {isExpanded ? '▼ Hide Remediation Steps' : '▶ View Remediation Steps'}
+            </button>
+
+            <div className={`remediation-steps ${isExpanded ? 'expanded' : ''}`}>
+              <ol style={{ margin: '0.75rem 0 0', paddingLeft: '1.25rem', color: '#374151', fontSize: '0.85rem', lineHeight: 1.7 }}>
+                {(finding.remediation_steps || []).map((step, index) => (
+                  <li key={`${finding.id}-step-${index}`}>{step}</li>
+                ))}
+              </ol>
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
+
+      {filteredFindings.length === 0 && (
+        <div style={{ ...cardStyle, textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>
+          No findings match this filter.
+        </div>
+      )}
     </div>
   );
 }
@@ -655,6 +842,106 @@ function EvidenceTab({ data, onExport, exporting }) {
 }
 
 // ---------------------------------------------------------------------------
+// Findings helpers
+// ---------------------------------------------------------------------------
+
+function normalizeFindings(payload) {
+  const source = Array.isArray(payload) ? payload : payload?.findings || payload?.data || [];
+  if (!Array.isArray(source)) return [];
+
+  return source.map((finding, index) => ({
+    id: finding.id || `finding-${index}`,
+    severity: String(finding.severity || 'low').toLowerCase(),
+    title: finding.title || 'Untitled finding',
+    description: finding.description || finding.remediation || 'No description available.',
+    control: finding.control || 'HIPAA control',
+    status: String(finding.status || 'open').toLowerCase(),
+    remediation_steps: Array.isArray(finding.remediation_steps)
+      ? finding.remediation_steps
+      : (finding.remediation ? [finding.remediation] : ['Review and remediate this control.'])
+  }));
+}
+
+function filterFindings(findings, activeFilter) {
+  if (activeFilter === 'all') return findings;
+  if (activeFilter === 'resolved') return findings.filter((finding) => finding.status === 'resolved');
+  return findings.filter((finding) => finding.severity === activeFilter);
+}
+
+function getFilterCounts(findings) {
+  return {
+    all: findings.length,
+    critical: findings.filter((finding) => finding.severity === 'critical').length,
+    high: findings.filter((finding) => finding.severity === 'high').length,
+    medium: findings.filter((finding) => finding.severity === 'medium').length,
+    low: findings.filter((finding) => finding.severity === 'low').length,
+    resolved: findings.filter((finding) => finding.status === 'resolved').length,
+  };
+}
+
+function filterLabel(filter) {
+  if (filter === 'all') return 'All';
+  if (filter === 'resolved') return 'Resolved';
+  return filter.charAt(0).toUpperCase() + filter.slice(1);
+}
+
+function statusLabel(status) {
+  if (status === 'in_progress') return 'In Progress';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function severityBadgeStyle(severity) {
+  const map = {
+    critical: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' },
+    high: { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' },
+    medium: { background: '#e0f2fe', color: '#075985', border: '1px solid #7dd3fc' },
+    low: { background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }
+  };
+  const style = map[severity] || map.low;
+  return {
+    ...style,
+    textTransform: 'capitalize',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+    borderRadius: 999,
+    padding: '0.15rem 0.55rem'
+  };
+}
+
+function statusBadgeStyle(status) {
+  const color = status === 'open' ? '#dc2626' : status === 'in_progress' ? '#d97706' : '#16a34a';
+  return {
+    color,
+    fontWeight: 700,
+    fontSize: '0.8rem'
+  };
+}
+
+function generateEvidenceReport(org, date, findings, score) {
+  const openFindings = findings.filter((finding) => finding.status !== 'resolved');
+  const resolvedFindings = findings.filter((finding) => finding.status === 'resolved');
+  return `
+HIPAA COMPLIANCE EVIDENCE PACKAGE
+==================================
+Organization: ${org}
+Generated: ${date}
+Overall Score: ${score}%
+
+OPEN FINDINGS
+-------------
+${openFindings.map((finding) =>
+  `[${String(finding.severity).toUpperCase()}] ${finding.title}\nControl: ${finding.control}\n${finding.description}`
+).join('\n\n')}
+
+RESOLVED CONTROLS
+-----------------
+${resolvedFindings.map((finding) =>
+  `✓ ${finding.title} (${finding.control})`
+).join('\n')}
+`.trim();
+}
+
+// ---------------------------------------------------------------------------
 // Shared styles
 // ---------------------------------------------------------------------------
 
@@ -702,6 +989,17 @@ const btnSecondary = {
   fontWeight: 600,
   cursor: 'pointer',
   fontSize: '0.875rem'
+};
+
+const inlineActionButtonStyle = {
+  background: '#fff',
+  color: '#0f4c81',
+  border: '1px solid #bfdbfe',
+  borderRadius: 8,
+  padding: '0.35rem 0.65rem',
+  fontWeight: 600,
+  fontSize: '0.78rem',
+  cursor: 'pointer'
 };
 
 // ---------------------------------------------------------------------------
