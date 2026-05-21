@@ -71,7 +71,8 @@ const MOCK_HISTORY = [
   { date: '2026-05-13', score: 84, controls_passing: 42, high_findings: 4 },
 ];
 
-const FRAMEWORKS = ['hipaa', 'soc2', 'pcidss'];
+const DEFAULT_FRAMEWORK = 'hipaa';
+const SUPPORTED_FRAMEWORK_IDS = ['hipaa', 'soc2', 'pcidss'];
 
 const MOCK_FRAMEWORKS = [
   { id: 'hipaa', name: 'HIPAA', description: 'Health Insurance Portability & Accountability Act', score: 84, controls_passing: 42, high_findings: 4, color: '#0f4c81', icon: '🏥' },
@@ -136,8 +137,8 @@ function getMockSchedule() {
 }
 
 function getStoredActiveFramework() {
-  const framework = String(localStorage.getItem('active_framework') || 'hipaa').toLowerCase();
-  return FRAMEWORKS.includes(framework) ? framework : 'hipaa';
+  const framework = String(localStorage.getItem('active_framework') || DEFAULT_FRAMEWORK).toLowerCase();
+  return SUPPORTED_FRAMEWORK_IDS.includes(framework) ? framework : DEFAULT_FRAMEWORK;
 }
 
 function normalizeFrameworkOverview(payload) {
@@ -160,7 +161,9 @@ function normalizeFrameworkOverview(payload) {
 }
 
 function getFrameworkMeta(frameworkId, frameworks = MOCK_FRAMEWORKS) {
-  return frameworks.find((framework) => framework.id === frameworkId) || MOCK_FRAMEWORKS[0];
+  return frameworks.find((framework) => framework.id === frameworkId)
+    || MOCK_FRAMEWORKS[0]
+    || { id: DEFAULT_FRAMEWORK, name: 'HIPAA', description: '', score: 0, controls_passing: 0, high_findings: 0, color: '#0f4c81', icon: '🏥' };
 }
 
 function buildFrameworkComplianceFallback(frameworkId, frameworks = MOCK_FRAMEWORKS) {
@@ -406,8 +409,7 @@ export default function HIPAADashboard() {
     const shouldJumpToFindings = localStorage.getItem('hipaa_jump_to_findings') === 'true';
     if (shouldJumpToFindings) {
       localStorage.removeItem('hipaa_jump_to_findings');
-      setActiveFramework('hipaa');
-      localStorage.setItem('active_framework', 'hipaa');
+      setActiveFramework(DEFAULT_FRAMEWORK);
       setJumpToFindingsOnLoad(true);
       setActiveFilter('critical');
       setActiveTab('findings');
