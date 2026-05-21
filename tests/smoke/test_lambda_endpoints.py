@@ -17,7 +17,7 @@ TESTS = [
     ("POST /auth no token", "POST", "/auth", {}, 401),
     ("POST /checkout invalid tier", "POST", "/checkout", {"tier": "unknown"}, 400),
     ("GET /pilot/availability", "GET", "/pilot/availability?sku=pilot_compliance", None, 200),
-    ("GET /validate-session", "GET", "/validate-session", None, 401),
+    ("GET /validate-session invalid session", "GET", "/validate-session?session_id=cs_smoke_invalid", None, 400),
 ]
 
 
