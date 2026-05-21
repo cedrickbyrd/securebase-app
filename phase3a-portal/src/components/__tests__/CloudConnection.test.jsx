@@ -48,6 +48,8 @@ describe('CloudConnection', () => {
     expect(screen.getByText('Controls Passing')).toBeInTheDocument();
     expect(screen.getByText(/Connect your AWS environment to unlock your live HIPAA posture/i)).toBeInTheDocument();
     expect(screen.getByText('87')).toHaveStyle({ filter: 'blur(6px)', userSelect: 'none' });
+    expect(screen.getByText('87')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText(/Locked placeholder metric for HIPAA Posture Score/i)).toBeInTheDocument();
   });
 
   it('builds a team handoff mailto link with live deployment values', async () => {
@@ -83,6 +85,16 @@ describe('CloudConnection', () => {
     expect(screen.getByText('Role verified')).toBeInTheDocument();
     expect(screen.getByText('Analyzing IAM policies')).toBeInTheDocument();
     expect(screen.getByText('Scan in progress')).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith('/api/scan/trigger', expect.any(Object));
+    expect(screen.getByText('Analyzing IAM policies')).toHaveClass('text-blue-700');
+
+    await act(async () => {
+      vi.advanceTimersByTime(1800);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Auditing S3 bucket configurations')).toHaveClass('text-blue-700');
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(1800 * SCAN_STEP_COUNT);

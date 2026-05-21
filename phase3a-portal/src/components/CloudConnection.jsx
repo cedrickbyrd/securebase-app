@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { apiService } from '../services/apiService';
 
 // ── Step indicators ──────────────────────────────────────────────────────────
@@ -112,6 +112,7 @@ export default function CloudConnection() {
   const [verifyResult, setVerifyResult] = useState(null);
   const [scanPending, setScanPending]   = useState(false);
   const [scanProgressIndex, setScanProgressIndex] = useState(0);
+  const scanIntervalRef = useRef(null);
 
   // Load existing connection on mount
   useEffect(() => {
@@ -133,24 +134,34 @@ export default function CloudConnection() {
 
   useEffect(() => {
     if (!(scanPending && step === 3 && verifyResult?.connected)) {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
       setScanProgressIndex(0);
       return undefined;
     }
 
     setScanProgressIndex(1);
 
-    const interval = setInterval(() => {
-      setScanProgressIndex(prev => {
-        if (prev >= SCAN_PROGRESS_STEPS.length - 1) {
-          clearInterval(interval);
-          return SCAN_PROGRESS_STEPS.length;
-        }
-        return prev + 1;
-      });
+    scanIntervalRef.current = setInterval(() => {
+      setScanProgressIndex(prev => Math.min(prev + 1, SCAN_PROGRESS_STEPS.length));
     }, 1800);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+    };
   }, [scanPending, step, verifyResult?.connected]);
+
+  useEffect(() => {
+    if (scanProgressIndex >= SCAN_PROGRESS_STEPS.length && scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+  }, [scanProgressIndex]);
 
   // ── Step 1: generate external ID ─────────────────────────────────────────
 
@@ -262,10 +273,14 @@ export default function CloudConnection() {
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{card.label}</p>
                 <p
                   className="mt-3 text-3xl font-bold text-gray-900"
+                  aria-hidden="true"
                   style={{ filter: 'blur(6px)', userSelect: 'none' }}
                 >
                   {card.value}
                 </p>
+                <span className="sr-only">
+                  Locked placeholder metric for {card.label}. Connect your AWS environment to unlock live values.
+                </span>
                 <p className="mt-2 text-xs text-gray-400">Live once your AWS environment is connected</p>
               </div>
             ))}
@@ -273,6 +288,7 @@ export default function CloudConnection() {
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/55 px-6 text-center">
             <span className="text-3xl" aria-hidden="true">🔒</span>
             <p className="mt-3 max-w-md text-sm font-semibold text-gray-800">
+              <span className="sr-only">Locked: </span>
               Connect your AWS environment to unlock your live HIPAA posture
             </p>
           </div>
