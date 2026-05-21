@@ -325,36 +325,22 @@ class TestAuthBruteForce(unittest.TestCase):
 class TestAuditLogging(unittest.TestCase):
     """Verify the audit_logging module emits structured logs and writes to DB."""
 
-    def _import_module(self):
-        import importlib
-        import sys
-        # Ensure db_utils stub is in place so the module loads without the layer
-        if 'db_utils' not in sys.modules:
-            sys.modules['db_utils'] = MagicMock()
-        import phase2_backend.functions.audit_logging as al  # noqa: F401
-        return importlib.import_module('phase2-backend.functions.audit_logging'.replace('-', '_').replace('/', '.'))
-
     def test_log_activity_emits_cloudwatch_log(self):
         """log_activity must emit a structured log even when DB is unavailable."""
         import sys
+        import importlib
+        import os as _os
+
         # Stub out db layer
         db_stub = MagicMock()
         db_stub.get_connection.side_effect = Exception('no db in test')
         sys.modules['db_utils'] = db_stub
 
-        # Re-import to pick up the stub
-        import importlib
-        if 'phase2-backend' in sys.modules:
-            del sys.modules['phase2-backend']
-
         # Dynamically locate the module file and exec it in isolation
-        import types
-        import os as _os
-        module_path = _os.path.join(
+        module_path = _os.path.normpath(_os.path.join(
             _os.path.dirname(__file__),
             '..', '..', 'phase2-backend', 'functions', 'audit_logging.py',
-        )
-        module_path = _os.path.normpath(module_path)
+        ))
         spec = importlib.util.spec_from_file_location('audit_logging', module_path)
         mod = importlib.util.module_from_spec(spec)
         sys.modules['audit_logging'] = mod
