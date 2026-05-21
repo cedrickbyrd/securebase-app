@@ -149,6 +149,11 @@ const mockScheduleApiResponse = {
   notify_email: 'user@example.com',
 };
 
+const mockUsersApiResponse = [
+  { id: 'u001', name: 'User Example', email: 'user@example.com', role: 'admin', avatar_initials: 'UE', joined_at: '2026-04-01T00:00:00Z' },
+  { id: 'u002', name: 'Sarah Chen', email: 'sarah.chen@trinetx.com', role: 'analyst', avatar_initials: 'SC', joined_at: '2026-04-15T00:00:00Z' },
+];
+
 vi.mock('../../services/sreService', () => ({
   sreService: {
     getHIPAACompliance: vi.fn(() => Promise.resolve(mockHIPAAData))
@@ -189,6 +194,9 @@ describe('HIPAADashboard Component', () => {
       }
       if (url === '/api/hipaa/schedule' && options?.method === 'POST') {
         return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      if (url === '/api/users') {
+        return Promise.resolve({ ok: true, json: async () => mockUsersApiResponse });
       }
       return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
     }));
@@ -492,5 +500,33 @@ describe('HIPAADashboard Component', () => {
 
     objectUrlSpy.mockRestore();
     revokeSpy.mockRestore();
+  });
+
+  it('shows mine filter and remediation ownership widget for admin user', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Mine \\(0\\)/i })).toBeInTheDocument();
+      expect(screen.getByText(/Remediation Ownership/i)).toBeInTheDocument();
+    });
+  });
+
+  it('assigns finding owner with optimistic update and toast', async () => {
+    render(<HIPAADashboard />);
+    await waitFor(() => screen.getByText(/⚠️ Findings/i));
+    fireEvent.click(screen.getByText(/⚠️ Findings/i));
+
+    const findingAssignmentSelect = await screen.findByLabelText(/Assign owner for Unencrypted PHI in S3 Bucket/i);
+    fireEvent.change(findingAssignmentSelect, { target: { value: 'u002' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/✓ Assigned to Sarah Chen/i)).toBeInTheDocument();
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/hipaa/findings/hipaa-f100',
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
   });
 });
