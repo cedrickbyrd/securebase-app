@@ -15,7 +15,7 @@ on:
       base_url:
         description: 'Portal base URL for E2E tests'
         required: false
-        default: 'http://localhost:5173'
+        default: 'https://portal.securebase.tximhotep.com'
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ jobs:
   e2e:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     defaults:
       run:
@@ -64,61 +64,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for lock file drift
+      - name: Install Playwright browsers (chromium only for CI speed)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
         run: |
-          echo "Checking for package-lock.json drift..."
-          if npm install --dry-run 2>&1 | grep -q "added\|removed\|changed"; then
-            echo "::warning::package-lock.json is out of sync with package.json. Run 'npm install' locally and commit the updated lock file."
-          else
-            echo "Lock file is in sync ✓"
-          fi
-
-      - name: Install Playwright browsers (all configured projects)
-        run: npx playwright install --with-deps
-
-      - name: Build portal (demo mode for E2E)
-        run: npm run build
-        env:
-          VITE_DEMO_MODE: 'true'
-          VITE_USE_MOCK_API: 'true'
-          VITE_API_BASE_URL: 'http://localhost:5173'
-
-      - name: Run Playwright compliance tests
-        working-directory: phase3a-portal
+          npx playwright test tests/e2e/ \
+            --project=chromium \
+            --reporter=list \
+            --timeout=30000
         env:
           CI: true
-          BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:5173' }}
-          PORTAL_URL: https://portal.securebase.tximhotep.com
+          PORTAL_URL: ${{ github.event.inputs.base_url || 'https://portal.securebase.tximhotep.com' }}
           TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
           TEST_ADMIN_EMAIL: ${{ secrets.PLAYWRIGHT_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.PLAYWRIGHT_ADMIN_PASSWORD }}
-        run: |
-          npx playwright test tests/e2e/compliance-score-endpoints.spec.js --reporter=list
-
-      - name: Start portal preview server
-        run: npx vite preview --port 5173 &
-        env:
-          NODE_ENV: test
-
-      - name: Wait for portal to be ready
-        run: |
-          timeout 30 bash -c 'until curl -sf http://localhost:5173; do sleep 1; done'
-
-      - name: Run Playwright E2E tests (includes compliance-scores.spec.js)
-        run: |
-          if [ -d "tests/e2e" ]; then
-            npx playwright test tests/e2e/ \
-              --reporter=html \
-              --timeout=30000
-          else
-            echo "No E2E tests found in tests/e2e/ yet — skipping."
-            echo "TODO: Create tests/e2e/ directory with Playwright specs."
-          fi
-        env:
-          BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:5173' }}
-          VITE_DEMO_MODE: 'true'
-          VITE_USE_MOCK_API: 'true'
 
       - name: Upload test report on failure
         uses: actions/upload-artifact@v4
