@@ -115,12 +115,44 @@ const login = async (body) => {
     const valid = authenticator.verify({ token: totp_code, secret: user.mfa_secret });
     if (!valid) return response(401, { message: "Invalid TOTP code" });
   }
+  if (!user.first_login_at) {
+    const firstLoginAt = new Date().toISOString();
+    try {
+      await db.send(new UpdateItemCommand({
+        TableName: USERS_TABLE,
+        Key: marshall({ email }),
+        UpdateExpression: "SET first_login_at = :t",
+        ConditionExpression: "attribute_not_exists(first_login_at)",
+        ExpressionAttributeValues: marshall({ ":t": firstLoginAt }),
+      }));
+      user.first_login_at = firstLoginAt;
+    } catch (err) {
+      if (err?.name === "ConditionalCheckFailedException") {
+        const latestUser = await getUser(email);
+        if (!latestUser?.first_login_at) {
+          throw new Error("first_login_at could not be read after conditional write failure; possible consistency delay");
+        }
+        user.first_login_at = latestUser.first_login_at;
+      } else {
+        console.error("Failed to set first_login_at:", err);
+        throw err;
+      }
+    }
+  }
   const token = jwt.sign(
     { sub: user.email, role: user.role || "user", mfa_enabled: !!user.mfa_enabled },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRY },
   );
-  return response(200, { token, user: { email: user.email, role: user.role, mfa_enabled: user.mfa_enabled } });
+  return response(200, {
+    token,
+    user: {
+      email: user.email,
+      role: user.role,
+      mfa_enabled: user.mfa_enabled,
+      first_login_at: user.first_login_at || null,
+    },
+  });
 };
 
 const register = async (body) => {
