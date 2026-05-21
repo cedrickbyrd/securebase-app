@@ -48,9 +48,30 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: phase3a-portal/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify npm registry connectivity
+        run: |
+          echo "Checking npm registry connectivity..."
+          if ! curl -sf --max-time 10 https://registry.npmjs.org > /dev/null; then
+            echo "::error::Cannot reach registry.npmjs.org — npm ci will fail. Check runner DNS/network."
+            exit 1
+          fi
+          echo "Registry reachable ✓"
+          npm config set registry https://registry.npmjs.org
+          npm config get registry
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check for lock file drift
+        run: |
+          echo "Checking for package-lock.json drift..."
+          if npm install --dry-run 2>&1 | grep -q "added\|removed\|changed"; then
+            echo "::warning::package-lock.json is out of sync with package.json. Run 'npm install' locally and commit the updated lock file."
+          else
+            echo "Lock file is in sync ✓"
+          fi
 
       - name: Install Playwright browsers (all configured projects)
         run: npx playwright install --with-deps
