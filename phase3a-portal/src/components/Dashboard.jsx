@@ -139,6 +139,20 @@ function Dashboard() {
   const handleCriticalAlert = (notification) => setToasts(prev => [...prev, notification]);
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
+  // Scan step animation
+  const [currentStep, setCurrentStep] = useState(0);
+  useEffect(() => {
+    if (!scanPending) return;
+    if (currentStep >= 5) return;
+    const timer = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev >= 4) { clearInterval(timer); return 5; }
+        return prev + 1;
+      });
+    }, 2200);
+    return () => clearInterval(timer);
+  }, [scanPending]);
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -169,17 +183,76 @@ function Dashboard() {
 
         <main className="dashboard-main">
           <div className="dashboard-empty-state">
-            <div className="mx-auto max-w-[480px] px-8 py-16 text-center">
-              <div className="mb-4 text-5xl">🔍</div>
-              <h2 className="mb-3 text-2xl font-bold text-gray-900">
-                Your compliance posture is being calculated
-              </h2>
-              <p className="mb-6 leading-relaxed text-gray-500">
-                SecureBase is scanning your AWS environment. Your compliance score, findings, and evidence packages will appear here within 15 minutes.
+            <div style={{ maxWidth: '560px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+              {/* Spinner */}
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }} />
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
+                  Analyzing your AWS environment
+                </h2>
+                <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: '0.95rem', maxWidth: '420px', margin: '0 auto' }}>
+                  SecureBase is running your first HIPAA compliance assessment. Results are typically ready in 10–15 minutes.
+                </p>
+              </div>
+
+              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
+
+              {/* Scan steps */}
+              <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                Building your HIPAA posture report
               </p>
-              <p className="text-sm text-gray-400">
-                You can close this tab and come back — we'll have your results ready.
-              </p>
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1rem 1.25rem' }}>
+                {[
+                  'Auditing IAM policies & roles',
+                  'Scanning S3 bucket configurations',
+                  'Checking encryption at rest & transit',
+                  'Mapping PHI data locations',
+                  'Calculating HIPAA posture score',
+                ].map((label, i) => {
+                  const isDone = i < currentStep;
+                  const isActive = i === currentStep && currentStep < 5;
+                  return (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.45rem 0', fontSize: '0.9rem', color: isDone ? '#374151' : isActive ? '#1a73e8' : '#9ca3af' }}>
+                      {isDone
+                        ? <span style={{ color: '#10b981', fontWeight: '700', minWidth: '1.2rem' }}>✓</span>
+                        : isActive
+                          ? <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', minWidth: '1.2rem', color: '#1a73e8' }}>⟳</span>
+                          : <span style={{ minWidth: '1.2rem', color: '#d1d5db' }}>⏳</span>
+                      }
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Email notification */}
+              {(() => {
+                const userEmail = localStorage.getItem('userEmail');
+                if (!userEmail) return null;
+                const mailto = `mailto:${userEmail}?subject=SecureBase%20%E2%80%94%20Your%20HIPAA%20Scan%20is%20Ready&body=Your%20SecureBase%20HIPAA%20compliance%20scan%20has%20completed.%20Log%20in%20to%20view%20your%20results%3A%20https%3A%2F%2Fportal.securebase.tximhotep.com%2Fdashboard`;
+                return (
+                  <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>📬 Want a notification when it's ready?</p>
+                    <a href={mailto}
+                      style={{ display: 'inline-block', border: '1px solid #d1d5db', borderRadius: '8px', padding: '0.6rem 1.25rem', fontSize: '0.875rem', color: '#374151', textDecoration: 'none', background: 'white' }}>
+                      Send me an email notification
+                    </a>
+                  </div>
+                );
+              })()}
+
+              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
+
+              {/* Preview cards */}
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem' }}>While you wait — explore what's coming:</p>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {[['🛡️', 'HIPAA Posture Score'], ['⚠️', 'Open Findings & Remediation'], ['📄', 'Evidence Export Package']].map(([icon, title]) => (
+                  <div key={title} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '1rem 1.25rem', flex: '1 1 160px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.75rem' }}>{icon}</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#374151', marginTop: '0.5rem' }}>{title}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </main>
