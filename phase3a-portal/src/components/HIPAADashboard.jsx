@@ -404,6 +404,7 @@ export default function HIPAADashboard() {
   };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(() => window.matchMedia('(max-width: 640px)').matches);
   const [activeTab, setActiveTab] = useState('overview');
   const [activeSafeguard, setActiveSafeguard] = useState('administrative');
   const [exporting, setExporting] = useState(false);
@@ -518,6 +519,13 @@ export default function HIPAADashboard() {
     trackHIPAARoute('/hipaa-dashboard', 'view');
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)');
+    const onChange = (event) => setIsMobileView(event.matches);
+    media.addEventListener?.('change', onChange);
+    return () => media.removeEventListener?.('change', onChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('active_framework', activeFramework);
@@ -756,6 +764,23 @@ export default function HIPAADashboard() {
                   👥 Team
                 </button>
               )}
+              {isHealthcareTier && currentUserRole === 'admin' && (
+                <button
+                  onClick={() => navigate('/executive')}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: 8,
+                    padding: '0.6rem 1.1rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  📊 Executive View
+                </button>
+              )}
               {isHealthcareTier && (
                 <button
                   onClick={() => navigate('/alerts')}
@@ -875,6 +900,7 @@ export default function HIPAADashboard() {
             teamMembers={teamMembers}
             currentUserEmail={currentUserEmail}
             currentUserRole={currentUserRole}
+            isMobileView={isMobileView}
           />
         )}
         {activeTab === 'evidence' && <EvidenceTab data={data} onExport={handleExport} exporting={exporting} />}
@@ -1186,6 +1212,7 @@ function FindingsTab({
   teamMembers,
   currentUserEmail,
   currentUserRole,
+  isMobileView,
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const [remediationStates, setRemediationStates] = useState({});
@@ -1360,16 +1387,18 @@ function FindingsTab({
         frameworkMeta={frameworkMeta}
       />
 
-      <div ref={findingsListRef} className="findings-filter-bar">
-        {FINDING_FILTERS.map((filter) => (
-          <button
-            key={filter}
-            className={`filter-pill ${activeFilter === filter ? 'active' : ''}`}
-            onClick={() => setActiveFilter(filter)}
-          >
-            {filterLabel(filter)} ({counts[filter] ?? 0})
-          </button>
-        ))}
+      <div className="findings-filter-bar-wrapper">
+        <div ref={findingsListRef} className="findings-filter-bar">
+          {FINDING_FILTERS.map((filter) => (
+            <button
+              key={filter}
+              className={`filter-pill ${activeFilter === filter ? 'active' : ''}`}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {filterLabel(filter)} ({counts[filter] ?? 0})
+            </button>
+          ))}
+        </div>
       </div>
 
       {filteredFindings.map((finding) => {
@@ -1496,7 +1525,13 @@ function FindingsTab({
             )}
 
             <button
-              onClick={() => setExpandedId(isExpanded ? null : finding.id)}
+              onClick={(event) => {
+                const nextExpandedId = isExpanded ? null : finding.id;
+                setExpandedId(nextExpandedId);
+                if (nextExpandedId && isMobileView) {
+                  event.currentTarget.closest('.finding-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              }}
               style={{ marginTop: '0.8rem', background: 'none', border: 'none', color: '#0f4c81', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', padding: 0 }}
             >
               {isExpanded ? '▼ Hide Remediation Steps' : '▶ View Remediation Steps'}
