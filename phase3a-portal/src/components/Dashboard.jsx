@@ -245,7 +245,9 @@ function Dashboard() {
             ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
-        const findingsPayload = findingsRes.ok ? await findingsRes.json() : [];
+        const findingsPayload = findingsRes.ok
+          ? await findingsRes.json()
+          : (hipaaMetric?.findings || compliance?.findings || []);
         const findings = normalizeHipaaFindingsForEvidence(findingsPayload);
         const reportDate = new Date().toISOString().split('T')[0];
         const report = generateHipaaEvidenceReport(

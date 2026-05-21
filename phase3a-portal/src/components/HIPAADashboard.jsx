@@ -271,7 +271,7 @@ export default function HIPAADashboard() {
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    setFindings((previous) => previous.map((finding) => (finding.id === id ? { ...finding, status } : finding)));
+    setFindings((previousFindings) => previousFindings.map((finding) => (finding.id === id ? { ...finding, status } : finding)));
     setStatusToastId(id);
     window.setTimeout(() => setStatusToastId(''), 2000);
 
@@ -281,7 +281,8 @@ export default function HIPAADashboard() {
         headers,
         body: JSON.stringify({ status }),
       });
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to update HIPAA finding status in API; retaining optimistic UI state.', error);
       // Optimistic update is intentionally retained even when the PATCH request fails.
     }
   };
