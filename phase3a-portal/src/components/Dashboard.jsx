@@ -22,7 +22,7 @@ const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.
 const FIRST_RUN_SCORE_FALLBACK = 84;
 const FIRST_RUN_HIGH_FINDINGS_FALLBACK = 4;
 const FIRST_RUN_CONTROLS_PASSING_FALLBACK = 42;
-const FRAMEWORKS = ['hipaa', 'soc2', 'pcidss'];
+const SUPPORTED_FRAMEWORK_IDS = ['hipaa', 'soc2', 'pcidss'];
 const MOCK_FRAMEWORKS = [
   { id: 'hipaa', name: 'HIPAA', description: 'Health Insurance Portability & Accountability Act', score: 84, controls_passing: 42, high_findings: 4, color: '#0f4c81', icon: '🏥' },
   { id: 'soc2', name: 'SOC 2', description: 'Service Organization Control 2', score: 76, controls_passing: 38, high_findings: 6, color: '#7c3aed', icon: '🔐' },
@@ -364,7 +364,7 @@ function Dashboard() {
   };
 
   const handleViewFrameworkDetails = (frameworkId) => {
-    localStorage.setItem('active_framework', FRAMEWORKS.includes(frameworkId) ? frameworkId : 'hipaa');
+    localStorage.setItem('active_framework', SUPPORTED_FRAMEWORK_IDS.includes(frameworkId) ? frameworkId : 'hipaa');
     navigate('/hipaa-dashboard');
   };
 
