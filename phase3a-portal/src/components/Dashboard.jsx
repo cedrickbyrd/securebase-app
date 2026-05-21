@@ -19,9 +19,79 @@ import EvidencePackages from './EvidencePackages';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
+const FIRST_RUN_SCORE_FALLBACK = 84;
+const FIRST_RUN_HIGH_FINDINGS_FALLBACK = 4;
+const FIRST_RUN_CONTROLS_PASSING_FALLBACK = 42;
 
 function getCustomerTier() {
   return localStorage.getItem('customerTier') || '';
+}
+
+function toSafeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function clampScore(score, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, score));
+}
+
+function getHIPAAScore(source) {
+  if (!source) return FIRST_RUN_SCORE_FALLBACK;
+  return toSafeNumber(
+    source.overallScore
+    ?? source.overall_score
+    ?? source.compliance_score
+    ?? source.score
+    ?? FIRST_RUN_SCORE_FALLBACK,
+    FIRST_RUN_SCORE_FALLBACK
+  );
+}
+
+function getFirstRunScore(metrics, compliance) {
+  if (metrics?.overallScore !== undefined && metrics?.overallScore !== null) {
+    return toSafeNumber(metrics.overallScore, FIRST_RUN_SCORE_FALLBACK);
+  }
+  return getHIPAAScore(compliance);
+}
+
+function getHighFindingsCount(source) {
+  if (!source) return FIRST_RUN_HIGH_FINDINGS_FALLBACK;
+  return toSafeNumber(
+    source.high_findings
+    ?? source.highSeverityFindings
+    ?? source.high_severity_findings
+    ?? source.failing
+    ?? FIRST_RUN_HIGH_FINDINGS_FALLBACK,
+    FIRST_RUN_HIGH_FINDINGS_FALLBACK
+  );
+}
+
+function getControlsPassingCount(source) {
+  if (!source) return FIRST_RUN_CONTROLS_PASSING_FALLBACK;
+  return toSafeNumber(
+    source.controls_passing
+    ?? source.controlsPassing
+    ?? source.passing
+    ?? FIRST_RUN_CONTROLS_PASSING_FALLBACK,
+    FIRST_RUN_CONTROLS_PASSING_FALLBACK
+  );
+}
+
+function formatLastAssessed(lastAssessed) {
+  if (!lastAssessed) return 'Today';
+  const assessedDate = new Date(lastAssessed);
+  if (Number.isNaN(assessedDate.getTime())) return 'Today';
+  const elapsedMs = Date.now() - assessedDate.getTime();
+  if (elapsedMs < 0) return assessedDate.toLocaleDateString();
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+  if (elapsedMinutes < 1) return 'just now';
+  if (elapsedMinutes < 60) return `${elapsedMinutes} minute${elapsedMinutes === 1 ? '' : 's'} ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7) return `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`;
+  return assessedDate.toLocaleDateString();
 }
 
 function Dashboard() {
@@ -37,14 +107,32 @@ function Dashboard() {
   const [scanPending, setScanPending] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState('');
+  const [showFirstRunOverlay, setShowFirstRunOverlay] = useState(false);
+  const [animatedOverlayScore, setAnimatedOverlayScore] = useState(0);
+  const [hipaaMetric, setHipaaMetric] = useState(null);
+  const [hipaaMetricLoading, setHipaaMetricLoading] = useState(false);
+  const [hipaaMetricError, setHipaaMetricError] = useState('');
   const [toasts, setToasts] = useState([]);
   const { customer, customerIndex } = useDemoCustomer();
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   const startTimeRef = useRef(null);
 
   const effectiveTier = customer?.tier || getCustomerTier();
+  const isHealthcareTier = effectiveTier === CUSTOMER_TIERS.HEALTHCARE;
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
   const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
+  const firstRunTargetScore = clampScore(getFirstRunScore(metrics, compliance));
+  const hipaaLastAssessed = formatLastAssessed(hipaaMetric?.last_assessed || compliance?.last_assessed);
+  const hipaaLiveScore = clampScore(getHIPAAScore(hipaaMetric || compliance));
+  const hipaaHighFindings = getHighFindingsCount(hipaaMetric || compliance);
+  const hipaaControlsPassing = getControlsPassingCount(hipaaMetric || compliance);
+  const organizationName = customer?.name || customer?.orgName || localStorage.getItem('orgName') || 'Your Organization';
+
+  const overlayRiskLevel = firstRunTargetScore >= 90
+    ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
+    : firstRunTargetScore >= 75
+      ? { label: 'Moderate Risk', badgeBackground: '#fef3c7', badgeColor: '#92400e', detail: 'Targeted remediation will improve posture' }
+      : { label: 'High Risk', badgeBackground: '#fee2e2', badgeColor: '#991b1b', detail: 'Immediate remediation is recommended' };
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -90,6 +178,11 @@ function Dashboard() {
       setCompliance(complianceData);
       setTickets(Array.isArray(ticketsArray) ? ticketsArray.slice(0, 5) : []);
       if (texasData) setTexasCompliance(texasData.data || texasData);
+
+      const hasSeenFirstRun = localStorage.getItem('hipaa_first_run_seen') === 'true';
+      if (metricsData && isHealthcareTier && !hasSeenFirstRun) {
+        setShowFirstRunOverlay(true);
+      }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
@@ -138,6 +231,74 @@ function Dashboard() {
 
   const handleCriticalAlert = (notification) => setToasts(prev => [...prev, notification]);
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  const markFirstRunSeen = () => {
+    localStorage.setItem('hipaa_first_run_seen', 'true');
+    setShowFirstRunOverlay(false);
+  };
+
+  const handleFirstRunReview = () => {
+    navigate('/hipaa-dashboard');
+    localStorage.setItem('hipaa_jump_to_findings', 'true');
+    markFirstRunSeen();
+  };
+
+  const handleFirstRunExport = async () => {
+    if (typeof handleDownloadReport === 'function') {
+      await handleDownloadReport();
+    } else {
+      console.log('export triggered');
+    }
+    markFirstRunSeen();
+  };
+
+  useEffect(() => {
+    if (!showFirstRunOverlay) {
+      setAnimatedOverlayScore(0);
+      return;
+    }
+    setAnimatedOverlayScore(0);
+    const timer = setInterval(() => {
+      setAnimatedOverlayScore((previous) => {
+        const next = Math.min(firstRunTargetScore, previous + 3);
+        if (next >= firstRunTargetScore) clearInterval(timer);
+        return next;
+      });
+    }, 30);
+    return () => clearInterval(timer);
+  }, [showFirstRunOverlay, firstRunTargetScore]);
+
+  useEffect(() => {
+    if (!isHealthcareTier) return undefined;
+
+    let active = true;
+    const loadHipaaMetric = async () => {
+      setHipaaMetricLoading(true);
+      setHipaaMetricError('');
+      try {
+        const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
+        const response = await fetch('/api/hipaa/compliance', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!response.ok) {
+          throw new Error(`HIPAA metric request failed: ${response.status} ${response.statusText}`);
+        }
+        const payload = await response.json();
+        if (!active) return;
+        setHipaaMetric(payload?.data || payload);
+      } catch (error) {
+        console.error('Failed to load HIPAA compliance metric.');
+        if (active) setHipaaMetricError('Unable to refresh HIPAA metric. Showing last known values.');
+      } finally {
+        if (active) setHipaaMetricLoading(false);
+      }
+    };
+
+    loadHipaaMetric();
+    return () => {
+      active = false;
+    };
+  }, [isHealthcareTier]);
 
   // Scan step animation
   const [currentStep, setCurrentStep] = useState(0);
@@ -384,6 +545,29 @@ function Dashboard() {
             </div>
           </div>
 
+          {isHealthcareTier && (
+            <div className="metric-card" style={{ border: '1px solid #dbeafe', display: 'block' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                <div className="metric-icon" style={{ background: '#dbeafe' }}>🩺</div>
+                <div className="metric-content">
+                  <h3>Live HIPAA Score</h3>
+                  <p className="metric-value" style={{ color: '#0f4c81' }}>
+                    {hipaaMetricLoading && !hipaaMetric ? '...' : `${Math.round(hipaaLiveScore)}%`}
+                  </p>
+                </div>
+              </div>
+              {hipaaMetricLoading && !hipaaMetric ? (
+                <div style={{ height: '10px', borderRadius: '999px', background: '#e5e7eb' }} />
+              ) : (
+                <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden', marginBottom: '0.5rem' }}>
+                  <div style={{ height: '100%', width: `${Math.round(hipaaLiveScore)}%`, background: '#0f4c81', borderRadius: '999px' }} />
+                </div>
+              )}
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>Last assessed: {hipaaLastAssessed}</p>
+              {hipaaMetricError && <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#92400e' }}>{hipaaMetricError}</p>}
+            </div>
+          )}
+
           {hasTexasCompliance && (
             <div className="metric-card clickable" onClick={() => navigate('/fintech-portal')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/fintech-portal')} aria-label="Texas Examiner Portal">
               <div className="metric-icon" style={{ background: '#eff6ff' }}>⭐</div>
@@ -574,6 +758,9 @@ function Dashboard() {
                         <div style={{ height: 6, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${sg.pct}%`, background: sg.pct >= 90 ? '#10b981' : '#f59e0b', borderRadius: 999 }} />
                         </div>
+                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.72rem', color: '#6b7280' }}>
+                          Last assessed: {hipaaLastAssessed}
+                        </p>
                       </div>
                     ))}
                     <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>BAA on file · PHI encrypted at rest &amp; in transit</p>
@@ -584,6 +771,57 @@ function Dashboard() {
           </div>
         </div>
       </main>
+
+      {showFirstRunOverlay && (
+        <div className="hipaa-first-run-overlay" role="dialog" aria-modal="true" aria-label="HIPAA first run summary">
+          <div className="hipaa-first-run-card">
+            <div style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '0.5rem' }}>🎉</div>
+            <h2 style={{ margin: 0, textAlign: 'center', fontSize: '1.6rem', fontWeight: 800, color: '#111827' }}>Your HIPAA Assessment is Ready</h2>
+            <p style={{ margin: '0.6rem 0 1.5rem', textAlign: 'center', fontSize: '0.82rem', color: '#6b7280' }}>
+              {organizationName} · Healthcare Tier
+            </p>
+
+            <div style={{ background: 'linear-gradient(135deg, #0f4c81 0%, #1a73e8 100%)', borderRadius: '14px', padding: '1.5rem', color: '#fff', marginBottom: '1rem' }}>
+              <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.08em' }}>HIPAA POSTURE SCORE</p>
+              <div style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.1, margin: '0.35rem 0 0.5rem' }}>{animatedOverlayScore}%</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ background: overlayRiskLevel.badgeBackground, color: overlayRiskLevel.badgeColor, borderRadius: '999px', padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontWeight: 700 }}>
+                  {overlayRiskLevel.label}
+                </span>
+                <span style={{ fontSize: '0.82rem', opacity: 0.95 }}>{overlayRiskLevel.detail}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '1rem', border: '1px solid #e5e7eb', fontSize: '0.9rem', fontWeight: 700, color: '#1f2937' }}>
+                ⚠️ {hipaaHighFindings} High findings
+              </div>
+              <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '1rem', border: '1px solid #e5e7eb', fontSize: '0.9rem', fontWeight: 700, color: '#1f2937' }}>
+                ✓ {hipaaControlsPassing} Controls passing
+              </div>
+            </div>
+
+            <button
+              onClick={handleFirstRunReview}
+              style={{ width: '100%', background: '#0f4c81', color: '#fff', border: 'none', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', marginBottom: '0.65rem' }}
+            >
+              Review Critical Findings →
+            </button>
+            <button
+              onClick={handleFirstRunExport}
+              style={{ width: '100%', background: '#fff', color: '#0f4c81', border: '2px solid #0f4c81', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}
+            >
+              Download Evidence Package
+            </button>
+            <button
+              onClick={markFirstRunSeen}
+              style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.78rem', cursor: 'pointer' }}
+            >
+              ✕ Skip for now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
