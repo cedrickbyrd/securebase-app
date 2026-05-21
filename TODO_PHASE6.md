@@ -8,41 +8,42 @@
 ## Component 6.1 — Immutable Audit Logging at Scale
 
 ### Terraform Infrastructure
-- [ ] Create `landing-zone/modules/phase6-audit-logging/` directory
-- [ ] `landing-zone/modules/phase6-audit-logging/main.tf` — S3 Object Lock (COMPLIANCE mode, 2555 days), Macie job, KMS key, bucket policy, Lambda IAM role
-- [ ] `landing-zone/modules/phase6-audit-logging/variables.tf` — `environment`, `project_name`, `tags`, `evidence_bucket_name`, `kms_key_arn`
-- [ ] `landing-zone/modules/phase6-audit-logging/outputs.tf` — `evidence_bucket_arn`, `evidence_bucket_name`, `kms_key_id`, `lambda_role_arn`
-- [ ] Wire phase6-audit-logging module into `landing-zone/environments/dev/main.tf`
+- [x] Create `landing-zone/modules/phase6-audit-logging/` directory
+- [x] `landing-zone/modules/phase6-audit-logging/main.tf` — S3 Object Lock (COMPLIANCE mode, 2555 days), Macie job, KMS key, bucket policy, Lambda IAM role
+- [x] `landing-zone/modules/phase6-audit-logging/variables.tf` — `environment`, `project_name`, `tags`, `evidence_bucket_name`, `kms_key_arn`
+- [x] `landing-zone/modules/phase6-audit-logging/outputs.tf` — `evidence_bucket_arn`, `evidence_bucket_name`, `kms_key_id`, `lambda_role_arn`
+- [x] Wire phase6-audit-logging module into `landing-zone/environments/dev/main.tf`
 - [ ] Wire phase6-audit-logging module into `landing-zone/environments/prod/main.tf` (when exists)
 - [ ] `terraform validate` passes on phase6-audit-logging module
 
 ### Lambda Functions
-- [ ] `phase6-backend/functions/audit_log_packager.py` — collect logs, zip, SHA-256 manifest, upload with Object Lock, write DB record
-- [ ] `phase6-backend/functions/audit_evidence_api.py` — `GET /admin/evidence`, `GET /admin/evidence/{id}`, `POST /admin/evidence/generate`
+- [x] `phase6-backend/functions/audit_log_packager.py` — collect logs, zip, SHA-256 manifest, upload with Object Lock, write DB record
+- [x] `phase6-backend/functions/audit_evidence_api.py` — `GET /admin/evidence`, `GET /admin/evidence/{id}`, `POST /admin/evidence/generate`
 - [ ] Add `audit_log_packager` to `phase2-backend/functions/requirements.txt` (boto3 already included)
 - [ ] Package Lambda zips via `package-lambda.sh` update
 - [ ] Wire `audit_evidence_api` to API Gateway in `landing-zone/modules/api-gateway/main.tf`
 
 ### Database Migrations
-- [ ] `phase6-backend/database/migrations/001_audit_evidence_tables.sql` — `evidence_packages` table, `macie_findings` table, RLS policies, indexes
+- [x] `phase6-backend/database/migrations/001_audit_evidence_tables.sql` — `evidence_packages` table, `macie_findings` table, RLS policies, indexes
 - [ ] Test migration against local PostgreSQL
 - [ ] Run migration in dev Aurora cluster
 
 ### AWS Macie
-- [ ] Terraform: `aws_macie2_account` resource (enable Macie) with `count` guard if already enabled
-- [ ] Terraform: `aws_macie2_classification_job` targeting the evidence S3 bucket
+- [x] Terraform: `aws_macie2_account` resource (enable Macie) with `count` guard if already enabled
+- [x] Terraform: `aws_macie2_classification_job` targeting the evidence S3 bucket
 - [ ] Terraform: `aws_macie2_findings_filter` for HIGH/CRITICAL severity PII findings
-- [ ] SNS notification for Macie findings → admin alert
+- [x] SNS notification for Macie findings → admin alert
 
 ### Tests
-- [ ] `tests/phase6/__init__.py` — empty init file
-- [ ] `tests/phase6/test_audit_log_packager.py`
+- [x] `tests/phase6/__init__.py` — empty init file
+- [x] `tests/phase6/test_audit_log_packager.py`
   - [ ] Test: handler invoked successfully with valid event
   - [ ] Test: S3 `put_object` called with correct Retention settings
   - [ ] Test: SHA-256 manifest file included in zip
   - [ ] Test: DB record written to `evidence_packages`
   - [ ] Test: error handling for missing `tenant_id` in event
   - [ ] Test: error handling for empty S3 log prefix
+- [x] `tests/phase6/test_track1_compliance_lambdas.py` — evidence_collector, audit_log_validator coverage
 - [ ] Run: `pytest tests/phase6/test_audit_log_packager.py -v`
 
 ---
@@ -50,50 +51,52 @@
 ## Component 6.2 — Compliance Automation (50+ AWS Config Rules)
 
 ### Terraform Infrastructure
-- [ ] `landing-zone/modules/phase6-compliance/main.tf`
-  - [ ] `aws_config_configuration_recorder` with `count` guard (skip if already enabled by phase1 security module)
-  - [ ] `aws_config_delivery_channel` to existing S3 bucket
-  - [ ] 25+ `aws_config_rule` resources for SOC 2 controls:
-    - [ ] `s3-bucket-ssl-requests-only`
-    - [ ] `encrypted-volumes`
-    - [ ] `iam-password-policy`
-    - [ ] `mfa-enabled-for-iam-console-access`
-    - [ ] `root-account-mfa-enabled`
-    - [ ] `cloudtrail-enabled`
-    - [ ] `vpc-flow-logs-enabled`
-    - [ ] `guardduty-enabled-centralized`
-    - [ ] `s3-bucket-logging-enabled`
-    - [ ] `s3-bucket-versioning-enabled`
-    - [ ] `s3-bucket-public-read-prohibited`
-    - [ ] `s3-bucket-public-write-prohibited`
-    - [ ] `iam-no-inline-policy-check`
-    - [ ] `iam-root-access-key-check`
-    - [ ] `access-keys-rotated` (90-day rotation)
-    - [ ] `rds-instance-public-access-check`
-    - [ ] `rds-storage-encrypted`
-    - [ ] `rds-multi-az-support`
-    - [ ] `lambda-function-public-access-prohibited`
-    - [ ] `api-gw-ssl-enabled`
-    - [ ] `cloudwatch-alarm-action-check`
-    - [ ] `kms-cmk-not-scheduled-for-deletion`
-    - [ ] `secretsmanager-rotation-enabled-check`
-    - [ ] `ec2-imdsv2-check`
-    - [ ] `dynamodb-in-backup-plan`
-  - [ ] `aws_config_conformance_pack` for HIPAA (AWS managed)
-  - [ ] `aws_config_conformance_pack` for NIST 800-53
-- [ ] `landing-zone/modules/phase6-compliance/variables.tf`
-- [ ] `landing-zone/modules/phase6-compliance/outputs.tf`
-- [ ] Wire phase6-compliance module into `landing-zone/environments/dev/main.tf`
+- [x] `landing-zone/modules/phase6-compliance/main.tf`
+  - [x] `aws_config_configuration_recorder` with `count` guard (skip if already enabled by phase1 security module)
+  - [x] `aws_config_delivery_channel` to existing S3 bucket
+  - [x] 25+ `aws_config_rule` resources for SOC 2 controls (26 rules deployed):
+    - [x] `s3-bucket-ssl-requests-only`
+    - [x] `encrypted-volumes`
+    - [x] `iam-password-policy`
+    - [x] `mfa-enabled-for-iam-console-access`
+    - [x] `root-account-mfa-enabled`
+    - [x] `cloudtrail-enabled`
+    - [x] `cloudtrail-log-file-validation-enabled`
+    - [x] `vpc-flow-logs-enabled`
+    - [x] `guardduty-enabled-centralized`
+    - [x] `s3-bucket-logging-enabled`
+    - [x] `s3-bucket-versioning-enabled`
+    - [x] `s3-bucket-public-read-prohibited`
+    - [x] `s3-bucket-public-write-prohibited`
+    - [x] `iam-no-inline-policy-check`
+    - [x] `iam-root-access-key-check`
+    - [x] `access-keys-rotated` (90-day rotation)
+    - [x] `rds-instance-public-access-check`
+    - [x] `rds-storage-encrypted`
+    - [x] `rds-multi-az-support`
+    - [x] `lambda-function-public-access-prohibited`
+    - [x] `api-gw-ssl-enabled`
+    - [x] `cloudwatch-alarm-action-check`
+    - [x] `kms-cmk-not-scheduled-for-deletion`
+    - [x] `secretsmanager-rotation-enabled-check`
+    - [x] `ec2-imdsv2-check`
+    - [x] `dynamodb-in-backup-plan`
+  - [x] `aws_config_conformance_pack` for HIPAA (AWS managed)
+  - [x] `aws_config_conformance_pack` for NIST 800-53
+  - [ ] Replace conformance pack TODO placeholder URLs with real AWS-managed template URIs
+- [x] `landing-zone/modules/phase6-compliance/variables.tf`
+- [x] `landing-zone/modules/phase6-compliance/outputs.tf`
+- [x] Wire phase6-compliance module into `landing-zone/environments/dev/main.tf`
 
 ### Compliance Mapping Files
-- [ ] `phase6-backend/compliance/soc2_mapping.json` — ≥ 15 SOC 2 CC controls → Config rule names
-- [ ] `phase6-backend/compliance/hipaa_mapping.json` — ≥ 10 HIPAA technical safeguards → GuardDuty finding types + Config rules
-- [ ] `phase6-backend/compliance/fedramp_mapping.json` — ≥ 12 FedRAMP Rev 5 control families → Security Hub standards
+- [x] `phase6-backend/compliance/soc2_mapping.json` — ≥ 15 SOC 2 CC controls → Config rule names
+- [x] `phase6-backend/compliance/hipaa_mapping.json` — ≥ 10 HIPAA technical safeguards → GuardDuty finding types + Config rules
+- [x] `phase6-backend/compliance/fedramp_mapping.json` — ≥ 12 FedRAMP Rev 5 control families → Security Hub standards
 - [ ] Validate JSON syntax for all three mapping files
 
 ### Lambda Functions
-- [ ] `phase6-backend/functions/compliance_score_recalculator.py`
-  - [ ] EventBridge schedule (daily at 02:00 UTC)
+- [x] `phase6-backend/functions/compliance_score_recalculator.py`
+  - [ ] EventBridge schedule (daily at 02:00 UTC) — wire in Terraform
   - [ ] Query AWS Config for all compliance rules
   - [ ] Query Security Hub findings (active, FAILED)
   - [ ] Query GuardDuty findings (HIGH/CRITICAL severity)
@@ -101,20 +104,59 @@
   - [ ] Calculate weighted compliance score per framework (0–100)
   - [ ] Write daily snapshot to DynamoDB `securebase-compliance-scores`
   - [ ] Structured JSON logging
-- [ ] `phase6-backend/functions/compliance_history_api.py` — `GET /tenant/compliance/history` with 90-day trend _(TODO: full implementation)_
+- [x] `phase6-backend/functions/compliance_history_api.py` — `GET /tenant/compliance/history` with 90-day trend _(full implementation in progress)_
+- [ ] Wire `compliance_history_api` to API Gateway in `landing-zone/modules/api-gateway/main.tf`
 
 ### Database Migrations
-- [ ] `phase6-backend/database/migrations/002_compliance_score_history.sql` — `compliance_score_daily`, `control_violation_log` tables, composite indexes for trend queries
+- [x] `phase6-backend/database/migrations/002_compliance_score_history.sql` — `compliance_score_daily`, `control_violation_log` tables, composite indexes for trend queries
 - [ ] Run migration in dev Aurora cluster
 
 ### Tests
-- [ ] `tests/phase6/test_compliance_score_recalculator.py`
+- [x] `tests/phase6/test_compliance_score_recalculator.py`
   - [ ] Test: mapping files load correctly (valid JSON, required keys present)
   - [ ] Test: weighted score calculation logic (100% passing → 100, 0% → 0, mixed → expected value)
   - [ ] Test: DynamoDB write called with correct item structure
   - [ ] Test: error handling when Config API returns throttle error
   - [ ] Test: error handling when Security Hub is not enabled
+- [x] `tests/phase6/test_compliance_history_api.py`
 - [ ] Run: `pytest tests/phase6/test_compliance_score_recalculator.py -v`
+
+---
+
+## Track 3 — Alerting & Incident Response ✅ Complete
+
+_Delivered alongside Phase 6 sprint. All deliverables present._
+
+### Terraform Infrastructure
+- [x] `terraform/modules/alerting/sns_topics.tf` — SNS topics for alarm routing
+- [x] `terraform/modules/alerting/cloudwatch_alarms.tf` — CloudWatch alarm definitions
+- [x] `terraform/modules/alerting/pagerduty_integration.tf` — PagerDuty/Opsgenie wiring
+- [x] `terraform/modules/alerting/variables.tf`
+- [x] `terraform/modules/alerting/outputs.tf`
+
+### Lambda Functions
+- [x] `src/lambdas/alerting/runbook_executor.py` — maintenance mode, runbook matching, step execution
+- [x] `src/lambdas/alerting/alarm_aggregator.py` — SNS event parsing, DynamoDB persistence, MTTA/MTTR
+- [x] `src/lambdas/alerting/chaos_drill.py` — maintenance mode toggle, Lambda throttle/restore
+
+### Frontend
+- [x] `phase3a-portal/src/components/admin/AlertingDashboard.jsx`
+
+### Tests
+- [x] `tests/phase6/test_alerting_track3.py` — full coverage for all three Lambda functions
+
+---
+
+## Track 4 — Provisioning & Drift Detection ✅ Complete
+
+_Delivered alongside Phase 6 sprint. All deliverables present._
+
+### Lambda Functions
+- [x] `src/lambdas/provisioning/drift_detector.py` — Terraform plan drift parsing and severity classification
+- [x] `src/lambdas/provisioning/tenant_provisioner.py` — API key generation and tenant setup
+
+### Tests
+- [x] `tests/phase6/test_track6_provisioning.py` — parse_plan_summary, classify_drift, generate_api_key
 
 ---
 
@@ -149,7 +191,7 @@
 - [ ] Terraform: DLQ for both queues (max_receive_count = 3)
 
 ### Load Testing
-- [ ] `tests/phase6/load_test_10k_users.py` (Locust)
+- [x] `tests/phase6/load_test_10k_users.py` (Locust)
   - [ ] Scenario: 10,000 virtual users ramp over 5 minutes
   - [ ] Tasks: GET /tenant/dashboard, GET /tenant/compliance/score, GET /invoices, POST /api-keys
   - [ ] Assert p95 < 200ms, error rate < 0.1%
@@ -284,5 +326,5 @@
 
 ---
 
-**Last Updated:** May 8, 2026  
+**Last Updated:** May 21, 2026  
 **Owner:** Cedrick Byrd (cedrickbyrd)
