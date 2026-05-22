@@ -37,7 +37,7 @@ permissions:
 
 env:
   CHECKOUT_ENDPOINT_URL: ${{ vars.CHECKOUT_ENDPOINT_URL || 'https://securebase.tximhotep.com/api/checkout' }}
-  CHECKOUT_APIGW_URL: ${{ vars.CHECKOUT_APIGW_URL || 'https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/checkout' }}
+  CHECKOUT_APIGW_URL: ${{ vars.CHECKOUT_APIGW_URL || 'https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout' }}
   HIPAA_PROBE_NAME: HIPAA E2E Probe
   HIPAA_PROBE_COMPANY: Acme Health
   HIPAA_PERSONAL_EMAIL_DOMAINS: gmail.com yahoo.com hotmail.com outlook.com icloud.com aol.com
