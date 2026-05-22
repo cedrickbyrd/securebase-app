@@ -11,7 +11,7 @@
 #
 # Usage:
 #   export TOPIC_ARN="arn:aws:sns:us-east-1:<ACCOUNT_ID>:securebase-production-customer-activations"
-#   export EMAIL="you@example.com"
+#   export EMAIL="cedrickjbyrd@me.com"
 #   bash scripts/subscribe-activation-alerts.sh
 #
 # After running, AWS will send a confirmation email to $EMAIL.
