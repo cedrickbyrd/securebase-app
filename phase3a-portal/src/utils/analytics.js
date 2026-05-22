@@ -55,6 +55,12 @@ function isValidMeasurementId(id) {
   return GA_MEASUREMENT_ID_REGEX.test(id) && id !== GA_PLACEHOLDER_MEASUREMENT_ID;
 }
 
+/**
+ * Ensures gtag is available by creating a local queueing stub and loading
+ * the GA4 gtag.js script for the configured measurement ID if needed.
+ *
+ * @returns {boolean} True when gtag can be called, false when GA4 is disabled.
+ */
 function ensureGtagLoaded() {
   if (typeof window === 'undefined') return false;
   if (!isValidMeasurementId(GA_MEASUREMENT_ID)) {
@@ -72,6 +78,9 @@ function ensureGtagLoaded() {
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    script.onerror = () => {
+      console.warn('[GA4] Failed to load gtag.js');
+    };
     script.setAttribute('data-securebase-ga4-id', GA_MEASUREMENT_ID);
     document.head.appendChild(script);
   }
@@ -93,12 +102,8 @@ function ensureGtagLoaded() {
  * Call this once on application mount (e.g. inside a root-level useEffect).
  */
 export function initializeSessionTracking() {
-  if (!isValidMeasurementId(GA_MEASUREMENT_ID)) {
-    console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
-    return;
-  }
-
   if (!ensureGtagLoaded()) {
+    console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
     return;
   }
 
