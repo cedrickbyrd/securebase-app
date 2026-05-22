@@ -4,10 +4,14 @@
  * Provides per-page and per-feature tracking helpers for the SecureBase portal.
  */
 
-const GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
+const DEFAULT_GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
+const GA_MEASUREMENT_ID_REGEX = /^G-[A-Z0-9]+$/;
 
 // In-session page-view counter (resets on hard reload).
 let _pagesViewed = 0;
+let _lastVirtualPagePath = '';
+let _lastVirtualPageTimestamp = 0;
 
 // ---------------------------------------------------------------------------
 // Core helper
@@ -63,10 +67,18 @@ export function initializeSessionTracking() {
     return;
   }
 
+  if (
+    !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
+    GA_MEASUREMENT_ID === 'G-XXXXXXXXXX'
+  ) {
+    console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
+    return;
+  }
+
   const utmParams = getUtmParams();
 
   window.gtag('config', GA_MEASUREMENT_ID, {
-    send_page_view: true,
+    send_page_view: false,
     ...utmParams,
   });
 
@@ -86,15 +98,33 @@ export function initializeSessionTracking() {
 
 /**
  * Track a virtual page view.
+ * @param {string} path      URL path (e.g. '/dashboard')
+ * @param {string} pageTitle Human-readable page title
+ * @param {string} pageLocation Absolute URL location
+ */
+export function trackVirtualPageView(path, pageTitle = document.title, pageLocation = window.location.href) {
+  const now = Date.now();
+  if (path === _lastVirtualPagePath && now - _lastVirtualPageTimestamp < 750) {
+    return;
+  }
+
+  _lastVirtualPagePath = path;
+  _lastVirtualPageTimestamp = now;
+
+  trackEvent('page_view', {
+    page_title: pageTitle,
+    page_location: pageLocation,
+    page_path: path,
+  });
+}
+
+/**
+ * Track a virtual page view (legacy helper).
  * @param {string} pageName  Human-readable page name (e.g. 'Dashboard')
  * @param {string} path      URL path (e.g. '/dashboard')
  */
 export function trackPageView(pageName, path) {
-  trackEvent('page_view', {
-    page_title: pageName,
-    page_location: window.location.href,
-    page_path: path,
-  });
+  trackVirtualPageView(path, pageName, window.location.href);
 }
 
 /**
