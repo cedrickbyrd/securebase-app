@@ -1,12 +1,26 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const SESSION_TOKEN_KEY = 'sessionToken';
+
+export function getStoredSessionToken() {
+  return sessionStorage.getItem(SESSION_TOKEN_KEY) || localStorage.getItem(SESSION_TOKEN_KEY);
+}
+
+export function clearStoredSessionToken() {
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
+export function persistSessionToken(token, rememberMe = false) {
+  clearStoredSessionToken();
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem(SESSION_TOKEN_KEY, token);
+}
 
 class ApiService {
   constructor() { this.baseURL = API_BASE; }
 
   request = async (endpoint, options = {}) => {
-    // Read token from sessionStorage only (not localStorage) to limit XSS exposure.
-    // HttpOnly cookies are sent automatically via credentials:'include'.
-    const sessionToken = sessionStorage.getItem('sessionToken');
+    const sessionToken = getStoredSessionToken();
     const config = {
       credentials: 'include', // send HttpOnly JWT cookie on same-origin requests
       headers: {
@@ -20,7 +34,7 @@ class ApiService {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       if (response.status === 401) {
         if (sessionToken) {
-          sessionStorage.removeItem('sessionToken');
+          clearStoredSessionToken();
           window.location.href = '/login';
           throw new Error('Session expired. Please log in again.');
         }
@@ -50,15 +64,13 @@ class ApiService {
   put    = async (endpoint, data, options = {}) => this.request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(data) });
   delete = async (endpoint, options = {}) => this.request(endpoint, { ...options, method: 'DELETE' });
 
-  authenticate = async (email, password, totp_code = null) => {
+  authenticate = async (email, password, totp_code = null, rememberMe = false) => {
     const payload = { email, password };
     if (totp_code) payload.totp_code = totp_code;
     try {
       const response = await this.post('/auth/login', payload);
       if (response.token) {
-        // Store in sessionStorage (cleared when the tab closes) rather than
-        // localStorage to reduce the XSS attack surface.
-        sessionStorage.setItem('sessionToken', response.token);
+        persistSessionToken(response.token, rememberMe);
         localStorage.setItem('userEmail', response.user?.email || email);
         localStorage.setItem('userRole', response.user?.role || 'user');
       }

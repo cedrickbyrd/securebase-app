@@ -37,7 +37,7 @@
 > **Portal auth = AWS Lambda JWT via API Gateway. No Supabase.**
 
 - `Login.jsx` calls `apiService.authenticate(email, password)` → POST `/api/auth/login` → Netlify proxy → API Gateway → `securebase-production-auth-v2` Lambda
-- JWT stored in `sessionStorage` as `sessionToken`
+- JWT stored as `sessionToken` — default `sessionStorage`, optional `localStorage` when "Remember me" is selected
 - `App.jsx` reads `sessionStorage.getItem('sessionToken')` or `localStorage.getItem('sessionToken')` to determine `isAuthenticated`
 - Demo mode (`VITE_DEMO_MODE=true`) auto-login via `demoApiService.js` — stores `demo_mode=true` in `localStorage`
 - `authAdapter.js` and `jwtService.js` handle JWT encode/decode/validation
