@@ -16,7 +16,7 @@
 
 [[redirects]]
   from = "/api/checkout"
-  to = "https://4f0i48ueak.execute-api.us-east-1.amazonaws.com/prod/checkout"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/checkout"
   status = 200
   force = true
 
@@ -35,6 +35,12 @@
 [[redirects]]
   from = "/api/onboarding/*"
   to = "https://api.securebase.tximhotep.com/onboarding/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/*"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/auth/:splat"
   status = 200
   force = true
 
