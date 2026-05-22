@@ -29,6 +29,11 @@ import ReactGA from 'react-ga4';
 
 let _initialised = false;
 let _pagesViewed = 0; // in-session page-view counter
+let _lastPageViewKey = '';
+let _lastPageViewAt = 0;
+// 400ms catches route/component overlap duplicates while allowing genuine
+// quick back/forward navigation behavior in the SPA.
+const PAGE_VIEW_DEDUP_WINDOW_MS = 400;
 
 const IS_PROD = import.meta.env.VITE_ENV === 'production';
 const IS_DEV = !IS_PROD;
@@ -307,6 +312,17 @@ export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride)
 
   const safePath = sanitizePath(path);
   const pageLocation = pageLocationOverride || window.location.href;
+  const pageViewKey = `${safePath}|${pageLocation}`;
+  const now = Date.now();
+
+  // Guard against immediate duplicate page_view events caused by overlapping
+  // route-level and component-level tracking in SPA transitions.
+  if (_lastPageViewKey === pageViewKey && now - _lastPageViewAt < PAGE_VIEW_DEDUP_WINDOW_MS) {
+    devLog('Skipped duplicate page_view', { safePath, pageLocation });
+    return;
+  }
+  _lastPageViewKey = pageViewKey;
+  _lastPageViewAt = now;
 
   // GA4 SPA tracking: send explicit page_view events on client-side route changes.
   ReactGA.event('page_view', {
@@ -900,6 +916,48 @@ export function trackDemoRequest(tier = 'enterprise') {
     devLog('Event tracked: generate_lead (demo_request)', { tier });
   } catch (error) {
     console.error('[Analytics] Error tracking event: generate_lead (demo_request)', error);
+  }
+}
+
+/**
+ * Track lead-form lifecycle for BOFU funnel validation.
+ *
+ * Uses GA4-recommended `form_start` and `form_submit` plus standard
+ * `generate_lead` on submit for consistent conversion reporting.
+ *
+ * @param {'start'|'submit'} phase
+ * @param {string} [formName='lead_form']
+ * @param {string} [tier='enterprise']
+ * @returns {void}
+ */
+export function trackLeadFormEvent(phase, formName = 'lead_form', tier = 'enterprise') {
+  if (!canTrack()) return;
+  try {
+    const safeFormName = (formName || 'lead_form').slice(0, 100);
+    const safeTier = (tier || 'enterprise').slice(0, 100);
+
+    if (phase === 'start') {
+      ReactGA.event('form_start', {
+        form_name: safeFormName,
+        tier: safeTier,
+      });
+      devLog('Event tracked: form_start', { formName: safeFormName, tier: safeTier });
+      return;
+    }
+
+    if (phase === 'submit') {
+      ReactGA.event('form_submit', {
+        form_name: safeFormName,
+        tier: safeTier,
+      });
+      ReactGA.event('generate_lead', {
+        lead_type: safeFormName,
+        tier: safeTier,
+      });
+      devLog('Event tracked: form_submit + generate_lead', { formName: safeFormName, tier: safeTier });
+    }
+  } catch (error) {
+    console.error('[Analytics] Error tracking lead-form lifecycle event', error);
   }
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader, CheckCircle } from 'lucide-react';
-import { trackSignupStarted, trackSignupCompleted, trackTierSelected, trackHIPAARoute } from '../utils/analytics';
+import { trackSignupStarted, trackSignupCompleted, trackTierSelected, trackHIPAARoute, trackLeadFormEvent } from '../utils/analytics';
 import { supabase } from '../lib/supabase';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +85,8 @@ const WAVE3_COMPANIES = {
     tagline: 'SOC 2 and PCI-ready infrastructure for card issuing platforms.',
   },
 };
+
+const WAVE3_FINTECH_TARGETS = new Set(['column', 'mercury', 'lithic']);
 
 const DEFAULT_COMPANY = {
   name: null,
@@ -354,6 +356,8 @@ function Step4Verify({ email }) {
 
 function FastTrackForm({ wave3Target }) {
   const company = WAVE3_COMPANIES[wave3Target] || DEFAULT_COMPANY;
+  const leadFormStarted = useRef(false);
+  const leadTier = WAVE3_FINTECH_TARGETS.has(wave3Target) ? 'fintech' : 'enterprise';
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -362,6 +366,10 @@ function FastTrackForm({ wave3Target }) {
   const [submitted, setSubmitted] = useState(false);
 
   const handleEmailChange = (e) => {
+    if (!leadFormStarted.current) {
+      leadFormStarted.current = true;
+      trackLeadFormEvent('start', 'signup_fast_track', leadTier);
+    }
     setEmail(e.target.value);
     if (emailError) setEmailError('');
   };
@@ -399,12 +407,7 @@ function FastTrackForm({ wave3Target }) {
           magicLinkErr instanceof Error ? magicLinkErr.message : 'Unknown error');
       }
 
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'lead_captured', {
-          method: 'fast_track',
-          campaign: wave3Target ? `wave3_${wave3Target}` : '',
-        });
-      }
+      trackLeadFormEvent('submit', 'signup_fast_track', leadTier);
 
       setSubmitted(true);
     } catch (err) {
