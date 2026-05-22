@@ -52,27 +52,29 @@ function getUtmParams() {
   return params;
 }
 
+function isValidMeasurementId(id) {
+  return GA_MEASUREMENT_ID_REGEX.test(id) && id !== GA_PLACEHOLDER_MEASUREMENT_ID;
+}
+
 function ensureGtagLoaded() {
   if (typeof window === 'undefined') return false;
-  if (
-    !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
-    GA_MEASUREMENT_ID === GA_PLACEHOLDER_MEASUREMENT_ID
-  ) {
+  if (!isValidMeasurementId(GA_MEASUREMENT_ID)) {
     return false;
   }
 
   if (typeof window.gtag === 'function') return true;
 
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() { window.dataLayer.push(arguments); };
+  window.gtag = function gtag(...args) { window.dataLayer.push(args); };
   window.gtag('js', new Date());
 
-  const scriptSelector = `script[data-securebase-ga4-id="${GA_MEASUREMENT_ID}"]`;
+  const safeGaMeasurementId = encodeURIComponent(GA_MEASUREMENT_ID);
+  const scriptSelector = `script[data-securebase-ga4-id="${safeGaMeasurementId}"]`;
   if (!document.querySelector(scriptSelector)) {
     const script = document.createElement('script');
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
-    script.setAttribute('data-securebase-ga4-id', GA_MEASUREMENT_ID);
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${safeGaMeasurementId}`;
+    script.setAttribute('data-securebase-ga4-id', safeGaMeasurementId);
     document.head.appendChild(script);
   }
 
@@ -93,10 +95,7 @@ function ensureGtagLoaded() {
  * Call this once on application mount (e.g. inside a root-level useEffect).
  */
 export function initializeSessionTracking() {
-  if (
-    !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
-    GA_MEASUREMENT_ID === GA_PLACEHOLDER_MEASUREMENT_ID
-  ) {
+  if (!isValidMeasurementId(GA_MEASUREMENT_ID)) {
     console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
     return;
   }
