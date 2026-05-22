@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, Loader } from 'lucide-react';
-import { trackDemoRequest } from '../utils/analytics';
+import { trackDemoRequest, trackLeadFormEvent } from '../utils/analytics';
 
 const SALES_EMAIL = 'sales@securebase.tximhotep.com';
 
@@ -68,8 +68,13 @@ export default function ContactSales() {
     framework: defaultFramework,
   });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const leadFormStarted = useRef(false);
 
   function handleChange(e) {
+    if (!leadFormStarted.current) {
+      leadFormStarted.current = true;
+      trackLeadFormEvent('start', 'contact_sales', tierParam || 'enterprise');
+    }
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
@@ -107,6 +112,7 @@ export default function ContactSales() {
 
     setStatus('success');
     trackDemoRequest(tierParam || 'enterprise');
+    trackLeadFormEvent('submit', 'contact_sales', tierParam || 'enterprise');
   }
 
   return (
