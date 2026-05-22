@@ -6,7 +6,8 @@ import { isDemoMode } from '../utils/demoData';
 const PRICING_URL = 'https://securebase.tximhotep.com/pricing';
 
 const DemoBanner = () => {
-  // Show banner in any demo mode: VITE_DEMO_MODE, VITE_USE_MOCK_API, demo_mode localStorage, or ?demo=true
+  // isDemoMode() covers VITE_DEMO_MODE, localStorage demo_mode, and ?demo=true.
+  // Also show when VITE_USE_MOCK_API=true (mock-API dev mode), which isDemoMode() does not cover.
   if (!isDemoMode() && import.meta.env.VITE_USE_MOCK_API !== 'true') return null;
 
   const bookDemoUrl = import.meta.env.VITE_DEMO_CTA_BOOK_DEMO_URL || 'https://securebase.tximhotep.com/contact';
