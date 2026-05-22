@@ -129,5 +129,5 @@ variable "session_management_allowed_origin" {
 variable "ceo_alert_email" {
   description = "Email address to receive customer activation alerts (invite_accepted and first_login events). Leave empty to skip the SNS email subscription."
   type        = string
-  default     = ""
+  default     = "cedrickjbyrd@me.com"
 }

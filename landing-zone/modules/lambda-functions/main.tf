@@ -164,10 +164,18 @@ resource "aws_sns_topic_policy" "customer_activation" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
-        Principal = { AWS = aws_iam_role.lambda_execution.arn }
-        Action    = "SNS:Publish"
-        Resource  = aws_sns_topic.customer_activation.arn
+        Sid    = "AllowLambdaPublish"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action   = "SNS:Publish"
+        Resource = aws_sns_topic.customer_activation.arn
+        Condition = {
+          ArnLike = {
+            "AWS:SourceArn" = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:securebase-${var.environment}-*"
+          }
+        }
       }
     ]
   })
