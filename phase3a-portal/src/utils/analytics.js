@@ -7,6 +7,7 @@
 const DEFAULT_GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
 const GA_MEASUREMENT_ID_REGEX = /^G-[A-Z0-9]+$/;
+const VIRTUAL_PAGE_DEDUPE_WINDOW_MS = 750;
 
 // In-session page-view counter (resets on hard reload).
 let _pagesViewed = 0;
@@ -78,6 +79,7 @@ export function initializeSessionTracking() {
   const utmParams = getUtmParams();
 
   window.gtag('config', GA_MEASUREMENT_ID, {
+    // Disable auto page_view so SPA route transitions can be tracked manually.
     send_page_view: false,
     ...utmParams,
   });
@@ -104,7 +106,7 @@ export function initializeSessionTracking() {
  */
 export function trackVirtualPageView(path, pageTitle = document.title, pageLocation = window.location.href) {
   const now = Date.now();
-  if (path === _lastVirtualPagePath && now - _lastVirtualPageTimestamp < 750) {
+  if (path === _lastVirtualPagePath && now - _lastVirtualPageTimestamp < VIRTUAL_PAGE_DEDUPE_WINDOW_MS) {
     return;
   }
 
