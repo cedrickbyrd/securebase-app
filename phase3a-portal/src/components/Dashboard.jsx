@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/apiService';
+import { apiService, clearStoredSessionToken } from '../services/apiService';
 import { demoAwareApiService } from '../services/demoApiService';
 import { logoutDemo } from '../services/jwtService';
 import NotificationBell from './NotificationBell';
@@ -305,7 +305,7 @@ function Dashboard() {
 
   const handleLogout = async () => {
     await logoutDemo();
-    localStorage.removeItem('sessionToken');
+    clearStoredSessionToken();
     navigate('/login');
   };
 
