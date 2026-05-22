@@ -17,6 +17,7 @@ import TeamManagement from './components/TeamManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExecutiveDashboard from './components/ExecutiveDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
+import DemoBanner from './components/DemoBanner';
 import EvidencePackages from './components/EvidencePackages';
 import CloudConnection from './components/CloudConnection';
 import ComplianceTrend from './components/ComplianceTrend';
@@ -93,6 +94,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
 
   return (
     <>
+      <DemoBanner />
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         {/* ─ Auth ─ */}
