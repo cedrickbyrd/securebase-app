@@ -314,7 +314,7 @@ export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride)
 
   // Guard against immediate duplicate page_view events caused by overlapping
   // route-level and component-level tracking in SPA transitions.
-  if (_lastPageViewKey === pageViewKey && now - _lastPageViewAt < 1000) {
+  if (_lastPageViewKey === pageViewKey && now - _lastPageViewAt < 400) {
     devLog('Skipped duplicate page_view', { safePath, pageLocation });
     return;
   }

@@ -354,6 +354,7 @@ function Step4Verify({ email }) {
 
 function FastTrackForm({ wave3Target }) {
   const company = WAVE3_COMPANIES[wave3Target] || DEFAULT_COMPANY;
+  const leadTier = wave3Target && wave3Target.toLowerCase().includes('health') ? 'healthcare' : 'fintech';
   const leadFormStarted = useRef(false);
 
   const [email, setEmail] = useState('');
@@ -365,7 +366,7 @@ function FastTrackForm({ wave3Target }) {
   const handleEmailChange = (e) => {
     if (!leadFormStarted.current) {
       leadFormStarted.current = true;
-      trackLeadFormEvent('start', 'signup_fast_track', 'fintech');
+      trackLeadFormEvent('start', 'signup_fast_track', leadTier);
     }
     setEmail(e.target.value);
     if (emailError) setEmailError('');
@@ -404,7 +405,7 @@ function FastTrackForm({ wave3Target }) {
           magicLinkErr instanceof Error ? magicLinkErr.message : 'Unknown error');
       }
 
-      trackLeadFormEvent('submit', 'signup_fast_track', 'fintech');
+      trackLeadFormEvent('submit', 'signup_fast_track', leadTier);
 
       setSubmitted(true);
     } catch (err) {

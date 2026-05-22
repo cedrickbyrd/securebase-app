@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, CheckCircle, Loader } from 'lucide-react';
 import { trackDemoRequest, trackLeadFormEvent } from '../utils/analytics';
