@@ -8,6 +8,7 @@ const DEFAULT_GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
 const GA_MEASUREMENT_ID_REGEX = /^G-[A-Z0-9]+$/;
 const GA_PLACEHOLDER_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+// Dedupes route + component mount page_view overlap in SPA transitions.
 const VIRTUAL_PAGE_DEDUPE_WINDOW_MS = 750;
 
 // In-session page-view counter (resets on hard reload).
@@ -105,8 +106,11 @@ export function initializeSessionTracking() {
  * @param {string} pageTitle Human-readable page title
  * @param {string} pageLocation Absolute URL location
  */
-export function trackVirtualPageView(path, pageTitle = document.title, pageLocation = window.location.href) {
+export function trackVirtualPageView(path, pageTitle, pageLocation) {
   const now = Date.now();
+  const resolvedTitle = pageTitle ?? document.title;
+  const resolvedLocation = pageLocation ?? window.location.href;
+
   if (path === _lastVirtualPagePath && now - _lastVirtualPageTimestamp < VIRTUAL_PAGE_DEDUPE_WINDOW_MS) {
     return;
   }
@@ -115,8 +119,8 @@ export function trackVirtualPageView(path, pageTitle = document.title, pageLocat
   _lastVirtualPageTimestamp = now;
 
   trackEvent('page_view', {
-    page_title: pageTitle,
-    page_location: pageLocation,
+    page_title: resolvedTitle,
+    page_location: resolvedLocation,
     page_path: path,
   });
 }
