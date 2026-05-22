@@ -21,6 +21,7 @@ import DemoBanner from './components/DemoBanner';
 import EvidencePackages from './components/EvidencePackages';
 import CloudConnection from './components/CloudConnection';
 import ComplianceTrend from './components/ComplianceTrend';
+import Signup from './components/Signup';
 import LandingPage from './pages/LandingPage';
 import DemoDashboard from './pages/DemoDashboard';
 import ThankYou from './pages/ThankYou';
@@ -35,12 +36,6 @@ import './App.css';
 function OnboardingRoute() {
   const [params] = useSearchParams();
   return <OnboardingProgress jobId={params.get('jobId')} email={params.get('email')} />;
-}
-
-const MAIN_SITE_SIGNUP_URL = 'https://securebase.tximhotep.com/pricing';
-function ExternalSignupRedirect() {
-  useEffect(() => { window.location.replace(MAIN_SITE_SIGNUP_URL); }, []);
-  return <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh' }}><p>Redirecting…</p></div>;
 }
 
 const DEMO_EMAIL       = 'demo@securebase.tximhotep.com';
@@ -107,8 +102,8 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
         <Route path="/accept-invite"   element={<AcceptInvite   setAuth={setIsAuthenticated} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password"  element={<ResetPassword  />} />
-        <Route path="/signup"          element={<ExternalSignupRedirect />} />
-        <Route path="/register"        element={<ExternalSignupRedirect />} />
+        <Route path="/signup"          element={<Signup />} />
+        <Route path="/register"        element={<Signup />} />
         <Route path="/onboarding"      element={<OnboardingRoute />} />
 
         {/* ─ Protected ─ */}
