@@ -86,11 +86,7 @@ const WAVE3_COMPANIES = {
   },
 };
 
-const WAVE3_LEAD_TIER = {
-  column: 'fintech',
-  mercury: 'fintech',
-  lithic: 'fintech',
-};
+const WAVE3_FINTECH_TARGETS = new Set(['column', 'mercury', 'lithic']);
 
 const DEFAULT_COMPANY = {
   name: null,
@@ -360,8 +356,8 @@ function Step4Verify({ email }) {
 
 function FastTrackForm({ wave3Target }) {
   const company = WAVE3_COMPANIES[wave3Target] || DEFAULT_COMPANY;
-  const leadTier = WAVE3_LEAD_TIER[wave3Target] || 'enterprise';
   const leadFormStarted = useRef(false);
+  const leadTier = WAVE3_FINTECH_TARGETS.has(wave3Target) ? 'fintech' : 'enterprise';
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');

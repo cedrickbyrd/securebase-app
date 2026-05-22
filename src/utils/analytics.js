@@ -928,6 +928,7 @@ export function trackDemoRequest(tier = 'enterprise') {
  * @param {'start'|'submit'} phase
  * @param {string} [formName='lead_form']
  * @param {string} [tier='enterprise']
+ * @returns {void}
  */
 export function trackLeadFormEvent(phase, formName = 'lead_form', tier = 'enterprise') {
   if (!canTrack()) return;
