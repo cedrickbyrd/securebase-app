@@ -6,6 +6,7 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+# IMPORTANT: Set VITE_GA4_MEASUREMENT_ID in this Netlify site to the demo portal GA4 stream.
 
 # API REDIRECTS - Clean, no headers
 [[redirects]]
