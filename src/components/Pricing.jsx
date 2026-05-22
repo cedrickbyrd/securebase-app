@@ -229,12 +229,25 @@ export default function Pricing() {
               <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">TxImhotep LLC</div>
             </div>
           </button>
-          <button
-            onClick={() => navigate('/login')}
-            className="text-sm font-semibold text-slate-600 hover:text-[#667eea] transition-colors"
-          >
-            Sign In
-          </button>
+          <div className="flex items-center gap-4">
+            {!isBanking && (
+              <button
+                onClick={() => {
+                  trackPricingCTA('header_free_trial');
+                  navigate('/checkout?plan=fintech&planName=Fintech+%2F+Healthcare');
+                }}
+                className="inline-flex items-center rounded-xl bg-gradient-to-r from-[#667eea] to-[#764ba2] px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-lg"
+              >
+                Start Free Trial
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/login')}
+              className="text-sm font-semibold text-slate-600 hover:text-[#667eea] transition-colors"
+            >
+              Sign In
+            </button>
+          </div>
         </div>
       </header>
 
@@ -424,6 +437,17 @@ export default function Pricing() {
                 {isBanking && plan.id === 'fintech' ? 'Request Regulatory Briefing →' : plan.cta}
                 {!(isBanking && plan.id === 'fintech') && <ArrowRight className="w-4 h-4" />}
               </button>
+              {!(isBanking && plan.id === 'fintech') && (
+                <a
+                  href="https://demo.securebase.tximhotep.com"
+                  className={`mt-3 block text-center text-sm underline transition-colors hover:no-underline ${
+                    plan.highlight ? 'text-purple-200 hover:text-white' : 'text-slate-500 hover:text-[#667eea]'
+                  }`}
+                  onClick={() => trackPricingCTA(`demo_link_${plan.id}`)}
+                >
+                  See live demo →
+                </a>
+              )}
             </div>
           ))}
         </div>
