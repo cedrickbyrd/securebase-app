@@ -53,18 +53,21 @@ function Login({ setAuth }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleSuccessfulLogin = () => {
+    trackDemoLogin();
+    // `enabled` is tracked as an event-scoped GA4 parameter for this login.
+    window.gtag?.('event', 'login_remember_me', { enabled: rememberMe });
+    setAuth(true);
+    navigate('/dashboard');
+  };
+
   const handleCredentials = async (e) => {
     e.preventDefault(); setError(''); setInvitePending(null); setLoading(true);
     try {
       if (isDemo && email === DEMO_EMAIL && password === DEMO_PASSWORD) { authenticateDemoUser(); return; }
       const res = await apiService.authenticate(email, password, null, rememberMe);
       if (res.mfa_required) { setStep('mfa'); }
-      else if (res.token)   {
-        trackDemoLogin();
-        window.gtag?.('event', 'login_remember_me', { enabled: rememberMe });
-        setAuth(true);
-        navigate('/dashboard');
-      }
+      else if (res.token)   { handleSuccessfulLogin(); }
       else                  { setError('Invalid credentials'); }
     } catch (err) {
       if (err?.code === 'invite_pending') {
@@ -82,12 +85,7 @@ function Login({ setAuth }) {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const res = await apiService.authenticate(email, password, totpCode, rememberMe);
-      if (res.token) {
-        trackDemoLogin();
-        window.gtag?.('event', 'login_remember_me', { enabled: rememberMe });
-        setAuth(true);
-        navigate('/dashboard');
-      }
+      if (res.token) { handleSuccessfulLogin(); }
       else           { setError('Invalid TOTP code. Please try again.'); }
     } catch (err) {
       setError(err.message || 'MFA verification failed');

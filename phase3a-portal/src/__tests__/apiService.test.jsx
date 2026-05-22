@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
   apiService,
   clearStoredSessionToken,
+  clearStoredUserSession,
   getStoredSessionToken,
   persistSessionToken,
 } from '../services/apiService';
@@ -113,5 +115,17 @@ describe('apiService storage helpers', () => {
 
     clearStoredSessionToken();
     expect(getStoredSessionToken()).toBeNull();
+  });
+
+  it('clears stored profile metadata on full logout cleanup', () => {
+    localStorage.setItem('sessionToken', 'remembered-token');
+    localStorage.setItem('userEmail', 'remember@example.com');
+    localStorage.setItem('userRole', 'admin');
+
+    clearStoredUserSession();
+
+    expect(localStorage.getItem('sessionToken')).toBeNull();
+    expect(localStorage.getItem('userEmail')).toBeNull();
+    expect(localStorage.getItem('userRole')).toBeNull();
   });
 });

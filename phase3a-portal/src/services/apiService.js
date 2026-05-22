@@ -2,12 +2,20 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const SESSION_TOKEN_KEY = 'sessionToken';
 
 export function getStoredSessionToken() {
+  // Prefer sessionStorage to limit the XSS exposure window; fall back to
+  // localStorage only when "Remember me" persisted the token across sessions.
   return sessionStorage.getItem(SESSION_TOKEN_KEY) || localStorage.getItem(SESSION_TOKEN_KEY);
 }
 
 export function clearStoredSessionToken() {
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
   localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
+export function clearStoredUserSession() {
+  clearStoredSessionToken();
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userRole');
 }
 
 export function persistSessionToken(token, rememberMe = false) {
@@ -34,7 +42,7 @@ class ApiService {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       if (response.status === 401) {
         if (sessionToken) {
-          clearStoredSessionToken();
+          clearStoredUserSession();
           window.location.href = '/login';
           throw new Error('Session expired. Please log in again.');
         }
