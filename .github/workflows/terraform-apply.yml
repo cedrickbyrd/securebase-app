@@ -8,6 +8,12 @@ on:
       - 'terraform/**'
       - '.github/workflows/terraform-apply.yml'
 
+# Top-level concurrency prevents duplicate workflow runs for the same commit.
+# Per-workspace concurrency is enforced at the job level below.
+concurrency:
+  group: terraform-apply-${{ github.sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
@@ -19,6 +25,13 @@ jobs:
   terraform-apply:
     name: terraform apply (${{ matrix.workspace }})
     runs-on: ubuntu-latest
+    # Serialize applies per workspace so two concurrent workflow runs cannot
+    # attempt a terraform apply on the same environment simultaneously.
+    # cancel-in-progress: false means a queued run waits rather than being
+    # dropped — critical for infrastructure state safety.
+    concurrency:
+      group: terraform-apply-workspace-${{ matrix.workspace }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +82,24 @@ jobs:
             -backend-config="key=landing-zone/${{ matrix.workspace }}/terraform.tfstate" \
             -backend-config="region=us-east-1" \
             -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+
+      - name: Check for existing state lock
+        if: steps.backend_check.outputs.configured == 'true'
+        # The LockID key matches the backend S3 key pattern used in the init
+        # step above.  If the backend key path ever changes, update both places.
+        run: |
+          echo "## Terraform State Lock Check — ${{ matrix.workspace }}" >> "$GITHUB_STEP_SUMMARY"
+          LOCK=$(aws dynamodb get-item \
+            --table-name "${{ secrets.TF_BACKEND_LOCK_TABLE }}" \
+            --key "{\"LockID\":{\"S\":\"landing-zone/${{ matrix.workspace }}/terraform.tfstate\"}}" \
+            --query "Item.Info.S" \
+            --output text 2>/dev/null || echo "None")
+          if [ "$LOCK" != "None" ] && [ -n "$LOCK" ]; then
+            echo "::warning::State lock currently held: $LOCK"
+            echo "**⚠️ State lock held:** \`$LOCK\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**✅ No active state lock**" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Select workspace
         if: steps.backend_check.outputs.configured == 'true'
