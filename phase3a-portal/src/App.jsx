@@ -64,7 +64,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
   const location = useLocation();
 
   useEffect(() => {
-    const pathWithQuery = `${location.pathname}${location.search}${location.hash || ''}`;
+    const pathWithQuery = `${location.pathname}${location.search}${location.hash}`;
     trackVirtualPageView(pathWithQuery, document.title, window.location.href);
   }, [location.pathname, location.search, location.hash]);
 
