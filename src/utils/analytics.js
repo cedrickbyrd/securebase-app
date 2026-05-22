@@ -307,6 +307,7 @@ export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride)
   const safePath = sanitizePath(path);
   const pageLocation = pageLocationOverride || window.location.href;
 
+  // GA4 SPA tracking: send explicit page_view events on client-side route changes.
   ReactGA.event('page_view', {
     page_path: safePath,
     page_title: title || document.title,
