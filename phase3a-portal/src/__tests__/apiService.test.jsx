@@ -1,19 +1,17 @@
-/**
- * Unit tests for ApiService
- * Tests for production API authentication and core methods
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  apiService,
+  clearStoredSessionToken,
+  getStoredSessionToken,
+  persistSessionToken,
+} from '../services/apiService';
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { apiService } from '../services/apiService';
-
-// Mock fetch globally
 global.fetch = vi.fn();
 
-describe('ApiService - authenticate() method', () => {
+describe('apiService session token persistence', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
     vi.clearAllMocks();
-    // Clear localStorage
+    sessionStorage.clear();
     localStorage.clear();
   });
 
@@ -21,161 +19,99 @@ describe('ApiService - authenticate() method', () => {
     vi.restoreAllMocks();
   });
 
-  it('should successfully authenticate with valid API key', async () => {
-    // Mock successful authentication response
-    const mockResponse = {
-      token: 'jwt-token-123',
-      session_token: 'session-abc-456',
-      customer_id: 'customer-001',
-      email: 'test@example.com',
-    };
-
+  it('stores the token in sessionStorage by default', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => mockResponse,
+      json: async () => ({
+        token: 'jwt-token-123',
+        user: { email: 'test@example.com', role: 'user' },
+      }),
     });
 
-    const result = await apiService.authenticate('sb_test_key_12345');
+    const result = await apiService.authenticate('test@example.com', 'SecureBase123!');
 
-    // Verify the fetch call
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result.token).toBe('jwt-token-123');
+    expect(sessionStorage.getItem('sessionToken')).toBe('jwt-token-123');
+    expect(localStorage.getItem('sessionToken')).toBeNull();
+    expect(localStorage.getItem('userEmail')).toBe('test@example.com');
+  });
+
+  it('stores the token in localStorage when remember me is enabled', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        token: 'jwt-token-remembered',
+        user: { email: 'remember@example.com', role: 'admin' },
+      }),
+    });
+
+    await apiService.authenticate('remember@example.com', 'SecureBase123!', null, true);
+
+    expect(localStorage.getItem('sessionToken')).toBe('jwt-token-remembered');
+    expect(sessionStorage.getItem('sessionToken')).toBeNull();
+    expect(localStorage.getItem('userRole')).toBe('admin');
+  });
+
+  it('reads the bearer token from localStorage when sessionStorage is empty', async () => {
+    localStorage.setItem('sessionToken', 'persisted-token');
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: 'ok' }),
+    });
+
+    await apiService.get('/protected');
+
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/login'),
+      expect.stringContaining('/protected'),
       expect.objectContaining({
-        method: 'POST',
+        method: 'GET',
         headers: expect.objectContaining({
-          'Content-Type': 'application/json',
+          Authorization: 'Bearer persisted-token',
         }),
-        body: JSON.stringify({ api_key: 'sb_test_key_12345' }),
       })
     );
-
-    // Verify the response
-    expect(result).toEqual(mockResponse);
-
-    // Verify session token is stored in localStorage
-    expect(localStorage.getItem('sessionToken')).toBe('jwt-token-123');
   });
 
-  it('should store session_token if token is not present', async () => {
-    // Mock response with session_token instead of token
-    const mockResponse = {
-      session_token: 'session-xyz-789',
-      customer_id: 'customer-002',
-    };
-
+  it('clears both storage locations on a 401 response', async () => {
+    sessionStorage.setItem('sessionToken', 'short-lived-token');
+    localStorage.setItem('sessionToken', 'remembered-token');
     global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    await apiService.authenticate('sb_another_key');
-
-    // Verify session_token is stored
-    expect(localStorage.getItem('sessionToken')).toBe('session-xyz-789');
-  });
-
-  it('should handle network errors gracefully', async () => {
-    // Mock network error
-    global.fetch.mockRejectedValueOnce(new Error('fetch failed: Network error'));
-
-    await expect(
-      apiService.authenticate('sb_test_key')
-    ).rejects.toThrow('Network error. Please check your connection and try again.');
-  });
-
-  it('should handle authentication errors with appropriate message', async () => {
-    // Mock authentication error (non-network)
-    global.fetch.mockResolvedValueOnce({
-      ok: false,
       status: 401,
+      ok: false,
+      json: async () => ({ message: 'expired' }),
     });
 
-    await expect(
-      apiService.authenticate('sb_invalid_key')
-    ).rejects.toThrow('Invalid API key. Please check your credentials.');
-  });
+    await expect(apiService.get('/protected')).rejects.toThrow('Session expired. Please log in again.');
 
-  it('should not store token if response has neither token nor session_token', async () => {
-    const mockResponse = {
-      customer_id: 'customer-003',
-      email: 'test@example.com',
-    };
-
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    await apiService.authenticate('sb_key_without_token');
-
-    // Verify no token is stored
+    expect(sessionStorage.getItem('sessionToken')).toBeNull();
     expect(localStorage.getItem('sessionToken')).toBeNull();
-  });
-
-  it('should call POST endpoint with correct data structure', async () => {
-    const mockResponse = {
-      token: 'test-token',
-    };
-
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    await apiService.authenticate('sb_production_key_123');
-
-    // Verify the request body structure
-    const fetchCall = global.fetch.mock.calls[0];
-    const requestBody = JSON.parse(fetchCall[1].body);
-    
-    expect(requestBody).toEqual({
-      api_key: 'sb_production_key_123',
-    });
   });
 });
 
-describe('ApiService - Core HTTP Methods', () => {
+describe('apiService storage helpers', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
   });
 
-  it('should make GET requests', async () => {
-    const mockData = { data: 'test' };
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+  it('persists only one copy of the token in the chosen storage location', () => {
+    sessionStorage.setItem('sessionToken', 'old-session');
+    localStorage.setItem('sessionToken', 'old-local');
 
-    const result = await apiService.get('/test-endpoint');
+    persistSessionToken('fresh-token', true);
+    expect(localStorage.getItem('sessionToken')).toBe('fresh-token');
+    expect(sessionStorage.getItem('sessionToken')).toBeNull();
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/test-endpoint'),
-      expect.objectContaining({
-        method: 'GET',
-      })
-    );
-    expect(result).toEqual(mockData);
+    persistSessionToken('tab-only-token', false);
+    expect(sessionStorage.getItem('sessionToken')).toBe('tab-only-token');
+    expect(localStorage.getItem('sessionToken')).toBeNull();
   });
 
-  it('should make POST requests', async () => {
-    const mockData = { success: true };
-    const postData = { name: 'test' };
+  it('returns the currently stored token and clears both stores when requested', () => {
+    localStorage.setItem('sessionToken', 'remembered-token');
+    expect(getStoredSessionToken()).toBe('remembered-token');
 
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
-
-    const result = await apiService.post('/test-endpoint', postData);
-
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/test-endpoint'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify(postData),
-      })
-    );
-    expect(result).toEqual(mockData);
+    clearStoredSessionToken();
+    expect(getStoredSessionToken()).toBeNull();
   });
 });

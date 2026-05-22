@@ -21,6 +21,7 @@ function Login({ setAuth }) {
   const [error, setError]         = useState('');
   const [invitePending, setInvitePending] = useState(null);
   const [loading, setLoading]     = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [copiedField, setCopied]  = useState(null);
   const navigate = useNavigate();
 
@@ -56,9 +57,14 @@ function Login({ setAuth }) {
     e.preventDefault(); setError(''); setInvitePending(null); setLoading(true);
     try {
       if (isDemo && email === DEMO_EMAIL && password === DEMO_PASSWORD) { authenticateDemoUser(); return; }
-      const res = await apiService.authenticate(email, password);
+      const res = await apiService.authenticate(email, password, null, rememberMe);
       if (res.mfa_required) { setStep('mfa'); }
-      else if (res.token)   { trackDemoLogin(); setAuth(true); navigate('/dashboard'); }
+      else if (res.token)   {
+        trackDemoLogin();
+        window.gtag?.('event', 'login_remember_me', { enabled: rememberMe });
+        setAuth(true);
+        navigate('/dashboard');
+      }
       else                  { setError('Invalid credentials'); }
     } catch (err) {
       if (err?.code === 'invite_pending') {
@@ -75,8 +81,13 @@ function Login({ setAuth }) {
   const handleMFA = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const res = await apiService.authenticate(email, password, totpCode);
-      if (res.token) { trackDemoLogin(); setAuth(true); navigate('/dashboard'); }
+      const res = await apiService.authenticate(email, password, totpCode, rememberMe);
+      if (res.token) {
+        trackDemoLogin();
+        window.gtag?.('event', 'login_remember_me', { enabled: rememberMe });
+        setAuth(true);
+        navigate('/dashboard');
+      }
       else           { setError('Invalid TOTP code. Please try again.'); }
     } catch (err) {
       setError(err.message || 'MFA verification failed');
@@ -225,6 +236,18 @@ function Login({ setAuth }) {
               <div className="form-group">
                 <label htmlFor="password">Password</label>
                 <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" disabled={loading} required />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#667eea] focus:ring-[#667eea]"
+                />
+                <label htmlFor="rememberMe" className="text-sm text-slate-600 select-none cursor-pointer">
+                  Remember me
+                </label>
               </div>
               <button type="submit" className="login-button" disabled={loading}>
                 {loading ? 'Signing in…' : 'Sign In'}
