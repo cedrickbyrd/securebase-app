@@ -142,6 +142,56 @@ resource "aws_iam_role_policy" "lambda_custom" {
 }
 
 # ============================================================================
+# Customer Activation SNS Topic
+# ============================================================================
+
+# SNS topic that receives invite_accepted and first_login events from auth_v2.
+resource "aws_sns_topic" "customer_activation" {
+  name         = "securebase-${var.environment}-customer-activations"
+  display_name = "SecureBase Customer Activations"
+
+  tags = merge(var.tags, {
+    Name    = "securebase-${var.environment}-customer-activations"
+    Purpose = "Customer activation alerts (invite_accepted, first_login)"
+  })
+}
+
+# Allow the Lambda execution role to publish to this topic.
+resource "aws_sns_topic_policy" "customer_activation" {
+  arn = aws_sns_topic.customer_activation.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowLambdaPublish"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action   = "SNS:Publish"
+        Resource = aws_sns_topic.customer_activation.arn
+        Condition = {
+          ArnLike = {
+            "AWS:SourceArn" = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:securebase-${var.environment}-*"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# CEO email subscription — receives instant alerts on every activation event.
+# Requires one-time email confirmation from AWS before messages are delivered.
+# Omitted entirely when var.ceo_alert_email is left empty.
+resource "aws_sns_topic_subscription" "ceo_activation_alert" {
+  count     = var.ceo_alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.customer_activation.arn
+  protocol  = "email"
+  endpoint  = var.ceo_alert_email
+}
+
+# ============================================================================
 # Lambda Functions
 # ============================================================================
 
@@ -161,10 +211,11 @@ resource "aws_lambda_function" "auth_v2" {
 
   environment {
     variables = {
-      ENVIRONMENT       = var.environment
-      JWT_SECRET_ARN    = var.jwt_secret_arn
-      DYNAMODB_TABLE    = var.dynamodb_table_name
-      RDS_PROXY_ENDPOINT = var.rds_proxy_endpoint
+      ENVIRONMENT            = var.environment
+      JWT_SECRET_ARN         = var.jwt_secret_arn
+      DYNAMODB_TABLE         = var.dynamodb_table_name
+      RDS_PROXY_ENDPOINT     = var.rds_proxy_endpoint
+      ACTIVATION_SNS_TOPIC_ARN = aws_sns_topic.customer_activation.arn
     }
   }
 

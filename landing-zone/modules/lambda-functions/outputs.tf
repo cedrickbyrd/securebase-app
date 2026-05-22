@@ -151,3 +151,8 @@ output "session_management_name" {
   description = "Name of the session_management Lambda function"
   value       = aws_lambda_function.session_management.function_name
 }
+
+output "customer_activation_sns_topic_arn" {
+  description = "ARN of the customer activation SNS topic (receives invite_accepted and first_login events)"
+  value       = aws_sns_topic.customer_activation.arn
+}
