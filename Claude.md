@@ -3,13 +3,13 @@
 **Repository:** `cedrickbyrd/securebase-app`
 **Role Context:** Principal Cloud Architect | Compliance-First SaaS Platform
 **Mission:** Build SOC 2, FedRAMP, and HIPAA-ready infrastructure and features
-**Last Updated:** May 17, 2026
+**Last Updated:** May 22, 2026
 
 ---
 
 ## 🎯 Project Overview
 
-SecureBase is a security-first, multi-tenant AWS PaaS platform delivering **compliance automation**, **AI Agent Authentication**, **Non-Human Identity Management (NHI/IAM)**, and **Sovereign Infrastructure Orchestration**. Every code change must prioritize security, auditability, and regulatory compliance.
+SecureBase is a security-first, multi-tenant AWS PaaS platform delivering **compliance automation**, **AI Agent Authentication**, **Non-Human Identity Management (NHI/IAM)**, and **Sovereign Infrastructure-as-Code** for regulated industries (fintech, healthcare, federal).
 
 **Current Phase Status:**
 | Phase | Description | Status |
@@ -49,6 +49,47 @@ Portal components: evidence history table, async polling, presigned download, ad
 
 ---
 
+## 🛒 Sales Funnel Architecture
+
+> **Source of truth for conversion:** `securebase.tximhotep.com` (marketing site, root `/`)
+
+The SecureBase funnel has three stages across two separate web properties:
+
+```
+[TOFU]  demo.securebase.tximhotep.com   ←  prospect explores live product
+           ↓  "Ready to deploy? See pricing →"
+[MOFU]  securebase.tximhotep.com/pricing  ←  highest-traffic page (236 views/day)
+           ↓  plan CTA
+[BOFU]  securebase.tximhotep.com/checkout  ←  Stripe payment capture
+```
+
+### Key Rules for Every Developer
+
+- **Demo → Pricing is the primary acquisition path.** `demo.securebase.tximhotep.com` must always carry a prominent CTA back to `securebase.tximhotep.com/pricing`. Do NOT add self-serve signup flows inside the demo portal — pricing is the handoff point.
+- **Pricing → Checkout, NOT Pricing → Signup.** `src/components/Pricing.jsx` routes `handleSelectPlan()` directly to `/checkout`. The `/signup` page exists for a separate direct-traffic path. Do NOT conflate these two funnels.
+- **The pricing page is the revenue bottleneck.** All conversion optimisation work (CTAs, copy, layout) is concentrated in `src/components/Pricing.jsx`.
+- **Banking/FFIEC visitors are routed to `/contact-sales`, not checkout.** This is intentional — do NOT remove the `isBanking` guard.
+
+### GA4 Properties
+
+| Property | GA4 ID | Tracks |
+|---|---|---|
+| SecureBase - tximhotep.com | `533585511` | Marketing site — **source of truth** |
+| SecureBase Demo Portal | `530646932` | `demo.securebase.tximhotep.com` |
+
+Both properties are live and receiving data. The `G-XXXXXXXXXX` placeholder in env templates below is intentional — real IDs are set in Netlify environment variables, never in the repo.
+
+### Known Conversion Issues (May 22, 2026)
+
+| Issue | Root Cause | Fix |
+|---|---|---|
+| 0s average engagement time across all pages | SPA client-side routing not firing GA4 `page_view` events on route change | PR in progress |
+| ~15.7% of `/login` sessions hit `/forgot-password` | JWT stored in `sessionStorage` — cleared on tab close, forcing re-login | Add "Remember me" → `localStorage` path |
+| Demo dashboard invisible from pricing page | No link from `Pricing.jsx` to `demo.securebase.tximhotep.com` | Add secondary CTA to pricing cards |
+| No acquisition CTA in pricing page header | Header only shows "Sign In" — no path for new prospects | Add "Start Free Trial" to sticky header |
+
+---
+
 ## 🛠 Build & Environment Constraints
 
 ### Package Management
@@ -84,7 +125,7 @@ The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/
 ```env
 VITE_API_BASE_URL=https://api.securebase.tximhotep.com
 VITE_API_ENDPOINT=https://api.securebase.tximhotep.com
-VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX  # placeholder — real ID in Netlify env vars (property 533585511)
 VITE_DEMO_MODE=false
 VITE_DEMO_USER_EMAIL=demo@securebase.tximhotep.com
 VITE_USE_MOCK_API=false
@@ -205,6 +246,8 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 - [ ] No customer PII in repo files, issues, or commit messages — use Customer #1, #2, etc.
 - [ ] No new Netlify Functions — use AWS Lambda + API Gateway
 - [ ] New docs in `docs/`, not repo root
+- [ ] Funnel rule: demo CTAs point to `securebase.tximhotep.com/pricing`, not internal signup
+- [ ] Pricing page: `handleSelectPlan()` routes to `/checkout` — do NOT reroute to `/signup`
 
 ---
 
@@ -216,4 +259,4 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 
 ---
 
-**Last Updated:** 2026-05-17 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
+**Last Updated:** 2026-05-22 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
