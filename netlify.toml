@@ -1,11 +1,11 @@
 [build]
-  base = "phase3a-portal"
   command = "npm ci --legacy-peer-deps && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+# IMPORTANT: Set VITE_GA4_MEASUREMENT_ID in this Netlify site to the marketing GA4 stream.
 
 # API REDIRECTS - Clean, no headers
 [[redirects]]

@@ -4,10 +4,10 @@
  * Provides per-page and per-feature tracking helpers for the SecureBase portal.
  */
 
-const DEFAULT_GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
+const GA_PLACEHOLDER_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+const DEFAULT_GA_MEASUREMENT_ID = GA_PLACEHOLDER_MEASUREMENT_ID;
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
 const GA_MEASUREMENT_ID_REGEX = /^G-[A-Z0-9]+$/;
-const GA_PLACEHOLDER_MEASUREMENT_ID = 'G-XXXXXXXXXX';
 // Dedupes route + component mount page_view overlap in SPA transitions.
 const VIRTUAL_PAGE_DEDUPE_WINDOW_MS = 750;
 
@@ -52,6 +52,33 @@ function getUtmParams() {
   return params;
 }
 
+function ensureGtagLoaded() {
+  if (typeof window === 'undefined') return false;
+  if (
+    !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
+    GA_MEASUREMENT_ID === GA_PLACEHOLDER_MEASUREMENT_ID
+  ) {
+    return false;
+  }
+
+  if (typeof window.gtag === 'function') return true;
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function gtag() { window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+
+  const scriptSelector = `script[data-securebase-ga4-id="${GA_MEASUREMENT_ID}"]`;
+  if (!document.querySelector(scriptSelector)) {
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
+    script.setAttribute('data-securebase-ga4-id', GA_MEASUREMENT_ID);
+    document.head.appendChild(script);
+  }
+
+  return typeof window.gtag === 'function';
+}
+
 // ---------------------------------------------------------------------------
 // Session initialisation
 // ---------------------------------------------------------------------------
@@ -66,15 +93,15 @@ function getUtmParams() {
  * Call this once on application mount (e.g. inside a root-level useEffect).
  */
 export function initializeSessionTracking() {
-  if (typeof window.gtag !== 'function') {
-    return;
-  }
-
   if (
     !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
     GA_MEASUREMENT_ID === GA_PLACEHOLDER_MEASUREMENT_ID
   ) {
     console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
+    return;
+  }
+
+  if (!ensureGtagLoaded()) {
     return;
   }
 
