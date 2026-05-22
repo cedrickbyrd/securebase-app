@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
-import { initializeSessionTracking } from './utils/analytics';
+import { initializeSessionTracking, trackVirtualPageView } from './utils/analytics';
 import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -17,6 +17,7 @@ import TeamManagement from './components/TeamManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExecutiveDashboard from './components/ExecutiveDashboard';
 import ExitIntentModal from './components/ExitIntentModal';
+import DemoBanner from './components/DemoBanner';
 import EvidencePackages from './components/EvidencePackages';
 import CloudConnection from './components/CloudConnection';
 import ComplianceTrend from './components/ComplianceTrend';
@@ -64,6 +65,11 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
   const location = useLocation();
 
   useEffect(() => {
+    const pathWithQuery = `${location.pathname}${location.search}${location.hash}`;
+    trackVirtualPageView(pathWithQuery, document.title, window.location.href);
+  }, [location.pathname, location.search, location.hash]);
+
+  useEffect(() => {
     if (!isAuthenticated || isDemoMode()) return;
     const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
     if (userRole === 'admin') return;
@@ -93,6 +99,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
 
   return (
     <>
+      <DemoBanner />
       {isAuthenticated && <ExitIntentModal />}
       <Routes>
         {/* ─ Auth ─ */}
