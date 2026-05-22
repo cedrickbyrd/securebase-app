@@ -10,6 +10,13 @@ on:
     paths:
       - 'landing-zone/**'
 
+# Serialize plan+apply per branch so concurrent pushes to main never race for
+# the same Terraform state.  cancel-in-progress: false prevents an in-flight
+# apply from being aborted mid-run; only queued plans are cancelled.
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
