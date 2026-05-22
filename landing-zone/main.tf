@@ -64,6 +64,15 @@ module "central_logging" {
   log_retention_days = 365
 }
 
+module "phase6_audit_logging" {
+  source               = "./modules/phase6-audit-logging"
+  environment          = var.environment
+  project_name         = "securebase"
+  evidence_bucket_name = "securebase-evidence-${var.environment}"
+  tags                 = merge(var.tags, { Phase = "6.1" })
+  depends_on           = [module.central_logging]
+}
+
 module "identity" {
   source           = "./modules/identity"
   sso_instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
