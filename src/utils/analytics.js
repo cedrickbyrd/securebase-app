@@ -288,7 +288,8 @@ export function trackEvent(category, action, label, value) {
  *
  * @param {string} pathOrPageName - URL path (e.g. '/compliance') OR legacy page name.
  * @param {string} [titleOrPath]  - Optional page title, OR legacy path argument.
- * @param {string} [pageLocationOverride] - Optional absolute URL override.
+ * @param {string} [pageLocationOverride] - Optional absolute URL override
+ *   (useful for tracking virtual locations that do not match window.location).
  */
 export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride) {
   if (!canTrack()) return;

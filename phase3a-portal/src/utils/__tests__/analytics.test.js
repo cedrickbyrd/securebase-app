@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   initializeSessionTracking,
   trackVirtualPageView,
@@ -7,6 +7,10 @@ import {
 describe('portal analytics', () => {
   beforeEach(() => {
     window.gtag = vi.fn();
+  });
+
+  afterEach(() => {
+    delete window.gtag;
   });
 
   it('configures GA with manual page views enabled for SPA routing', () => {
