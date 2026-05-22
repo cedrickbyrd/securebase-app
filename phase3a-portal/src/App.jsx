@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
-import { initializeSessionTracking } from './utils/analytics';
+import { initializeSessionTracking, trackVirtualPageView } from './utils/analytics';
 import { isDemoMode } from './utils/demoData';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -62,6 +62,11 @@ const ONBOARDING_EXEMPT_PATHS = [
 
 function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNeedsOnboarding }) {
   const location = useLocation();
+
+  useEffect(() => {
+    const pathWithQuery = `${location.pathname}${location.search}${location.hash}`;
+    trackVirtualPageView(pathWithQuery, document.title, window.location.href);
+  }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
     if (!isAuthenticated || isDemoMode()) return;
