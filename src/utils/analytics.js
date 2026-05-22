@@ -31,6 +31,9 @@ let _initialised = false;
 let _pagesViewed = 0; // in-session page-view counter
 let _lastPageViewKey = '';
 let _lastPageViewAt = 0;
+// 400ms catches route/component overlap duplicates while allowing genuine
+// quick back/forward navigation behavior in the SPA.
+const PAGE_VIEW_DEDUP_WINDOW_MS = 400;
 
 const IS_PROD = import.meta.env.VITE_ENV === 'production';
 const IS_DEV = !IS_PROD;
@@ -314,7 +317,7 @@ export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride)
 
   // Guard against immediate duplicate page_view events caused by overlapping
   // route-level and component-level tracking in SPA transitions.
-  if (_lastPageViewKey === pageViewKey && now - _lastPageViewAt < 400) {
+  if (_lastPageViewKey === pageViewKey && now - _lastPageViewAt < PAGE_VIEW_DEDUP_WINDOW_MS) {
     devLog('Skipped duplicate page_view', { safePath, pageLocation });
     return;
   }

@@ -86,6 +86,12 @@ const WAVE3_COMPANIES = {
   },
 };
 
+const WAVE3_LEAD_TIER = {
+  column: 'fintech',
+  mercury: 'fintech',
+  lithic: 'fintech',
+};
+
 const DEFAULT_COMPANY = {
   name: null,
   greeting: 'Get Started with SecureBase',
@@ -354,7 +360,7 @@ function Step4Verify({ email }) {
 
 function FastTrackForm({ wave3Target }) {
   const company = WAVE3_COMPANIES[wave3Target] || DEFAULT_COMPANY;
-  const leadTier = wave3Target && wave3Target.toLowerCase().includes('health') ? 'healthcare' : 'fintech';
+  const leadTier = WAVE3_LEAD_TIER[wave3Target] || 'enterprise';
   const leadFormStarted = useRef(false);
 
   const [email, setEmail] = useState('');
