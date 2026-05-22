@@ -288,8 +288,10 @@ export function trackEvent(category, action, label, value) {
  *
  * @param {string} pathOrPageName - URL path (e.g. '/compliance') OR legacy page name.
  * @param {string} [titleOrPath]  - Optional page title, OR legacy path argument.
+ * @param {string} [pageLocationOverride] - Optional absolute URL override
+ *   (useful for tracking virtual locations that do not match window.location).
  */
-export function trackPageView(pathOrPageName, titleOrPath) {
+export function trackPageView(pathOrPageName, titleOrPath, pageLocationOverride) {
   if (!canTrack()) return;
 
   let path, title;
@@ -304,14 +306,16 @@ export function trackPageView(pathOrPageName, titleOrPath) {
   }
 
   const safePath = sanitizePath(path);
+  const pageLocation = pageLocationOverride || window.location.href;
 
-  ReactGA.send({
-    hitType: 'pageview',
-    page: safePath,
-    title: title || document.title,
+  // GA4 SPA tracking: send explicit page_view events on client-side route changes.
+  ReactGA.event('page_view', {
+    page_path: safePath,
+    page_title: title || document.title,
+    page_location: pageLocation,
   });
 
-  devLog('Page view:', safePath, title || '');
+  devLog('Page view:', safePath, title || '', pageLocation);
 }
 
 // ---------------------------------------------------------------------------
@@ -966,4 +970,3 @@ export function trackLeadGateSubmit(tier = 'unknown', campaign = '') {
     console.error('[Analytics] Error tracking event: lead_gate_submit', error);
   }
 }
-
