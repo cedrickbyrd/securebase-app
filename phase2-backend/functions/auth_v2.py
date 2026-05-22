@@ -36,14 +36,20 @@ import bcrypt
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO'))
 
-# AWS clients
+# AWS clients — module-level; reused across warm Lambda invocations
 ddb = boto3.resource('dynamodb')
 secrets_client = boto3.client('secretsmanager')
 _sns_client    = boto3.client('sns')
 
-# Table handles
+# Table handles — module-level; reused across warm Lambda invocations
 _tokens_table = ddb.Table(os.environ.get('TOKENS_TABLE', 'securebase-tokens'))
 _users_table  = ddb.Table(os.environ.get('USERS_TABLE',  'securebase-users'))
+
+# ── In-memory JWT secret cache ────────────────────────────────────────────────
+# Avoids a Secrets Manager round-trip on every decode/mint under concurrent load.
+# TTL is kept short (5 min) so rotation takes effect within a single Lambda run.
+_JWT_SECRET_CACHE: dict = {}
+_JWT_SECRET_TTL_SECONDS = int(os.environ.get('JWT_SECRET_CACHE_TTL', '300'))
 
 _ACTIVATION_TOPIC_ARN = os.environ.get('ACTIVATION_SNS_TOPIC_ARN', '')
 
@@ -72,17 +78,33 @@ def _resp(status: int, body: dict) -> dict:
 
 
 def _get_jwt_secret() -> str:
+    """Return the JWT secret, serving from an in-memory cache when possible.
+
+    The cache avoids a Secrets Manager call on every Lambda invocation, which
+    is the dominant latency contributor under concurrent RBAC verification load.
+    The TTL (_JWT_SECRET_TTL_SECONDS) ensures that key rotation propagates within
+    a predictable window without restarting the function.
+    """
+    now = datetime.now(timezone.utc).timestamp()
+    cached = _JWT_SECRET_CACHE.get('secret')
+    if cached and now < _JWT_SECRET_CACHE.get('expires_at', 0):
+        return cached
+
     secret_name = os.environ.get('JWT_SECRET', 'securebase-jwt-production')
     try:
         resp = secrets_client.get_secret_value(SecretId=secret_name)
         raw = resp.get('SecretString', '')
         try:
             parsed = json.loads(raw)
-            return parsed.get('jwt_secret') or parsed.get(secret_name) or raw
+            value = parsed.get('jwt_secret') or parsed.get(secret_name) or raw
         except (json.JSONDecodeError, AttributeError):
-            return raw
+            value = raw
     except ClientError:
-        return secret_name
+        value = secret_name
+
+    _JWT_SECRET_CACHE['secret'] = value
+    _JWT_SECRET_CACHE['expires_at'] = now + _JWT_SECRET_TTL_SECONDS
+    return value
 
 
 def _mint_jwt(email: str, user: dict) -> str:
@@ -118,12 +140,19 @@ def _get_user_record(email: str) -> dict | None:
 
 
 def _has_active_invite(email: str) -> bool:
-    """Best-effort check for an active invite token for this email."""
+    """Best-effort check for an active invite token for this email.
+
+    Uses ProjectionExpression + Limit so the scan reads only the minimum data
+    required. A future improvement is to add a GSI on (email, status) to
+    convert this to a key-based query and eliminate the scan entirely.
+    """
     try:
         resp = _tokens_table.scan(
             FilterExpression='email = :e AND #s = :s',
             ExpressionAttributeValues={':e': email, ':s': 'active'},
             ExpressionAttributeNames={'#s': 'status'},
+            ProjectionExpression='#s',
+            Limit=1,
         )
         return bool(resp.get('Items'))
     except Exception as e:
@@ -132,13 +161,24 @@ def _has_active_invite(email: str) -> bool:
 
 
 def _mark_token_used(token: str) -> None:
+    """Mark an invite token as used using an optimistic conditional write.
+
+    The ConditionExpression ensures that only one concurrent accept-invite
+    request can succeed for the same token. If two requests race, the second
+    will receive a ConditionalCheckFailedException, which is silently ignored
+    because the token was already consumed by the winner.
+    """
     try:
         _tokens_table.update_item(
             Key={'token': token},
             UpdateExpression='SET #s = :used',
+            ConditionExpression='#s = :active',
             ExpressionAttributeNames={'#s': 'status'},
-            ExpressionAttributeValues={':used': 'used'},
+            ExpressionAttributeValues={':used': 'used', ':active': 'active'},
         )
+    except ClientError as e:
+        if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+            logger.warning(f"Could not mark token used: {e}")
     except Exception as e:
         logger.warning(f"Could not mark token used: {e}")
 

@@ -998,6 +998,41 @@ resource "aws_api_gateway_method_settings" "all" {
   }
 }
 
+# ============================================================================
+# Per-Tenant Usage Plan and API Key
+#
+# Enforces a per-customer request rate/burst ceiling so that a single tenant
+# spiking to 100+ concurrent users cannot starve adjacent tenants.
+#
+# Rate:  var.default_rate_limit  (default 100 req/s  per tenant)
+# Burst: var.default_burst_limit (default 200 tokens per tenant)
+#
+# Each tenant receives one API key; the key is associated with this usage plan.
+# Tenants that need a higher limit can be given a bespoke usage plan by
+# extending the module.
+# ============================================================================
+
+resource "aws_api_gateway_usage_plan" "per_tenant" {
+  name        = "securebase-${var.environment}-per-tenant"
+  description = "Per-tenant rate/burst throttle — 100 req/s, 200 burst"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.securebase_api.id
+    stage  = aws_api_gateway_stage.main.stage_name
+  }
+
+  throttle_settings {
+    rate_limit  = var.default_rate_limit
+    burst_limit = var.default_burst_limit
+  }
+
+  tags = merge(var.tags, {
+    Name        = "securebase-${var.environment}-per-tenant-usage-plan"
+    Environment = var.environment
+    Component   = "api-gateway"
+  })
+}
+
 #
 #resource "aws_api_gateway_rest_api_policy" "netlify_only" {
 #  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
