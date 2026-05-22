@@ -64,3 +64,8 @@ output "root_resource_id" {
   description = "Root resource ID of the API Gateway REST API"
   value       = aws_api_gateway_rest_api.securebase_api.root_resource_id
 }
+
+output "per_tenant_usage_plan_id" {
+  description = "ID of the per-tenant usage plan (associate tenant API keys with this plan)"
+  value       = aws_api_gateway_usage_plan.per_tenant.id
+}

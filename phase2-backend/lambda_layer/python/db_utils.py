@@ -146,6 +146,36 @@ def set_rls_context(customer_id: str, role: str = 'customer') -> None:
         release_connection(conn)
 
 
+def set_rls_context_on_conn(conn, customer_id: str, role: str = 'customer') -> None:
+    """
+    Set RLS context on an already-acquired connection.
+
+    Use this variant when the caller will immediately execute additional queries
+    on the same connection.  This eliminates the extra acquire/release cycle that
+    would otherwise occur if set_rls_context() and the subsequent query each
+    obtained their own connection from the pool, which doubles connection churn
+    under concurrent load.
+
+    The caller is responsible for committing or rolling back the transaction and
+    returning the connection to the pool via release_connection().
+
+    Args:
+        conn: An active psycopg2 connection obtained from get_connection().
+        customer_id: UUID of the customer
+        role: 'customer' or 'admin'
+
+    Raises:
+        DatabaseError: If context setting fails
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT set_customer_context(%s, %s)", (customer_id, role))
+        logger.debug(f"RLS context set (shared conn) for customer {customer_id} as {role}")
+    except psycopg2.Error as e:
+        logger.error(f"Failed to set RLS context on shared conn: {str(e)}")
+        raise DatabaseError(f"RLS context setting failed: {str(e)}")
+
+
 def query_one(query: str, params: tuple = None, dict_cursor: bool = True) -> Optional[Dict]:
     """
     Execute a SELECT query and return a single row.
