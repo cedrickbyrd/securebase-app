@@ -35,7 +35,7 @@ const LoadingFallback = () => (
 function RouteTracker() {
   const location = useLocation();
   useEffect(() => {
-    const pathWithQuery = `${location.pathname}${location.search}${location.hash || ''}`;
+    const pathWithQuery = `${location.pathname}${location.search}${location.hash}`;
     trackPageView(pathWithQuery, document.title, window.location.href);
   }, [location.pathname, location.search, location.hash]);
   return null;

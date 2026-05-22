@@ -7,6 +7,7 @@
 const DEFAULT_GA_MEASUREMENT_ID = 'G-EEVD92DCS1';
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
 const GA_MEASUREMENT_ID_REGEX = /^G-[A-Z0-9]+$/;
+const GA_PLACEHOLDER_MEASUREMENT_ID = 'G-XXXXXXXXXX';
 const VIRTUAL_PAGE_DEDUPE_WINDOW_MS = 750;
 
 // In-session page-view counter (resets on hard reload).
@@ -70,7 +71,7 @@ export function initializeSessionTracking() {
 
   if (
     !GA_MEASUREMENT_ID_REGEX.test(GA_MEASUREMENT_ID) ||
-    GA_MEASUREMENT_ID === 'G-XXXXXXXXXX'
+    GA_MEASUREMENT_ID === GA_PLACEHOLDER_MEASUREMENT_ID
   ) {
     console.warn('[GA4] Invalid or placeholder measurement ID; analytics disabled.');
     return;
