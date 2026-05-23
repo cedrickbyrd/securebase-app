@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { isDemoMode } from '../utils/demoData';
 import './Dashboard.css';
 
 const FRAMEWORK_META = {
@@ -9,6 +10,7 @@ const FRAMEWORK_META = {
 };
 
 const MOCK_USERS = [
+  { email: 'demo@securebase.tximhotep.com', role: 'admin' },
   { email: 'matthew.matturro@trinetx.com', role: 'admin' },
   { email: 'sarah.chen@trinetx.com', role: 'analyst' },
   { email: 'david.park@trinetx.com', role: 'auditor' },
@@ -199,7 +201,10 @@ export default function ExecutiveDashboard() {
         if (active) setIsAdmin(String(matched?.role || '').toLowerCase() === 'admin');
       } catch {
         const matched = MOCK_USERS.find((user) => user.email.toLowerCase() === currentUserEmail);
-        if (active) setIsAdmin(String(matched?.role || '').toLowerCase() === 'admin');
+        const matchedEmail = String(matched?.email || '').toLowerCase();
+        const isDemoAdmin = matchedEmail === 'demo@securebase.tximhotep.com' && isDemoMode();
+        const canUseRole = matchedEmail !== 'demo@securebase.tximhotep.com' || isDemoAdmin;
+        if (active) setIsAdmin(canUseRole && String(matched?.role || '').toLowerCase() === 'admin');
       }
     };
     loadAdmin();
@@ -346,6 +351,14 @@ export default function ExecutiveDashboard() {
           >
             Download Board Report
           </button>
+          {isDemoMode() && (
+            <a
+              href="https://securebase.tximhotep.com/pricing"
+              className="mt-2 text-sm font-semibold text-[#0f4c81] hover:underline"
+            >
+              Ready to deploy? See pricing →
+            </a>
+          )}
         </div>
       </header>
 
@@ -426,7 +439,7 @@ export default function ExecutiveDashboard() {
                 className="framework-card"
                 onClick={() => {
                   localStorage.setItem('active_framework', id);
-                  navigate('/hipaa-dashboard');
+                  navigate('/compliance');
                 }}
                 style={{ textAlign: 'left', cursor: 'pointer' }}
               >
