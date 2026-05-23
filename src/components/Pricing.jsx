@@ -518,7 +518,7 @@ export default function Pricing() {
               <button
                 onClick={() => {
                   trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
-                  navigate('/checkout?plan=pilot_compliance&planName=Compliance+Jumpstart');
+                  navigate(`/checkout?plan=pilot_compliance&planName=${encodeURIComponent('Compliance Jumpstart')}`);
                 }}
                 className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
               >
@@ -557,7 +557,7 @@ export default function Pricing() {
               <button
                 onClick={() => {
                   trackAddToCart('hipaa_assessment', 'HIPAA Readiness Assessment', 1995);
-                  navigate('/checkout?plan=hipaa_assessment&planName=HIPAA+Readiness+Assessment');
+                  navigate(`/checkout?plan=hipaa_assessment&planName=${encodeURIComponent('HIPAA Readiness Assessment')}`);
                 }}
                 className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
               >
