@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star } from 'lucide-react';
-import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick, trackAddToCart } from '../utils/analytics';
+import { trackPricingCTA, trackViewPromotion, trackPilotCTAClick } from '../utils/analytics';
 import { isLinkedInTraffic, isBankingDomainTraffic, PILOT_PRICING } from '../utils/trackingUtils';
 import { mockComplianceData } from '../mock-api';
+import AddOnCard from './AddOnCard';
 
 const PLANS = [
   {
@@ -79,6 +80,38 @@ const PLANS = [
     ],
     cta: 'Contact Sales →',
     highlight: false,
+  },
+];
+
+const ADDON_PRODUCTS = [
+  {
+    planId: 'pilot_compliance',
+    title: 'Compliance Jumpstart',
+    tagline: 'Fast-track your SOC 2 readiness',
+    price: 495,
+    ctaLabel: 'Get Started',
+    features: [
+      'SOC 2 Type II gap analysis',
+      'CIS Benchmark Level 1 & 2 assessment',
+      'Prioritized remediation roadmap',
+      'Compliance PDF report',
+      '30-day email support',
+    ],
+  },
+  {
+    planId: 'hipaa_assessment',
+    title: 'HIPAA Readiness Assessment',
+    tagline: "Know your HIPAA gaps before you're audited",
+    price: 1995,
+    ctaLabel: 'Get Assessment',
+    features: [
+      'Full HIPAA technical safeguard audit',
+      'PHI data flow mapping',
+      'Gap analysis with severity ratings',
+      'Remediation checklist',
+      'Auto-enrolled in Healthcare tier (fee credited to first invoice)',
+      'BAA executed on enrollment',
+    ],
   },
 ];
 
@@ -489,82 +522,9 @@ export default function Pricing() {
             <p className="text-slate-600 mt-2">One-time purchases to accelerate compliance readiness</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white border-2 border-teal-200 rounded-2xl p-8 shadow-sm flex flex-col">
-              <div className="mb-6">
-                <span className="inline-flex items-center bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
-                  One-time purchase
-                </span>
-                <h3 className="text-2xl font-bold text-slate-900 mb-1">Compliance Jumpstart</h3>
-                <p className="text-sm text-slate-600">Fast-track your SOC 2 readiness</p>
-              </div>
-              <div className="mb-8">
-                <span className="text-5xl font-black text-slate-900">$495</span>
-                <span className="text-sm ml-2 text-slate-500">one-time</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  'SOC 2 Type II gap analysis',
-                  'CIS Benchmark Level 1 & 2 assessment',
-                  'Prioritized remediation roadmap',
-                  'Compliance PDF report',
-                  '30-day email support',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-teal-600" />
-                    <span className="text-sm text-slate-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => {
-                  trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
-                  navigate(`/checkout?plan=pilot_compliance&planName=${encodeURIComponent('Compliance Jumpstart')}`);
-                }}
-                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="bg-white border-2 border-teal-200 rounded-2xl p-8 shadow-sm flex flex-col">
-              <div className="mb-6">
-                <span className="inline-flex items-center bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
-                  One-time purchase
-                </span>
-                <h3 className="text-2xl font-bold text-slate-900 mb-1">HIPAA Readiness Assessment</h3>
-                <p className="text-sm text-slate-600">Know your HIPAA gaps before you're audited</p>
-              </div>
-              <div className="mb-8">
-                <span className="text-5xl font-black text-slate-900">$1,995</span>
-                <span className="text-sm ml-2 text-slate-500">one-time</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  'Full HIPAA technical safeguard audit',
-                  'PHI data flow mapping',
-                  'Gap analysis with severity ratings',
-                  'Remediation checklist',
-                  'Auto-enrolled in Healthcare tier (fee credited to first invoice)',
-                  'BAA executed on enrollment',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-teal-600" />
-                    <span className="text-sm text-slate-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => {
-                  trackAddToCart('hipaa_assessment', 'HIPAA Readiness Assessment', 1995);
-                  navigate(`/checkout?plan=hipaa_assessment&planName=${encodeURIComponent('HIPAA Readiness Assessment')}`);
-                }}
-                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
-              >
-                Get Assessment
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+            {ADDON_PRODUCTS.map((product) => (
+              <AddOnCard key={product.planId} {...product} />
+            ))}
           </div>
         </div>
 

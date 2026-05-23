@@ -596,7 +596,7 @@ export function trackAddToCart(plan, planName = '', price = 0) {
  * Step 4 ("Begin checkout") correctly.
  *
  * @param {string} plan                                 - Plan identifier.
- * @param {'annual'|'monthly'} [billingCycle='monthly'] - Billing cadence.
+ * @param {'annual'|'monthly'|'one_time'} [billingCycle='monthly'] - Billing cadence.
  * @param {'form'|'one_click'} [method='form']          - Checkout path taken.
  *   'form'      = /checkout route form submit → POST /api/checkout
  *   'one_click' = portal Pricing inline POST /api/checkout
