@@ -265,7 +265,7 @@ export default function Pricing() {
               <button
                 onClick={() => {
                   trackPricingCTA('header_free_trial');
-                  navigate('/checkout?plan=healthcare&planName=Healthcare');
+                  navigate(`/checkout?plan=healthcare&planName=${encodeURIComponent('Healthcare')}`);
                 }}
                 className="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-semibold px-4 py-2 rounded-lg text-sm hover:shadow-md transition-all"
               >
@@ -481,6 +481,91 @@ export default function Pricing() {
               )}
             </div>
           ))}
+        </div>
+
+        <div className="mb-20">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-900">Add-On Products</h2>
+            <p className="text-slate-600 mt-2">One-time purchases to accelerate compliance readiness</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white border-2 border-teal-200 rounded-2xl p-8 shadow-sm flex flex-col">
+              <div className="mb-6">
+                <span className="inline-flex items-center bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
+                  One-time purchase
+                </span>
+                <h3 className="text-2xl font-bold text-slate-900 mb-1">Compliance Jumpstart</h3>
+                <p className="text-sm text-slate-600">Fast-track your SOC 2 readiness</p>
+              </div>
+              <div className="mb-8">
+                <span className="text-5xl font-black text-slate-900">$495</span>
+                <span className="text-sm ml-2 text-slate-500">one-time</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  'SOC 2 Type II gap analysis',
+                  'CIS Benchmark Level 1 & 2 assessment',
+                  'Prioritized remediation roadmap',
+                  'Compliance PDF report',
+                  '30-day email support',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-teal-600" />
+                    <span className="text-sm text-slate-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => {
+                  trackAddToCart('pilot_compliance', 'Compliance Jumpstart', 495);
+                  navigate(`/checkout?plan=pilot_compliance&planName=${encodeURIComponent('Compliance Jumpstart')}`);
+                }}
+                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-white border-2 border-teal-200 rounded-2xl p-8 shadow-sm flex flex-col">
+              <div className="mb-6">
+                <span className="inline-flex items-center bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
+                  One-time purchase
+                </span>
+                <h3 className="text-2xl font-bold text-slate-900 mb-1">HIPAA Readiness Assessment</h3>
+                <p className="text-sm text-slate-600">Know your HIPAA gaps before you're audited</p>
+              </div>
+              <div className="mb-8">
+                <span className="text-5xl font-black text-slate-900">$1,995</span>
+                <span className="text-sm ml-2 text-slate-500">one-time</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  'Full HIPAA technical safeguard audit',
+                  'PHI data flow mapping',
+                  'Gap analysis with severity ratings',
+                  'Remediation checklist',
+                  'Auto-enrolled in Healthcare tier (fee credited to first invoice)',
+                  'BAA executed on enrollment',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-teal-600" />
+                    <span className="text-sm text-slate-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => {
+                  trackAddToCart('hipaa_assessment', 'HIPAA Readiness Assessment', 1995);
+                  navigate(`/checkout?plan=hipaa_assessment&planName=${encodeURIComponent('HIPAA Readiness Assessment')}`);
+                }}
+                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-teal-500 to-green-500 text-white hover:shadow-lg hover:scale-105"
+              >
+                Get Assessment
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Social Proof Section */}
