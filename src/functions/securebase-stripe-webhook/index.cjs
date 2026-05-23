@@ -181,8 +181,13 @@ function normalizePlan(value) {
   return value.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
+function normalizeEmail(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
 function determineTierAndPlan(metadata = {}) {
-  const tier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || normalizePlan(metadata.plan) || 'standard';
+  const tier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || 'standard';
   const plan = normalizePlan(metadata.plan) || tier;
   return { tier, plan };
 }
@@ -208,7 +213,7 @@ async function updateCheckoutState(session, email) {
 
   const command = new UpdateCommand({
     TableName: USERS_TABLE,
-    Key: { email: String(email).trim().toLowerCase() },
+    Key: { email: normalizeEmail(email) },
     UpdateExpression: [
       'SET #status = :status',
       '#plan = :plan',
@@ -274,7 +279,7 @@ async function invokeProvisioning(session, email) {
     trigger: 'stripe_checkout_completed',
     checkout_session_id: session.id || '',
     stripe_customer_id: session.customer || '',
-    company_email: String(email).trim().toLowerCase(),
+    company_email: normalizeEmail(email),
     tier: normalizeTier(metadata.tier),
     plan: normalizePlan(metadata.plan),
     upgrade_to: normalizeTier(metadata.upgrade_to),
