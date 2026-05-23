@@ -16,6 +16,7 @@ describe('ExecutiveDashboard', () => {
     localStorage.setItem('customerTier', 'healthcare');
     localStorage.setItem('orgName', 'TriNetX');
     localStorage.setItem('userEmail', 'matthew.matturro@trinetx.com');
+    localStorage.removeItem('demo_mode');
 
     vi.stubGlobal('fetch', vi.fn((url) => {
       if (url === '/api/users') {
@@ -81,6 +82,7 @@ describe('ExecutiveDashboard', () => {
 
   it('allows demo admin fallback access when /api/users fails', async () => {
     localStorage.setItem('userEmail', 'demo@securebase.tximhotep.com');
+    localStorage.setItem('demo_mode', 'true');
 
     globalThis.fetch.mockImplementation((url) => {
       if (url === '/api/users') {
