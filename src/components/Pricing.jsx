@@ -10,7 +10,7 @@ const PLANS = [
     id: 'standard',
     name: 'Standard',
     tagline: 'CIS-hardened AWS Landing Zone',
-    price: 499,
+    price: 2000,
     badge: null,
     features: [
       'CIS Benchmark Level 1 & 2',
@@ -27,19 +27,36 @@ const PLANS = [
   },
   {
     id: 'fintech',
-    name: 'Fintech / Healthcare',
-    tagline: 'SOC 2 Type II + HIPAA-ready',
-    price: 1499,
-    badge: 'Most Popular',
+    name: 'Fintech',
+    tagline: 'SOC 2 Type II ready',
+    price: 8000,
+    badge: null,
     features: [
       'Everything in Standard',
       'SOC 2 Type II controls (209)',
-      'HIPAA technical safeguards',
       'Texas DOB compliance (7 TAC §33)',
       'Fintech examiner portal',
       'Row-Level Security (RLS) in Aurora',
       'Compliance PDF reports',
       'Slack + email support (4h SLA)',
+    ],
+    cta: 'Start Free Trial',
+    highlight: false,
+  },
+  {
+    id: 'healthcare',
+    name: 'Healthcare',
+    tagline: 'HIPAA + PHI protection',
+    price: 15000,
+    badge: 'Most Popular',
+    features: [
+      'Everything in Fintech',
+      'HIPAA technical safeguards',
+      'Business Associate Agreement (BAA)',
+      'PHI data isolation + audit trail',
+      'HIPAA Readiness Assessment included',
+      '7-year immutable log retention',
+      'Dedicated support (2h SLA)',
     ],
     cta: 'Start Free Trial',
     highlight: true,
@@ -48,17 +65,17 @@ const PLANS = [
     id: 'enterprise',
     name: 'Enterprise / FedRAMP',
     tagline: 'FedRAMP Moderate + NIST RMF',
-    price: 3999,
+    price: 25000,
     badge: null,
     features: [
-      'Everything in Fintech',
+      'Everything in Healthcare',
       'FedRAMP Moderate baseline',
       'NIST 800-53 Rev 5 controls',
       'Dedicated AWS GovCloud option',
       'Custom SCP guardrails',
       'White-label portal',
       'Multi-region deployment',
-      'Dedicated SRE + phone support',
+      'Dedicated SRE + phone support (1h SLA)',
     ],
     cta: 'Contact Sales →',
     highlight: false,
@@ -75,42 +92,56 @@ const COMPARISON_ROWS = [
     label: 'Controls Automated',
     standard: '50+',
     fintech: '209+',
+    healthcare: '255+',
     enterprise: '325+',
   },
   {
     label: 'Scan Frequency',
     standard: 'Daily',
     fintech: 'Continuous',
+    healthcare: 'Continuous',
     enterprise: 'Continuous',
   },
   {
     label: 'Support Level',
     standard: 'Email',
     fintech: 'Slack + Email',
+    healthcare: 'Dedicated',
     enterprise: 'Dedicated SRE',
   },
   {
     label: 'SLA',
     standard: '48h',
     fintech: '4h',
+    healthcare: '2h',
     enterprise: '1h',
   },
   {
     label: 'Compliance PDF Reports',
     standard: false,
     fintech: true,
+    healthcare: true,
+    enterprise: true,
+  },
+  {
+    label: 'HIPAA BAA Included',
+    standard: false,
+    fintech: false,
+    healthcare: true,
     enterprise: true,
   },
   {
     label: 'Custom SCP Guardrails',
     standard: false,
     fintech: false,
+    healthcare: false,
     enterprise: true,
   },
   {
     label: 'White-label Portal',
     standard: false,
     fintech: false,
+    healthcare: false,
     enterprise: true,
   },
 ];
@@ -234,7 +265,7 @@ export default function Pricing() {
               <button
                 onClick={() => {
                   trackPricingCTA('header_free_trial');
-                  navigate('/checkout?plan=fintech&planName=Fintech+%2F+Healthcare');
+                  navigate('/checkout?plan=healthcare&planName=Healthcare');
                 }}
                 className="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-semibold px-4 py-2 rounded-lg text-sm hover:shadow-md transition-all"
               >
@@ -355,7 +386,7 @@ export default function Pricing() {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mb-20">
           {PLANS.map((plan) => (
             <div
               key={plan.id}

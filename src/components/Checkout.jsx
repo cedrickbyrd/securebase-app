@@ -55,13 +55,15 @@ const SALES_ONLY_PLANS = {
 };
 
 // List prices (before any pilot discount) used when isPilot is false.
+// Must stay aligned with Terraform infrastructure tier pricing definitions
+// and the marketing pricing matrix in src/components/Pricing.jsx.
 // healthcare and government are enterprise tiers sold via portal/sales.
 const PLAN_PRICES = {
-  standard: 499,
-  fintech: 1499,
+  standard: 2000,
+  fintech: 8000,
   healthcare: 15000,
   government: 25000,
-  enterprise: 3999,
+  enterprise: 25000,
   pilot: 2000,
   pilot_compliance: 495,
   hipaa_assessment: 1995,
