@@ -614,6 +614,8 @@ export const sreService = {
    * Needed by: Trellis AI, HealthSync (Healthcare tier)
    */
   async getHIPAACompliance() {
+    if (isDemoMode()) return getMockHIPAACompliance();
+
     const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
     const res = await fetch('/api/compliance/hipaa', {
       headers: {

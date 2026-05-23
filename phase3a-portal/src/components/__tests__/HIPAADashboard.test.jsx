@@ -263,6 +263,7 @@ describe('HIPAADashboard Component', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it('should render loading state initially', () => {
@@ -427,6 +428,18 @@ describe('HIPAADashboard Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Failed to load compliance data/i)).toBeInTheDocument();
     });
+  });
+
+  it('skips framework overview fetch in demo mode', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'true');
+    render(<HIPAADashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/HIPAA Compliance Dashboard/i)).toBeInTheDocument();
+    });
+
+    const requestedUrls = globalThis.fetch.mock.calls.map(([url]) => url);
+    expect(requestedUrls).not.toContain('/api/frameworks');
   });
 
   it('should track HIPAA page view on mount', async () => {
