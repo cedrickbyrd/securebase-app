@@ -312,4 +312,31 @@ describe('securebase-stripe-webhook checkout post-payment state handling', () =>
     assert.equal(ddbCommands.length, 1);
     assert.equal(lambdaCommands.length, 1);
   });
+
+  test('state update failure returns 500 so Stripe retries delivery', async () => {
+    ddbSendImpl = async () => {
+      throw new Error('ddb unavailable');
+    };
+    currentStripeEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_ddb_fail',
+          customer: 'cus_test_ddb_fail',
+          metadata: {
+            company_email: 'ddbfail@example.com',
+            plan: 'Standard',
+            tier: 'standard',
+          },
+          customer_details: { email: 'ddbfail@example.com' },
+        },
+      },
+    };
+
+    const response = await handler(makeWebhookEvent(), {});
+
+    assert.equal(response.statusCode, 500);
+    assert.equal(ddbCommands.length, 1);
+    assert.equal(lambdaCommands.length, 0);
+  });
 });

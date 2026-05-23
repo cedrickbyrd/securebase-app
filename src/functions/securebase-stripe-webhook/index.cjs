@@ -485,6 +485,7 @@ exports.handler = async (event, context) => {
       await updateCheckoutState(session, email);
     } catch (ddbError) {
       console.error('checkout_state_update_failed:', sanitizeError(ddbError));
+      return { statusCode: 500, body: JSON.stringify({ received: false, error: 'state_update_failed' }) };
     }
 
     try {
