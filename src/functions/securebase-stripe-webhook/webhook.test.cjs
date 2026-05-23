@@ -281,6 +281,7 @@ describe('securebase-stripe-webhook checkout post-payment state handling', () =>
 
     assert.equal(response.statusCode, 200);
     assert.equal(ddbCommands[0].Key.email, 'mixed.case+team@example.com');
+    assert.equal(lambdaCommands.length, 1);
     const payload = JSON.parse(lambdaCommands[0].Payload);
     assert.equal(payload.company_email, 'mixed.case+team@example.com');
   });
