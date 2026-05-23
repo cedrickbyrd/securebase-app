@@ -19,6 +19,8 @@ AWS credentials or a deployed environment.
 """
 
 import json
+import hmac
+import hashlib
 import os
 import sys
 import unittest
@@ -325,9 +327,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
             second_email['Message']['Body']['Html']['Data'],
         )
 
-        if mock_sns.publish.called:
-            self.assertTrue(mock_sns.publish.called)
-        else:
+        if not mock_sns.publish.called:
             print('Step 3 best-effort: SNS publish was not called')
 
         print(f'✓ Step 3: Onboarding complete – API key generated, '
@@ -518,6 +518,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
     @patch('webhook_manager.dynamodb')
     @patch('webhook_manager.requests')
     def test_step10_first_event_delivery(self, mock_requests, mock_dynamodb):
+        """Validate first webhook event delivery with signature headers."""
         if not self.__class__.webhook_id:
             self.skipTest("Step 5 did not complete — skipping dependent step")
 
@@ -528,7 +529,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         deliveries_table = MagicMock()
         webhooks_table.query.return_value = {
             'Items': [{
-                'id': self.__class__.webhook_id or 'wh_e2e_001',
+                'id': self.__class__.webhook_id,
                 'customer_id': self.__class__.customer_id,
                 'secret': 'whsec_test_secret_e2e',
                 'url': 'https://hooks.example.com/securebase',
@@ -538,6 +539,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         }
         webhooks_table.update_item.return_value = {}
         deliveries_table.put_item.return_value = {}
+        # 1st Table() for webhook query, 2nd for deliveries put_item, 3rd for webhook update_item
         mock_dynamodb.Table.side_effect = [webhooks_table, deliveries_table, webhooks_table]
 
         mock_response = MagicMock()
@@ -562,6 +564,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
     @patch('webhook_manager.dynamodb')
     @patch('webhook_manager.requests')
     def test_step10_hmac_signature_correctness(self, mock_requests, mock_dynamodb):
+        """Validate HMAC signature header matches payload signing algorithm."""
         if not self.__class__.webhook_id:
             self.skipTest("Step 5 did not complete — skipping dependent step")
 
@@ -572,7 +575,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         deliveries_table = MagicMock()
         webhooks_table.query.return_value = {
             'Items': [{
-                'id': self.__class__.webhook_id or 'wh_e2e_001',
+                'id': self.__class__.webhook_id,
                 'customer_id': self.__class__.customer_id,
                 'secret': 'whsec_test_secret_e2e',
                 'url': 'https://hooks.example.com/securebase',
@@ -582,6 +585,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         }
         webhooks_table.update_item.return_value = {}
         deliveries_table.put_item.return_value = {}
+        # 1st Table() for webhook query, 2nd for deliveries put_item, 3rd for webhook update_item
         mock_dynamodb.Table.side_effect = [webhooks_table, deliveries_table, webhooks_table]
 
         mock_response = MagicMock()
@@ -599,9 +603,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         actual_signature = call_kwargs['headers']['X-SecureBase-Signature']
         payload = call_kwargs['json']
 
-        import hmac as _hmac
-        import hashlib
-        expected_sig = _hmac.new(
+        expected_sig = hmac.new(
             b'whsec_test_secret_e2e',
             json.dumps(payload, sort_keys=True).encode(),
             hashlib.sha256
@@ -613,6 +615,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
     @patch('webhook_manager.dynamodb')
     @patch('webhook_manager.requests')
     def test_step10_delivery_failure_increments_failure_count(self, mock_requests, mock_dynamodb):
+        """Validate delivery_failure_count increments on non-2xx delivery."""
         if not self.__class__.webhook_id:
             self.skipTest("Step 5 did not complete — skipping dependent step")
 
@@ -623,7 +626,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         deliveries_table = MagicMock()
         webhooks_table.query.return_value = {
             'Items': [{
-                'id': self.__class__.webhook_id or 'wh_e2e_001',
+                'id': self.__class__.webhook_id,
                 'customer_id': self.__class__.customer_id,
                 'secret': 'whsec_test_secret_e2e',
                 'url': 'https://hooks.example.com/securebase',
@@ -633,6 +636,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         }
         webhooks_table.update_item.return_value = {}
         deliveries_table.put_item.return_value = {}
+        # 1st Table() for webhook query, 2nd for deliveries put_item, 3rd for webhook update_item
         mock_dynamodb.Table.side_effect = [webhooks_table, deliveries_table, webhooks_table]
 
         mock_response = MagicMock()
@@ -657,6 +661,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
     @patch('webhook_manager.dynamodb')
     @patch('webhook_manager.requests')
     def test_step10_no_matching_webhooks(self, mock_requests, mock_dynamodb):
+        """Validate no outbound call occurs when no webhook subscription matches."""
         if not self.__class__.webhook_id:
             self.skipTest("Step 5 did not complete — skipping dependent step")
 
