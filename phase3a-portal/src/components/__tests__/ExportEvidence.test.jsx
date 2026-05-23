@@ -7,6 +7,10 @@ const generateEvidencePackage = vi.fn();
 const pollUntilComplete = vi.fn();
 const downloadFromUrl = vi.fn();
 
+function formatDateInput(date) {
+  return date.toISOString().slice(0, 10);
+}
+
 vi.mock('../../services/evidenceApiService', () => ({
   generateEvidencePackage: (...args) => generateEvidencePackage(...args),
   pollUntilComplete: (...args) => pollUntilComplete(...args),
@@ -20,10 +24,17 @@ describe('ExportEvidence', () => {
   });
 
   it('renders idle state with HIPAA selected by default', () => {
-    render(<ExportEvidence />);
+    const today = new Date();
+    const yearAgo = new Date(today);
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+
+    const { container } = render(<ExportEvidence />);
+    const dateInputs = container.querySelectorAll('input[type="date"]');
 
     expect(screen.getByRole('button', { name: /export evidence for audit/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox')).toHaveValue('HIPAA');
+    expect(dateInputs[0]).toHaveValue(formatDateInput(yearAgo));
+    expect(dateInputs[1]).toHaveValue(formatDateInput(today));
   });
 
   it('calls generateEvidencePackage with selected framework and date range on export', async () => {
@@ -81,6 +92,13 @@ describe('ExportEvidence', () => {
         }),
       );
     });
+
+    const onProgress = pollUntilComplete.mock.calls[0][1].onProgress;
+    onProgress({ logs_collected: 42 });
+
+    await waitFor(() => {
+      expect(screen.getByText('Collecting evidence… (42 events)')).toBeInTheDocument();
+    });
   });
 
   it('shows success state and sha256 when package is immediately complete', async () => {
@@ -89,6 +107,8 @@ describe('ExportEvidence', () => {
       package_id: 'pkg-1',
       download_url: 'https://example.com/pkg.zip',
       sha256_manifest: 'abc123',
+      size_bytes: 2048,
+      generated_at: '2026-05-23T12:00:00.000Z',
     });
 
     render(<ExportEvidence />);
@@ -97,6 +117,8 @@ describe('ExportEvidence', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /download package/i })).toBeInTheDocument();
       expect(screen.getByText(/sha-256: abc123/i)).toBeInTheDocument();
+      expect(screen.getByText(/package size: 2.0 kb/i)).toBeInTheDocument();
+      expect(screen.getByText(/generated:/i)).toBeInTheDocument();
     });
   });
 
