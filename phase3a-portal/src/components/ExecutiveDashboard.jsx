@@ -201,7 +201,10 @@ export default function ExecutiveDashboard() {
         if (active) setIsAdmin(String(matched?.role || '').toLowerCase() === 'admin');
       } catch {
         const matched = MOCK_USERS.find((user) => user.email.toLowerCase() === currentUserEmail);
-        if (active) setIsAdmin(String(matched?.role || '').toLowerCase() === 'admin');
+        const matchedEmail = String(matched?.email || '').toLowerCase();
+        const isDemoAdmin = matchedEmail === 'demo@securebase.tximhotep.com' && isDemoMode();
+        const canUseRole = matchedEmail !== 'demo@securebase.tximhotep.com' || isDemoAdmin;
+        if (active) setIsAdmin(canUseRole && String(matched?.role || '').toLowerCase() === 'admin');
       }
     };
     loadAdmin();
