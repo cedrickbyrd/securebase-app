@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sreService } from '../services/sreService';
 import { trackPageView, trackHIPAARoute } from '../utils/analytics';
 import { logoutDemo } from '../services/jwtService';
+import { isDemoMode } from '../utils/demoData';
 import { buildDeterministicFallbackId, getAvatarColor, getInitials } from '../utils/teamUtils';
 import './Dashboard.css';
 
@@ -419,15 +420,19 @@ export default function HIPAADashboard() {
         ...(token && { Authorization: `Bearer ${token}` }),
       };
 
-      try {
-        const frameworksRes = await fetch('/api/frameworks', { headers });
-        if (!frameworksRes.ok) throw new Error(`frameworks_fetch_failed:${frameworksRes.status}`);
-        const frameworksData = await frameworksRes.json();
-        const normalizedFrameworks = normalizeFrameworkOverview(frameworksData);
-        setFrameworks(normalizedFrameworks.length > 0 ? normalizedFrameworks : MOCK_FRAMEWORKS);
-      } catch (frameworksError) {
-        console.error('Framework overview fetch failed, using fallback frameworks.', frameworksError);
+      if (isDemoMode()) {
         setFrameworks(MOCK_FRAMEWORKS);
+      } else {
+        try {
+          const frameworksRes = await fetch('/api/frameworks', { headers });
+          if (!frameworksRes.ok) throw new Error(`frameworks_fetch_failed:${frameworksRes.status}`);
+          const frameworksData = await frameworksRes.json();
+          const normalizedFrameworks = normalizeFrameworkOverview(frameworksData);
+          setFrameworks(normalizedFrameworks.length > 0 ? normalizedFrameworks : MOCK_FRAMEWORKS);
+        } catch (frameworksError) {
+          console.error('Framework overview fetch failed, using fallback frameworks.', frameworksError);
+          setFrameworks(MOCK_FRAMEWORKS);
+        }
       }
 
       let compliancePayload;
