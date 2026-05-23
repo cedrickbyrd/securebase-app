@@ -208,6 +208,32 @@ describe('securebase-stripe-webhook checkout post-payment state handling', () =>
     assert.equal(lambdaCommands[0].InvocationType, 'Event');
   });
 
+  test('upgrade_to takes precedence over tier for persisted and invoked target tier', async () => {
+    currentStripeEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_upgrade_precedence',
+          customer: 'cus_test_upgrade_precedence',
+          metadata: {
+            company_email: 'precedence@example.com',
+            tier: 'standard',
+            upgrade_to: 'fintech',
+            plan: 'Fintech Pilot',
+          },
+          customer_details: { email: 'fallback@example.com' },
+        },
+      },
+    };
+
+    const response = await handler(makeWebhookEvent(), {});
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(ddbCommands[0].ExpressionAttributeValues[':tier'], 'fintech');
+    const payload = JSON.parse(lambdaCommands[0].Payload);
+    assert.equal(payload.tier, 'fintech');
+  });
+
   test('email normalization trims and lowercases for state + provisioning payload', async () => {
     currentStripeEvent = {
       type: 'checkout.session.completed',

@@ -186,6 +186,11 @@ function normalizeEmail(value) {
   return value.trim().toLowerCase();
 }
 
+function normalizeInteger(value, fallback = 0) {
+  const parsed = parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function determineTierAndPlan(metadata = {}) {
   const tier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || 'standard';
   const plan = normalizePlan(metadata.plan) || tier;
@@ -208,8 +213,7 @@ async function updateCheckoutState(session, email) {
 
   const metadata = session.metadata || {};
   const { tier: targetTier, plan } = determineTierAndPlan(metadata);
-  const assessmentCredit = parseInt(metadata.assessment_credit || '0', 10);
-  const normalizedAssessmentCredit = Number.isFinite(assessmentCredit) ? assessmentCredit : 0;
+  const normalizedAssessmentCredit = normalizeInteger(metadata.assessment_credit, 0);
 
   const command = new UpdateCommand({
     TableName: USERS_TABLE,
@@ -224,7 +228,8 @@ async function updateCheckoutState(session, email) {
       '#stripe_checkout_session_id = :stripe_checkout_session_id',
       '#assessment_credit = :assessment_credit',
       '#updated_at = :updated_at',
-      // Preserve initial activation timestamp across duplicate webhook deliveries.
+      // Preserve initial activation timestamp across duplicate webhook deliveries
+      // to keep activation auditing idempotent on Stripe retries/replays.
       '#activated_at = if_not_exists(#activated_at, :activated_at)',
     ].join(', '),
     ExpressionAttributeNames: {
@@ -275,15 +280,16 @@ async function invokeProvisioning(session, email) {
   }
 
   const metadata = session.metadata || {};
+  const { tier, plan } = determineTierAndPlan(metadata);
   const payload = {
     trigger: 'stripe_checkout_completed',
     checkout_session_id: session.id || '',
     stripe_customer_id: session.customer || '',
     company_email: normalizeEmail(email),
-    tier: normalizeTier(metadata.tier),
-    plan: normalizePlan(metadata.plan),
+    tier,
+    plan,
     upgrade_to: normalizeTier(metadata.upgrade_to),
-    assessment_credit: parseInt(metadata.assessment_credit || '0', 10) || 0,
+    assessment_credit: normalizeInteger(metadata.assessment_credit, 0),
     timestamp: new Date().toISOString(),
   };
 
