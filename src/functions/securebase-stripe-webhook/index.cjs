@@ -17,8 +17,17 @@
  */
 const Stripe = require('stripe');
 const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 // Assuming you're using the AWS SDK v3 as is standard now
 const sesClient = new SESClient({ region: "us-east-1" }); 
+const ddbDocClient = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' })
+);
+const lambdaClient = new LambdaClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const USERS_TABLE = process.env.USERS_TABLE || 'securebase-users';
+const PROVISIONING_FUNCTION_NAME = process.env.PROVISIONING_FUNCTION_NAME;
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -160,6 +169,142 @@ function buildAssessmentEmail(config) {
       <p style="color: #64748b; font-size: 0.875rem;">Questions? Reply to this email or contact <a href="mailto:sales@securebase.tximhotep.com">sales@securebase.tximhotep.com</a>.</p>
     </div>
   `;
+}
+
+function normalizeTier(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function normalizePlan(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value.trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function normalizeEmail(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function normalizeInteger(value, fallback = 0) {
+  const parsed = parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function determineTierAndPlan(metadata = {}) {
+  const tier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || 'standard';
+  const plan = normalizePlan(metadata.plan) || tier;
+  return { tier, plan };
+}
+
+function sanitizeError(err) {
+  return {
+    type: err?.name || 'Error',
+    message: err?.message || 'Unknown error',
+    requestId: err?.$metadata?.requestId || null,
+  };
+}
+
+async function updateCheckoutState(session, email) {
+  if (!email) {
+    console.warn('checkout_state_update_skipped: missing_email');
+    return;
+  }
+
+  const metadata = session.metadata || {};
+  const { tier: targetTier, plan } = determineTierAndPlan(metadata);
+  const normalizedAssessmentCredit = normalizeInteger(metadata.assessment_credit, 0);
+
+  const command = new UpdateCommand({
+    TableName: USERS_TABLE,
+    Key: { email: normalizeEmail(email) },
+    UpdateExpression: [
+      'SET #status = :status',
+      '#plan = :plan',
+      '#pilot_tier = :tier',
+      '#checkout_state = :checkout_state',
+      '#provisioning_status = :provisioning_status',
+      '#stripe_customer_id = :stripe_customer_id',
+      '#stripe_checkout_session_id = :stripe_checkout_session_id',
+      '#assessment_credit = :assessment_credit',
+      '#updated_at = :updated_at',
+      // Preserve initial activation timestamp across duplicate webhook deliveries
+      // to keep activation auditing idempotent on Stripe retries/replays.
+      '#activated_at = if_not_exists(#activated_at, :activated_at)',
+    ].join(', '),
+    ExpressionAttributeNames: {
+      '#status': 'status',
+      '#plan': 'plan',
+      '#pilot_tier': 'pilot_tier',
+      '#checkout_state': 'checkout_state',
+      '#provisioning_status': 'provisioning_status',
+      '#stripe_customer_id': 'stripe_customer_id',
+      '#stripe_checkout_session_id': 'stripe_checkout_session_id',
+      '#assessment_credit': 'assessment_credit',
+      '#updated_at': 'updated_at',
+      '#activated_at': 'activated_at',
+    },
+    ExpressionAttributeValues: {
+      ':status': 'pro',
+      ':plan': plan,
+      ':tier': targetTier,
+      ':checkout_state': 'paid',
+      ':provisioning_status': 'queued',
+      ':stripe_customer_id': session.customer || '',
+      ':stripe_checkout_session_id': session.id || '',
+      ':assessment_credit': normalizedAssessmentCredit,
+      ':updated_at': new Date().toISOString(),
+      ':activated_at': new Date().toISOString(),
+    },
+  });
+
+  await ddbDocClient.send(command);
+  console.log(JSON.stringify({
+    event: 'checkout_state_updated',
+    checkout_session_id: session.id || null,
+    customer_id: session.customer || null,
+    target_tier: targetTier,
+    plan,
+    has_assessment_credit: normalizedAssessmentCredit > 0,
+  }));
+}
+
+async function invokeProvisioning(session, email) {
+  if (!PROVISIONING_FUNCTION_NAME) {
+    console.warn('provisioning_invoke_skipped: function_name_not_configured');
+    return;
+  }
+  if (!email) {
+    console.warn('provisioning_invoke_skipped: missing_email');
+    return;
+  }
+
+  const metadata = session.metadata || {};
+  const { tier, plan } = determineTierAndPlan(metadata);
+  const payload = {
+    trigger: 'stripe_checkout_completed',
+    checkout_session_id: session.id || '',
+    stripe_customer_id: session.customer || '',
+    company_email: normalizeEmail(email),
+    tier,
+    plan,
+    upgrade_to: normalizeTier(metadata.upgrade_to),
+    assessment_credit: normalizeInteger(metadata.assessment_credit, 0),
+    timestamp: new Date().toISOString(),
+  };
+
+  await lambdaClient.send(new InvokeCommand({
+    FunctionName: PROVISIONING_FUNCTION_NAME,
+    InvocationType: 'Event',
+    Payload: JSON.stringify(payload),
+  }));
+
+  console.log(JSON.stringify({
+    event: 'provisioning_invoked',
+    checkout_session_id: session.id || null,
+    customer_id: session.customer || null,
+    target_function: PROVISIONING_FUNCTION_NAME,
+  }));
 }
 
 async function handlePaymentFailed(invoice) {
@@ -336,8 +481,18 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // 1. YOUR EXISTING LOGIC: Update DynamoDB to "pro"
-    // await updateDynamoDB(email, "pro"); 
+    try {
+      await updateCheckoutState(session, email);
+    } catch (ddbError) {
+      console.error('checkout_state_update_failed:', sanitizeError(ddbError));
+      return { statusCode: 500, body: JSON.stringify({ received: false, error: 'state_update_failed' }) };
+    }
+
+    try {
+      await invokeProvisioning(session, email);
+    } catch (invokeError) {
+      console.error('provisioning_invoke_failed:', sanitizeError(invokeError));
+    }
 
     // 2. NEW AUTOMATION: Trigger the SES Welcome Email
     if (!email) {
