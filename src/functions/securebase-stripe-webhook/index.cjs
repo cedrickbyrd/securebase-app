@@ -181,6 +181,20 @@ function normalizePlan(value) {
   return value.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
+function determineTierAndPlan(metadata = {}) {
+  const tier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || normalizePlan(metadata.plan) || 'standard';
+  const plan = normalizePlan(metadata.plan) || tier;
+  return { tier, plan };
+}
+
+function sanitizeError(err) {
+  return {
+    type: err?.name || 'Error',
+    message: err?.message || 'Unknown error',
+    requestId: err?.$metadata?.requestId || null,
+  };
+}
+
 async function updateCheckoutState(session, email) {
   if (!email) {
     console.warn('checkout_state_update_skipped: missing_email');
@@ -188,9 +202,9 @@ async function updateCheckoutState(session, email) {
   }
 
   const metadata = session.metadata || {};
-  const targetTier = normalizeTier(metadata.upgrade_to) || normalizeTier(metadata.tier) || normalizePlan(metadata.plan) || 'standard';
-  const plan = normalizePlan(metadata.plan) || targetTier;
+  const { tier: targetTier, plan } = determineTierAndPlan(metadata);
   const assessmentCredit = parseInt(metadata.assessment_credit || '0', 10);
+  const normalizedAssessmentCredit = Number.isFinite(assessmentCredit) ? assessmentCredit : 0;
 
   const command = new UpdateCommand({
     TableName: USERS_TABLE,
@@ -205,6 +219,7 @@ async function updateCheckoutState(session, email) {
       '#stripe_checkout_session_id = :stripe_checkout_session_id',
       '#assessment_credit = :assessment_credit',
       '#updated_at = :updated_at',
+      // Preserve initial activation timestamp across duplicate webhook deliveries.
       '#activated_at = if_not_exists(#activated_at, :activated_at)',
     ].join(', '),
     ExpressionAttributeNames: {
@@ -227,7 +242,7 @@ async function updateCheckoutState(session, email) {
       ':provisioning_status': 'queued',
       ':stripe_customer_id': session.customer || '',
       ':stripe_checkout_session_id': session.id || '',
-      ':assessment_credit': Number.isFinite(assessmentCredit) ? assessmentCredit : 0,
+      ':assessment_credit': normalizedAssessmentCredit,
       ':updated_at': new Date().toISOString(),
       ':activated_at': new Date().toISOString(),
     },
@@ -240,7 +255,7 @@ async function updateCheckoutState(session, email) {
     customer_id: session.customer || null,
     target_tier: targetTier,
     plan,
-    has_assessment_credit: (Number.isFinite(assessmentCredit) ? assessmentCredit : 0) > 0,
+    has_assessment_credit: normalizedAssessmentCredit > 0,
   }));
 }
 
@@ -458,13 +473,13 @@ exports.handler = async (event, context) => {
     try {
       await updateCheckoutState(session, email);
     } catch (ddbError) {
-      console.error('checkout_state_update_failed:', ddbError);
+      console.error('checkout_state_update_failed:', sanitizeError(ddbError));
     }
 
     try {
       await invokeProvisioning(session, email);
     } catch (invokeError) {
-      console.error('provisioning_invoke_failed:', invokeError);
+      console.error('provisioning_invoke_failed:', sanitizeError(invokeError));
     }
 
     // 2. NEW AUTOMATION: Trigger the SES Welcome Email
