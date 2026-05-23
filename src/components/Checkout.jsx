@@ -348,6 +348,17 @@ export default function Checkout() {
                 </button>
               </div>
             )}
+            {plan === 'pilot_compliance' && (
+              <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <p className="text-xs font-bold text-indigo-800 mb-1">Includes automatic Fintech tier enrollment</p>
+                <p className="text-xs text-indigo-700">
+                  After your Compliance Jumpstart assessment, you'll be automatically enrolled in the{' '}
+                  <strong>Fintech tier</strong> ($2,000/mo pilot) with a <strong>30-day free trial</strong>.
+                  Your $495 assessment fee will be credited toward your first invoice. Cancel anytime before
+                  the trial ends with no charge.
+                </p>
+              </div>
+            )}
             <h1 className="text-2xl font-bold text-slate-900 mb-2">
               {billingType === 'payment' ? 'Complete your purchase' : 'Start your subscription'}
             </h1>
@@ -462,6 +473,14 @@ export default function Checkout() {
                       'Auto-enrolled in Healthcare tier — 30-day trial, $1,995 credited',
                       'HIPAA BAA included — PHI handling compliant',
                       'Business Associate Agreement executed on enrollment',
+                      'SOC 2 Type II certified infrastructure',
+                    ]
+                  : plan === 'pilot_compliance'
+                  ? [
+                      'Secured by Stripe — PCI DSS Level 1',
+                      'One-time payment — $495 assessment fee',
+                      'Auto-enrolled in Fintech tier — 30-day free trial, fee credited',
+                      'Cancel before trial ends — no subscription charge',
                       'SOC 2 Type II certified infrastructure',
                     ]
                   : plan === 'healthcare'

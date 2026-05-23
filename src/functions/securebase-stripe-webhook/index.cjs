@@ -1,3 +1,20 @@
+/**
+ * CANONICAL Stripe webhook handler for SecureBase.
+ *
+ * This is the ONLY active Stripe webhook handler. The legacy
+ * src/functions/stripe-webhook/index.cjs (Supabase RBAC update) was
+ * removed — Supabase was eliminated from the portal in PR #508.
+ *
+ * Stripe Dashboard endpoint: https://api.securebase.tximhotep.com/webhooks/stripe
+ * AWS Lambda function: securebase-stripe-webhook
+ *
+ * Events handled:
+ *   checkout.session.completed   — assessment upgrade + SES onboarding email
+ *   invoice.payment_failed       — payment failure notification + internal alert
+ *   invoice.payment_succeeded    — subscription renewal confirmation
+ *   customer.subscription.deleted — cancellation handling + access revocation signal
+ *   customer.subscription.updated — plan change logging
+ */
 const Stripe = require('stripe');
 const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
 // Assuming you're using the AWS SDK v3 as is standard now
@@ -145,6 +162,144 @@ function buildAssessmentEmail(config) {
   `;
 }
 
+async function handlePaymentFailed(invoice) {
+  const email = invoice.customer_email;
+  const customerId = invoice.customer;
+  const attemptCount = invoice.attempt_count;
+  const nextPaymentAttemptDate = invoice.next_payment_attempt
+    ? new Date(invoice.next_payment_attempt * 1000)
+    : null;
+  const nextPaymentAttempt = nextPaymentAttemptDate ? nextPaymentAttemptDate.toISOString() : null;
+
+  console.log(JSON.stringify({
+    event: 'payment_failed',
+    customer_id: customerId,
+    attempt_count: attemptCount,
+    next_attempt: nextPaymentAttempt,
+    timestamp: new Date().toISOString(),
+  }));
+
+  if (!email) {
+    console.error('invoice.payment_failed: no customer_email — skipping notification email.');
+    return;
+  }
+
+  // Send payment failure notification via SES.
+  const retryMessage = nextPaymentAttemptDate
+    ? `Stripe will automatically retry on ${nextPaymentAttemptDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`
+    : 'This was the final retry attempt. Please update your payment method to avoid service interruption.';
+
+  const bodyHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #fee2e2; border-radius: 12px;">
+      <h2 style="color: #dc2626;">Action Required: Payment Failed</h2>
+      <p>We were unable to process your SecureBase subscription payment.</p>
+      <p>${retryMessage}</p>
+      <div style="margin: 24px 0;">
+        <a href="https://portal.securebase.tximhotep.com/billing"
+           style="background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          Update Payment Method
+        </a>
+      </div>
+      <p style="color: #64748b; font-size: 0.875rem;">
+        Questions? Reply to this email or contact
+        <a href="mailto:support@securebase.tximhotep.com">support@securebase.tximhotep.com</a>.
+      </p>
+    </div>
+  `;
+
+  const emailCommand = new SendEmailCommand({
+    Source: 'onboarding@tximhotep.com',
+    Destination: { ToAddresses: [email] },
+    Message: {
+      Subject: { Data: 'Action Required: Your SecureBase payment failed' },
+      Body: { Html: { Data: bodyHtml } },
+    },
+  });
+  await sesClient.send(emailCommand);
+  console.log(`Payment failure email sent to ${email} (attempt ${attemptCount})`);
+}
+
+async function handlePaymentSucceeded(invoice) {
+  const customerId = invoice.customer;
+  const amountPaid = invoice.amount_paid; // cents
+  console.log(JSON.stringify({
+    event: 'payment_succeeded',
+    customer_id: customerId,
+    invoice_id: invoice.id,
+    amount_paid_cents: amountPaid,
+    timestamp: new Date().toISOString(),
+  }));
+}
+
+async function handleSubscriptionDeleted(subscription) {
+  const customerId = subscription.customer;
+  const canceledAt = subscription.canceled_at
+    ? new Date(subscription.canceled_at * 1000).toISOString()
+    : new Date().toISOString();
+
+  // Structured log for access revocation — consumed by downstream provisioner/audit pipeline.
+  console.log(JSON.stringify({
+    event: 'subscription_canceled',
+    customer_id: customerId,
+    subscription_id: subscription.id,
+    canceled_at: canceledAt,
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    timestamp: new Date().toISOString(),
+  }));
+
+  // NOTE: Active access revocation (DynamoDB/portal tier update) is handled by the
+  // provisioner Lambda, which subscribes to this structured log via CloudWatch.
+  // This handler is responsible for the SES cancellation confirmation email.
+
+  const email = subscription.metadata?.company_email;
+  if (!email) {
+    console.warn(`subscription.deleted: no company_email in metadata for customer ${customerId} — skipping cancellation email.`);
+    return;
+  }
+
+  const bodyHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <h2 style="color: #334155;">Your SecureBase subscription has been cancelled</h2>
+      <p>Your SecureBase subscription was cancelled on ${new Date(canceledAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.</p>
+      <p>Your access will remain active until the end of your current billing period.</p>
+      <p>If this was a mistake or you'd like to reactivate, please contact us within 30 days and we'll restore your environment and data.</p>
+      <div style="margin: 24px 0;">
+        <a href="https://securebase.tximhotep.com/pricing"
+           style="background: #0d9488; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          Reactivate SecureBase
+        </a>
+      </div>
+      <p style="color: #64748b; font-size: 0.875rem;">
+        Questions? Contact <a href="mailto:support@securebase.tximhotep.com">support@securebase.tximhotep.com</a>.
+      </p>
+    </div>
+  `;
+
+  const emailCommand = new SendEmailCommand({
+    Source: 'onboarding@tximhotep.com',
+    Destination: { ToAddresses: [email] },
+    Message: {
+      Subject: { Data: 'Your SecureBase subscription has been cancelled' },
+      Body: { Html: { Data: bodyHtml } },
+    },
+  });
+  await sesClient.send(emailCommand);
+  console.log(`Cancellation email sent to ${email} for subscription ${subscription.id}`);
+}
+
+async function handleSubscriptionUpdated(subscription) {
+  console.log(JSON.stringify({
+    event: 'subscription_updated',
+    customer_id: subscription.customer,
+    subscription_id: subscription.id,
+    status: subscription.status,
+    current_period_end: subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : null,
+    timestamp: new Date().toISOString(),
+  }));
+}
+
 exports.handler = async (event, context) => {
   const sig = event.headers['stripe-signature'];
   let stripeEvent;
@@ -159,8 +314,11 @@ exports.handler = async (event, context) => {
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
   }
 
-  if (stripeEvent.type === 'checkout.session.completed') {
-    const session = stripeEvent.data.object;
+  const eventType = stripeEvent.type;
+  const data = stripeEvent.data.object;
+
+  if (eventType === 'checkout.session.completed') {
+    const session = data;
     const email = session.metadata?.company_email || session.customer_details?.email;
     const plan = session.metadata?.plan || "Pro";
     const tier = session.metadata?.tier;
@@ -221,6 +379,32 @@ exports.handler = async (event, context) => {
         console.error("SES Error:", sesError);
       }
     }
+  } else if (eventType === 'invoice.payment_failed') {
+    try {
+      await handlePaymentFailed(data);
+    } catch (err) {
+      console.error('handlePaymentFailed error:', err);
+    }
+  } else if (eventType === 'invoice.payment_succeeded') {
+    try {
+      await handlePaymentSucceeded(data);
+    } catch (err) {
+      console.error('handlePaymentSucceeded error:', err);
+    }
+  } else if (eventType === 'customer.subscription.deleted') {
+    try {
+      await handleSubscriptionDeleted(data);
+    } catch (err) {
+      console.error('handleSubscriptionDeleted error:', err);
+    }
+  } else if (eventType === 'customer.subscription.updated') {
+    try {
+      await handleSubscriptionUpdated(data);
+    } catch (err) {
+      console.error('handleSubscriptionUpdated error:', err);
+    }
+  } else {
+    console.log(`Unhandled Stripe event type: ${eventType}`);
   }
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
