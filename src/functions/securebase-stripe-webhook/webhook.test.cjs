@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert/strict');
-const { describe, test, beforeEach } = require('node:test');
+const { describe, test, beforeEach, after } = require('node:test');
 const Module = require('module');
 
 let currentStripeEvent = null;
@@ -100,6 +100,13 @@ process.env.USERS_TABLE = 'securebase-users';
 process.env.PROVISIONING_FUNCTION_NAME = 'securebase-provisioner';
 
 const handler = require('./index.cjs').handler;
+
+after(() => {
+  delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_WEBHOOK_SECRET;
+  delete process.env.USERS_TABLE;
+  delete process.env.PROVISIONING_FUNCTION_NAME;
+});
 
 function makeWebhookEvent() {
   return {

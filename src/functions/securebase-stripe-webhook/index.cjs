@@ -27,7 +27,7 @@ const ddbDocClient = DynamoDBDocumentClient.from(
 );
 const lambdaClient = new LambdaClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const USERS_TABLE = process.env.USERS_TABLE || 'securebase-users';
-const PROVISIONING_FUNCTION_NAME = process.env.PROVISIONING_FUNCTION_NAME || '';
+const PROVISIONING_FUNCTION_NAME = process.env.PROVISIONING_FUNCTION_NAME;
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
