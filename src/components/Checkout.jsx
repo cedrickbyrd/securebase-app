@@ -224,7 +224,7 @@ export default function Checkout() {
 
     // Fire GA4 begin_checkout right before the POST — not on page load.
     const displayPrice = isPilot ? resolvedPilotPricing.monthlyPrice : (PLAN_PRICES[plan] || 0);
-    trackCheckoutStarted(plan, 'monthly', 'form', displayPrice);
+    trackCheckoutStarted(plan, billingType === 'payment' ? 'one_time' : 'monthly', 'form', displayPrice);
 
     try {
       // Use window.location.origin so the redirect URLs work correctly
