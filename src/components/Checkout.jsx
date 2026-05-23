@@ -242,7 +242,7 @@ export default function Checkout() {
           // Always include HIPAA fields; the server ignores them for non-HIPAA tiers.
           company_name: company,
           hipaa_baa_acknowledged: hipaaConsent,
-          successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${PLAN_PRICES[plan] || 0}`,
+          successUrl: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan)}&value=${displayPrice}`,
           cancelUrl: `${origin}/pricing`,
         }),
       });
