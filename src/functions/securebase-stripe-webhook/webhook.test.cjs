@@ -208,6 +208,30 @@ describe('securebase-stripe-webhook checkout post-payment state handling', () =>
     assert.equal(lambdaCommands[0].InvocationType, 'Event');
   });
 
+  test('email normalization trims and lowercases for state + provisioning payload', async () => {
+    currentStripeEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_email_norm',
+          customer: 'cus_test_email_norm',
+          metadata: {
+            company_email: '  Mixed.Case+Team@Example.COM  ',
+            tier: 'standard',
+          },
+          customer_details: { email: 'fallback@example.com' },
+        },
+      },
+    };
+
+    const response = await handler(makeWebhookEvent(), {});
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(ddbCommands[0].Key.email, 'mixed.case+team@example.com');
+    const payload = JSON.parse(lambdaCommands[0].Payload);
+    assert.equal(payload.company_email, 'mixed.case+team@example.com');
+  });
+
   test('provisioning failure does not fail webhook acknowledgment', async () => {
     lambdaSendImpl = async () => {
       throw new Error('invoke failed');
