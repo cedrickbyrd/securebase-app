@@ -184,6 +184,26 @@ describe('securebase-stripe-webhook checkout post-payment state handling', () =>
     assert.equal(ddb.ExpressionAttributeValues[':assessment_credit'], 0);
   });
 
+  test('missing email skips state update and provisioning but still acknowledges webhook', async () => {
+    currentStripeEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_no_email',
+          customer: 'cus_test_no_email',
+          metadata: {},
+          customer_details: {},
+        },
+      },
+    };
+
+    const response = await handler(makeWebhookEvent(), {});
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(ddbCommands.length, 0);
+    assert.equal(lambdaCommands.length, 0);
+  });
+
   test('provisioning invocation path uses async event invocation', async () => {
     currentStripeEvent = {
       type: 'checkout.session.completed',
