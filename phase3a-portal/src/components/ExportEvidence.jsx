@@ -6,6 +6,10 @@ function formatDateInput(date) {
   return date.toISOString().slice(0, 10);
 }
 
+function getGeneratedTimestamp(data) {
+  return data?.generated_at || data?.created_at || data?.completed_at || new Date().toISOString();
+}
+
 function formatBytes(value) {
   if (value == null || Number.isNaN(Number(value))) return null;
   const bytes = Number(value);
@@ -21,10 +25,13 @@ function formatBytes(value) {
 }
 
 export default function ExportEvidence({ framework = 'HIPAA' }) {
+  const today = new Date();
+  const yearAgo = new Date(today);
+  yearAgo.setFullYear(yearAgo.getFullYear() - 1);
   const [state, setState] = useState('idle');
   const [selectedFramework, setSelectedFramework] = useState(framework);
-  const [periodEnd, setPeriodEnd] = useState(formatDateInput(new Date()));
-  const [periodStart, setPeriodStart] = useState(formatDateInput(new Date(new Date().setFullYear(new Date().getFullYear() - 1))));
+  const [periodEnd, setPeriodEnd] = useState(formatDateInput(today));
+  const [periodStart, setPeriodStart] = useState(formatDateInput(yearAgo));
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [sha256, setSha256] = useState(null);
   const [packageSize, setPackageSize] = useState(null);
@@ -52,7 +59,7 @@ export default function ExportEvidence({ framework = 'HIPAA' }) {
       });
       const id = data.package_id || data.id;
       const immediateUrl = data.download_url || data.presigned_url;
-      const immediateGeneratedAt = data.generated_at || data.created_at || data.completed_at || new Date().toISOString();
+      const immediateGeneratedAt = getGeneratedTimestamp(data);
 
       if (data.status === 'complete' && immediateUrl) {
         setDownloadUrl(immediateUrl);
@@ -71,7 +78,8 @@ export default function ExportEvidence({ framework = 'HIPAA' }) {
           },
         });
         if (completed.status === 'failed') {
-          throw new Error('Package generation failed on server.');
+          const failureReason = completed.error_message || completed.failure_reason;
+          throw new Error(failureReason ? `Package generation failed: ${failureReason}` : 'Package generation failed on server.');
         }
         const completedUrl = completed.download_url || completed.presigned_url;
         if (!completedUrl) {
@@ -80,7 +88,7 @@ export default function ExportEvidence({ framework = 'HIPAA' }) {
         setDownloadUrl(completedUrl);
         setSha256(completed.sha256_manifest);
         setPackageSize(completed.size_bytes);
-        setGeneratedAt(completed.generated_at || completed.created_at || completed.completed_at || new Date().toISOString());
+        setGeneratedAt(getGeneratedTimestamp(completed));
         setState('success');
       }
     } catch (err) {
