@@ -46,7 +46,7 @@ _Scope:_ Read-only architecture audit (no functional code changes)
 ## Pilot constraints used for this assessment
 
 From the pilot issue requirements for this audit:
-- Rate limiting target: **100 req/hr per customer** (server-side Lambda enforcement)
+- Rate limiting **target**: **100 req/hr per customer** with server-side Lambda enforcement (current implementation does not meet this target)
 - Notification implementation path: **AWS Lambda + API Gateway** (no Netlify Functions)
 - Logging posture: no PII/PHI in notification delivery logs
 - Retry exhaustion should integrate with existing **Phase 5 alerting SNS** path
@@ -125,8 +125,7 @@ Potentially exposed in outbound payloads/logged delivery records:
      - `notification_worker.py` (email/webhook/SMS payload assembly)
      - `webhook_manager.py` (`payload` creation + persisted log records)
      - `alert_router.py` (third-party alert payloads)
-   - Mirror the sanitization style already used in `phase3a-portal/src/services/analyticsService.js` and reuse the concrete redaction primitives from `src/utils/analytics.js` (`PII_PATTERNS`, `sanitizePath`) as the baseline.
-   - Implement sanitization server-side in Lambda only; frontend analytics patterns are reference input, not an execution boundary.
+   - Implement sanitization server-side in Lambda only. Use `phase3a-portal/src/services/analyticsService.js` and the redaction primitives in `src/utils/analytics.js` (`PII_PATTERNS`, `sanitizePath`) as design references only (do not rely on frontend execution paths for enforcement).
    - Implement a notification-specific allowlist schema per channel (webhook/email/SMS) for delivery payloads.
    - Enforce allowlist output fields and redact/remove: account IDs, ARNs, raw policy blobs, CVE internals, secret identifiers.
    - Emit dashboard deep links to `https://portal.securebase.tximhotep.com/...` for sensitive drill-down.
