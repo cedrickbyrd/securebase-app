@@ -8,7 +8,7 @@ _Scope:_ Read-only architecture audit (no functional code changes)
 
 | Risk Area | Readiness | Summary |
 |---|---|---|
-| 1. Alert Fatigue (De-dup / Batching) | **Red** | No global deduplication or batching window is implemented across active notification dispatch paths. Repeated events can fan out one-by-one. |
+| 1. Alert Fatigue (Dedup / Batching) | **Red** | No global deduplication or batching window is implemented across active notification dispatch paths. Repeated events can fan out one-by-one. |
 | 2. Secure Delivery (Payload Sanitization) | **Red** | Outbound payloads currently include raw event/body metadata and account-identifying fields in multiple paths; no shared `sanitizeNotificationPayload()` utility exists. |
 | 3. Delivery Logging (Success/Failure Tracking) | **Amber** | Partial logging exists (CloudWatch logs + webhook delivery table), but no unified `NotificationDeliveryLog`, no robust retry-exhaustion pipeline for webhook manager, and inconsistent escalation into Phase 5 alerting. |
 
@@ -27,8 +27,8 @@ _Scope:_ Read-only architecture audit (no functional code changes)
 - `landing-zone/main.tf`
 - `landing-zone/modules/lambda-functions/main.tf`
 - `landing-zone/modules/api-gateway/main.tf`
-- `landing-zone/modules/notifications/main.tf` (module exists, not wired in root)
-- `landing-zone/modules/webhooks/main.tf` (module exists, not wired in root)
+- `landing-zone/modules/notifications/main.tf`
+- `landing-zone/modules/webhooks/main.tf`
 - `landing-zone/modules/phase5-alerting/main.tf`
 - `landing-zone/modules/phase5-alerting/webhook-integration.tf`
 
@@ -36,12 +36,20 @@ _Scope:_ Read-only architecture audit (no functional code changes)
 - `phase3a-portal/src/components/Webhooks.jsx`
 - `phase3a-portal/src/services/notificationService.js`
 - `phase3a-portal/src/services/analyticsService.js`
-- `src/utils/analytics.js` (PII/PHI sanitization pattern currently implemented in repo)
+- `src/utils/analytics.js` (root marketing site; includes concrete PII/PHI redaction primitives)
 
 ### Validation/tests/docs context
 - `phase2-backend/tests/test_notification_worker.py`
 - `phase2-backend/functions/test_alert_router.py`
 - `phase2-backend/.env.example`
+
+## Pilot constraints used for this assessment
+
+From the pilot issue requirements for this audit:
+- Rate limiting target: **100 req/hr per customer** (server-side Lambda enforcement)
+- Notification implementation path: **AWS Lambda + API Gateway** (no Netlify Functions)
+- Logging posture: no PII/PHI in notification delivery logs
+- Retry exhaustion should integrate with existing **Phase 5 alerting SNS** path
 
 ---
 
@@ -75,7 +83,7 @@ _Scope:_ Read-only architecture audit (no functional code changes)
 
 ### Sensitive-field exposure assessment
 Potentially exposed in outbound payloads/logged delivery records:
-- Account identifiers (`customer_id`, `AWSAccountId`)
+- Account identifiers (`customer_id`, AWS-native alarm field `AWSAccountId`)
 - Raw metadata/body contents (including security/compliance context)
 - Full webhook response bodies (could include secrets/errors from third-party endpoints)
 
@@ -117,7 +125,9 @@ Potentially exposed in outbound payloads/logged delivery records:
      - `notification_worker.py` (email/webhook/SMS payload assembly)
      - `webhook_manager.py` (`payload` creation + persisted log records)
      - `alert_router.py` (third-party alert payloads)
-   - Mirror the sanitization style already used in `phase3a-portal/src/services/analyticsService.js` (and the repository’s analytics sanitization approach) so redaction logic is centralized and consistent.
+   - Mirror the sanitization style already used in `phase3a-portal/src/services/analyticsService.js` and reuse the concrete redaction primitives from `src/utils/analytics.js` (`PII_PATTERNS`, `sanitizePath`) as the baseline.
+   - Implement sanitization server-side in Lambda only; frontend analytics patterns are reference input, not an execution boundary.
+   - Implement a notification-specific allowlist schema per channel (webhook/email/SMS) for delivery payloads.
    - Enforce allowlist output fields and redact/remove: account IDs, ARNs, raw policy blobs, CVE internals, secret identifiers.
    - Emit dashboard deep links to `https://portal.securebase.tximhotep.com/...` for sensitive drill-down.
 
@@ -132,29 +142,33 @@ Potentially exposed in outbound payloads/logged delivery records:
    - Replace `schedule_retry()` placeholder in `webhook_manager.py` with real delayed retry orchestration (SQS delay queue or Step Functions).
    - Add max-attempt tracking and explicit exhausted status.
 
+4. **Resolve runtime configuration mismatches before pilot traffic**
+   - Align webhook delivery log environment variable naming between runtime and Lambda config (`DELIVERIES_TABLE` vs `WEBHOOK_DELIVERIES_TABLE`) so delivery logging does not silently fail.
+   - Add startup validation in notification/webhook Lambdas for required environment variables.
+
+5. **Rate-limit enforcement alignment**
+   - Current API Gateway defaults are 100 req/sec per key (`api-gateway` usage plan), which does not satisfy the pilot guardrail of 100 req/hr/customer documented in **Pilot constraints used for this assessment**. This is a critical operational and abuse-risk gap (3600x mismatch) for pilot traffic.
+   - Add server-side per-customer hourly limiter in notification Lambdas before pilot rollout.
+
 ## P1 (Pilot hardening)
-4. **Create unified delivery log table and schema**
+6. **Create unified delivery log table and schema**
    - Add a `NotificationDeliveryLog`-style table (or extend existing webhook delivery model) in Terraform with:
      - KMS encryption
      - Required tags: `Environment`, `ComplianceFramework`, `DataClassification`
      - TTL for retention lifecycle
    - Store minimal non-PII fields only: `clientId` (opaque), `alertType`, `channel`, `status`, `attempt`, `errorCode`, timestamps.
 
-5. **Integrate exhausted retry alarms into Phase 5 alerting**
+7. **Integrate exhausted retry alarms into Phase 5 alerting**
    - Reuse `landing-zone/modules/phase5-alerting` SNS topic output.
    - Add CloudWatch metric + alarm for retry exhaustion counts and route to `aws_sns_topic.alerts.arn`.
 
-6. **Normalize active infra wiring and remove drift**
+8. **Normalize active infra wiring and remove drift**
    - Root `landing-zone/main.tf` currently wires active notification-like paths via `lambda-functions` + `api-gateway`, while dedicated `modules/notifications` and `modules/webhooks` are not wired.
    - Consolidate to one canonical deployment path before pilot rollout.
-   - Keep implementation strictly in AWS Lambda + API Gateway paths (no new Netlify Functions).
+   - Keep implementation strictly in AWS Lambda + API Gateway paths (no new Netlify Functions), aligned with the repository cost-optimization policy in CLAUDE.md.
 
 ## P2 (Operational maturity)
-7. **Rate-limit enforcement alignment**
-   - Current API Gateway defaults are 100 req/sec per key (`api-gateway` usage plan), which does not satisfy a strict 100 req/hr/customer pilot guardrail.
-   - Add server-side per-customer hourly limiter in notification Lambdas.
-
-8. **Add notification delivery SLO dashboards**
+9. **Add notification delivery SLO dashboards**
    - Build dashboards for success rate, retries, exhausted retries, median/95p delivery latency, per-channel failure heatmap.
 
 ---
@@ -201,7 +215,7 @@ Potentially exposed in outbound payloads/logged delivery records:
    - Active deployment currently routes webhooks through `modules/lambda-functions` + `modules/api-gateway`.
 
 2. **Environment variable mismatch risk**
-   - `webhook_manager.py` expects `DELIVERIES_TABLE`, while active lambda module environment uses `WEBHOOK_DELIVERIES_TABLE` naming in one path.
+   - `phase2-backend/functions/webhook_manager.py` expects `DELIVERIES_TABLE`, while `landing-zone/modules/lambda-functions/main.tf` configures `WEBHOOK_DELIVERIES_TABLE` for the active webhook-manager Lambda path.
    - This should be reconciled during implementation PR to avoid runtime misconfiguration.
 
 ---
