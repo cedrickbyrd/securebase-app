@@ -516,17 +516,17 @@ def log_delivery(
     notification_id = notification.get('id')
     if not notification_id:
         print("Notification ID missing while writing delivery log")
-        notification_id = 'unknown-notification'
+        notification_id = str(uuid4())
 
     audit_log = {
-        'notificationId': notification_id,
-        'clientId': notification.get('customer_id'),
-        'alertType': notification.get('type'),
+        'notification_id': notification_id,
+        'client_id': notification.get('customer_id'),
+        'alert_type': notification.get('type'),
         'channel': channel,
         'status': status,
-        'httpStatusCode': http_status_code,
-        'errorMessage': error_message,
-        'retryAttempt': retry_attempt,
+        'http_status_code': http_status_code,
+        'error_message': error_message,
+        'retry_attempt': retry_attempt,
         'timestamp': timestamp
     }
     print(json.dumps(audit_log))

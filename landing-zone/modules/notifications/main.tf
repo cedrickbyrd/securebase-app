@@ -354,6 +354,23 @@ resource "aws_dynamodb_table" "notification_delivery_log" {
     type = "S"
   }
 
+  attribute {
+    name = "client_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "client_id-timestamp-index"
+    hash_key        = "client_id"
+    range_key       = "timestamp"
+    projection_type = "ALL"
+  }
+
   ttl {
     attribute_name = "ttl"
     enabled        = true
@@ -683,6 +700,5 @@ resource "aws_cloudwatch_metric_alarm" "old_messages" {
   
   tags = var.tags
 }
-
 
 
