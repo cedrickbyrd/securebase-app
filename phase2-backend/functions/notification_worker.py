@@ -45,6 +45,7 @@ NOTIFICATION_DEDUP_WINDOW_SECONDS = int(os.environ.get('NOTIFICATION_DEDUP_WINDO
 NOTIFICATION_DELIVERY_LOG_TABLE = os.environ.get('NOTIFICATION_DELIVERY_LOG_TABLE', 'securebase-notification-delivery-log')
 NOTIFICATION_MAX_RETRIES = int(os.environ.get('NOTIFICATION_MAX_RETRIES', str(MAX_RETRIES)))
 NOTIFICATION_RETRY_BACKOFF_BASE_MS = int(os.environ.get('NOTIFICATION_RETRY_BACKOFF_BASE_MS', '500'))
+NOTIFICATION_DELIVERY_LOG_TTL_DAYS = int(os.environ.get('NOTIFICATION_DELIVERY_LOG_TTL_DAYS', '30'))
 DASHBOARD_ALERT_BASE_URL = os.environ.get('DASHBOARD_ALERT_BASE_URL', 'https://app.securebase.io/alerts')
 
 SENSITIVE_KEY_MARKERS = (
@@ -512,8 +513,13 @@ def log_delivery(
         retry_attempt: Dispatch attempt number
     """
     timestamp = datetime.utcnow().isoformat()
+    notification_id = notification.get('id')
+    if not notification_id:
+        print("Notification ID missing while writing delivery log")
+        notification_id = 'unknown-notification'
+
     audit_log = {
-        'notificationId': notification.get('id'),
+        'notificationId': notification_id,
         'clientId': notification.get('customer_id'),
         'alertType': notification.get('type'),
         'channel': channel,
@@ -529,7 +535,7 @@ def log_delivery(
         table = dynamodb.Table(NOTIFICATION_DELIVERY_LOG_TABLE)
         table.put_item(
             Item={
-                'notification_id': notification.get('id', str(uuid4())),
+                'notification_id': notification_id,
                 'log_id': f"{int(time.time() * 1000)}#{uuid4()}",
                 'client_id': notification.get('customer_id', 'unknown'),
                 'alert_type': notification.get('type', 'unknown'),
@@ -539,7 +545,9 @@ def log_delivery(
                 'error_message': error_message,
                 'retry_attempt': retry_attempt,
                 'timestamp': timestamp,
-                'ttl': int((datetime.utcnow() + timedelta(days=30)).timestamp())
+                'ttl': int(
+                    (datetime.utcnow() + timedelta(days=max(1, NOTIFICATION_DELIVERY_LOG_TTL_DAYS))).timestamp()
+                )
             }
         )
     except Exception as e:
@@ -570,7 +578,7 @@ def should_suppress_notification(notification: Dict[str, Any]) -> tuple[bool, in
             dedup_table.put_item(
                 Item={
                     'dedup_key': dedup_key,
-                    'notification_id': item.get('notification_id', notification.get('id')),
+                    'notification_id': item.get('notification_id', 'unknown-notification'),
                     'duplicate_count': duplicate_count,
                     'expires_at': item.get('expires_at'),
                     'updated_at': datetime.utcnow().isoformat(),
