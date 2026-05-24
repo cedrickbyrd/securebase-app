@@ -308,6 +308,70 @@ resource "aws_dynamodb_table" "templates" {
   })
 }
 
+# Notification deduplication table (short-lived event window)
+resource "aws_dynamodb_table" "notification_dedup" {
+  name         = "securebase-${var.environment}-notification-dedup"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "dedup_key"
+
+  attribute {
+    name = "dedup_key"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = merge(var.tags, {
+    Name = "SecureBase Notification Dedup"
+  })
+}
+
+# Notification delivery observability table
+resource "aws_dynamodb_table" "notification_delivery_log" {
+  name         = "securebase-${var.environment}-notification-delivery-log"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "notification_id"
+  range_key    = "log_id"
+
+  attribute {
+    name = "notification_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "log_id"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = merge(var.tags, {
+    Name = "SecureBase Notification Delivery Log"
+  })
+}
+
 # ============================================
 # Lambda Functions
 # ============================================
@@ -372,7 +436,9 @@ resource "aws_iam_role_policy" "notification_worker" {
           aws_dynamodb_table.subscriptions.arn,
           "${aws_dynamodb_table.subscriptions.arn}/index/*",
           aws_dynamodb_table.templates.arn,
-          "${aws_dynamodb_table.templates.arn}/index/*"
+          "${aws_dynamodb_table.templates.arn}/index/*",
+          aws_dynamodb_table.notification_dedup.arn,
+          aws_dynamodb_table.notification_delivery_log.arn
         ]
       },
       {
@@ -423,6 +489,12 @@ resource "aws_lambda_function" "notification_worker" {
       SES_FROM_EMAIL      = var.ses_from_email
       WEBHOOK_TIMEOUT     = "5"
       MAX_RETRIES         = "3"
+      NOTIFICATION_DEDUP_TABLE             = aws_dynamodb_table.notification_dedup.name
+      NOTIFICATION_DELIVERY_LOG_TABLE      = aws_dynamodb_table.notification_delivery_log.name
+      NOTIFICATION_DEDUP_WINDOW_SECONDS    = "300"
+      NOTIFICATION_MAX_RETRIES             = "3"
+      NOTIFICATION_RETRY_BACKOFF_BASE_MS   = "500"
+      DASHBOARD_ALERT_BASE_URL             = "https://app.securebase.io/alerts"
     }
   }
   
@@ -610,7 +682,6 @@ resource "aws_cloudwatch_metric_alarm" "old_messages" {
   
   tags = var.tags
 }
-
 
 
 
