@@ -81,6 +81,7 @@ from notification_worker import (  # noqa: E402
     parse_sqs_message,
     process_notification,
     render_template,
+    dispatch_with_retry,
     send_email,
     send_sms,
     send_webhook,
@@ -90,6 +91,9 @@ from notification_worker import (  # noqa: E402
     get_user_preferences,
     get_enabled_channels,
     log_delivery,
+    sanitize_notification_payload,
+    should_suppress_notification,
+    build_dedup_key,
 )
 
 # Expose stub exception types so test bodies can raise / assert them
@@ -260,7 +264,7 @@ def test_parse_sqs_message_missing_fields():
 # ============================================================================
 
 def test_process_notification_all_channels(sample_notification):
-    """process_notification calls send_email, send_sms, and store_in_app."""
+    """process_notification dispatches external channels and stores in-app notifications."""
     sample_notification['channels'] = ['email', 'sms', 'in_app']
 
     mock_prefs = {
@@ -274,48 +278,43 @@ def test_process_notification_all_channels(sample_notification):
         'body_text': 'Alert',
     }
 
-    with patch('notification_worker.get_user_preferences', return_value=mock_prefs), \
+    with patch('notification_worker.should_suppress_notification', return_value=(False, 1)), \
+         patch('notification_worker.get_user_preferences', return_value=mock_prefs), \
          patch('notification_worker.get_enabled_channels',
                return_value=['email', 'sms', 'in_app']), \
          patch('notification_worker.render_template', return_value=rendered), \
-         patch('notification_worker.send_email') as mock_email, \
-         patch('notification_worker.send_sms') as mock_sms, \
+         patch('notification_worker.dispatch_with_retry',
+               side_effect=[('success', None, None), ('success', None, None)]) as mock_dispatch, \
          patch('notification_worker.store_in_app') as mock_store, \
          patch('notification_worker.log_delivery') as mock_log:
 
         process_notification(sample_notification)
 
-    mock_email.assert_called_once()
-    mock_sms.assert_called_once()
+    assert mock_dispatch.call_count == 2
     mock_store.assert_called_once()
-    assert mock_log.call_count == 3  # one success log per channel
+    assert mock_log.call_count == 1  # in_app channel logs directly in process_notification
 
 
 def test_process_notification_channel_failure(sample_notification):
-    """process_notification logs failures and continues processing remaining channels."""
+    """process_notification continues processing remaining channels when external dispatch fails."""
     sample_notification['channels'] = ['email', 'in_app']
 
     mock_prefs = {'email': 'user@example.com', 'subscriptions': {}}
     rendered = {'subject': 'Alert', 'body_html': '<p>Alert</p>', 'body_text': 'Alert'}
 
-    with patch('notification_worker.get_user_preferences', return_value=mock_prefs), \
+    with patch('notification_worker.should_suppress_notification', return_value=(False, 1)), \
+         patch('notification_worker.get_user_preferences', return_value=mock_prefs), \
          patch('notification_worker.get_enabled_channels',
                return_value=['email', 'in_app']), \
          patch('notification_worker.render_template', return_value=rendered), \
-         patch('notification_worker.send_email',
-               side_effect=Exception('SES error')), \
-         patch('notification_worker.store_in_app') as mock_store, \
-         patch('notification_worker.log_delivery') as mock_log:
+         patch('notification_worker.dispatch_with_retry',
+               return_value=('failed', None, 'SES error')) as mock_dispatch, \
+         patch('notification_worker.store_in_app') as mock_store:
 
         # Implementation continues after a channel failure — should not raise
         process_notification(sample_notification)
 
-    # The email failure must be logged with status 'failed'
-    failed_calls = [c for c in mock_log.call_args_list if c[0][2] == 'failed']
-    assert len(failed_calls) == 1
-    assert failed_calls[0][0][1] == 'email'
-
-    # in_app channel must still be dispatched despite email failure
+    mock_dispatch.assert_called_once()
     mock_store.assert_called_once()
 
 
@@ -458,7 +457,7 @@ def test_send_webhook_success(sample_notification):
 
 
 def test_send_webhook_timeout(sample_notification):
-    """send_webhook raises Exception with 'failed after' after MAX_RETRIES failures."""
+    """send_webhook raises Exception when POST fails."""
     rendered = {
         'subject': 'Alert',
         'body_html': '<p>Alert</p>',
@@ -470,13 +469,12 @@ def test_send_webhook_timeout(sample_notification):
     }
 
     with patch.object(notification_worker.requests, 'post',
-                      side_effect=RequestException('timeout')), \
-         patch('notification_worker.time.sleep'):
+                      side_effect=RequestException('timeout')):
 
         with pytest.raises(Exception) as exc_info:
             send_webhook(sample_notification, rendered, user_prefs)
 
-    assert 'failed after' in str(exc_info.value)
+    assert 'Webhook delivery failed' in str(exc_info.value)
 
 
 # ============================================================================
@@ -650,6 +648,97 @@ def test_get_user_preferences():
     assert result['phone_number'] == '+15551234567'
     assert result['webhook_url'] == 'https://example.com/hook'
     assert 'subscriptions' in result
+
+
+# ============================================================================
+# DEDUP / SANITIZATION / DELIVERY LOG TESTS
+# ============================================================================
+
+def test_build_dedup_key_uses_customer_type_and_resource():
+    """build_dedup_key includes customer, type, and metadata resource id."""
+    notification = {
+        'customer_id': 'customer-1',
+        'type': 'iam_policy_drift',
+        'metadata': {'resource_id': 'role/ci-role'}
+    }
+    assert build_dedup_key(notification) == 'customer-1#iam_policy_drift#role/ci-role'
+
+
+def test_should_suppress_notification_when_event_repeats(sample_notification):
+    """should_suppress_notification returns True when key is still inside dedup window."""
+    with patch('notification_worker.dynamodb') as mock_dynamodb, \
+         patch('notification_worker.time.time', return_value=1000):
+        mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+        mock_table.get_item.return_value = {'Item': {'expires_at': 1200, 'duplicate_count': 2}}
+
+        should_suppress, duplicate_count = should_suppress_notification(sample_notification)
+
+    assert should_suppress is True
+    assert duplicate_count == 3
+    mock_table.put_item.assert_called_once()
+
+
+def test_sanitize_notification_payload_redacts_sensitive_values():
+    """sanitize_notification_payload strips sensitive keys and token-like values."""
+    payload = {
+        'account_id': '123456789012',
+        'arn': 'arn:aws:iam::123456789012:role/Admin',
+        'body': 'Issue CVE-2024-12345 in account 123456789012',
+        'metadata': {'access_key_fragment': 'AKIAZZZZZZZZZZZZZZZZ'}
+    }
+
+    sanitized = sanitize_notification_payload(payload, alert_id='alert-123')
+
+    assert sanitized['account_id'] == '[REDACTED]'
+    assert sanitized['arn'] == '[REDACTED]'
+    assert '[REDACTED_CVE]' in sanitized['body']
+    assert sanitized['metadata']['access_key_fragment'] == '[REDACTED]'
+    assert sanitized['alert_reference_url'].endswith('/alert-123')
+
+
+def test_dispatch_with_retry_retries_critical_notifications(sample_notification):
+    """dispatch_with_retry retries critical channel failures and returns retried on recovery."""
+    sample_notification['priority'] = 'critical'
+
+    with patch('notification_worker.send_email', side_effect=[Exception('temp'), None]) as mock_send, \
+         patch('notification_worker.log_delivery') as mock_log, \
+         patch('notification_worker.time.sleep'):
+        status, http_status, error = dispatch_with_retry(
+            channel='email',
+            notification=sample_notification,
+            rendered={'subject': 'A', 'body_html': '<p>A</p>', 'body_text': 'A'},
+            user_prefs={'email': 'user@example.com'}
+        )
+
+    assert status == 'retried'
+    assert http_status is None
+    assert error is None
+    assert mock_send.call_count == 2
+    assert mock_log.call_count == 2
+
+
+def test_log_delivery_persists_delivery_record(sample_notification):
+    """log_delivery writes structured delivery data to DynamoDB."""
+    with patch('notification_worker.dynamodb') as mock_dynamodb:
+        mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+
+        log_delivery(
+            sample_notification,
+            channel='webhook',
+            status='failed',
+            http_status_code=429,
+            error_message='rate limit',
+            retry_attempt=2
+        )
+
+    mock_table.put_item.assert_called_once()
+    item = mock_table.put_item.call_args[1]['Item']
+    assert item['notification_id'] == 'notif-123'
+    assert item['channel'] == 'webhook'
+    assert item['status'] == 'failed'
+    assert item['http_status_code'] == 429
 
 
 # ============================================================================
