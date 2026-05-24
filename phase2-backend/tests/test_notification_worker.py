@@ -670,7 +670,9 @@ def test_should_suppress_notification_when_event_repeats(sample_notification):
          patch('notification_worker.time.time', return_value=1000):
         mock_table = MagicMock()
         mock_dynamodb.Table.return_value = mock_table
-        mock_table.get_item.return_value = {'Item': {'expires_at': 1200, 'duplicate_count': 2}}
+        mock_table.get_item.return_value = {
+            'Item': {'expires_at': 1200, 'ttl': 1200, 'duplicate_count': 2, 'notification_id': 'notif-123'}
+        }
 
         should_suppress, duplicate_count = should_suppress_notification(sample_notification)
 

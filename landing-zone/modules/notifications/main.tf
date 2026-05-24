@@ -494,6 +494,7 @@ resource "aws_lambda_function" "notification_worker" {
       NOTIFICATION_DEDUP_WINDOW_SECONDS    = "300"
       NOTIFICATION_MAX_RETRIES             = "3"
       NOTIFICATION_RETRY_BACKOFF_BASE_MS   = "500"
+      NOTIFICATION_DELIVERY_LOG_TTL_DAYS   = "30"
       DASHBOARD_ALERT_BASE_URL             = "https://app.securebase.io/alerts"
     }
   }
@@ -682,7 +683,6 @@ resource "aws_cloudwatch_metric_alarm" "old_messages" {
   
   tags = var.tags
 }
-
 
 
 
