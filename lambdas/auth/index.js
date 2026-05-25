@@ -15,8 +15,8 @@ const JWT_SECRET   = process.env.JWT_SECRET;
 const JWT_EXPIRY   = process.env.JWT_EXPIRY   || "1h";
 const APP_URL      = process.env.APP_URL       || "https://portal.securebase.tximhotep.com";
 const APP_NAME     = process.env.APP_NAME      || "SecureBase";
-const FROM_EMAIL     = process.env.FROM_EMAIL      || "onboarding@tximhotep.com";
-const SUPPORT_EMAIL  = process.env.SUPPORT_EMAIL   || "support@securebase.tximhotep.com";
+const FROM_EMAIL    = process.env.FROM_EMAIL     || "onboarding@tximhotep.com";
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL  || "support@securebase.tximhotep.com";
 const TOKEN_TTL_H  = 24; // hours
 // Brute-force protection: lock account after this many consecutive bad passwords.
 const MAX_FAILED_ATTEMPTS = parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS || "5", 10);
@@ -49,8 +49,10 @@ const normalizeEmail = (raw) => (raw || "").toLowerCase().trim();
 
 /** Lightweight email format check — non-backtracking to prevent ReDoS on uncontrolled input */
 const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
   const at = email.indexOf('@');
   if (at < 1) return false;
+  if (email.indexOf('@', at + 1) !== -1) return false; // reject multiple '@'
   const dot = email.lastIndexOf('.');
   return dot > at + 1 && dot < email.length - 1 && !email.includes(' ');
 };
