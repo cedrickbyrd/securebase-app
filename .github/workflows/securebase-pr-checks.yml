@@ -5,6 +5,11 @@ on:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
 
+# NOTE:
+# Auth regression coverage for post-merge security/sales-blocker fixes runs in
+# `.github/workflows/auth-regression-tests.yml`.
+# Both this workflow and the auth regression workflow must pass before merge.
+
 permissions:
   contents: read
   pull-requests: write

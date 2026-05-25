@@ -1,0 +1,130 @@
+# Auth regression test workflow for post-merge hardening fixes from PRs #806 and #807.
+# Runs focused Lambda + portal component regression tests for auth/security/sales-blocker paths.
+
+name: Auth Regression Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'lambdas/auth/**'
+      - 'phase3a-portal/src/components/ForgotPassword.jsx'
+      - 'phase3a-portal/src/components/__tests__/ForgotPassword.test.jsx'
+      - 'phase3a-portal/src/config/branding.js'
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambdas/auth/**'
+      - 'phase3a-portal/src/components/ForgotPassword.jsx'
+      - 'phase3a-portal/src/components/__tests__/ForgotPassword.test.jsx'
+      - 'phase3a-portal/src/config/branding.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-lambda-unit-tests:
+    name: Auth Lambda — Unit & Security Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Lambda dependencies
+        run: |
+          cd lambdas/auth
+          npm ci
+
+      - name: Run auth Lambda regression tests
+        run: |
+          cd lambdas/auth
+          node --test index.test.cjs
+        env:
+          JWT_SECRET: test-secret
+          USERS_TABLE: securebase-users
+          TOKENS_TABLE: securebase-tokens
+          SUPPORT_EMAIL: ci-support@securebase.test
+          APP_NAME: SecureBase-CI
+
+  portal-component-tests:
+    name: Portal — ForgotPassword Component Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: phase3a-portal/package-lock.json
+
+      - name: Install portal dependencies
+        run: |
+          cd phase3a-portal
+          npm ci
+
+      - name: Run ForgotPassword regression test
+        shell: bash
+        run: |
+          cd phase3a-portal
+          TEST_FILE="src/components/__tests__/ForgotPassword.test.jsx"
+
+          RUNNER="$(node <<'NODE'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          if (!pkg.scripts || !pkg.scripts.test) {
+            console.error('❌ package.json is missing a test script');
+            process.exit(1);
+          }
+          const hasVitestInScripts = /vitest/.test(pkg.scripts.test || '');
+          const hasVitestInDependencies = Boolean(
+            (pkg.dependencies && pkg.dependencies.vitest) ||
+            (pkg.devDependencies && pkg.devDependencies.vitest)
+          );
+          process.stdout.write(
+            hasVitestInScripts || hasVitestInDependencies ? 'vitest' : 'jest'
+          );
+          NODE
+          )"
+
+          if [[ "$RUNNER" == "vitest" ]]; then
+            echo "Detected Vitest; running targeted test in run mode"
+            npm run test -- --run "$TEST_FILE"
+          else
+            echo "Vitest not detected; running targeted Jest test"
+            npm test -- "$TEST_FILE"
+          fi
+
+  regression-gate:
+    name: Auth Regression Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - auth-lambda-unit-tests
+      - portal-component-tests
+    if: always()
+
+    steps:
+      - name: Check required auth regression job results
+        shell: bash
+        run: |
+          if [[ "${{ needs.auth-lambda-unit-tests.result }}" != "success" || "${{ needs.portal-component-tests.result }}" != "success" ]]; then
+            echo "❌ Auth regression tests failed — see job logs above"
+            exit 1
+          fi
+          echo "✅ All auth regression tests passed"
