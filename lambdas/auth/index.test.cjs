@@ -144,7 +144,8 @@ const state = globalThis.__authTestState = {
 
     throw new Error(`Unexpected DynamoDB command. Add support for this operation in the test mock. Input: ${JSON.stringify(command.input)}`);
   },
-  sesSend() {
+  sesSend(command) {
+    this.sesCallCount = (this.sesCallCount || 0) + 1;
     return { MessageId: 'ses-mock' };
   },
 };
@@ -163,6 +164,7 @@ before(async () => {
 beforeEach(() => {
   state.mockUsers = new Map();
   state.mockTokens = new Map();
+  state.sesCallCount = 0;
 });
 
 function makeEvent(pathname, body) {
@@ -333,6 +335,7 @@ describe('emailHtml — SUPPORT_EMAIL is configurable', () => {
     const originalSesSend = state.sesSend;
     state.sesSend = function sesSendCapture(command) {
       capturedSesInputs.push(command.input);
+      this.sesCallCount = (this.sesCallCount || 0) + 1;
       return { MessageId: 'ses-captured' };
     };
 
@@ -349,5 +352,87 @@ describe('emailHtml — SUPPORT_EMAIL is configurable', () => {
     } finally {
       state.sesSend = originalSesSend;
     }
+  });
+});
+
+describe('resendInvite', () => {
+  test('valid (expired) invite token issues a new invite and sends email', async () => {
+    const expiredToken = 'expired-invite-token-abc123';
+    const pastExpiry = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+    state.mockTokens.set(expiredToken, {
+      token: expiredToken,
+      email: 'user@example.com',
+      type: 'invite',
+      used: false,
+      expiresAt: pastExpiry,
+    });
+
+    const response = await handler(makeEvent('/auth/invite/resend', { token: expiredToken }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(JSON.parse(response.body).message, 'If a matching invite exists, a new link has been sent');
+
+    // A new token should have been stored (different from the original)
+    const allTokens = [...state.mockTokens.keys()];
+    assert.ok(allTokens.length === 2, `Expected 2 tokens, got ${allTokens.length}`);
+    const newToken = allTokens.find((t) => t !== expiredToken);
+    assert.ok(newToken, 'New token should exist in mockTokens');
+    const newRecord = state.mockTokens.get(newToken);
+    assert.equal(newRecord.type, 'invite');
+    assert.equal(newRecord.email, 'user@example.com');
+    assert.equal(newRecord.used, false);
+
+    // Email should have been sent
+    assert.equal(state.sesCallCount, 1, 'Expected SES to be called once');
+  });
+
+  test('already-used invite token returns 200 without creating a new token (anti-enumeration)', async () => {
+    const usedToken = 'used-invite-token-xyz';
+    state.mockTokens.set(usedToken, {
+      token: usedToken,
+      email: 'user@example.com',
+      type: 'invite',
+      used: true,
+      expiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    const response = await handler(makeEvent('/auth/invite/resend', { token: usedToken }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(JSON.parse(response.body).message, 'If a matching invite exists, a new link has been sent');
+
+    // No new token should have been written
+    assert.equal(state.mockTokens.size, 1, 'No new token should have been stored');
+
+    // No email should have been sent
+    assert.equal(state.sesCallCount, 0, 'SES should not have been called for used token');
+  });
+
+  test('missing token body returns 400', async () => {
+    const response = await handler(makeEvent('/auth/invite/resend', {}));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Token required');
+  });
+
+  test('invite route stores token with 30-day TTL (720 hours)', async () => {
+    const beforeSend = Math.floor(Date.now() / 1000);
+
+    await handler(makeEvent('/auth/invite', { email: 'newuser@example.com' }));
+
+    const afterSend = Math.floor(Date.now() / 1000);
+
+    // Find the invite token that was stored
+    const inviteRecord = [...state.mockTokens.values()].find((t) => t.type === 'invite');
+    assert.ok(inviteRecord, 'An invite token should have been stored');
+
+    const expectedTtlHours = 24 * 30; // 720 hours
+    const expectedMin = beforeSend + expectedTtlHours * 3600;
+    const expectedMax = afterSend  + expectedTtlHours * 3600;
+
+    assert.ok(
+      inviteRecord.expiresAt >= expectedMin && inviteRecord.expiresAt <= expectedMax + 60,
+      `expiresAt ${inviteRecord.expiresAt} should be ~${expectedTtlHours}h from now (between ${expectedMin} and ${expectedMax + 60})`,
+    );
   });
 });

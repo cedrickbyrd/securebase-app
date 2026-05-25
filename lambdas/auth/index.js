@@ -17,7 +17,8 @@ const APP_URL      = process.env.APP_URL       || "https://portal.securebase.txi
 const APP_NAME     = process.env.APP_NAME      || "SecureBase";
 const FROM_EMAIL    = process.env.FROM_EMAIL     || "onboarding@tximhotep.com";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL  || "support@securebase.tximhotep.com";
-const TOKEN_TTL_H  = 24; // hours
+const INVITE_TOKEN_TTL_H = 24 * 30; // 720 hours = 30 days — matches trigger_onboarding.py
+const RESET_TOKEN_TTL_H  = 24;      // 24 hours — appropriate for password resets
 // Brute-force protection: lock account after this many consecutive bad passwords.
 const MAX_FAILED_ATTEMPTS = parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS || "5", 10);
 // Account lockout window in seconds (default 15 minutes).
@@ -107,8 +108,8 @@ const clearFailedLogins = async (email) => {
 
 const generateToken = () => crypto.randomBytes(32).toString("hex");
 
-const storeToken = async (email, token, type) => {
-  const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_H * 3600;
+const storeToken = async (email, token, type, ttlHours = RESET_TOKEN_TTL_H) => {
+  const expiresAt = Math.floor(Date.now() / 1000) + ttlHours * 3600;
   await db.send(new PutItemCommand({
     TableName: TOKENS_TABLE,
     Item: marshall({ token, email, type, expiresAt, used: false }),
@@ -150,7 +151,7 @@ const sendEmail = async (to, subject, html) => {
   }));
 };
 
-const emailHtml = (heading, body, ctaLabel, ctaUrl) => `
+const emailHtml = (heading, body, ctaLabel, ctaUrl, ttlHours = RESET_TOKEN_TTL_H) => `
 <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
   <div style="text-align:center;margin-bottom:24px">
     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -168,7 +169,7 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl) => `
     </a>
   </div>
   <p style="color:#64748b;font-size:13px;text-align:center">
-    This link expires in ${TOKEN_TTL_H} hours. If you didn't request this, ignore this email.
+    This link expires in ${ttlHours >= 48 ? Math.round(ttlHours / 24) + ' days' : ttlHours + ' hours'}. If you didn't request this, ignore this email.
   </p>
   <p style="color:#94a3b8;font-size:12px;text-align:center">
     Questions? <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
@@ -292,7 +293,7 @@ const invite = async (body) => {
     }));
   }
   const token = generateToken();
-  await storeToken(email, token, "invite");
+  await storeToken(email, token, "invite", INVITE_TOKEN_TTL_H);
   const link = `${APP_URL}/accept-invite?token=${token}`;
   const html = emailHtml(
     `You're invited to ${APP_NAME}`,
@@ -301,6 +302,7 @@ const invite = async (body) => {
      <p>Click below to set your password and activate your account. Your 30-day pilot begins the moment you log in.</p>`,
     "Activate Your Account →",
     link,
+    INVITE_TOKEN_TTL_H,
   );
   try {
     await sendEmail(email, `Activate your ${APP_NAME} account`, html);
@@ -361,7 +363,7 @@ const forgotPassword = async (body) => {
   const html = emailHtml(
     `Reset your ${APP_NAME} password`,
     `<p>We received a request to reset the password for your ${APP_NAME} account.</p>
-     <p>Click below to choose a new password. This link expires in ${TOKEN_TTL_H} hours.</p>`,
+     <p>Click below to choose a new password. This link expires in ${RESET_TOKEN_TTL_H} hours.</p>`,
     "Reset Password →",
     link,
   );
@@ -428,6 +430,42 @@ const mfaVerify = async (body) => {
   return response(200, { message: "MFA enabled successfully" });
 };
 
+const resendInvite = async (body) => {
+  const { token } = body;
+  if (!token) return response(400, { message: "Token required" });
+
+  // Look up the original token record — deliberately do NOT consume it
+  const r = await db.send(new GetItemCommand({
+    TableName: TOKENS_TABLE,
+    Key: marshall({ token }),
+  }));
+  const item = r.Item ? unmarshall(r.Item) : null;
+
+  // Uniform 200 response — never reveal whether the token/email exists (prevent enumeration)
+  if (!item || item.used || item.type !== "invite") {
+    return response(200, { message: "If a matching invite exists, a new link has been sent" });
+  }
+
+  const newToken = generateToken();
+  await storeToken(item.email, newToken, "invite", INVITE_TOKEN_TTL_H);
+  const link = `${APP_URL}/accept-invite?token=${newToken}`;
+  const html = emailHtml(
+    `Your new ${APP_NAME} invite link`,
+    `<p>Hi,</p>
+     <p>Your previous invite link expired. Here's a fresh one — it's valid for 30 days.</p>`,
+    "Activate Your Account →",
+    link,
+    INVITE_TOKEN_TTL_H,
+  );
+  try {
+    await sendEmail(item.email, `New invite link — ${APP_NAME}`, html);
+  } catch (sesErr) {
+    console.error("SES resend failed — token stored, email not delivered:", sesErr);
+  }
+
+  return response(200, { message: "If a matching invite exists, a new link has been sent" });
+};
+
 // ── router ────────────────────────────────────────────────────────────────────
 
 export const handler = async (event) => {
@@ -461,6 +499,7 @@ export const handler = async (event) => {
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
     if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
+    if (method === "POST" && path.includes("/auth/invite/resend"))   return await resendInvite(body);
     if (method === "POST" && isInvitePath)                            return await invite(body);
     if (method === "POST" && path.includes("/auth/forgot-password")) return await forgotPassword(body);
     if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
