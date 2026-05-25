@@ -1,158 +1,156 @@
 'use strict';
 
 const assert = require('assert/strict');
-const fs = require('fs');
 const path = require('path');
-const { describe, test } = require('node:test');
+const { pathToFileURL } = require('url');
+const { registerHooks } = require('node:module');
+const { before, beforeEach, describe, test } = require('node:test');
 
-const sourcePath = path.join(__dirname, 'index.js');
-const source = fs.readFileSync(sourcePath, 'utf8')
-  .replace(/^import .*$/gm, '')
-  .replace('export const handler = async (event) => {', 'const handler = async (event) => {');
-
-function createHarness(initialUsers = {}) {
-  const users = new Map(
-    Object.entries(initialUsers).map(([email, user]) => [email, { ...user }]),
-  );
-  const tokens = new Map();
-
-  class GetItemCommand {
-    constructor(input) {
-      this.input = input;
+const mockModules = {
+  '@aws-sdk/client-dynamodb': `
+    export class DynamoDBClient {
+      async send(command) {
+        return globalThis.__authTestState.ddbSend(command);
+      }
     }
-  }
-
-  class PutItemCommand {
-    constructor(input) {
-      this.input = input;
+    export class GetItemCommand {
+      constructor(input) {
+        this.input = input;
+      }
     }
-  }
-
-  class UpdateItemCommand {
-    constructor(input) {
-      this.input = input;
+    export class PutItemCommand {
+      constructor(input) {
+        this.input = input;
+      }
     }
-  }
+    export class UpdateItemCommand {
+      constructor(input) {
+        this.input = input;
+      }
+    }
+  `,
+  '@aws-sdk/util-dynamodb': `
+    export const marshall = (value) => value;
+    export const unmarshall = (value) => value;
+  `,
+  '@aws-sdk/client-ses': `
+    export class SESClient {
+      async send(command) {
+        return globalThis.__authTestState.sesSend(command);
+      }
+    }
+    export class SendEmailCommand {
+      constructor(input) {
+        this.input = input;
+      }
+    }
+  `,
+  bcryptjs: `
+    export default {
+      hash: async (password) => \`hash:\${password}\`,
+      compare: async (password, hash) => hash === \`hash:\${password}\`,
+    };
+  `,
+  jsonwebtoken: `
+    export default {
+      sign: (payload) => \`jwt:\${payload.sub}\`,
+    };
+  `,
+  otplib: `
+    export const authenticator = {
+      verify: () => true,
+      generateSecret: () => 'secret',
+      keyuri: (email) => \`otpauth://\${email}\`,
+    };
+  `,
+};
 
-  class DynamoDBClient {
-    async send(command) {
-      if (command instanceof GetItemCommand) {
-        const key = command.input.Key.email || command.input.Key.token;
-        const item = command.input.TableName === 'securebase-users'
-          ? users.get(key)
-          : tokens.get(key);
-        return item ? { Item: { ...item } } : {};
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (mockModules[specifier]) {
+      return {
+        shortCircuit: true,
+        url: `data:text/javascript,${encodeURIComponent(mockModules[specifier])}`,
+      };
+    }
+
+    return nextResolve(specifier, context);
+  },
+});
+
+const state = globalThis.__authTestState = {
+  users: new Map(),
+  tokens: new Map(),
+  ddbSend(command) {
+    const { TableName, Key, Item, UpdateExpression, ExpressionAttributeValues } = command.input;
+
+    if (Item) {
+      if (TableName === 'securebase-users') {
+        this.users.set(Item.email, { ...Item });
+      } else {
+        this.tokens.set(Item.token, { ...Item });
+      }
+      return {};
+    }
+
+    if (UpdateExpression) {
+      const email = Key?.email;
+      if (!email) {
+        throw new Error('Expected email key for user update');
       }
 
-      if (command instanceof PutItemCommand) {
-        if (command.input.TableName === 'securebase-users') {
-          users.set(command.input.Item.email, { ...command.input.Item });
-        } else {
-          tokens.set(command.input.Item.token, { ...command.input.Item });
+      const existing = this.users.get(email) || { email };
+      const values = ExpressionAttributeValues || {};
+
+      if (UpdateExpression.includes('first_login_at = :t')) {
+        if (existing.first_login_at) {
+          const error = new Error('Conditional check failed');
+          error.name = 'ConditionalCheckFailedException';
+          throw error;
         }
+        this.users.set(email, { ...existing, first_login_at: values[':t'] });
         return {};
       }
 
-      if (command instanceof UpdateItemCommand) {
-        const email = command.input.Key.email;
-        const existing = users.get(email) || { email };
-        const values = command.input.ExpressionAttributeValues || {};
-        const expression = command.input.UpdateExpression;
-
-        if (expression === 'SET failed_login_attempts = :zero REMOVE locked_until') {
-          users.set(email, { ...existing, failed_login_attempts: values[':zero'] });
-          return {};
-        }
-
-        if (expression === 'SET first_login_at = :t') {
-          if (existing.first_login_at) {
-            const error = new Error('Conditional check failed');
-            error.name = 'ConditionalCheckFailedException';
-            throw error;
-          }
-          users.set(email, { ...existing, first_login_at: values[':t'] });
-          return {};
-        }
-
-        throw new Error(`Unhandled UpdateExpression in test harness: ${expression}`);
+      if (UpdateExpression.includes('failed_login_attempts = :zero')) {
+        const updated = { ...existing, failed_login_attempts: values[':zero'] };
+        delete updated.locked_until;
+        this.users.set(email, updated);
+        return {};
       }
 
-      throw new Error(`Unhandled command type: ${command.constructor.name}`);
+      throw new Error(`Unhandled UpdateExpression in test harness: ${UpdateExpression}`);
     }
-  }
 
-  class SESClient {
-    async send() {
-      return { MessageId: 'ses-mock' };
+    if (Key?.email || Key?.token) {
+      const recordKey = Key.email || Key.token;
+      const record = TableName === 'securebase-users'
+        ? this.users.get(recordKey)
+        : this.tokens.get(recordKey);
+      return record ? { Item: { ...record } } : {};
     }
-  }
 
-  class SendEmailCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
+    throw new Error(`Unhandled DynamoDB input: ${JSON.stringify(command.input)}`);
+  },
+  sesSend() {
+    return { MessageId: 'ses-mock' };
+  },
+};
 
-  const bcrypt = {
-    hash: async (password) => `hash:${password}`,
-    compare: async (password, hash) => hash === `hash:${password}`,
-  };
+process.env.JWT_SECRET = 'test-secret';
+process.env.USERS_TABLE = 'securebase-users';
+process.env.TOKENS_TABLE = 'securebase-tokens';
 
-  const jwt = {
-    sign: (payload) => `jwt:${payload.sub}`,
-  };
+let handler;
 
-  const authenticator = {
-    verify: () => true,
-    generateSecret: () => 'secret',
-    keyuri: (email) => `otpauth://${email}`,
-  };
+before(async () => {
+  ({ handler } = await import(pathToFileURL(path.join(__dirname, 'index.js')).href));
+});
 
-  const crypto = {
-    randomBytes: () => ({ toString: () => 'mock-token' }),
-  };
-
-  const moduleFactory = new Function(
-    'DynamoDBClient',
-    'GetItemCommand',
-    'PutItemCommand',
-    'UpdateItemCommand',
-    'marshall',
-    'unmarshall',
-    'SESClient',
-    'SendEmailCommand',
-    'bcrypt',
-    'jwt',
-    'authenticator',
-    'crypto',
-    'process',
-    'console',
-    `${source}\nreturn { handler };`,
-  );
-
-  process.env.JWT_SECRET = 'test-secret';
-  process.env.USERS_TABLE = 'securebase-users';
-  process.env.TOKENS_TABLE = 'securebase-tokens';
-
-  const { handler } = moduleFactory(
-    DynamoDBClient,
-    GetItemCommand,
-    PutItemCommand,
-    UpdateItemCommand,
-    (value) => value,
-    (value) => value,
-    SESClient,
-    SendEmailCommand,
-    bcrypt,
-    jwt,
-    authenticator,
-    crypto,
-    process,
-    console,
-  );
-
-  return { handler, users };
-}
+beforeEach(() => {
+  state.users = new Map();
+  state.tokens = new Map();
+});
 
 function makeEvent(pathname, body) {
   return {
@@ -164,27 +162,23 @@ function makeEvent(pathname, body) {
 
 describe('auth lambda email normalization', () => {
   test('register stores lowercase email when given mixed-case input', async () => {
-    const { handler, users } = createHarness();
-
     const response = await handler(makeEvent('/auth/register', {
       email: '  USER@Example.COM ',
       password: 'ValidPass123!',
     }));
 
     assert.equal(response.statusCode, 201);
-    assert.equal(users.has('user@example.com'), true);
-    assert.equal(users.has('  USER@Example.COM '), false);
-    assert.equal(users.get('user@example.com').email, 'user@example.com');
+    assert.equal(state.users.has('user@example.com'), true);
+    assert.equal(state.users.has('  USER@Example.COM '), false);
+    assert.equal(state.users.get('user@example.com').email, 'user@example.com');
   });
 
   test('login resolves existing lowercase user from mixed-case input', async () => {
-    const { handler, users } = createHarness({
-      'user@example.com': {
-        email: 'user@example.com',
-        password_hash: 'hash:ValidPass123!',
-        role: 'user',
-        mfa_enabled: false,
-      },
+    state.users.set('user@example.com', {
+      email: 'user@example.com',
+      password_hash: 'hash:ValidPass123!',
+      role: 'user',
+      mfa_enabled: false,
     });
 
     const response = await handler(makeEvent('/auth/login', {
@@ -196,6 +190,6 @@ describe('auth lambda email normalization', () => {
     const payload = JSON.parse(response.body);
     assert.equal(payload.user.email, 'user@example.com');
     assert.equal(payload.token, 'jwt:user@example.com');
-    assert.ok(users.get('user@example.com').first_login_at);
+    assert.ok(state.users.get('user@example.com').first_login_at);
   });
 });
