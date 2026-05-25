@@ -77,6 +77,10 @@ def _resp(status: int, body: dict) -> dict:
     }
 
 
+def _normalize_email(email: str) -> str:
+    return (email or '').strip().lower()
+
+
 def _get_jwt_secret() -> str:
     """Return the JWT secret, serving from an in-memory cache when possible.
 
@@ -108,6 +112,7 @@ def _get_jwt_secret() -> str:
 
 
 def _mint_jwt(email: str, user: dict) -> str:
+    email = _normalize_email(email)
     secret = _get_jwt_secret()
     now = datetime.now(timezone.utc)
     payload = {
@@ -135,6 +140,7 @@ def _get_token_record(token: str) -> dict | None:
 
 
 def _get_user_record(email: str) -> dict | None:
+    email = _normalize_email(email)
     resp = _users_table.get_item(Key={'email': email})
     return resp.get('Item')
 
@@ -146,6 +152,7 @@ def _has_active_invite(email: str) -> bool:
     required. A future improvement is to add a GSI on (email, status) to
     convert this to a key-based query and eliminate the scan entirely.
     """
+    email = _normalize_email(email)
     try:
         resp = _tokens_table.scan(
             FilterExpression='email = :e AND #s = :s',
@@ -158,6 +165,23 @@ def _has_active_invite(email: str) -> bool:
     except Exception as e:
         logger.warning(f"Could not check pending invite for {email}: {e}")
         return False
+
+
+def _normalize_token_email(token: str, email: str) -> str:
+    normalized_email = _normalize_email(email)
+    if not normalized_email or normalized_email == email:
+        return normalized_email
+
+    try:
+        _tokens_table.update_item(
+            Key={'token': token},
+            UpdateExpression='SET email = :e',
+            ExpressionAttributeValues={':e': normalized_email},
+        )
+    except Exception as e:
+        logger.warning(f"Could not normalize token email for {normalized_email}: {e}")
+
+    return normalized_email
 
 
 def _mark_token_used(token: str) -> None:
@@ -185,6 +209,7 @@ def _mark_token_used(token: str) -> None:
 
 def _store_password(email: str, password: str, user: dict) -> None:
     """Hash password with bcrypt and store/update user record."""
+    email = _normalize_email(email)
     pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     _users_table.put_item(Item={
         **user,
@@ -203,6 +228,7 @@ def _publish_activation_event(email: str, event_type: str, metadata: dict) -> No
     if not _ACTIVATION_TOPIC_ARN:
         return
     try:
+        email = _normalize_email(email)
         # Use a truncated SHA-256 hash as a correlation ID — never raw email (PII)
         correlation_id = hashlib.sha256(email.encode()).hexdigest()[:16]
         message = json.dumps({
@@ -232,6 +258,7 @@ def _record_first_login(email: str, user: dict) -> None:
 
     Uses a DynamoDB conditional write so concurrent requests cannot double-fire.
     """
+    email = _normalize_email(email)
     try:
         _users_table.update_item(
             Key={'email': email},
@@ -297,7 +324,7 @@ def accept_invite(event: dict, request_id: str) -> dict:
         except ValueError:
             pass
 
-    email = token_record.get('email', '')
+    email = _normalize_token_email(token_val, token_record.get('email', ''))
     if not email:
         logger.error(f"Token record missing email [{request_id}]")
         return _resp(500, {'error': 'Invalid token record', 'request_id': request_id})
@@ -353,7 +380,7 @@ def login(event: dict, request_id: str) -> dict:
     except (json.JSONDecodeError, TypeError):
         body = {}
 
-    email    = (body.get('email') or '').strip().lower()
+    email    = _normalize_email(body.get('email') or '')
     password = body.get('password') or ''
 
     if not email or not password:
