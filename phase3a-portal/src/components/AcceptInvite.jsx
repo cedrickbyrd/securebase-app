@@ -148,7 +148,7 @@ export default function AcceptInvite({ setAuth }) {
                       </a>
                     </p>
                   </div>
-                ) : /invalid|expired/i.test(error) ? (
+                ) : /(?:invalid|expired).*(?:invite|link|token)/i.test(error) ? (
                   <div className="error-message">
                     <span className="error-icon">⚠️</span> Your invite link has expired.
                     <div style={{ marginTop: '12px' }}>

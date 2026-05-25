@@ -429,10 +429,12 @@ describe('resendInvite', () => {
     const expectedTtlHours = 24 * 30; // 720 hours
     const expectedMin = beforeSend + expectedTtlHours * 3600;
     const expectedMax = afterSend  + expectedTtlHours * 3600;
+    // Allow a small buffer for test execution time
+    const TEST_TIMESTAMP_BUFFER_SECONDS = 60;
 
     assert.ok(
-      inviteRecord.expiresAt >= expectedMin && inviteRecord.expiresAt <= expectedMax + 60,
-      `expiresAt ${inviteRecord.expiresAt} should be ~${expectedTtlHours}h from now (between ${expectedMin} and ${expectedMax + 60})`,
+      inviteRecord.expiresAt >= expectedMin && inviteRecord.expiresAt <= expectedMax + TEST_TIMESTAMP_BUFFER_SECONDS,
+      `expiresAt ${inviteRecord.expiresAt} should be ~${expectedTtlHours}h from now (between ${expectedMin} and ${expectedMax + TEST_TIMESTAMP_BUFFER_SECONDS})`,
     );
   });
 });
