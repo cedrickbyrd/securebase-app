@@ -119,7 +119,7 @@ const state = globalThis.__authTestState = {
         return {};
       }
 
-      throw new Error(`Unhandled UpdateExpression in auth test harness: ${UpdateExpression}. Add support here if the auth handler introduces a new update pattern.`);
+      throw new Error(`Unsupported UpdateExpression pattern. Please add support for this update operation in the test mock. Pattern: ${UpdateExpression}`);
     }
 
     if (Key?.email || Key?.token) {
@@ -130,7 +130,7 @@ const state = globalThis.__authTestState = {
       return record ? { Item: { ...record } } : {};
     }
 
-    throw new Error(`Unhandled DynamoDB input: ${JSON.stringify(command.input)}`);
+    throw new Error(`Unexpected DynamoDB command. Add support for this operation in the test mock. Input: ${JSON.stringify(command.input)}`);
   },
   sesSend() {
     return { MessageId: 'ses-mock' };
