@@ -84,7 +84,25 @@ jobs:
           cd phase3a-portal
           TEST_FILE="src/components/__tests__/ForgotPassword.test.jsx"
 
-          if grep -q '"vitest"' package.json; then
+          RUNNER="$(node <<'NODE'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          if (!pkg.scripts || !pkg.scripts.test) {
+            console.error('❌ package.json is missing a test script');
+            process.exit(1);
+          }
+          const hasVitestInScripts = /vitest/.test(pkg.scripts.test || '');
+          const hasVitestInDependencies = Boolean(
+            (pkg.dependencies && pkg.dependencies.vitest) ||
+            (pkg.devDependencies && pkg.devDependencies.vitest)
+          );
+          process.stdout.write(
+            hasVitestInScripts || hasVitestInDependencies ? 'vitest' : 'jest'
+          );
+          NODE
+          )"
+
+          if [[ "$RUNNER" == "vitest" ]]; then
             echo "Detected Vitest; running targeted test in run mode"
             npm run test -- --run "$TEST_FILE"
           else
