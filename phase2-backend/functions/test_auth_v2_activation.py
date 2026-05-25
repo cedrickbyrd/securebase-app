@@ -370,6 +370,8 @@ class TestLoginFirstLoginTracking(unittest.TestCase):
         self.assertEqual(resp["statusCode"], 200)
         self.assertEqual(body["user"]["email"], "user@example.com")
         auth_v2._users_table.get_item.assert_called_once_with(Key={"email": "user@example.com"})
+        mock_bcrypt.checkpw.assert_called_once()
+        mock_mint.assert_called_once_with("user@example.com", user)
 
 
 class TestLoginInvitePending(unittest.TestCase):
