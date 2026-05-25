@@ -14,6 +14,7 @@ const TOKENS_TABLE = process.env.TOKENS_TABLE || "securebase-tokens";
 const JWT_SECRET   = process.env.JWT_SECRET;
 const JWT_EXPIRY   = process.env.JWT_EXPIRY   || "1h";
 const APP_URL      = process.env.APP_URL       || "https://portal.securebase.tximhotep.com";
+const APP_NAME     = process.env.APP_NAME      || "SecureBase";
 const FROM_EMAIL   = process.env.FROM_EMAIL    || "onboarding@tximhotep.com";
 const TOKEN_TTL_H  = 24; // hours
 // Brute-force protection: lock account after this many consecutive bad passwords.
@@ -24,6 +25,11 @@ const LOCKOUT_TTL_S = parseInt(process.env.LOCKOUT_DURATION_SECONDS || "900", 10
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "https://portal.securebase.tximhotep.com";
 const ACCEPT_INVITE_PATH_PATTERN = /(?:^|\/)accept-invite(?:\/|$)/;
 const INVITE_PATH_PATTERN = /(?:^|\/)invite(?:\/|$)/;
+
+// ── Cold-start guard: JWT_SECRET is required for all token operations ────────
+if (!JWT_SECRET) {
+  console.error("FATAL: JWT_SECRET environment variable is not set. Auth Lambda will not issue tokens.");
+}
 
 const response = (statusCode, body) => ({
   statusCode,
@@ -36,9 +42,12 @@ const response = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 const normalizeEmail = (raw) => (raw || "").toLowerCase().trim();
+
+/** Lightweight RFC-style email format check — rejects obvious garbage before hitting DynamoDB */
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const getUser = async (email) => {
   const r = await db.send(new GetItemCommand({ TableName: USERS_TABLE, Key: marshall({ email }) }));
@@ -98,20 +107,28 @@ const storeToken = async (email, token, type) => {
   }));
 };
 
+/**
+ * Atomically mark a token as used using a conditional write.
+ * The ConditionExpression ensures used=false, correct type, and not expired —
+ * all in a single DynamoDB round-trip, closing the replay-attack window.
+ */
 const consumeToken = async (token, type) => {
-  const r = await db.send(new GetItemCommand({ TableName: TOKENS_TABLE, Key: marshall({ token }) }));
-  if (!r.Item) return null;
-  const item = unmarshall(r.Item);
-  const now  = Math.floor(Date.now() / 1000);
-  if (item.type !== type || item.used || item.expiresAt < now) return null;
-  await db.send(new UpdateItemCommand({
-    TableName: TOKENS_TABLE,
-    Key: marshall({ token }),
-    UpdateExpression: "SET #u = :t",
-    ExpressionAttributeNames:  { "#u": "used" },
-    ExpressionAttributeValues: marshall({ ":t": true }),
-  }));
-  return item;
+  const now = Math.floor(Date.now() / 1000);
+  try {
+    const result = await db.send(new UpdateItemCommand({
+      TableName: TOKENS_TABLE,
+      Key: marshall({ token }),
+      UpdateExpression: "SET #u = :t",
+      ConditionExpression: "#u = :f AND #type = :type AND expiresAt > :now",
+      ExpressionAttributeNames: { "#u": "used", "#type": "type" },
+      ExpressionAttributeValues: marshall({ ":t": true, ":f": false, ":type": type, ":now": now }),
+      ReturnValues: "ALL_NEW",
+    }));
+    return result.Attributes ? unmarshall(result.Attributes) : null;
+  } catch (err) {
+    if (err?.name === "ConditionalCheckFailedException") return null;
+    throw err;
+  }
 };
 
 const sendEmail = async (to, subject, html) => {
@@ -132,7 +149,7 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl) => `
       <rect width="40" height="40" rx="8" fill="#0066CC"/>
       <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="white"/>
     </svg>
-    <h1 style="color:#0066CC;margin:8px 0 0">SecureBase</h1>
+    <h1 style="color:#0066CC;margin:8px 0 0">${APP_NAME}</h1>
   </div>
   <h2 style="color:#1a202c">${heading}</h2>
   ${body}
@@ -150,12 +167,17 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl) => `
   </p>
 </div>`;
 
-// ── auth handlers ──────────────────────────────────────────────────────────
+// ── auth handlers ─────────────────────────────────────────────────────────────
 
 const login = async (body) => {
+  // Guard: JWT_SECRET must be set to issue tokens
+  if (!JWT_SECRET) return response(500, { message: "Auth service misconfigured" });
+
   const email = normalizeEmail(body.email);
   const { password, totp_code } = body;
   if (!email || !password) return response(400, { message: "Email and password required" });
+  if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
+
   const user = await getUser(email);
   // Return 401 for both "user not found" and "invited but not yet activated" —
   // never leak which case applies (prevents user enumeration)
@@ -236,6 +258,7 @@ const register = async (body) => {
   const email = normalizeEmail(body.email);
   const { password } = body;
   if (!email || !password) return response(400, { message: "Email and password required" });
+  if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
   if (password.length < 8)  return response(400, { message: "Password must be at least 8 characters" });
   const existing = await getUser(email);
   if (existing && existing.password_hash) return response(409, { message: "User already exists" });
@@ -251,6 +274,8 @@ const invite = async (body) => {
   const email = normalizeEmail(body.email);
   const { invited_by } = body;
   if (!email) return response(400, { message: "Email required" });
+  if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
+
   const existing = await getUser(email);
   if (!existing) {
     await db.send(new PutItemCommand({
@@ -262,19 +287,26 @@ const invite = async (body) => {
   await storeToken(email, token, "invite");
   const link = `${APP_URL}/accept-invite?token=${token}`;
   const html = emailHtml(
-    "You're invited to SecureBase",
+    `You're invited to ${APP_NAME}`,
     `<p>Hi,</p>
-     <p>${invited_by || "The SecureBase team"} has granted you access to the SecureBase Healthcare compliance portal.</p>
+     <p>${invited_by || `The ${APP_NAME} team`} has granted you access to the ${APP_NAME} Healthcare compliance portal.</p>
      <p>Click below to set your password and activate your account. Your 30-day pilot begins the moment you log in.</p>`,
     "Activate Your Account →",
     link,
   );
-  await sendEmail(email, "Activate your SecureBase account", html);
-  console.log("Invite sent [redacted]");
+  try {
+    await sendEmail(email, `Activate your ${APP_NAME} account`, html);
+  } catch (sesErr) {
+    console.error("SES send failed for invite — token stored, email not delivered:", sesErr);
+  }
+  console.log("Invite processed [redacted]");
   return response(200, { message: "Invite sent" });
 };
 
 const acceptInvite = async (body) => {
+  // Guard: JWT_SECRET must be set to issue tokens
+  if (!JWT_SECRET) return response(500, { message: "Auth service misconfigured" });
+
   const { token, password } = body;
   if (!token || !password) return response(400, { message: "Token and password required" });
   if (password.length < 8)  return response(400, { message: "Password must be at least 8 characters" });
@@ -300,19 +332,37 @@ const acceptInvite = async (body) => {
 const forgotPassword = async (body) => {
   const email = normalizeEmail(body.email);
   if (!email) return response(400, { message: "Email required" });
+  if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
+
   const user = await getUser(email);
+  // Always return 200 — never leak whether the email exists
   if (!user) return response(200, { message: "If that email exists, a reset link has been sent" });
+
   const token = generateToken();
-  await storeToken(email, token, "reset");
+
+  // Guard: if we can't persist the token, don't proceed to send a broken link
+  try {
+    await storeToken(email, token, "reset");
+  } catch (dbErr) {
+    console.error("DynamoDB storeToken failed for forgot-password:", dbErr);
+    return response(503, { message: "Service temporarily unavailable. Please try again." });
+  }
+
   const link = `${APP_URL}/reset-password?token=${token}`;
   const html = emailHtml(
-    "Reset your SecureBase password",
-    `<p>We received a request to reset the password for your SecureBase account.</p>
+    `Reset your ${APP_NAME} password`,
+    `<p>We received a request to reset the password for your ${APP_NAME} account.</p>
      <p>Click below to choose a new password. This link expires in ${TOKEN_TTL_H} hours.</p>`,
     "Reset Password →",
     link,
   );
-  await sendEmail(email, "Reset your SecureBase password", html);
+
+  try {
+    await sendEmail(email, `Reset your ${APP_NAME} password`, html);
+  } catch (sesErr) {
+    console.error("SES send failed for forgot-password — token stored, email not delivered:", sesErr);
+  }
+
   return response(200, { message: "If that email exists, a reset link has been sent" });
 };
 
@@ -336,11 +386,12 @@ const mfaSetup = async (body) => {
   // Null guard — missing email returns 400 not 500
   if (!body || !body.email) return response(400, { message: "Email required" });
   const email = normalizeEmail(body.email);
+  if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
   const user = await getUser(email);
   // Return 400 (not 404) to avoid disclosing whether the account exists.
   if (!user) return response(400, { message: "MFA setup not available" });
   const secret  = authenticator.generateSecret();
-  const otpauth = authenticator.keyuri(email, "SecureBase", secret);
+  const otpauth = authenticator.keyuri(email, APP_NAME, secret);
   await db.send(new UpdateItemCommand({
     TableName: USERS_TABLE,
     Key: marshall({ email }),
@@ -368,7 +419,7 @@ const mfaVerify = async (body) => {
   return response(200, { message: "MFA enabled successfully" });
 };
 
-// ── router ─────────────────────────────────────────────────────────────────
+// ── router ────────────────────────────────────────────────────────────────────
 
 export const handler = async (event) => {
   try {
@@ -387,9 +438,17 @@ export const handler = async (event) => {
         body: "",
       };
     }
-    const body = typeof event.body === "string"
-      ? (event.body ? JSON.parse(event.body) : {})
-      : (event.body || {});
+
+    // Guard: malformed JSON body returns 400 instead of throwing a 500
+    let body;
+    try {
+      body = typeof event.body === "string"
+        ? (event.body ? JSON.parse(event.body) : {})
+        : (event.body || {});
+    } catch {
+      return response(400, { message: "Invalid request body" });
+    }
+
     if (method === "POST" && path.endsWith("/auth/login"))           return await login(body);
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
     if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
