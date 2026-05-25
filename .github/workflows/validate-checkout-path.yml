@@ -473,7 +473,11 @@ jobs:
 
           # Export for downstream steps
           echo "http_code=${HTTP_CODE}" >> "${GITHUB_OUTPUT}"
-          echo "http_body=${HTTP_BODY}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "http_body<<BODY_EOF"
+            echo "${HTTP_BODY}"
+            echo "BODY_EOF"
+          } >> "${GITHUB_OUTPUT}"
 
           # Hard fail: old code returns "Missing priceId" — surface this prominently
           if echo "${HTTP_BODY}" | grep -qF "Missing priceId"; then
@@ -488,7 +492,13 @@ jobs:
           # Assert 400 (not 200, not 500)
           if [ "${HTTP_CODE}" != "400" ]; then
             echo "❌ Expected HTTP 400 for unknown tier, got ${HTTP_CODE}"
-            echo "   This may indicate the request is not reaching the Lambda (e.g. Netlify interceptor)."
+            if echo "${HTTP_BODY}" | grep -qiE '<!doctype html|<html|<head|<body'; then
+              echo "   Received an HTML response, which usually means the Netlify /api/checkout redirect is not live yet."
+              echo "   The request likely did not reach API Gateway/Lambda."
+              echo "   Remediation: trigger a Netlify redeploy so redirects are deployed, then re-run this workflow."
+            else
+              echo "   This may indicate the request is not reaching the Lambda (e.g. Netlify redirect/interceptor issue)."
+            fi
             exit 1
           fi
           echo "✅ HTTP 400 received as expected"
