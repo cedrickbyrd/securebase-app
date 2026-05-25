@@ -144,6 +144,8 @@ resource "google_service_account" "securebase_bridge" {
 }
 ```
 
+AWS webhook receivers must verify the OIDC token signature, issuer, and audience before accepting payloads to prevent unauthorized audit-event injection.
+
 > Implementation guardrail: deny creation of `google_service_account_key` resources via policy-as-code and CI checks.
 
 ---
@@ -290,7 +292,7 @@ resource "google_pubsub_subscription" "audit_push" {
 
 - **Private Google Access** for all participating subnets and services
 - **No public endpoints** for sensitive data-plane operations
-- **Production transfer path:** Cloud Interconnect or PrivateLink-equivalent private routing
+- **Production transfer path:** Cloud Interconnect or Private Service Connect (private endpoint model; equivalent intent to PrivateLink-style private routing)
 - **Dev/Staging transfer path:** VPN acceptable with perimeter and IAM constraints
 - **Firewall baseline:** deny-all ingress; explicit allow only for token exchange and approved control-plane calls
 
@@ -477,7 +479,7 @@ on:
 
 | Decision Topic | Options | Current Status | Owner |
 |---|---|---|---|
-| Private transfer architecture | Cloud Interconnect vs PrivateLink-equivalent vs internet + VPC SC | Open | Platform Architecture |
+| Private transfer architecture | Cloud Interconnect vs Private Service Connect (PrivateLink-style private path) vs internet + VPC SC | Open | Platform Architecture |
 | Ingestion engine | BigQuery Data Transfer Service vs custom Dataflow pipeline | Open | Data Platform |
 | Project topology | Single project vs folder hierarchy aligned to AWS multi-account strategy | Open | Cloud Governance |
 | Vertex AI refresh cadence | Real-time streaming vs nightly batch | Open | AI/ML Platform |
