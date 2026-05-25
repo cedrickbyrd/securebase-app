@@ -185,7 +185,7 @@ The AWS Lambda anonymizer is the final pre-egress control point and must:
 
 ### CMEK Requirements
 
-- All BigQuery datasets must use Cloud KMS **CMEK**
+- All BigQuery datasets must use **Customer-Managed Encryption Keys (CMEK)** via Cloud KMS
 - Key rotation every **90 days**
 - KMS IAM scoped to federated service account and minimum required service agents
 
@@ -310,7 +310,7 @@ resource "google_access_context_manager_service_perimeter" "securebase_perimeter
     ingress_policies {
       ingress_from {
         identities = [
-          "principal://iam.googleapis.com/${google_service_account.securebase_bridge.name}"
+          "serviceAccount:${google_service_account.securebase_bridge.email}"
         ]
       }
 
