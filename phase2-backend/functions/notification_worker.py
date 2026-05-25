@@ -25,6 +25,8 @@ from datetime import datetime, timedelta
 import time
 import hmac
 import hashlib
+import re
+from uuid import uuid4
 
 import boto3
 from botocore.exceptions import ClientError
@@ -38,6 +40,30 @@ SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', '')
 SES_FROM_EMAIL = os.environ.get('SES_FROM_EMAIL', 'notifications@securebase.io')
 WEBHOOK_TIMEOUT = int(os.environ.get('WEBHOOK_TIMEOUT', '5'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '3'))
+NOTIFICATION_DEDUP_TABLE = os.environ.get('NOTIFICATION_DEDUP_TABLE', 'securebase-notification-dedup')
+NOTIFICATION_DEDUP_WINDOW_SECONDS = int(os.environ.get('NOTIFICATION_DEDUP_WINDOW_SECONDS', '300'))
+NOTIFICATION_DELIVERY_LOG_TABLE = os.environ.get('NOTIFICATION_DELIVERY_LOG_TABLE', 'securebase-notification-delivery-log')
+NOTIFICATION_MAX_RETRIES = int(os.environ.get('NOTIFICATION_MAX_RETRIES', str(MAX_RETRIES)))
+NOTIFICATION_RETRY_BACKOFF_BASE_MS = int(os.environ.get('NOTIFICATION_RETRY_BACKOFF_BASE_MS', '500'))
+NOTIFICATION_DELIVERY_LOG_TTL_DAYS = int(os.environ.get('NOTIFICATION_DELIVERY_LOG_TTL_DAYS', '30'))
+DASHBOARD_ALERT_BASE_URL = os.environ.get('DASHBOARD_ALERT_BASE_URL', 'https://app.securebase.io/alerts')
+
+SENSITIVE_KEY_MARKERS = (
+    'policy',
+    'account_id',
+    'arn',
+    'access_key',
+    'secret',
+    'vulnerability',
+    'cve',
+)
+
+SENSITIVE_VALUE_PATTERNS = [
+    (re.compile(r'arn:aws:[^\s\'"]+'), '[REDACTED_ARN]'),
+    (re.compile(r'\b\d{12}\b'), '[REDACTED_ACCOUNT_ID]'),
+    (re.compile(r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'), '[REDACTED_ACCESS_KEY]'),
+    (re.compile(r'\bCVE-\d{4}-\d{4,7}\b', re.IGNORECASE), '[REDACTED_CVE]'),
+]
 
 # AWS clients - Initialize
 dynamodb = boto3.resource('dynamodb')
@@ -148,6 +174,14 @@ def process_notification(notification: Dict[str, Any]) -> None:
     Args:
         notification: Notification message
     """
+    should_suppress, duplicate_count = should_suppress_notification(notification)
+    if should_suppress:
+        print(
+            f"Suppressed duplicate notification {notification.get('id')} "
+            f"(dedup_count={duplicate_count})"
+        )
+        return
+
     # Get user preferences
     user_prefs = get_user_preferences(notification['user_id'], notification['customer_id'])
     
@@ -165,25 +199,43 @@ def process_notification(notification: Dict[str, Any]) -> None:
     # Track delivery results
     delivery_results = []
     
+    sanitized_rendered = sanitize_notification_payload(
+        {
+            'subject': rendered.get('subject', ''),
+            'body_html': rendered.get('body_html', ''),
+            'body_text': rendered.get('body_text', ''),
+            'metadata': notification.get('metadata', {}),
+        },
+        notification.get('id')
+    )
+
     # Dispatch to each enabled channel
     for channel in enabled_channels:
-        try:
-            if channel == 'email':
-                send_email(notification, rendered, user_prefs)
-            elif channel == 'sms':
-                send_sms(notification, rendered, user_prefs)
-            elif channel == 'webhook':
-                send_webhook(notification, rendered, user_prefs)
-            elif channel == 'in_app':
+        if channel == 'in_app':
+            try:
                 store_in_app(notification, rendered)
-            
-            log_delivery(notification['id'], channel, 'success')
-            delivery_results.append({'channel': channel, 'status': 'success'})
-        except Exception as e:
-            error_msg = str(e)
-            log_delivery(notification['id'], channel, 'failed', error_msg)
-            delivery_results.append({'channel': channel, 'status': 'failed', 'error': error_msg})
-            # Continue to next channel instead of failing entire notification
+                log_delivery(notification, channel, 'success')
+                delivery_results.append({'channel': channel, 'status': 'success'})
+            except Exception as e:
+                error_msg = str(e)
+                log_delivery(notification, channel, 'failed', error_message=error_msg)
+                delivery_results.append({'channel': channel, 'status': 'failed', 'error': error_msg})
+            continue
+
+        status, http_status_code, error_message = dispatch_with_retry(
+            channel=channel,
+            notification=notification,
+            rendered=sanitized_rendered,
+            user_prefs=user_prefs
+        )
+        delivery_results.append(
+            {
+                'channel': channel,
+                'status': status,
+                'http_status_code': http_status_code,
+                'error': error_message
+            }
+        )
     
     print(f"Notification {notification['id']} delivery results: {delivery_results}")
 
@@ -221,6 +273,71 @@ def render_template(notification: Dict[str, Any]) -> Dict[str, str]:
             'body_html': f"<p>{notification.get('body', '')}</p>",
             'body_text': notification.get('body', '')
         }
+
+
+def dispatch_with_retry(
+    channel: str,
+    notification: Dict[str, Any],
+    rendered: Dict[str, Any],
+    user_prefs: Dict[str, Any]
+) -> tuple[str, Optional[int], Optional[str]]:
+    """
+    Dispatch notification with retries for critical alerts.
+    """
+    max_attempts = 1
+    priority = (notification.get('priority') or '').lower()
+    if priority == 'critical':
+        max_attempts = max(1, NOTIFICATION_MAX_RETRIES)
+
+    last_error: Optional[str] = None
+    http_status_code: Optional[int] = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if channel == 'email':
+                send_email(notification, rendered, user_prefs)
+            elif channel == 'sms':
+                send_sms(notification, rendered, user_prefs)
+            elif channel == 'webhook':
+                http_status_code = send_webhook(notification, rendered, user_prefs)
+            else:
+                raise ValueError(f"Unsupported notification channel: {channel}")
+
+            status = 'retried' if attempt > 1 else 'success'
+            log_delivery(
+                notification,
+                channel,
+                status,
+                http_status_code=http_status_code,
+                retry_attempt=attempt
+            )
+            return status, http_status_code, None
+        except Exception as e:
+            last_error = str(e)
+            log_delivery(
+                notification,
+                channel,
+                'failed',
+                http_status_code=http_status_code,
+                error_message=last_error,
+                retry_attempt=attempt
+            )
+
+            if attempt < max_attempts:
+                backoff_ms = NOTIFICATION_RETRY_BACKOFF_BASE_MS * (2 ** (attempt - 1))
+                time.sleep(backoff_ms / 1000)
+
+    print(json.dumps({
+        'event': 'notification_delivery_retries_exhausted',
+        'notification_id': notification.get('id'),
+        'client_id': notification.get('customer_id'),
+        'alert_type': notification.get('type'),
+        'channel': channel,
+        'max_retries': max_attempts,
+        'error': last_error,
+        'timestamp': datetime.utcnow().isoformat()
+    }))
+    return 'failed', http_status_code, last_error
 
 
 def send_email(notification: Dict[str, Any], rendered: Dict[str, str], user_prefs: Dict[str, Any]) -> None:
@@ -289,7 +406,7 @@ def send_sms(notification: Dict[str, Any], rendered: Dict[str, str], user_prefs:
         raise Exception(f"SNS error: {error_code} - {e.response['Error']['Message']}")
 
 
-def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str], user_prefs: Dict[str, Any]) -> None:
+def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str], user_prefs: Dict[str, Any]) -> int:
     """
     Send notification via webhook (HTTP POST)
 
@@ -306,7 +423,7 @@ def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str], user_pr
         raise ValueError(f"No webhook URL configured for customer {notification['customer_id']}")
     
     # Prepare payload
-    payload = {
+    payload = sanitize_notification_payload({
         'id': notification['id'],
         'type': notification['type'],
         'priority': notification['priority'],
@@ -314,7 +431,7 @@ def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str], user_pr
         'body': rendered['body_text'],
         'timestamp': notification.get('created_at', datetime.utcnow().isoformat()),
         'metadata': notification.get('metadata', {})
-    }
+    }, notification.get('id'))
     
     # Calculate HMAC signature for verification
     headers = {'Content-Type': 'application/json'}
@@ -326,32 +443,18 @@ def send_webhook(notification: Dict[str, Any], rendered: Dict[str, str], user_pr
         ).hexdigest()
         headers['X-Webhook-Signature'] = signature
     
-    # Send HTTP POST with retry logic
-    retry_count = 0
-    last_error = None
-    
-    while retry_count < MAX_RETRIES:
-        try:
-            response = requests.post(
-                webhook_url,
-                json=payload,
-                headers=headers,
-                timeout=WEBHOOK_TIMEOUT
-            )
-            response.raise_for_status()
-            print(f"Webhook delivered to {webhook_url}, status: {response.status_code}")
-            return
-        except requests.exceptions.RequestException as e:
-            retry_count += 1
-            last_error = e
-            if retry_count < MAX_RETRIES:
-                # Exponential backoff
-                sleep_time = 2 ** retry_count
-                print(f"Webhook failed (attempt {retry_count}), retrying in {sleep_time}s: {e}")
-                time.sleep(sleep_time)
-    
-    # All retries failed
-    raise Exception(f"Webhook delivery failed after {MAX_RETRIES} attempts: {last_error}")
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            headers=headers,
+            timeout=WEBHOOK_TIMEOUT
+        )
+        response.raise_for_status()
+        print(f"Webhook delivered to {webhook_url}, status: {response.status_code}")
+        return int(response.status_code)
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Webhook delivery failed: {e}")
 
 
 def store_in_app(notification: Dict[str, Any], rendered: Dict[str, str]) -> None:
@@ -390,26 +493,157 @@ def store_in_app(notification: Dict[str, Any], rendered: Dict[str, str]) -> None
         raise Exception(f"DynamoDB error: {error_code} - {e.response['Error']['Message']}")
 
 
-def log_delivery(notification_id: str, channel: str, status: str, error: Optional[str] = None) -> None:
+def log_delivery(
+    notification: Dict[str, Any],
+    channel: str,
+    status: str,
+    http_status_code: Optional[int] = None,
+    error_message: Optional[str] = None,
+    retry_attempt: int = 1
+) -> None:
     """
     Log notification delivery status to audit trail
 
     Args:
-        notification_id: Notification ID
+        notification: Notification payload
         channel: Delivery channel
         status: Delivery status (success/failed)
-        error: Error message if failed
+        http_status_code: HTTP response code for webhook channels
+        error_message: Error message if failed
+        retry_attempt: Dispatch attempt number
     """
+    timestamp = datetime.utcnow().isoformat()
+    notification_id = notification.get('id')
+    if not notification_id:
+        print("Notification ID missing while writing delivery log")
+        notification_id = str(uuid4())
+
     audit_log = {
         'notification_id': notification_id,
+        'client_id': notification.get('customer_id'),
+        'alert_type': notification.get('type'),
         'channel': channel,
         'status': status,
-        'error': error,
-        'timestamp': datetime.utcnow().isoformat()
+        'http_status_code': http_status_code,
+        'error_message': error_message,
+        'retry_attempt': retry_attempt,
+        'timestamp': timestamp
     }
-    
-    # Log to CloudWatch Logs
     print(json.dumps(audit_log))
+
+    try:
+        table = dynamodb.Table(NOTIFICATION_DELIVERY_LOG_TABLE)
+        table.put_item(
+            Item={
+                'notification_id': notification_id,
+                'log_id': f"{int(time.time() * 1000)}#{uuid4()}",
+                'client_id': notification.get('customer_id', 'unknown'),
+                'alert_type': notification.get('type', 'unknown'),
+                'channel': channel,
+                'status': status,
+                'http_status_code': http_status_code,
+                'error_message': error_message,
+                'retry_attempt': retry_attempt,
+                'timestamp': timestamp,
+                'ttl': int(
+                    (datetime.utcnow() + timedelta(days=max(1, NOTIFICATION_DELIVERY_LOG_TTL_DAYS))).timestamp()
+                )
+            }
+        )
+    except Exception as e:
+        print(f"Failed to write delivery log to DynamoDB: {e}")
+
+
+def build_dedup_key(notification: Dict[str, Any]) -> str:
+    metadata = notification.get('metadata') or {}
+    resource_id = metadata.get('resource_id') or metadata.get('resourceId') or 'global'
+    return f"{notification.get('customer_id', 'unknown')}#{notification.get('type', 'unknown')}#{resource_id}"
+
+
+def should_suppress_notification(notification: Dict[str, Any]) -> tuple[bool, int]:
+    """
+    Deduplicate repeated notification events in a short TTL window.
+    """
+    dedup_table = dynamodb.Table(NOTIFICATION_DEDUP_TABLE)
+    dedup_key = build_dedup_key(notification)
+    now = int(time.time())
+    expires_at = now + max(1, NOTIFICATION_DEDUP_WINDOW_SECONDS)
+
+    try:
+        response = dedup_table.get_item(Key={'dedup_key': dedup_key})
+        item = response.get('Item')
+
+        if item and int(item.get('expires_at', 0)) > now:
+            duplicate_count = int(item.get('duplicate_count', 1)) + 1
+            dedup_table.put_item(
+                Item={
+                    'dedup_key': dedup_key,
+                    'notification_id': item.get('notification_id', 'unknown-notification'),
+                    'duplicate_count': duplicate_count,
+                    'expires_at': item.get('expires_at'),
+                    'updated_at': datetime.utcnow().isoformat(),
+                    'ttl': expires_at
+                }
+            )
+            return True, duplicate_count
+
+        dedup_table.put_item(
+            Item={
+                'dedup_key': dedup_key,
+                'notification_id': notification.get('id'),
+                'duplicate_count': 1,
+                'expires_at': expires_at,
+                'updated_at': datetime.utcnow().isoformat(),
+                'ttl': expires_at
+            }
+        )
+        return False, 1
+    except Exception as e:
+        print(f"Dedup check failed, continuing without suppression: {e}")
+        return False, 1
+
+
+def sanitize_notification_payload(
+    payload: Any,
+    alert_id: Optional[str] = None,
+    include_alert_reference: bool = True
+) -> Any:
+    """
+    Strip or mask sensitive fields from notification payloads.
+    """
+    if isinstance(payload, dict):
+        sanitized: Dict[str, Any] = {}
+        for key, value in payload.items():
+            if any(marker in key.lower() for marker in SENSITIVE_KEY_MARKERS):
+                sanitized[key] = '[REDACTED]'
+            else:
+                sanitized[key] = sanitize_notification_payload(
+                    value,
+                    alert_id,
+                    include_alert_reference=False
+                )
+
+        if alert_id and include_alert_reference:
+            sanitized['alert_reference_url'] = f"{DASHBOARD_ALERT_BASE_URL.rstrip('/')}/{alert_id}"
+        return sanitized
+
+    if isinstance(payload, list):
+        return [
+            sanitize_notification_payload(item, alert_id, include_alert_reference=False)
+            for item in payload
+        ]
+
+    if isinstance(payload, str):
+        return scrub_sensitive_text(payload)
+
+    return payload
+
+
+def scrub_sensitive_text(value: str) -> str:
+    sanitized = value
+    for pattern, replacement in SENSITIVE_VALUE_PATTERNS:
+        sanitized = pattern.sub(replacement, sanitized)
+    return sanitized
 
 
 def log_error(record: Dict[str, Any], error_msg: str) -> None:
