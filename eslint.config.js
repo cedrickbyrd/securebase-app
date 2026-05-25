@@ -3,6 +3,14 @@ import js from "@eslint/js";
 import globals from "globals"; // You may need to: npm install globals
 
 export default [
+  {
+    ignores: [
+      "**/dist/**",
+      "**/.netlify/**",
+      "**/build/**",
+      "node_modules/**"
+    ],
+  },
   js.configs.recommended,
   {
     // Apply this to your Frontend / Browser files
@@ -22,14 +30,4 @@ export default [
       },
     },
   },
-  export default [
-  // ... other configs ...
-  {
-    ignores: [
-      "**/dist/**", 
-      "**/.netlify/**", 
-      "**/build/**", 
-      "node_modules/**"
-    ],
-  }
 ];
