@@ -53,8 +53,8 @@ export default function ForgotPassword() {
               <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>The link expires in 30 minutes.</p>
               <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px' }}>
                 ⚠️ Didn't receive it? Check your spam folder or contact{' '}
-                <a href="mailto:cedrick@securebase.tximhotep.com" style={{ color: '#9ca3af' }}>
-                  cedrick@securebase.tximhotep.com
+                <a href={`mailto:${BRANDING.supportEmail}`} style={{ color: '#9ca3af' }}>
+                  {BRANDING.supportEmail}
                 </a>
               </p>
               <Link to="/login"
@@ -66,7 +66,7 @@ export default function ForgotPassword() {
             <form onSubmit={handleSubmit} className="login-form">
               <h2>Forgot your password?</h2>
               <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
-                Enter your TriNetX work email and we'll send a time-limited, encrypted reset link to your inbox.
+                Enter your {BRANDING.productShortName} work email and we'll send a time-limited, encrypted reset link to your inbox.
               </p>
 
               {error && (
