@@ -64,6 +64,9 @@ const PERMISSION_MATRIX = {
 
 /**
  * Decode a JWT payload without a library (base64url → JSON).
+ * NOTE: This only decodes the payload — it does NOT verify the signature.
+ * Signature verification is the backend's responsibility. Never use decoded
+ * claims for security decisions that bypass the backend.
  * @private
  */
 const decodeJwtPayload = (token) => {
@@ -134,8 +137,10 @@ export const getCurrentUser = () => {
 
 /**
  * Get current user role.
- * Fast path: localStorage.getItem('userRole') (set by apiService.authenticate).
- * Fallback: decode from JWT.
+ * Fast path: localStorage.getItem('userRole') (set by apiService.authenticate on every login).
+ * apiService.authenticate always writes userRole to localStorage when a token is received,
+ * so this value stays in sync with the active session token.
+ * Fallback: decode from JWT (handles edge cases where localStorage was cleared externally).
  * @returns {string|null} User role
  */
 export const getCurrentUserRole = () => {
@@ -315,8 +320,10 @@ export const setupMFA = async (userId) => {
 export const logout = async () => {
   try {
     await apiRequest('/auth/logout', { method: 'POST' });
-  } catch {
-    // Proceed with local cleanup even if server-side logout fails
+  } catch (err) {
+    // Log but proceed — local cleanup must always happen even if the server
+    // fails to invalidate the session (e.g. network error, already expired).
+    console.warn('Server-side logout failed; proceeding with local cleanup:', err?.message);
   }
   clearStoredSessionToken();
   localStorage.removeItem('userRole');
