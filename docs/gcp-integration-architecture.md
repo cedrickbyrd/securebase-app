@@ -96,7 +96,7 @@ Only these SecureBase AWS roles may federate:
 ### Attribute Mapping and Conditions
 
 - `google.subject` → `assertion.arn`
-- `attribute.aws_role` → extracted role name from `assertion.arn`
+- `attribute.aws_role` → extracted role name from `assertion.arn` (validated in deployment tests against real ARN samples)
 - Attribute condition enforces explicit role allowlist
 - Max token lifetime: **1 hour**
 
@@ -146,13 +146,13 @@ resource "google_service_account" "securebase_bridge" {
 
 AWS webhook receivers must verify the OIDC token signature, issuer, and audience before accepting payloads to prevent unauthorized audit-event injection.
 
-> Implementation guardrail: deny creation of `google_service_account_key` resources via policy-as-code and CI checks.
+> Implementation guardrail: deny creation of `google_service_account_key` resources via policy-as-code and CI checks. OIDC webhook token validation implementation is delivered in Sprint 7.3.
 
 ---
 
 ## 4. Secure Data Bridge — AWS → GCP
 
-The secure data bridge moves only anonymized operational/compliance metrics to GCP analytics services.
+The secure data bridge moves only de-identified (Safe Harbor-aligned) operational/compliance metrics to GCP analytics services.
 
 ### PHI Boundary Rule (Mandatory)
 
@@ -161,7 +161,7 @@ The AWS Lambda anonymizer is the final pre-egress control point and must:
 1. Hash all email addresses (`SHA-256 + tenant-specific salt`)
 2. Replace tenant names with opaque tenant IDs
 3. Strip free-text fields that could contain PHI
-4. Forward only aggregated/anonymized compliance and usage metrics
+4. Forward only aggregated/de-identified compliance and usage metrics
 
 ### Pipeline Stages
 
@@ -260,8 +260,9 @@ resource "google_logging_project_sink" "audit_export" {
 }
 
 resource "google_pubsub_topic" "audit_topic" {
-  name   = "securebase-audit-events"
-  labels = local.gcp_labels
+  name         = "securebase-audit-events"
+  kms_key_name = google_kms_crypto_key.audit_topic.id
+  labels       = local.gcp_labels
 }
 
 resource "google_pubsub_subscription" "audit_push" {
@@ -292,7 +293,7 @@ resource "google_pubsub_subscription" "audit_push" {
 
 - **Private Google Access** for all participating subnets and services
 - **No public endpoints** for sensitive data-plane operations
-- **Production transfer path:** Cloud Interconnect or Private Service Connect (private endpoint model; equivalent intent to PrivateLink-style private routing)
+- **Production transfer path:** Cloud Interconnect or Private Service Connect (GCP private endpoint pattern aligned to AWS PrivateLink connectivity goals)
 - **Dev/Staging transfer path:** VPN acceptable with perimeter and IAM constraints
 - **Firewall baseline:** deny-all ingress; explicit allow only for token exchange and approved control-plane calls
 
@@ -484,6 +485,8 @@ on:
 | Project topology | Single project vs folder hierarchy aligned to AWS multi-account strategy | Open | Cloud Governance |
 | Vertex AI refresh cadence | Real-time streaming vs nightly batch | Open | AI/ML Platform |
 | Org policy parity | Mirror AWS SCP intent with GCP Org Policies | Open | Security Engineering |
+
+**Interim risk constraint:** Until private transfer architecture is finalized and approved, PHI-crossing workloads remain disabled by policy and feature flag.
 
 ### Decision Criteria (Required)
 
