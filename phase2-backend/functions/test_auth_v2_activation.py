@@ -220,7 +220,7 @@ class TestAcceptInviteActivationEvent(unittest.TestCase):
     @patch("auth_v2._mint_jwt")
     def test_fires_invite_accepted_event(self, mock_mint, mock_bcrypt):
         """Successful accept_invite should publish invite_accepted to SNS."""
-        token_rec = _make_token_record()
+        token_rec = _make_token_record(email="User.MixedCase@Example.com")
         auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
         auth_v2._users_table.get_item.return_value = {}  # new user
         mock_mint.return_value = "session-jwt"
@@ -236,6 +236,11 @@ class TestAcceptInviteActivationEvent(unittest.TestCase):
         resp = auth_v2.accept_invite(event, "req-001")
 
         self.assertEqual(resp["statusCode"], 200)
+        body = json.loads(resp["body"])
+        self.assertEqual(body["user"]["email"], "user.mixedcase@example.com")
+        auth_v2._users_table.put_item.assert_called_once()
+        put_item = auth_v2._users_table.put_item.call_args.kwargs["Item"]
+        self.assertEqual(put_item["email"], "user.mixedcase@example.com")
         auth_v2._sns_client.publish.assert_called_once()
         msg = json.loads(auth_v2._sns_client.publish.call_args.kwargs["Message"])
         self.assertEqual(msg["event_type"], "invite_accepted")
@@ -343,6 +348,28 @@ class TestLoginFirstLoginTracking(unittest.TestCase):
         self.assertEqual(resp["statusCode"], 401)
         auth_v2._users_table.update_item.assert_not_called()
         auth_v2._sns_client.publish.assert_not_called()
+
+    @patch("auth_v2.bcrypt")
+    @patch("auth_v2._mint_jwt")
+    def test_uppercase_email_login_succeeds(self, mock_mint, mock_bcrypt):
+        """Login with uppercase email should resolve to lowercase user record."""
+        user = _make_user_record(email="user@example.com")
+        auth_v2._users_table.get_item.return_value = {"Item": user}
+        mock_bcrypt.checkpw.return_value = True
+        mock_mint.return_value = "session-jwt"
+
+        event = {
+            "httpMethod": "POST",
+            "path": "/auth/login",
+            "body": json.dumps({"email": "USER@EXAMPLE.COM", "password": "pass"}),
+            "requestContext": {"requestId": "req-008"},
+        }
+        resp = auth_v2.login(event, "req-008")
+        body = json.loads(resp["body"])
+
+        self.assertEqual(resp["statusCode"], 200)
+        self.assertEqual(body["user"]["email"], "user@example.com")
+        auth_v2._users_table.get_item.assert_called_once_with(Key={"email": "user@example.com"})
 
 
 class TestLoginInvitePending(unittest.TestCase):
