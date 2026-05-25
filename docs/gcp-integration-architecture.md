@@ -96,7 +96,7 @@ Only these SecureBase AWS roles may federate:
 ### Attribute Mapping and Conditions
 
 - `google.subject` → `assertion.arn`
-- `attribute.aws_role` → extracted role name from `assertion.arn` (validated in deployment tests against real ARN samples)
+- `attribute.aws_role` → extracted role name from `assertion.arn` (must be validated in deployment tests against real ARN samples)
 - Attribute condition enforces explicit role allowlist
 - Max token lifetime: **1 hour**
 
@@ -146,7 +146,7 @@ resource "google_service_account" "securebase_bridge" {
 
 AWS webhook receivers must verify the OIDC token signature, issuer, and audience before accepting payloads to prevent unauthorized audit-event injection.
 
-> Implementation guardrail: deny creation of `google_service_account_key` resources via policy-as-code and CI checks. OIDC webhook token validation implementation is delivered in Sprint 7.3.
+> Implementation guardrail: deny creation of `google_service_account_key` resources via policy-as-code and CI checks (OPA/Conftest policy in CI). OIDC webhook token validation implementation is delivered in Sprint 7.3.
 
 ---
 
@@ -241,6 +241,7 @@ Phase 7 extends Phase 6.1 Vault architecture to include GCP audit evidence in th
   - Event count
   - Collection window
 - Compliance package must include both AWS CloudTrail and GCP audit events in one artifact per compliance period
+  - Implemented as a Phase 7.3 extension to existing `audit_log_packager.py` packaging logic
 
 ### Latency SLO and Alerting
 
@@ -293,9 +294,10 @@ resource "google_pubsub_subscription" "audit_push" {
 
 - **Private Google Access** for all participating subnets and services
 - **No public endpoints** for sensitive data-plane operations
-- **Production transfer path:** Cloud Interconnect or Private Service Connect (GCP private endpoint pattern aligned to AWS PrivateLink connectivity goals)
+- **Production transfer path requirement:** private-only transfer using Cloud Interconnect or Private Service Connect (final selection tracked in Decision Log)
 - **Dev/Staging transfer path:** VPN acceptable with perimeter and IAM constraints
 - **Firewall baseline:** deny-all ingress; explicit allow only for token exchange and approved control-plane calls
+- **Drift guardrail:** Terraform policy validation must fail if VPN transfer configuration is enabled in production
 
 ```hcl
 resource "google_access_context_manager_service_perimeter" "securebase_perimeter" {
@@ -403,7 +405,7 @@ Phase 7 introduces a feature-gated portal experience in `phase3a-portal/` with e
 ### Gating & Feature Flag
 
 - Tier gate: render only for `enterprise` and `government` tiers (same conditional model used by `HIPAADashboard.jsx` gating patterns)
-- Feature flag: `VITE_GCP_ENABLED=false` (returns `null`/no render in production until launch)
+- Feature flag: `VITE_GCP_ENABLED=false` (integration stays hidden in production until launch)
 
 ### Routing
 
@@ -486,7 +488,7 @@ on:
 | Vertex AI refresh cadence | Real-time streaming vs nightly batch | Open | AI/ML Platform |
 | Org policy parity | Mirror AWS SCP intent with GCP Org Policies | Open | Security Engineering |
 
-**Interim risk constraint:** Until private transfer architecture is finalized and approved, PHI-crossing workloads remain disabled by policy and feature flag.
+**Interim risk constraint:** Until private transfer architecture is finalized and approved, cross-cloud data export remains limited to de-identified datasets only, enforced by policy and feature flag.
 
 ### Decision Criteria (Required)
 
