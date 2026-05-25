@@ -94,6 +94,18 @@ const state = globalThis.__authTestState = {
     }
 
     if (UpdateExpression) {
+      if (TableName === 'securebase-tokens' && Key?.token) {
+        const token = Key.token;
+        const existingToken = this.mockTokens.get(token);
+        if (!existingToken) {
+          const error = new Error('Conditional check failed');
+          error.name = 'ConditionalCheckFailedException';
+          throw error;
+        }
+        this.mockTokens.set(token, { ...existingToken, used: true });
+        return { Attributes: { ...this.mockTokens.get(token) } };
+      }
+
       const email = Key?.email;
       if (!email) {
         throw new Error('Expected email key for user update');
@@ -140,6 +152,7 @@ const state = globalThis.__authTestState = {
 process.env.JWT_SECRET = 'test-secret';
 process.env.USERS_TABLE = 'securebase-users';
 process.env.TOKENS_TABLE = 'securebase-tokens';
+process.env.SUPPORT_EMAIL = 'custom-support@acme.com';
 
 let handler;
 
@@ -191,5 +204,150 @@ describe('auth lambda email normalization', () => {
     assert.equal(payload.user.email, 'user@example.com');
     assert.equal(payload.token, 'jwt:user@example.com');
     assert.ok(state.mockUsers.get('user@example.com').first_login_at);
+  });
+});
+
+describe('isValidEmail — ReDoS-safe validation', () => {
+  test('register accepts a valid email', async () => {
+    const response = await handler(makeEvent('/auth/register', {
+      email: 'user@example.com',
+      password: 'ValidPass123!',
+    }));
+
+    assert.equal(response.statusCode, 201);
+  });
+
+  test('register rejects email with no @ sign', async () => {
+    const response = await handler(makeEvent('/auth/register', {
+      email: 'notanemail',
+      password: 'ValidPass123!',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Invalid email address');
+  });
+
+  test('register rejects email with no domain part', async () => {
+    const response = await handler(makeEvent('/auth/register', {
+      email: 'user@',
+      password: 'ValidPass123!',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Invalid email address');
+  });
+
+  test('register rejects email containing spaces', async () => {
+    const response = await handler(makeEvent('/auth/register', {
+      email: 'user name@example.com',
+      password: 'ValidPass123!',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Invalid email address');
+  });
+
+  test('login with ReDoS-style payload resolves quickly and safely', async () => {
+    const start = Date.now();
+    const response = await handler(makeEvent('/auth/login', {
+      email: '!@!.!.!.!.!.!.!.!.!.!.!.',
+      password: 'ValidPass123!',
+    }));
+    const elapsed = Date.now() - start;
+
+    assert.ok(elapsed < 100);
+    assert.ok(response.statusCode === 400 || response.statusCode === 401);
+  });
+
+  test('forgot-password rejects invalid email', async () => {
+    const response = await handler(makeEvent('/auth/forgot-password', {
+      email: '@@bad',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Invalid email address');
+  });
+
+  test('mfa/setup rejects invalid email', async () => {
+    const response = await handler(makeEvent('/auth/mfa/setup', {
+      email: 'no-at-sign',
+    }));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).message, 'Invalid email address');
+  });
+});
+
+describe('forgotPassword — uniform 200 on DynamoDB failure', () => {
+  test('returns 200 with standard message when token store fails for known user', async () => {
+    state.mockUsers.set('known@example.com', {
+      email: 'known@example.com',
+      password_hash: 'hash:ValidPass123!',
+      role: 'user',
+      mfa_enabled: false,
+    });
+
+    const originalDdbSend = state.ddbSend;
+    state.ddbSend = function ddbSendWithStoreTokenFailure(command) {
+      if (
+        command.input?.TableName === 'securebase-tokens' &&
+        command.input?.Item?.type === 'reset'
+      ) {
+        throw new Error('simulated token storage failure');
+      }
+      return originalDdbSend.call(this, command);
+    };
+
+    try {
+      const response = await handler(makeEvent('/auth/forgot-password', {
+        email: 'known@example.com',
+      }));
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(JSON.parse(response.body).message, 'If that email exists, a reset link has been sent');
+    } finally {
+      state.ddbSend = originalDdbSend;
+    }
+  });
+
+  test('still returns 200 with standard message for non-existent user', async () => {
+    const response = await handler(makeEvent('/auth/forgot-password', {
+      email: 'missing@example.com',
+    }));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(JSON.parse(response.body).message, 'If that email exists, a reset link has been sent');
+  });
+});
+
+describe('emailHtml — SUPPORT_EMAIL is configurable', () => {
+  test('forgot-password email HTML uses SUPPORT_EMAIL env var', async () => {
+    state.mockUsers.set('known@example.com', {
+      email: 'known@example.com',
+      password_hash: 'hash:ValidPass123!',
+      role: 'user',
+      mfa_enabled: false,
+    });
+
+    const capturedSesInputs = [];
+    const originalSesSend = state.sesSend;
+    state.sesSend = function sesSendCapture(command) {
+      capturedSesInputs.push(command.input);
+      return { MessageId: 'ses-captured' };
+    };
+
+    try {
+      const response = await handler(makeEvent('/auth/forgot-password', {
+        email: 'known@example.com',
+      }));
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(capturedSesInputs.length, 1);
+      const html = capturedSesInputs[0].Message.Body.Html.Data;
+      assert.ok(html.includes('custom-support@acme.com'));
+      assert.ok(!html.includes('support@securebase.tximhotep.com'));
+    } finally {
+      state.sesSend = originalSesSend;
+    }
   });
 });
