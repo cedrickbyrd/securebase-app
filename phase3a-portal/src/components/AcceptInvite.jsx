@@ -34,6 +34,8 @@ export default function AcceptInvite({ setAuth }) {
   const [error, setError]         = useState('');
   const [success, setSuccess]     = useState(false);
   const [successEmail, setSuccessEmail] = useState('');
+  const [resendSent, setResendSent]     = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     if (!token) navigate('/login', { replace: true });
@@ -62,6 +64,18 @@ export default function AcceptInvite({ setAuth }) {
       setError(err.message || 'Invalid or expired invite link.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    try {
+      await apiService.post('/auth/invite/resend', { token });
+    } catch (_) {
+      // Swallow errors — uniform UX regardless of outcome (prevent enumeration)
+    } finally {
+      setResendLoading(false);
+      setResendSent(true);
     }
   };
 
@@ -120,9 +134,40 @@ export default function AcceptInvite({ setAuth }) {
               </p>
 
               {error && (
-                <div className="error-message">
-                  <span className="error-icon">⚠️</span> {error}
-                </div>
+                resendSent ? (
+                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '8px' }}>📬</div>
+                    <h3 style={{ color: '#1a202c' }}>New invite sent</h3>
+                    <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                      Check your inbox for a fresh activation link. It's valid for 30 days.
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+                      Didn't receive it? Contact{' '}
+                      <a href={`mailto:${BRANDING.supportEmail}`} style={{ color: '#9ca3af' }}>
+                        {BRANDING.supportEmail}
+                      </a>
+                    </p>
+                  </div>
+                ) : /invalid|expired/i.test(error) ? (
+                  <div className="error-message">
+                    <span className="error-icon">⚠️</span> Your invite link has expired.
+                    <div style={{ marginTop: '12px' }}>
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resendLoading}
+                        className="login-button"
+                        style={{ fontSize: '14px', padding: '10px 20px' }}
+                      >
+                        {resendLoading ? 'Sending…' : 'Resend my invite →'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="error-message">
+                    <span className="error-icon">⚠️</span> {error}
+                  </div>
+                )
               )}
 
               <div className="form-group">
