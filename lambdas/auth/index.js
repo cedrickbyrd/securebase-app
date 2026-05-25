@@ -38,6 +38,8 @@ const response = (statusCode, body) => ({
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
+const normalizeEmail = (raw) => (raw || "").toLowerCase().trim();
+
 const getUser = async (email) => {
   const r = await db.send(new GetItemCommand({ TableName: USERS_TABLE, Key: marshall({ email }) }));
   return r.Item ? unmarshall(r.Item) : null;
@@ -151,7 +153,8 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl) => `
 // ── auth handlers ──────────────────────────────────────────────────────────
 
 const login = async (body) => {
-  const { email, password, totp_code } = body;
+  const email = normalizeEmail(body.email);
+  const { password, totp_code } = body;
   if (!email || !password) return response(400, { message: "Email and password required" });
   const user = await getUser(email);
   // Return 401 for both "user not found" and "invited but not yet activated" —
@@ -230,7 +233,8 @@ const login = async (body) => {
 };
 
 const register = async (body) => {
-  const { email, password } = body;
+  const email = normalizeEmail(body.email);
+  const { password } = body;
   if (!email || !password) return response(400, { message: "Email and password required" });
   if (password.length < 8)  return response(400, { message: "Password must be at least 8 characters" });
   const existing = await getUser(email);
@@ -244,7 +248,8 @@ const register = async (body) => {
 };
 
 const invite = async (body) => {
-  const { email, invited_by } = body;
+  const email = normalizeEmail(body.email);
+  const { invited_by } = body;
   if (!email) return response(400, { message: "Email required" });
   const existing = await getUser(email);
   if (!existing) {
@@ -293,7 +298,7 @@ const acceptInvite = async (body) => {
 };
 
 const forgotPassword = async (body) => {
-  const { email } = body;
+  const email = normalizeEmail(body.email);
   if (!email) return response(400, { message: "Email required" });
   const user = await getUser(email);
   if (!user) return response(200, { message: "If that email exists, a reset link has been sent" });
@@ -330,7 +335,7 @@ const resetPassword = async (body) => {
 const mfaSetup = async (body) => {
   // Null guard — missing email returns 400 not 500
   if (!body || !body.email) return response(400, { message: "Email required" });
-  const { email } = body;
+  const email = normalizeEmail(body.email);
   const user = await getUser(email);
   // Return 400 (not 404) to avoid disclosing whether the account exists.
   if (!user) return response(400, { message: "MFA setup not available" });
@@ -348,7 +353,8 @@ const mfaSetup = async (body) => {
 const mfaVerify = async (body) => {
   // Null guard — missing fields return 400 not 500
   if (!body || !body.email || !body.totp_code) return response(400, { message: "Email and totp_code required" });
-  const { email, totp_code } = body;
+  const email = normalizeEmail(body.email);
+  const { totp_code } = body;
   const user = await getUser(email);
   if (!user || !user.mfa_secret_pending) return response(400, { message: "MFA setup not initiated" });
   const valid = authenticator.verify({ token: totp_code, secret: user.mfa_secret_pending });
