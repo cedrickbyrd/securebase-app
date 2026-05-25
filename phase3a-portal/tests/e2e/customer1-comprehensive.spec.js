@@ -156,9 +156,9 @@ test.describe('3 · Auth API error contracts', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('POST /auth/mfa/setup — unknown user → 404', async () => {
+  test('POST /auth/mfa/setup — unknown user → 400 (not 404, prevents account enumeration)', async () => {
     const res = await apiPost('/auth/mfa/setup', { email: 'ghost@nowhere.com' });
-    expect(res.status()).toBe(404);
+    expect(res.status()).toBe(400);
   });
 
   test('POST /auth/mfa/verify — missing fields → 400', async () => {
