@@ -79,16 +79,16 @@ registerHooks({
 });
 
 const state = globalThis.__authTestState = {
-  users: new Map(),
-  tokens: new Map(),
+  mockUsers: new Map(),
+  mockTokens: new Map(),
   ddbSend(command) {
     const { TableName, Key, Item, UpdateExpression, ExpressionAttributeValues } = command.input;
 
     if (Item) {
       if (TableName === 'securebase-users') {
-        this.users.set(Item.email, { ...Item });
+        this.mockUsers.set(Item.email, { ...Item });
       } else {
-        this.tokens.set(Item.token, { ...Item });
+        this.mockTokens.set(Item.token, { ...Item });
       }
       return {};
     }
@@ -99,7 +99,7 @@ const state = globalThis.__authTestState = {
         throw new Error('Expected email key for user update');
       }
 
-      const existing = this.users.get(email) || { email };
+      const existing = this.mockUsers.get(email) || { email };
       const values = ExpressionAttributeValues || {};
 
       if (UpdateExpression.includes('first_login_at = :t')) {
@@ -108,25 +108,25 @@ const state = globalThis.__authTestState = {
           error.name = 'ConditionalCheckFailedException';
           throw error;
         }
-        this.users.set(email, { ...existing, first_login_at: values[':t'] });
+        this.mockUsers.set(email, { ...existing, first_login_at: values[':t'] });
         return {};
       }
 
       if (UpdateExpression.includes('failed_login_attempts = :zero')) {
         const updated = { ...existing, failed_login_attempts: values[':zero'] };
         delete updated.locked_until;
-        this.users.set(email, updated);
+        this.mockUsers.set(email, updated);
         return {};
       }
 
-      throw new Error(`Unhandled UpdateExpression in test harness: ${UpdateExpression}`);
+      throw new Error(`Unhandled UpdateExpression in auth test harness: ${UpdateExpression}. Add support here if the auth handler introduces a new update pattern.`);
     }
 
     if (Key?.email || Key?.token) {
       const recordKey = Key.email || Key.token;
       const record = TableName === 'securebase-users'
-        ? this.users.get(recordKey)
-        : this.tokens.get(recordKey);
+        ? this.mockUsers.get(recordKey)
+        : this.mockTokens.get(recordKey);
       return record ? { Item: { ...record } } : {};
     }
 
@@ -148,8 +148,8 @@ before(async () => {
 });
 
 beforeEach(() => {
-  state.users = new Map();
-  state.tokens = new Map();
+  state.mockUsers = new Map();
+  state.mockTokens = new Map();
 });
 
 function makeEvent(pathname, body) {
@@ -168,13 +168,13 @@ describe('auth lambda email normalization', () => {
     }));
 
     assert.equal(response.statusCode, 201);
-    assert.equal(state.users.has('user@example.com'), true);
-    assert.equal(state.users.has('  USER@Example.COM '), false);
-    assert.equal(state.users.get('user@example.com').email, 'user@example.com');
+    assert.equal(state.mockUsers.has('user@example.com'), true);
+    assert.equal(state.mockUsers.has('  USER@Example.COM '), false);
+    assert.equal(state.mockUsers.get('user@example.com').email, 'user@example.com');
   });
 
   test('login resolves existing lowercase user from mixed-case input', async () => {
-    state.users.set('user@example.com', {
+    state.mockUsers.set('user@example.com', {
       email: 'user@example.com',
       password_hash: 'hash:ValidPass123!',
       role: 'user',
@@ -190,6 +190,6 @@ describe('auth lambda email normalization', () => {
     const payload = JSON.parse(response.body);
     assert.equal(payload.user.email, 'user@example.com');
     assert.equal(payload.token, 'jwt:user@example.com');
-    assert.ok(state.users.get('user@example.com').first_login_at);
+    assert.ok(state.mockUsers.get('user@example.com').first_login_at);
   });
 });
