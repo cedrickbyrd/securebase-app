@@ -1,46 +1,105 @@
 /**
  * RBAC Service - API Client for Team Collaboration & RBAC
- * 
- * This service handles all API calls related to user management,
- * roles, permissions, and audit logging.
- * 
- * TODO: Implement all API integration functions
- * 
+ *
+ * Handles user management, roles, permissions, and audit logging.
+ * Auth uses AWS Lambda JWT via API Gateway — no Supabase.
+ * Token is stored as `sessionToken` via apiService helpers.
+ *
  * @module rbacService
  */
 
+import {
+  getStoredSessionToken,
+  clearStoredSessionToken,
+  persistSessionToken,
+  apiService,
+} from './apiService';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// ============================================================================
+// PERMISSION MATRIX
+// ============================================================================
+
+const PERMISSION_MATRIX = {
+  admin: {
+    users:      ['create', 'read', 'update', 'delete'],
+    compliance: ['create', 'read', 'update', 'delete'],
+    invoices:   ['create', 'read', 'update', 'delete'],
+    audit_logs: ['create', 'read', 'update', 'delete'],
+    tickets:    ['create', 'read', 'update', 'delete'],
+    dashboard:  ['create', 'read', 'update', 'delete'],
+    api_keys:   ['create', 'read', 'update', 'delete'],
+    reports:    ['create', 'read', 'update', 'delete'],
+    settings:   ['create', 'read', 'update', 'delete'],
+  },
+  manager: {
+    users:      ['create', 'read', 'update'],
+    compliance: ['create', 'read', 'update'],
+    invoices:   ['create', 'read', 'update'],
+    audit_logs: ['read'],
+    tickets:    ['create', 'read', 'update'],
+    dashboard:  ['create', 'read', 'update'],
+    api_keys:   ['create', 'read', 'update'],
+    reports:    ['create', 'read', 'update'],
+    settings:   ['read', 'update'],
+  },
+  analyst: {
+    compliance: ['read'],
+    invoices:   ['read'],
+    audit_logs: ['read'],
+    tickets:    ['read'],
+    dashboard:  ['read'],
+    reports:    ['read'],
+  },
+  viewer: {
+    dashboard:  ['read'],
+    compliance: ['read'],
+  },
+};
+
+// ============================================================================
+// PRIVATE HELPERS
+// ============================================================================
+
 /**
- * Get authentication token from localStorage
+ * Decode a JWT payload without a library (base64url → JSON).
  * @private
  */
-const getAuthToken = () => {
-  // TODO: Implement token retrieval
-  return localStorage.getItem('auth_token');
+const decodeJwtPayload = (token) => {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
 };
 
 /**
- * Make authenticated API request
+ * Make an authenticated API request using the stored session token.
  * @private
  */
-const apiRequest = async (_endpoint, _options = {}) => {
-  // TODO: Implement API request wrapper with auth headers
-  const token = getAuthToken();
+const apiRequest = async (endpoint, options = {}) => {
+  const token = getStoredSessionToken();
   const headers = {
     'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ..._options.headers,
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${_endpoint}`, {
-      ..._options,
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
       headers,
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      let errorBody = {};
+      try { errorBody = await response.json(); } catch { /* ignore */ }
+      throw new Error(errorBody.message || `API Error: ${response.statusText}`);
     }
 
     return await response.json();
@@ -51,130 +110,161 @@ const apiRequest = async (_endpoint, _options = {}) => {
 };
 
 // ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get current user by decoding the stored JWT payload.
+ * @returns {Object|null} User object with email, role, tenant_id, org_name, plan, pilot_tier
+ */
+export const getCurrentUser = () => {
+  const token = getStoredSessionToken();
+  if (!token) return null;
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+  return {
+    email:      payload.email      || null,
+    role:       payload.role       || null,
+    tenant_id:  payload.tenant_id  || null,
+    org_name:   payload.org_name   || null,
+    plan:       payload.plan       || null,
+    pilot_tier: payload.pilot_tier || null,
+  };
+};
+
+/**
+ * Get current user role.
+ * Fast path: localStorage.getItem('userRole') (set by apiService.authenticate).
+ * Fallback: decode from JWT.
+ * @returns {string|null} User role
+ */
+export const getCurrentUserRole = () => {
+  const fastPath = localStorage.getItem('userRole');
+  if (fastPath) return fastPath;
+  const user = getCurrentUser();
+  return user?.role || null;
+};
+
+/**
+ * Check if the current user has a given permission.
+ * @param {string} resourceType - Resource type (users, invoices, compliance, etc.)
+ * @param {string} action - Action (create, read, update, delete)
+ * @returns {boolean} Whether the current user has permission
+ */
+export const hasPermission = (resourceType, action) => {
+  const role = getCurrentUserRole();
+  if (!role) return false;
+  const rolePermissions = PERMISSION_MATRIX[role];
+  if (!rolePermissions) return false;
+  const resourcePermissions = rolePermissions[resourceType];
+  if (!resourcePermissions) return false;
+  return resourcePermissions.includes(action);
+};
+
+/**
+ * Get authentication token.
+ * @returns {string|null} Session token
+ */
+export const getAuthToken = () => getStoredSessionToken();
+
+/**
+ * Store auth token.
+ * @param {string} token - JWT token
+ */
+export const storeAuthToken = (token) => persistSessionToken(token);
+
+// ============================================================================
 // USER MANAGEMENT FUNCTIONS
 // ============================================================================
 
 /**
- * Get list of users for current customer
+ * Get list of users for current customer.
  * @param {Object} filters - Filter criteria (role, status, search)
  * @returns {Promise<Object>} List of users and metadata
- * 
- * TODO: Implement user listing with filters
  */
-export const getUsers = async (_filters = {}) => {
-  // TODO: Build query string from filters
-  // const queryString = new URLSearchParams(filters).toString();
-  // return apiRequest(`/users?${queryString}`);
-  
-  throw new Error('TODO: Implement getUsers()');
+export const getUsers = async (filters = {}) => {
+  const queryString = new URLSearchParams(filters).toString();
+  return apiRequest(`/users${queryString ? `?${queryString}` : ''}`);
 };
 
 /**
- * Get single user by ID
+ * Get single user by ID.
  * @param {string} userId - User UUID
  * @returns {Promise<Object>} User details
- * 
- * TODO: Implement single user fetch
  */
-export const getUser = async (_userId) => {
-  // return apiRequest(`/users/${userId}`);
-  
-  throw new Error('TODO: Implement getUser()');
+export const getUser = async (userId) => {
+  return apiRequest(`/users/${userId}`);
 };
 
 /**
- * Create new user
+ * Create new user.
  * @param {Object} userData - User data (email, name, role)
  * @returns {Promise<Object>} Created user with temp password
- * 
- * TODO: Implement user creation
  */
-export const createUser = async (_userData) => {
-  // return apiRequest('/users', {
-  //   method: 'POST',
-  //   body: JSON.stringify(userData),
-  // });
-  
-  throw new Error('TODO: Implement createUser()');
+export const createUser = async (userData) => {
+  return apiRequest('/users', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
 };
 
 /**
- * Update user details
+ * Update user details.
  * @param {string} userId - User UUID
  * @param {Object} updates - Fields to update
  * @returns {Promise<Object>} Updated user
- * 
- * TODO: Implement user update
  */
-export const updateUser = async (_userId, _updates) => {
-  // return apiRequest(`/users/${userId}`, {
-  //   method: 'PUT',
-  //   body: JSON.stringify(updates),
-  // });
-  
-  throw new Error('TODO: Implement updateUser()');
+export const updateUser = async (userId, updates) => {
+  return apiRequest(`/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
 };
 
 /**
- * Update user role
+ * Update user role.
  * @param {string} userId - User UUID
  * @param {string} newRole - New role (admin, manager, analyst, viewer)
  * @returns {Promise<Object>} Updated user
- * 
- * TODO: Implement role update
  */
-export const updateUserRole = async (_userId, _newRole) => {
-  // return apiRequest(`/users/${userId}/role`, {
-  //   method: 'PUT',
-  //   body: JSON.stringify({ role: newRole }),
-  // });
-  
-  throw new Error('TODO: Implement updateUserRole()');
+export const updateUserRole = async (userId, newRole) => {
+  return apiRequest(`/users/${userId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role: newRole }),
+  });
 };
 
 /**
- * Delete user (soft delete)
+ * Delete user (soft delete).
  * @param {string} userId - User UUID
  * @returns {Promise<void>}
- * 
- * TODO: Implement user deletion
  */
-export const deleteUser = async (_userId) => {
-  // return apiRequest(`/users/${userId}`, {
-  //   method: 'DELETE',
-  // });
-  
-  throw new Error('TODO: Implement deleteUser()');
+export const deleteUser = async (userId) => {
+  return apiRequest(`/users/${userId}`, {
+    method: 'DELETE',
+  });
 };
 
 /**
- * Reset user password
+ * Reset user password.
  * @param {string} userId - User UUID
  * @returns {Promise<Object>} New temporary password
- * 
- * TODO: Implement password reset
  */
-export const resetUserPassword = async (_userId) => {
-  // return apiRequest(`/users/${userId}/reset-password`, {
-  //   method: 'POST',
-  // });
-  
-  throw new Error('TODO: Implement resetUserPassword()');
+export const resetUserPassword = async (userId) => {
+  return apiRequest(`/users/${userId}/reset-password`, {
+    method: 'POST',
+  });
 };
 
 /**
- * Unlock user account
+ * Unlock user account.
  * @param {string} userId - User UUID
  * @returns {Promise<void>}
- * 
- * TODO: Implement account unlock
  */
-export const unlockUser = async (_userId) => {
-  // return apiRequest(`/users/${userId}/unlock`, {
-  //   method: 'POST',
-  // });
-  
-  throw new Error('TODO: Implement unlockUser()');
+export const unlockUser = async (userId) => {
+  return apiRequest(`/users/${userId}/unlock`, {
+    method: 'POST',
+  });
 };
 
 // ============================================================================
@@ -182,67 +272,55 @@ export const unlockUser = async (_userId) => {
 // ============================================================================
 
 /**
- * User login
+ * User login — delegates to apiService.authenticate which handles token
+ * storage, userRole, and userEmail in localStorage.
  * @param {string} email - User email
  * @param {string} password - User password
  * @returns {Promise<Object>} Auth token or MFA challenge
- * 
- * TODO: Implement login
  */
-export const login = async (_email, _password) => {
-  // return apiRequest('/auth/login', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ email, password }),
-  // });
-  
-  throw new Error('TODO: Implement login()');
+export const login = async (email, password) => {
+  return apiService.authenticate(email, password);
 };
 
 /**
- * Verify MFA code
+ * Verify MFA code.
  * @param {string} sessionId - Temporary session ID
- * @param {string} mfaCode - 6-digit MFA code
+ * @param {string} mfaCode - 6-digit TOTP code
  * @returns {Promise<Object>} Auth token
- * 
- * TODO: Implement MFA verification
  */
-export const verifyMFA = async (_sessionId, _mfaCode) => {
-  // return apiRequest('/auth/mfa/verify', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ session_id: sessionId, mfa_code: mfaCode }),
-  // });
-  
-  throw new Error('TODO: Implement verifyMFA()');
+export const verifyMFA = async (sessionId, mfaCode) => {
+  return apiRequest('/auth/mfa/verify', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId, totp_code: mfaCode }),
+  });
 };
 
 /**
- * Setup MFA for user
- * @param {string} userId - User UUID
+ * Setup MFA for user.
+ * @param {string} userId - User email
  * @returns {Promise<Object>} QR code URL and secret
- * 
- * TODO: Implement MFA setup
  */
-export const setupMFA = async (_userId) => {
-  // return apiRequest(`/users/${userId}/mfa/setup`, {
-  //   method: 'POST',
-  // });
-  
-  throw new Error('TODO: Implement setupMFA()');
+export const setupMFA = async (userId) => {
+  return apiRequest('/auth/mfa/setup', {
+    method: 'POST',
+    body: JSON.stringify({ email: userId }),
+  });
 };
 
 /**
- * Logout current user
+ * Logout current user.
+ * Clears stored session token and localStorage role/email keys.
  * @returns {Promise<void>}
- * 
- * TODO: Implement logout
  */
 export const logout = async () => {
-  // await apiRequest('/auth/logout', {
-  //   method: 'POST',
-  // });
-  // localStorage.removeItem('auth_token');
-  
-  throw new Error('TODO: Implement logout()');
+  try {
+    await apiRequest('/auth/logout', { method: 'POST' });
+  } catch {
+    // Proceed with local cleanup even if server-side logout fails
+  }
+  clearStoredSessionToken();
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userEmail');
 };
 
 // ============================================================================
@@ -250,50 +328,26 @@ export const logout = async () => {
 // ============================================================================
 
 /**
- * Get available roles
+ * Get available roles.
+ * Real endpoint not yet implemented — returns placeholder data.
  * @returns {Promise<Array>} List of roles
- * 
- * TODO: Implement roles fetch
  */
 export const getRoles = async () => {
-  // return apiRequest('/roles');
-  
-  // Placeholder data for UI development
   return [
-    { id: 'admin', name: 'Admin', description: 'Full access to all resources' },
+    { id: 'admin',   name: 'Admin',   description: 'Full access to all resources' },
     { id: 'manager', name: 'Manager', description: 'Manage team and view reports' },
     { id: 'analyst', name: 'Analyst', description: 'View and analyze data' },
-    { id: 'viewer', name: 'Viewer', description: 'Basic read-only access' },
+    { id: 'viewer',  name: 'Viewer',  description: 'Basic read-only access' },
   ];
 };
 
 /**
- * Get user permissions
+ * Get user permissions.
  * @param {string} userId - User UUID
  * @returns {Promise<Array>} List of permissions
- * 
- * TODO: Implement permissions fetch
  */
-export const getUserPermissions = async (_userId) => {
-  // return apiRequest(`/users/${userId}/permissions`);
-  
-  throw new Error('TODO: Implement getUserPermissions()');
-};
-
-/**
- * Check if user has permission
- * @param {string} resourceType - Resource type (users, invoices, etc.)
- * @param {string} action - Action (create, read, update, delete)
- * @returns {boolean} Whether user has permission
- * 
- * TODO: Implement permission check
- */
-export const hasPermission = (_resourceType, _action) => {
-  // TODO: Check user permissions from token or cached data
-  // const userRole = getCurrentUserRole();
-  // return checkRolePermission(userRole, resourceType, action);
-  
-  return false; // Deny by default until implemented
+export const getUserPermissions = async (userId) => {
+  return apiRequest(`/users/${userId}/permissions`);
 };
 
 // ============================================================================
@@ -301,79 +355,35 @@ export const hasPermission = (_resourceType, _action) => {
 // ============================================================================
 
 /**
- * Get audit log events
+ * Get audit log events.
  * @param {Object} filters - Filter criteria
  * @param {number} page - Page number
  * @returns {Promise<Object>} Audit events and metadata
- * 
- * TODO: Implement audit log fetch
  */
-export const getAuditLogs = async (_filters = {}, _page = 1) => {
-  // const queryString = new URLSearchParams({ ...filters, page }).toString();
-  // return apiRequest(`/activity?${queryString}`);
-  
-  throw new Error('TODO: Implement getAuditLogs()');
+export const getAuditLogs = async (filters = {}, page = 1) => {
+  const queryString = new URLSearchParams({ ...filters, page }).toString();
+  return apiRequest(`/activity?${queryString}`);
 };
 
 /**
- * Export audit logs
+ * Export audit logs as a file blob.
  * @param {string} format - Export format (csv, pdf)
  * @param {Object} filters - Filter criteria
  * @returns {Promise<Blob>} File blob
- * 
- * TODO: Implement audit log export
  */
-export const exportAuditLogs = async (_format, _filters = {}) => {
-  // const queryString = new URLSearchParams({ ...filters, format }).toString();
-  // const response = await fetch(`${API_BASE_URL}/activity/export?${queryString}`, {
-  //   headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-  // });
-  // return await response.blob();
-  
-  throw new Error('TODO: Implement exportAuditLogs()');
-};
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-/**
- * Get current user from token
- * @returns {Object|null} Current user data
- * 
- * TODO: Implement user extraction from JWT
- */
-export const getCurrentUser = () => {
-  // TODO: Decode JWT token and extract user data
-  const token = getAuthToken();
-  if (!token) return null;
-  
-  // Placeholder
-  return null;
-};
-
-/**
- * Get current user role
- * @returns {string|null} User role
- * 
- * TODO: Implement role extraction
- */
-export const getCurrentUserRole = () => {
-  // const user = getCurrentUser();
-  // return user?.role || null;
-  
-  return null;
-};
-
-/**
- * Store auth token
- * @param {string} token - JWT token
- * 
- * TODO: Implement secure token storage
- */
-export const storeAuthToken = (_token) => {
-  // localStorage.setItem('auth_token', token);
-  // TODO: Consider using httpOnly cookies for better security
+export const exportAuditLogs = async (format, filters = {}) => {
+  const token = getStoredSessionToken();
+  const queryString = new URLSearchParams({ ...filters, format }).toString();
+  const response = await fetch(`${API_BASE_URL}/activity/export?${queryString}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Export failed: ${response.statusText}`);
+  }
+  return await response.blob();
 };
 
 export default {
@@ -386,24 +396,25 @@ export default {
   deleteUser,
   resetUserPassword,
   unlockUser,
-  
+
   // Authentication
   login,
   verifyMFA,
   setupMFA,
   logout,
-  
+
   // Roles & Permissions
   getRoles,
   getUserPermissions,
   hasPermission,
-  
+
   // Audit Logs
   getAuditLogs,
   exportAuditLogs,
-  
+
   // Utilities
   getCurrentUser,
   getCurrentUserRole,
+  getAuthToken,
   storeAuthToken,
 };
