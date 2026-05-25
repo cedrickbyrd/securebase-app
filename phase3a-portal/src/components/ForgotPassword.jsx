@@ -50,7 +50,7 @@ export default function ForgotPassword() {
               <div style={{ background: '#eff6ff', borderRadius: '6px', padding: '4px 10px', display: 'inline-block', fontFamily: 'monospace', color: '#1d4ed8', fontSize: '13px', margin: '8px 0' }}>
                 {email}
               </div>
-              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>The link expires in 30 minutes.</p>
+              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>The link expires in 24 hours.</p>
               <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px' }}>
                 ⚠️ Didn't receive it? Check your spam folder or contact{' '}
                 <a href={`mailto:${BRANDING.supportEmail}`} style={{ color: '#9ca3af' }}>
