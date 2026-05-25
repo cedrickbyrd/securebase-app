@@ -169,7 +169,7 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl, ttlHours = RESET_TOKEN_TTL_H
     </a>
   </div>
   <p style="color:#64748b;font-size:13px;text-align:center">
-    This link expires in ${ttlHours >= 48 ? Math.round(ttlHours / 24) + ' days' : ttlHours + ' hours'}. If you didn't request this, ignore this email.
+    This link expires in ${ttlHours >= 48 ? Math.round(ttlHours / 24) + (Math.round(ttlHours / 24) === 1 ? ' day' : ' days') : ttlHours + (ttlHours === 1 ? ' hour' : ' hours')}. If you didn't request this, ignore this email.
   </p>
   <p style="color:#94a3b8;font-size:12px;text-align:center">
     Questions? <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
