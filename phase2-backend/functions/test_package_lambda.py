@@ -265,7 +265,7 @@ class PackageLambdaScriptTests(unittest.TestCase):
             "--deploy",
             "session_management",
             extra_env={
-                "PACKAGE_LAMBDA_DIRECT_DEPLOY_LIMIT_BYTES": "1",
+                "PACKAGE_LAMBDA_DIRECT_DEPLOY_LIMIT_BYTES": "10",
                 "FAKE_AWS_LIST_FUNCTIONS_OUTPUT": "securebase-prod-session-management",
             },
         )
@@ -290,6 +290,30 @@ class PackageLambdaScriptTests(unittest.TestCase):
             aws_log,
         )
         self.assertIn("deployed via S3 (securebase-prod-session-management)", output)
+
+    def test_session_management_lookup_prefers_production_name(self):
+        self._write_fake_docker()
+        self._write_fake_aws()
+
+        _, _, aws_log = self._run_script(
+            "--deploy",
+            "session_management",
+            extra_env={
+                "FAKE_AWS_LIST_FUNCTIONS_OUTPUT": (
+                    "securebase-dev-session-management\tsecurebase-production-session-management"
+                ),
+            },
+        )
+
+        self.assertIn("lambda list-functions", aws_log)
+        self.assertIn(
+            "lambda update-function-code --function-name securebase-production-session-management --zip-file",
+            aws_log,
+        )
+        self.assertIn(
+            "lambda wait function-updated --function-name securebase-production-session-management",
+            aws_log,
+        )
 
     def test_session_management_deploy_defaults_when_lookup_is_empty(self):
         self._write_fake_docker()

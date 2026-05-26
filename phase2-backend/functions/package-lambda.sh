@@ -24,6 +24,7 @@ SUMMARY_SIZES=()
 SUMMARY_STATUSES=()
 DEPLOY_ENABLED=false
 LAST_DEPLOY_STATUS="packaged"
+# Lambda update-function-code direct uploads top out at 50 MB; larger zips must go through S3.
 DIRECT_DEPLOY_LIMIT_BYTES="${PACKAGE_LAMBDA_DIRECT_DEPLOY_LIMIT_BYTES:-52428800}"
 S3_DEPLOY_BUCKET="securebase-terraform-state-prod"
 
@@ -164,7 +165,6 @@ resolve_session_management_function_name() {
       2>&1
   )"; then
     echo "⚠️ WARNING: Could not look up session_management Lambda name; using ${default_name}" >&2
-    echo "   aws lambda list-functions failed with: ${discovered_names}" >&2
     printf '%s\n' "${default_name}"
     return 0
   fi
