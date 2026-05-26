@@ -167,3 +167,15 @@ variable "lambda_scaling_alarm_actions" {
   type        = list(string)
   default     = []
 }
+
+variable "marketplace_product_code" {
+  description = "AWS Marketplace product code for SaaS integration"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_alerts_sns_topic_arn" {
+  description = "SNS topic ARN for marketplace metering alarms and failures"
+  type        = string
+  default     = ""
+}

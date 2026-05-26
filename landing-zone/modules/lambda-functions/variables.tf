@@ -32,6 +32,11 @@ variable "dynamodb_table_name" {
   type        = string
 }
 
+variable "cache_table_name" {
+  description = "Name of DynamoDB cache table used for short-lived entitlement/session caches"
+  type        = string
+}
+
 variable "rds_proxy_endpoint" {
   description = "RDS Proxy endpoint for database connections"
   type        = string
