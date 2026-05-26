@@ -31,6 +31,7 @@ import ContactSales from './pages/ContactSales';
 import ComplianceJumpstart from './pages/ComplianceJumpstart';
 import HIPAAReadiness from './pages/HIPAAReadiness';
 import Setup from './pages/Setup';
+import MarketplaceRedirect from './pages/MarketplaceRedirect';
 import './App.css';
 
 function OnboardingRoute() {
@@ -129,6 +130,7 @@ function AppInner({ isAuthenticated, setIsAuthenticated, needsOnboarding, setNee
         <Route path="/pilots/compliance-jumpstart"  element={<ComplianceJumpstart />} />
         <Route path="/pilots/hipaa-readiness"       element={<HIPAAReadiness />} />
         <Route path="/setup"                        element={<Setup />} />
+        <Route path="/marketplace-redirect"         element={<MarketplaceRedirect setAuth={setIsAuthenticated} />} />
         <Route path="/"                             element={isDemoMode() ? <LandingPage /> : (isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />)} />
       </Routes>
     </>

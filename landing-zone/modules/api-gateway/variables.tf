@@ -309,3 +309,15 @@ variable "tenant_compliance_resource_id" {
   type        = string
   default     = null
 }
+
+variable "marketplace_resolve_lambda_arn" {
+  description = "ARN of marketplace_resolve_customer Lambda. Set null to skip /marketplace/resolve route."
+  type        = string
+  default     = null
+}
+
+variable "marketplace_resolve_lambda_name" {
+  description = "Function name of marketplace_resolve_customer Lambda."
+  type        = string
+  default     = null
+}

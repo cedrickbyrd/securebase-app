@@ -1,0 +1,177 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+locals {
+  common_tags = merge(var.tags, {
+    Environment = var.environment
+    Phase       = "marketplace"
+    ManagedBy   = "terraform"
+  })
+}
+
+resource "aws_sns_topic" "marketplace_subscriptions" {
+  name = "securebase-${var.environment}-marketplace-subscriptions"
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_policy" "marketplace_subscriptions" {
+  arn = aws_sns_topic.marketplace_subscriptions.arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowAWSMarketplacePublish"
+        Effect    = "Allow"
+        Principal = { Service = "aws-marketplace.amazonaws.com" }
+        Action    = "SNS:Publish"
+        Resource  = aws_sns_topic.marketplace_subscriptions.arn
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_function" "marketplace_resolve_customer" {
+  filename         = var.lambda_packages["marketplace_resolve_customer"]
+  function_name    = "securebase-${var.environment}-marketplace-resolve-customer"
+  role             = var.lambda_role_arn
+  handler          = "marketplace_resolve_customer.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_resolve_customer"])
+  runtime          = "python3.11"
+  timeout          = 30
+  memory_size      = 512
+
+  environment {
+    variables = {
+      MARKETPLACE_PRODUCT_CODE = var.marketplace_product_code
+      DB_HOST                  = var.db_host
+      DB_NAME                  = "securebase"
+      DB_SECRET_ARN            = var.db_secret_arn
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.lambda_security_group_id]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_lambda_function" "marketplace_subscription_handler" {
+  filename         = var.lambda_packages["marketplace_subscription_handler"]
+  function_name    = "securebase-${var.environment}-marketplace-subscription-handler"
+  role             = var.lambda_role_arn
+  handler          = "marketplace_subscription_handler.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_subscription_handler"])
+  runtime          = "python3.11"
+  timeout          = 60
+  memory_size      = 512
+
+  environment {
+    variables = {
+      MARKETPLACE_PRODUCT_CODE = var.marketplace_product_code
+      DB_HOST                  = var.db_host
+      DB_NAME                  = "securebase"
+      DB_SECRET_ARN            = var.db_secret_arn
+      CEO_SNS_TOPIC_ARN        = var.ceo_sns_topic_arn
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.lambda_security_group_id]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_lambda_function" "marketplace_metering_worker" {
+  filename         = var.lambda_packages["marketplace_metering_worker"]
+  function_name    = "securebase-${var.environment}-marketplace-metering-worker"
+  role             = var.lambda_role_arn
+  handler          = "marketplace_metering_worker.lambda_handler"
+  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_metering_worker"])
+  runtime          = "python3.11"
+  timeout          = 120
+  memory_size      = 512
+
+  environment {
+    variables = {
+      MARKETPLACE_PRODUCT_CODE = var.marketplace_product_code
+      DB_HOST                  = var.db_host
+      DB_NAME                  = "securebase"
+      DB_SECRET_ARN            = var.db_secret_arn
+      ALERTS_SNS_TOPIC_ARN     = var.alerts_sns_topic_arn
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.lambda_security_group_id]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_subscription" "subscription_handler" {
+  topic_arn = aws_sns_topic.marketplace_subscriptions.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.marketplace_subscription_handler.arn
+}
+
+resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
+  statement_id  = "AllowSNSInvokeMarketplaceSubscriptionHandler"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.marketplace_subscription_handler.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.marketplace_subscriptions.arn
+}
+
+resource "aws_cloudwatch_event_rule" "marketplace_metering_hourly" {
+  name                = "securebase-${var.environment}-marketplace-metering-hourly"
+  schedule_expression = "rate(1 hour)"
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_event_target" "marketplace_metering_hourly" {
+  rule      = aws_cloudwatch_event_rule.marketplace_metering_hourly.name
+  target_id = "marketplace-metering-worker"
+  arn       = aws_lambda_function.marketplace_metering_worker.arn
+}
+
+resource "aws_lambda_permission" "allow_eventbridge_invoke_metering" {
+  statement_id  = "AllowEventBridgeInvokeMarketplaceMeteringWorker"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.marketplace_metering_worker.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.marketplace_metering_hourly.arn
+}
+
+resource "aws_cloudwatch_metric_alarm" "metering_worker_errors" {
+  count               = var.alerts_sns_topic_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-marketplace-metering-worker-errors"
+  alarm_description   = "Marketplace metering worker reported errors in the last hour"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 3600
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.marketplace_metering_worker.function_name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
+  ok_actions    = [var.alerts_sns_topic_arn]
+
+  tags = local.common_tags
+}

@@ -193,6 +193,7 @@ module "lambda_functions" {
   lambda_packages          = var.lambda_packages
   jwt_secret_arn           = module.phase2_database.jwt_secret_arn
   dynamodb_table_name      = module.phase2_database.customers_table_name
+  cache_table_name         = module.phase2_database.dynamodb_cache_table
   rds_proxy_endpoint       = module.phase2_database.rds_proxy_endpoint
   private_subnet_ids       = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
   lambda_security_group_id = module.phase2_database.lambda_security_group_id
@@ -203,6 +204,33 @@ module "lambda_functions" {
   demo_auth_password       = var.demo_auth_password
 
   depends_on = [module.phase2_database]
+}
+
+# --- Marketplace SaaS Integration ---
+module "marketplace" {
+  count = alltrue([
+    contains(keys(var.lambda_packages), "marketplace_resolve_customer"),
+    contains(keys(var.lambda_packages), "marketplace_subscription_handler"),
+    contains(keys(var.lambda_packages), "marketplace_metering_worker"),
+    var.marketplace_product_code != "",
+  ]) ? 1 : 0
+
+  source = "./modules/marketplace"
+
+  environment               = var.environment
+  aws_region                = var.target_region
+  lambda_packages           = var.lambda_packages
+  lambda_role_arn           = module.lambda_functions.lambda_role_arn
+  db_host                   = module.phase2_database.rds_proxy_endpoint
+  db_secret_arn             = module.phase2_database.database_secret_arn
+  alerts_sns_topic_arn      = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn         = module.lambda_functions.customer_activation_sns_topic_arn
+  marketplace_product_code  = var.marketplace_product_code
+  private_subnet_ids        = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
+  lambda_security_group_id  = module.phase2_database.lambda_security_group_id
+  tags                      = var.tags
+
+  depends_on = [module.lambda_functions, module.phase2_database]
 }
 
 # --- API & Analytics (Phases 3 & 4) ---
@@ -238,6 +266,8 @@ module "api_gateway" {
   compliance_history_lambda_arn        = module.phase6_lambdas.compliance_history_api_arn
   compliance_history_lambda_invoke_arn = module.phase6_lambdas.compliance_history_api_invoke_arn
   compliance_history_lambda_name       = module.phase6_lambdas.compliance_history_api_name
+  marketplace_resolve_lambda_arn       = length(module.marketplace) > 0 ? module.marketplace[0].marketplace_resolve_customer_arn : null
+  marketplace_resolve_lambda_name      = length(module.marketplace) > 0 ? module.marketplace[0].marketplace_resolve_customer_name : null
   tags = merge(var.tags, { Phase = "Phase3-API" })
   depends_on = [module.lambda_functions, module.phase6_lambdas]
 }

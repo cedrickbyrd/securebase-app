@@ -17,7 +17,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEPLOY_DIR="${SCRIPT_DIR}/../deploy"
 TEMP_DIRS=()
-DEFAULT_FUNCTIONS=(auth_v2 report_engine demo_auth session_management)
+DEFAULT_FUNCTIONS=(auth_v2 report_engine demo_auth session_management marketplace_resolve_customer marketplace_subscription_handler marketplace_metering_worker)
 SELECTED_FUNCTIONS=()
 SUMMARY_NAMES=()
 SUMMARY_SIZES=()
@@ -122,6 +122,15 @@ requirements_for() {
     demo_auth)
       printf '%s\n' boto3
       ;;
+    marketplace_resolve_customer)
+      printf '%s\n' boto3
+      ;;
+    marketplace_subscription_handler)
+      printf '%s\n' boto3
+      ;;
+    marketplace_metering_worker)
+      printf '%s\n' boto3
+      ;;
     *)
       printf ''
       ;;
@@ -214,6 +223,15 @@ resolve_lambda_function_name() {
       ;;
     demo_auth)
       printf '%s\n' "securebase-dev-demo-auth"
+      ;;
+    marketplace_resolve_customer)
+      printf '%s\n' "securebase-production-marketplace-resolve-customer"
+      ;;
+    marketplace_subscription_handler)
+      printf '%s\n' "securebase-production-marketplace-subscription-handler"
+      ;;
+    marketplace_metering_worker)
+      printf '%s\n' "securebase-production-marketplace-metering-worker"
       ;;
     *)
       printf '%s\n' "$1"

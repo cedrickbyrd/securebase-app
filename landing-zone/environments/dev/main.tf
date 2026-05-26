@@ -276,3 +276,33 @@ module "phase6_cost" {
 
   depends_on = [module.phase5_admin_metrics, module.phase5_alerting]
 }
+
+module "marketplace" {
+  count = alltrue([
+    contains(keys(var.lambda_packages), "marketplace_resolve_customer"),
+    contains(keys(var.lambda_packages), "marketplace_subscription_handler"),
+    contains(keys(var.lambda_packages), "marketplace_metering_worker"),
+    var.marketplace_product_code != "",
+    var.marketplace_db_host != "",
+    var.marketplace_db_secret_arn != "",
+    var.marketplace_lambda_role_arn != "",
+    var.lambda_subnets != null,
+    length(var.lambda_subnets != null ? var.lambda_subnets : []) > 0,
+    var.marketplace_lambda_security_group_id != "",
+  ]) ? 1 : 0
+
+  source = "../../modules/marketplace"
+
+  environment               = var.environment
+  aws_region                = var.target_region
+  lambda_packages           = var.lambda_packages
+  lambda_role_arn           = var.marketplace_lambda_role_arn
+  db_host                   = var.marketplace_db_host
+  db_secret_arn             = var.marketplace_db_secret_arn
+  alerts_sns_topic_arn      = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn         = var.marketplace_ceo_sns_topic_arn
+  marketplace_product_code  = var.marketplace_product_code
+  private_subnet_ids        = var.lambda_subnets
+  lambda_security_group_id  = var.marketplace_lambda_security_group_id
+  tags                      = merge(var.tags, { Phase = "marketplace" })
+}

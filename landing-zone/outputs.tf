@@ -75,3 +75,28 @@ output "customer_ou_ids" {
     sales      = aws_organizations_organizational_unit.customer_sales[0].id
   }
 }
+
+output "lambda_role_arn" {
+  description = "Lambda execution role ARN from the lambda-functions module"
+  value       = module.lambda_functions.lambda_role_arn
+}
+
+output "rds_proxy_endpoint" {
+  description = "RDS Proxy endpoint used by backend Lambdas"
+  value       = module.phase2_database.rds_proxy_endpoint
+}
+
+output "database_secret_arn" {
+  description = "Secrets Manager ARN for database credentials"
+  value       = module.phase2_database.database_secret_arn
+}
+
+output "marketplace_resolve_lambda_arn" {
+  description = "ARN of marketplace resolve lambda when marketplace module is enabled"
+  value       = length(module.marketplace) > 0 ? module.marketplace[0].marketplace_resolve_customer_arn : null
+}
+
+output "marketplace_resolve_lambda_name" {
+  description = "Function name of marketplace resolve lambda when marketplace module is enabled"
+  value       = length(module.marketplace) > 0 ? module.marketplace[0].marketplace_resolve_customer_name : null
+}
