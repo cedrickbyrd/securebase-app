@@ -83,3 +83,56 @@ variable "tags" {
   }
 }
 
+variable "lambda_packages" {
+  description = "Lambda package map used by optional marketplace module"
+  type        = map(string)
+  default     = {}
+}
+
+variable "marketplace_product_code" {
+  description = "AWS Marketplace product code for marketplace integration"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_alerts_sns_topic_arn" {
+  description = "SNS topic ARN for marketplace worker alarms"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_ceo_sns_topic_arn" {
+  description = "SNS topic ARN for marketplace lifecycle alerts to leadership"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_db_host" {
+  description = "RDS Proxy endpoint for marketplace lambdas"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_db_secret_arn" {
+  description = "Secrets Manager ARN for marketplace lambdas"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_lambda_role_arn" {
+  description = "IAM role ARN used by marketplace lambdas"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_private_subnet_ids" {
+  description = "Private subnet IDs for marketplace lambdas"
+  type        = list(string)
+  default     = []
+}
+
+variable "marketplace_lambda_security_group_id" {
+  description = "Security group ID for marketplace lambdas"
+  type        = string
+  default     = ""
+}

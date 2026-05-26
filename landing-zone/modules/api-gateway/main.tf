@@ -8,12 +8,27 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  resource "aws_api_gateway_method_settings" "marketplace_resolve_throttle" {
+    count       = local.marketplace_enabled ? 1 : 0
+    rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+    stage_name  = aws_api_gateway_stage.main.stage_name
+    method_path = "marketplace/resolve/POST"
+
+    settings {
+      throttling_burst_limit = 10
+      throttling_rate_limit  = 0.1667
+      metrics_enabled        = true
+      logging_level          = "INFO"
+    }
+  }
 }
 
 locals {
   # Single authoritative origin for gateway-level CORS responses.
   # Must be a specific origin (not *) because all portal requests use credentials: include.
   portal_cors_origin = var.portal_origin
+  marketplace_enabled = var.marketplace_resolve_lambda_arn != null && var.marketplace_resolve_lambda_name != null
 }
 
 # ============================================================================
@@ -828,6 +843,9 @@ resource "aws_api_gateway_deployment" "main" {
       try(aws_api_gateway_method.auth_login_post[0].id, null),
       try(aws_api_gateway_integration.auth_login_post[0].id, null),
       try(aws_lambda_permission.session_management_api_gateway[0].id, null),
+      try(aws_api_gateway_method.marketplace_resolve_post[0].id, null),
+      try(aws_api_gateway_integration.marketplace_resolve_post[0].id, null),
+      try(aws_lambda_permission.marketplace_resolve_api_gateway[0].id, null),
       # Add any other methods/integrations here to trigger a fresh deploy on change
     ]))
   }
@@ -838,7 +856,8 @@ resource "aws_api_gateway_deployment" "main" {
 
   depends_on = [
     aws_api_gateway_integration.auth_login_post,
-    aws_api_gateway_integration.auth_lambda
+    aws_api_gateway_integration.auth_lambda,
+    aws_api_gateway_integration.marketplace_resolve_post
   ]
 }
 
@@ -1080,6 +1099,51 @@ resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
       }
     ]
   })
+}
+
+# ============================================================================
+# API Resources - AWS Marketplace Fulfillment (public)
+# ============================================================================
+
+resource "aws_api_gateway_resource" "marketplace" {
+  count       = local.marketplace_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_rest_api.securebase_api.root_resource_id
+  path_part   = "marketplace"
+}
+
+resource "aws_api_gateway_resource" "marketplace_resolve" {
+  count       = local.marketplace_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  parent_id   = aws_api_gateway_resource.marketplace[0].id
+  path_part   = "resolve"
+}
+
+resource "aws_api_gateway_method" "marketplace_resolve_post" {
+  count         = local.marketplace_enabled ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
+  resource_id   = aws_api_gateway_resource.marketplace_resolve[0].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "marketplace_resolve_post" {
+  count                   = local.marketplace_enabled ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.securebase_api.id
+  resource_id             = aws_api_gateway_resource.marketplace_resolve[0].id
+  http_method             = aws_api_gateway_method.marketplace_resolve_post[0].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.marketplace_resolve_lambda_arn}/invocations"
+}
+
+resource "aws_lambda_permission" "marketplace_resolve_api_gateway" {
+  count         = local.marketplace_enabled ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvokeMarketplaceResolve"
+  action        = "lambda:InvokeFunction"
+  function_name = var.marketplace_resolve_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
 }
 
 # ============================================================================
@@ -2023,4 +2087,3 @@ resource "aws_lambda_permission" "sre_metrics_api_gateway" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*/*"
 }
-

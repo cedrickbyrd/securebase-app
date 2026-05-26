@@ -136,6 +136,17 @@ resource "aws_iam_role_policy" "lambda_custom" {
         # customer's trust policy — preventing confused-deputy escalation.
         Action = ["sts:AssumeRole"]
         Resource = "arn:aws:iam::*:role/SecureBase*"
+      },
+      {
+        Sid    = "AWSMarketplaceIntegration"
+        Effect = "Allow"
+        Action = [
+          "aws-marketplace:ResolveCustomer",
+          "aws-marketplace:BatchMeterUsage",
+          "aws-marketplace:GetEntitlements",
+          "aws-marketplace:RegisterUsage"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -214,6 +225,7 @@ resource "aws_lambda_function" "auth_v2" {
       ENVIRONMENT            = var.environment
       JWT_SECRET_ARN         = var.jwt_secret_arn
       DYNAMODB_TABLE         = var.dynamodb_table_name
+      MARKETPLACE_ENTITLEMENT_CACHE_TABLE = var.cache_table_name
       RDS_PROXY_ENDPOINT     = var.rds_proxy_endpoint
       ACTIVATION_SNS_TOPIC_ARN = aws_sns_topic.customer_activation.arn
     }

@@ -37,6 +37,11 @@ import bcrypt
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO'))
 
+try:
+    from db_utils import query_one as db_query_one
+except Exception:  # pragma: no cover
+    db_query_one = None
+
 # AWS clients — module-level; reused across warm Lambda invocations
 ddb = boto3.resource('dynamodb')
 secrets_client = boto3.client('secretsmanager')
@@ -53,6 +58,8 @@ _JWT_SECRET_CACHE: dict = {}
 _JWT_SECRET_TTL_SECONDS = int(os.environ.get('JWT_SECRET_CACHE_TTL', '300'))
 
 _ACTIVATION_TOPIC_ARN = os.environ.get('ACTIVATION_SNS_TOPIC_ARN', '')
+_MARKETPLACE_ENTITLEMENT_CACHE_TABLE = os.environ.get('MARKETPLACE_ENTITLEMENT_CACHE_TABLE', 'securebase-cache-prod')
+_MARKETPLACE_CACHE_TTL_SECONDS = int(os.environ.get('MARKETPLACE_CACHE_TTL_SECONDS', '300'))
 
 _CORS_ORIGIN = os.environ.get('CORS_ORIGIN', 'https://portal.securebase.tximhotep.com')
 
@@ -290,6 +297,79 @@ def _record_first_login(email: str, user: dict) -> None:
         logger.warning(f"Could not record first login for {email}: {e}")
 
 
+def _get_marketplace_cached_status(customer_id: str) -> str | None:
+    try:
+        table = ddb.Table(_MARKETPLACE_ENTITLEMENT_CACHE_TABLE)
+        cache_key = f"marketplace-entitlement#{customer_id}"
+        item = table.get_item(Key={'SessionId': cache_key}).get('Item')
+        if not item:
+            return None
+
+        checked_at = int(item.get('checked_at', 0))
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        if (now_ts - checked_at) > _MARKETPLACE_CACHE_TTL_SECONDS:
+            return None
+        return item.get('status')
+    except Exception as e:
+        logger.warning(f"Marketplace cache read failed for {customer_id}: {e}")
+        return None
+
+
+def _set_marketplace_cached_status(customer_id: str, status: str) -> None:
+    try:
+        table = ddb.Table(_MARKETPLACE_ENTITLEMENT_CACHE_TABLE)
+        cache_key = f"marketplace-entitlement#{customer_id}"
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        table.put_item(Item={
+            'SessionId': cache_key,
+            'status': status,
+            'checked_at': now_ts,
+            'ExpiresAt': now_ts + _MARKETPLACE_CACHE_TTL_SECONDS,
+        })
+    except Exception as e:
+        logger.warning(f"Marketplace cache write failed for {customer_id}: {e}")
+
+
+def _block_inactive_marketplace_subscription(email: str, request_id: str) -> dict | None:
+    if db_query_one is None:
+        return None
+
+    try:
+        customer = db_query_one(
+            """
+            SELECT id, payment_method, marketplace_entitlement_status
+            FROM customers
+            WHERE email = %s
+            """,
+            (email,),
+        )
+    except Exception as e:
+        logger.warning(f"Marketplace entitlement DB lookup failed for {email}: {e}")
+        return None
+
+    if not customer:
+        return None
+
+    payment_method = customer.get('payment_method')
+    if payment_method != 'aws_marketplace':
+        return None
+
+    customer_id = str(customer.get('id'))
+    entitlement_status = _get_marketplace_cached_status(customer_id)
+    if not entitlement_status:
+        entitlement_status = customer.get('marketplace_entitlement_status') or 'pending'
+        _set_marketplace_cached_status(customer_id, entitlement_status)
+
+    if entitlement_status in {'inactive', 'unsubscribe-pending'}:
+        return _resp(402, {
+            'error': 'marketplace_subscription_inactive',
+            'message': 'Your AWS Marketplace subscription is inactive.',
+            'request_id': request_id,
+        })
+
+    return None
+
+
 # ── Route handlers ────────────────────────────────────────────────────────────
 
 def validate_invite_token(event: dict, request_id: str) -> dict:
@@ -451,6 +531,10 @@ def login(event: dict, request_id: str) -> dict:
     if not bcrypt.checkpw(password.encode(), pw_hash.encode()):
         logger.warning(f"Bad password for {email} [{request_id}]")
         return _resp(401, {'error': 'Invalid email or password', 'request_id': request_id})
+
+    marketplace_block = _block_inactive_marketplace_subscription(email, request_id)
+    if marketplace_block is not None:
+        return marketplace_block
 
     session_token = _mint_jwt(email, user)
     logger.info(f"Login success: {email} [{request_id}]")
