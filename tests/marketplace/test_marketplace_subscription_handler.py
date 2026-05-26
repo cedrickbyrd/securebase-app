@@ -79,6 +79,30 @@ class TestMarketplaceSubscriptionHandler(unittest.TestCase):
         self.assertFalse(handler._verify_sns_signature({'Sns': {'SignatureVersion': '2'}}))
         mock_lookup.assert_not_called()
 
+    @patch('marketplace_subscription_handler._lookup_customer')
+    def test_handler_skips_invalid_signature(self, mock_lookup):
+        with patch.dict(os.environ, {'BYPASS_SNS_SIGNATURE_VERIFY': 'false'}):
+            from importlib import reload
+            import marketplace_subscription_handler as handler
+            handler = reload(handler)
+
+            event = {
+                'Records': [{
+                    'Sns': {
+                        'MessageId': 'msg-invalid',
+                        'Message': json.dumps({'eventType': 'subscribe-success', 'customerIdentifier': 'cust-abc123'}),
+                        'SignatureVersion': '2',
+                        'Signature': '',
+                        'SigningCertUrl': 'http://invalid',
+                    }
+                }]
+            }
+            resp = handler.lambda_handler(event, None)
+
+        self.assertEqual(resp['statusCode'], 200)
+        self.assertEqual(json.loads(resp['body'])['skipped'], 1)
+        mock_lookup.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
@@ -14,10 +14,7 @@ if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
 if os.environ.get("DB_NAME") and not os.environ.get("RDS_DATABASE"):
     os.environ["RDS_DATABASE"] = os.environ["DB_NAME"]
 
-try:
-    from db_utils import get_connection, release_connection
-except ImportError:  # pragma: no cover
-    from db_utils import get_connection, release_connection  # type: ignore
+from db_utils import get_connection, release_connection
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -111,7 +108,7 @@ def _insert_marketplace_customer(marketplace_customer_id: str, product_code: str
                     marketplace_customer_id,
                     product_code,
                     "active",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                 ),
             )
             created = cur.fetchone()

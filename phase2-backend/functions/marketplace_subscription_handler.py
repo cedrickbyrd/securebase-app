@@ -3,6 +3,7 @@
 import json
 import os
 import logging
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -53,7 +54,7 @@ def _verify_sns_signature(record: dict) -> bool:
     if parsed.scheme != "https":
         return False
     host = (parsed.hostname or "").lower()
-    return host.endswith("amazonaws.com") and host.startswith("sns.")
+    return bool(re.fullmatch(r"sns\.[a-z0-9-]+\.amazonaws\.com(\.cn)?", host))
 
 
 def _extract_event_payload(record: dict) -> tuple[str, dict, str]:
@@ -133,27 +134,39 @@ def _upsert_audit_event(customer_id: str, event_type: str, message_id: str, meta
 
 
 def _update_customer_status(customer_id: str, entitlement_status: str | None, subscription_status: str | None):
-    updates = []
-    params = []
-    if entitlement_status is not None:
-        updates.append("marketplace_entitlement_status = %s")
-        params.append(entitlement_status)
-    if subscription_status is not None:
-        updates.append("subscription_status = %s")
-        params.append(subscription_status)
-
-    if not updates:
+    if entitlement_status is None and subscription_status is None:
         return
 
-    params.append(customer_id)
+    if entitlement_status is not None and subscription_status is not None:
+        query = """
+            UPDATE customers
+            SET marketplace_entitlement_status = %s,
+                subscription_status = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """
+        params = (entitlement_status, subscription_status, customer_id)
+    elif entitlement_status is not None:
+        query = """
+            UPDATE customers
+            SET marketplace_entitlement_status = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """
+        params = (entitlement_status, customer_id)
+    else:
+        query = """
+            UPDATE customers
+            SET subscription_status = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """
+        params = (subscription_status, customer_id)
 
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                f"UPDATE customers SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                tuple(params),
-            )
+            cur.execute(query, params)
         conn.commit()
     except Exception:
         conn.rollback()

@@ -305,7 +305,11 @@ def _get_marketplace_cached_status(customer_id: str) -> str | None:
         if not item:
             return None
 
-        checked_at = int(item.get('checked_at', 0))
+        checked_at_raw = item.get('checked_at')
+        if checked_at_raw is None:
+            return None
+
+        checked_at = int(checked_at_raw)
         now_ts = int(datetime.now(timezone.utc).timestamp())
         if (now_ts - checked_at) > _MARKETPLACE_CACHE_TTL_SECONDS:
             return None
@@ -332,6 +336,7 @@ def _set_marketplace_cached_status(customer_id: str, status: str) -> None:
 
 def _block_inactive_marketplace_subscription(email: str, request_id: str) -> dict | None:
     if db_query_one is None:
+        logger.warning(f"Marketplace entitlement check unavailable (db_utils missing) [{request_id}]")
         return None
 
     try:
