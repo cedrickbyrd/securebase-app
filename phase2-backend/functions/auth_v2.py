@@ -3,6 +3,7 @@ Authentication Lambda for SecureBase — DynamoDB-native.
 
 Routes:
   OPTIONS *                        -> CORS preflight
+  GET  /auth/accept-invite?token=  -> validate invite token (for email link landing)
   POST /auth/accept-invite         -> validate invite token, set password, mint JWT
   POST /auth/validate-session      -> verify existing JWT
   POST /auth/login | /auth         -> email + password login
@@ -207,6 +208,18 @@ def _mark_token_used(token: str) -> None:
         logger.warning(f"Could not mark token used: {e}")
 
 
+def _mask_email(email: str) -> str:
+    email = _normalize_email(email)
+    if not email:
+        return ''
+
+    local, sep, domain = email.partition('@')
+    visible = local[:2]
+    if sep and domain:
+        return f'{visible}***@{domain}'
+    return f'{visible}***'
+
+
 def _store_password(email: str, password: str, user: dict) -> None:
     """Hash password with bcrypt and store/update user record."""
     email = _normalize_email(email)
@@ -278,6 +291,39 @@ def _record_first_login(email: str, user: dict) -> None:
 
 
 # ── Route handlers ────────────────────────────────────────────────────────────
+
+def validate_invite_token(event: dict, request_id: str) -> dict:
+    """GET /auth/accept-invite?token=... or /accept-invite?token=..."""
+    query = event.get('queryStringParameters') or {}
+    token_val = (query.get('token') or '').strip()
+    if not token_val:
+        return _resp(400, {'error': 'token is required', 'request_id': request_id})
+
+    token_record = _get_token_record(token_val)
+    if not token_record:
+        return _resp(401, {'error': 'Invalid or expired invite link', 'request_id': request_id})
+
+    if token_record.get('status') != 'active':
+        return _resp(401, {'error': 'Invite link has already been used', 'request_id': request_id})
+
+    expires_at = token_record.get('expires_at', '')
+    if expires_at:
+        try:
+            exp_dt = datetime.fromisoformat(expires_at)
+            if exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > exp_dt:
+                return _resp(401, {'error': 'Invite link has expired', 'request_id': request_id})
+        except ValueError:
+            pass
+
+    return _resp(200, {
+        'valid': True,
+        'email': _mask_email(token_record.get('email', '')),
+        'plan': token_record.get('plan', 'standard'),
+        'expires_at': expires_at,
+    })
+
 
 def accept_invite(event: dict, request_id: str) -> dict:
     """
@@ -470,6 +516,9 @@ def lambda_handler(event, context) -> dict:
 
     if method == 'POST' and path in _ACCEPT_INVITE_PATHS:
         return accept_invite(event, request_id)
+
+    if method == 'GET' and path in _ACCEPT_INVITE_PATHS:
+        return validate_invite_token(event, request_id)
 
     if method == 'POST' and path in _VALIDATE_SESSION_PATHS:
         return validate_session(event, request_id)
