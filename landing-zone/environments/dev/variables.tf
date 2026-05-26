@@ -310,3 +310,45 @@ variable "sre_metrics_lambda_zip_path" {
   type        = string
   default     = "../../../phase2-backend/deploy/sre_metrics.zip"
 }
+
+variable "marketplace_product_code" {
+  description = "AWS Marketplace product code for marketplace integration"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_alerts_sns_topic_arn" {
+  description = "SNS topic ARN for marketplace failure alerts"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_ceo_sns_topic_arn" {
+  description = "SNS topic ARN for marketplace lifecycle alerts to leadership"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_db_host" {
+  description = "RDS Proxy endpoint for marketplace lambdas"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_db_secret_arn" {
+  description = "Secrets Manager ARN for marketplace lambdas database access"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_lambda_role_arn" {
+  description = "IAM role ARN used by marketplace lambdas"
+  type        = string
+  default     = ""
+}
+
+variable "marketplace_lambda_security_group_id" {
+  description = "Lambda security group ID for marketplace lambdas"
+  type        = string
+  default     = ""
+}
