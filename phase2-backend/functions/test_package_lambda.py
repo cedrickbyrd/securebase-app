@@ -144,14 +144,35 @@ class PackageLambdaScriptTests(unittest.TestCase):
         docker_script.write_text("#!/bin/bash\nexit 1\n", encoding="utf-8")
         docker_script.chmod(0o755)
 
-    def _run_script(self):
+    def _write_fake_aws(self):
+        aws_script = self.bin_dir / "aws"
+        aws_script.write_text(
+            textwrap.dedent(
+                """\
+                #!/bin/bash
+                set -e
+                echo "$*" >> "${FAKE_AWS_LOG}"
+                if [ "$1" = "lambda" ] && [ "$2" = "list-functions" ]; then
+                  printf '%s\n' "${FAKE_AWS_LIST_FUNCTIONS_OUTPUT}"
+                  exit 0
+                fi
+                """
+            ),
+            encoding="utf-8",
+        )
+        aws_script.chmod(0o755)
+
+    def _run_script(self, *args, extra_env=None):
         env = os.environ.copy()
         env["PATH"] = f"{self.bin_dir}:{env['PATH']}"
         env["FAKE_INSTALL_LOG"] = str(self.root / "install.log")
+        env["FAKE_AWS_LOG"] = str(self.root / "aws.log")
+        if extra_env:
+            env.update(extra_env)
 
         try:
-            subprocess.run(
-                ["bash", str(self.functions_dir / "package-lambda.sh")],
+            result = subprocess.run(
+                ["bash", str(self.functions_dir / "package-lambda.sh"), *args],
                 cwd=self.functions_dir,
                 env=env,
                 check=True,
@@ -163,12 +184,15 @@ class PackageLambdaScriptTests(unittest.TestCase):
                 f"package-lambda.sh failed\nSTDOUT:\n{exc.stdout}\nSTDERR:\n{exc.stderr}"
             ) from exc
 
-        return (self.root / "install.log").read_text(encoding="utf-8")
+        install_log = (self.root / "install.log").read_text(encoding="utf-8")
+        aws_log_path = self.root / "aws.log"
+        aws_log = aws_log_path.read_text(encoding="utf-8") if aws_log_path.exists() else ""
+        return result.stdout, install_log, aws_log
 
     def test_packages_all_functions_with_docker_when_available(self):
         self._write_fake_docker()
 
-        install_log = self._run_script()
+        output, install_log, aws_log = self._run_script()
 
         for name in FUNCTION_NAMES:
             self.assertTrue((self.deploy_dir / f"{name}.zip").exists())
@@ -192,12 +216,16 @@ class PackageLambdaScriptTests(unittest.TestCase):
 
         self.assertIn("--entrypoint /bin/bash", install_log)
         self.assertIn("public.ecr.aws/lambda/python:3.11", install_log)
+        self.assertEqual("", aws_log)
+        self.assertIn("📋 Packaging Summary", output)
+        self.assertIn("Function             Size", output)
+        self.assertNotIn("Deploy status", output)
 
     def test_falls_back_to_platform_specific_pip_install(self):
         self._write_unavailable_docker()
         self._write_fake_python()
 
-        install_log = self._run_script()
+        _, install_log, aws_log = self._run_script()
 
         self.assertIn("--platform manylinux2014_x86_64", install_log)
         self.assertIn("--only-binary=:all:", install_log)
@@ -207,6 +235,81 @@ class PackageLambdaScriptTests(unittest.TestCase):
         self.assertIn("jwt.py", auth_entries)
         self.assertIn("bcrypt/__init__.py", auth_entries)
         self.assertIn("boto3/__init__.py", auth_entries)
+        self.assertEqual("", aws_log)
+
+    def test_deploys_single_function_directly_with_wait(self):
+        self._write_fake_docker()
+        self._write_fake_aws()
+
+        output, _, aws_log = self._run_script("--deploy", "auth_v2")
+
+        self.assertTrue((self.deploy_dir / "auth_v2.zip").exists())
+        self.assertFalse((self.deploy_dir / "report_engine.zip").exists())
+        self.assertIn(
+            "lambda update-function-code --function-name securebase-production-auth-v2 --zip-file",
+            aws_log,
+        )
+        self.assertIn(
+            "lambda wait function-updated --function-name securebase-production-auth-v2",
+            aws_log,
+        )
+        self.assertNotIn("--s3-bucket", aws_log)
+        self.assertIn("Deploy status", output)
+        self.assertIn("deployed directly (securebase-production-auth-v2)", output)
+
+    def test_deploys_large_package_via_s3_and_looks_up_session_function_name(self):
+        self._write_fake_docker()
+        self._write_fake_aws()
+
+        output, _, aws_log = self._run_script(
+            "--deploy",
+            "session_management",
+            extra_env={
+                "PACKAGE_LAMBDA_DIRECT_DEPLOY_LIMIT_BYTES": "1",
+                "FAKE_AWS_LIST_FUNCTIONS_OUTPUT": "securebase-prod-session-management",
+            },
+        )
+
+        self.assertTrue((self.deploy_dir / "session_management.zip").exists())
+        self.assertIn("lambda list-functions", aws_log)
+        self.assertIn(
+            "s3 cp ",
+            aws_log,
+        )
+        self.assertIn(
+            "s3://securebase-terraform-state-prod/lambda-deploys/session_management.zip",
+            aws_log,
+        )
+        self.assertIn(
+            "lambda update-function-code --function-name securebase-prod-session-management "
+            "--s3-bucket securebase-terraform-state-prod --s3-key lambda-deploys/session_management.zip",
+            aws_log,
+        )
+        self.assertIn(
+            "lambda wait function-updated --function-name securebase-prod-session-management",
+            aws_log,
+        )
+        self.assertIn("deployed via S3 (securebase-prod-session-management)", output)
+
+    def test_session_management_deploy_defaults_when_lookup_is_empty(self):
+        self._write_fake_docker()
+        self._write_fake_aws()
+
+        _, _, aws_log = self._run_script(
+            "--deploy",
+            "session_management",
+            extra_env={"FAKE_AWS_LIST_FUNCTIONS_OUTPUT": ""},
+        )
+
+        self.assertIn("lambda list-functions", aws_log)
+        self.assertIn(
+            "lambda update-function-code --function-name securebase-production-session-management --zip-file",
+            aws_log,
+        )
+        self.assertIn(
+            "lambda wait function-updated --function-name securebase-production-session-management",
+            aws_log,
+        )
 
 
 if __name__ == "__main__":
