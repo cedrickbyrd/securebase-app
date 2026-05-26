@@ -1,3 +1,5 @@
+import { getStoredSessionToken } from './apiService';
+
 /**
  * SRE Service - Production API calls for infrastructure metrics
  *
@@ -32,11 +34,7 @@ function isDemoMode() {
 
 function getAuthToken() {
   try {
-    // Read from sessionStorage only — localStorage tokens are no longer used.
-    // HttpOnly JWT cookies are sent automatically by the browser via
-    // credentials:'include'; no explicit Authorization header is required for
-    // same-origin /api/* routes.
-    return sessionStorage.getItem('authToken') || sessionStorage.getItem('sessionToken') || '';
+    return getStoredSessionToken() || '';
   } catch (_) {
     return '';
   }
