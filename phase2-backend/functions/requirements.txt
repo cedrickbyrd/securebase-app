@@ -1,29 +1,4 @@
-# Phase 2 Backend Lambda Requirements
-# All dependencies for Lambda functions
-
-# AWS SDK
-boto3>=1.28.0
-
-# JWT handling
 PyJWT>=2.8.0
-cryptography>=41.0.0
-
-# HTTP requests for webhooks
-requests>=2.31.0
-aws-xray-sdk>=2.14.0
-
-# Database connectivity
-psycopg2-binary>=2.9.9
-
-# JSON/Data handling
-python-dateutil>=2.8.2
-
-# Environment variables
-python-dotenv>=1.0.0
-
-# Payment processing
-stripe>=7.0.0
-
-# RBAC & Authentication (Phase 4)
-bcrypt>=4.1.0
+bcrypt>=4.0.0
+boto3>=1.26.0
 pyotp>=2.9.0
