@@ -265,6 +265,91 @@ class TestAcceptInviteActivationEvent(unittest.TestCase):
         auth_v2._sns_client.publish.assert_not_called()
 
 
+class TestValidateInviteToken(unittest.TestCase):
+    """GET invite token validation for email-link landing."""
+
+    def setUp(self):
+        self._orig_tokens = auth_v2._tokens_table
+        auth_v2._tokens_table = MagicMock()
+
+    def tearDown(self):
+        auth_v2._tokens_table = self._orig_tokens
+
+    def test_missing_token_returns_400(self):
+        resp = auth_v2.validate_invite_token({"queryStringParameters": {}}, "req-009")
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 400)
+        self.assertEqual(body["error"], "token is required")
+
+    def test_invalid_token_returns_401(self):
+        auth_v2._tokens_table.get_item.return_value = {}
+        resp = auth_v2.validate_invite_token(
+            {"queryStringParameters": {"token": "missing"}},
+            "req-010",
+        )
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 401)
+        self.assertEqual(body["error"], "Invalid or expired invite link")
+
+    def test_used_token_returns_401(self):
+        token_rec = _make_token_record(status="used")
+        auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
+        resp = auth_v2.validate_invite_token(
+            {"queryStringParameters": {"token": "tok123"}},
+            "req-011",
+        )
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 401)
+        self.assertEqual(body["error"], "Invite link has already been used")
+
+    def test_expired_token_returns_401(self):
+        token_rec = _make_token_record()
+        token_rec["expires_at"] = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+        auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
+        resp = auth_v2.validate_invite_token(
+            {"queryStringParameters": {"token": "tok123"}},
+            "req-012",
+        )
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 401)
+        self.assertEqual(body["error"], "Invite link has expired")
+
+    def test_valid_token_returns_masked_email(self):
+        token_rec = _make_token_record(email="ce@example.com", plan="pro")
+        auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
+        resp = auth_v2.validate_invite_token(
+            {"queryStringParameters": {"token": "tok123"}},
+            "req-013",
+        )
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 200)
+        self.assertTrue(body["valid"])
+        self.assertEqual(body["email"], "ce***@example.com")
+        self.assertEqual(body["plan"], "pro")
+        self.assertEqual(body["expires_at"], token_rec["expires_at"])
+
+
+class TestLambdaHandlerAcceptInviteRoutes(unittest.TestCase):
+    """lambda_handler routes GET accept-invite paths to validate_invite_token."""
+
+    @patch("auth_v2.validate_invite_token")
+    def test_get_accept_invite_paths_are_routed(self, mock_validate):
+        mock_validate.return_value = {"statusCode": 200, "body": "{}"}
+
+        for path in ("/auth/accept-invite", "/accept-invite"):
+            with self.subTest(path=path):
+                event = {
+                    "httpMethod": "GET",
+                    "path": path,
+                    "queryStringParameters": {"token": "tok123"},
+                    "requestContext": {"requestId": f"req-{path}"},
+                    "headers": {},
+                }
+                auth_v2.lambda_handler(event, None)
+
+        self.assertEqual(mock_validate.call_count, 2)
+
+
 class TestLoginFirstLoginTracking(unittest.TestCase):
     """login fires first_login SNS event on first successful login only."""
 
