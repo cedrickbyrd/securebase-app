@@ -304,7 +304,7 @@ class TestValidateInviteToken(unittest.TestCase):
 
     def test_expired_token_returns_401(self):
         token_rec = _make_token_record()
-        token_rec["expires_at"] = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+        token_rec["expires_at"] = "2000-01-01T00:00:00+00:00"
         auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
         resp = auth_v2.validate_invite_token(
             {"queryStringParameters": {"token": "tok123"}},
@@ -327,6 +327,17 @@ class TestValidateInviteToken(unittest.TestCase):
         self.assertEqual(body["email"], "ce***@example.com")
         self.assertEqual(body["plan"], "pro")
         self.assertEqual(body["expires_at"], token_rec["expires_at"])
+
+    def test_valid_token_with_single_char_local_part_masks_fully(self):
+        token_rec = _make_token_record(email="a@example.com", plan="pro")
+        auth_v2._tokens_table.get_item.return_value = {"Item": token_rec}
+        resp = auth_v2.validate_invite_token(
+            {"queryStringParameters": {"token": "tok123"}},
+            "req-014",
+        )
+        body = json.loads(resp["body"])
+        self.assertEqual(resp["statusCode"], 200)
+        self.assertEqual(body["email"], "***@example.com")
 
 
 class TestLambdaHandlerAcceptInviteRoutes(unittest.TestCase):

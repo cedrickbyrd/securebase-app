@@ -214,7 +214,7 @@ def _mask_email(email: str) -> str:
         return ''
 
     local, sep, domain = email.partition('@')
-    visible = local[:2]
+    visible = local[:2] if len(local) > 1 else ''
     if sep and domain:
         return f'{visible}***@{domain}'
     return f'{visible}***'
