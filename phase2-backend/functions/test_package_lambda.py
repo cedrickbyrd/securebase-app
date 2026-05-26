@@ -45,11 +45,12 @@ class PackageLambdaScriptTests(unittest.TestCase):
                   exit 0
                 fi
 
-                echo "$*" >> "${FAKE_INSTALL_LOG}"
+                args="$*"
+                echo "${args}" >> "${FAKE_INSTALL_LOG}"
 
                 target=""
                 requirements=""
-                command_line="$*"
+                command_line="${args}"
                 while [ $# -gt 0 ]; do
                   case "$1" in
                     -e)
@@ -70,7 +71,7 @@ class PackageLambdaScriptTests(unittest.TestCase):
                   esac
                 done
 
-                command_line="${command_line} ${requirements}"
+                command_line="${args} ${requirements}"
                 mkdir -p "${target}"
                 case "${command_line}" in
                   *PyJWT*) echo "# jwt" > "${target}/jwt.py" ;;
