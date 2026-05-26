@@ -24,9 +24,10 @@ function MarketplaceRedirect({ setAuth }) {
       .post('/marketplace/resolve', { token })
       .then((response) => {
         if (!mounted) return;
+        const safeCustomerId = String(response.customer_id || 'buyer').replace(/[^a-zA-Z0-9-]/g, '');
         setAuth(true);
         localStorage.setItem('userRole', 'user');
-        localStorage.setItem('userEmail', `marketplace+${response.customer_id || 'buyer'}@securebase.local`);
+        localStorage.setItem('userEmail', `marketplace+${safeCustomerId || 'buyer'}@securebase.local`);
         navigate(response.redirect_url || '/dashboard', { replace: true });
       })
       .catch((err) => {

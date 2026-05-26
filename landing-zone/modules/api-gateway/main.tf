@@ -857,7 +857,6 @@ resource "aws_api_gateway_deployment" "main" {
   depends_on = [
     aws_api_gateway_integration.auth_login_post,
     aws_api_gateway_integration.auth_lambda,
-    aws_api_gateway_integration.marketplace_resolve_post
   ]
 }
 
