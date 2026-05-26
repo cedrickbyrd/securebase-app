@@ -111,7 +111,7 @@ parse_args() {
 requirements_for() {
   case "$1" in
     auth_v2)
-      printf '%s\n' PyJWT bcrypt boto3
+      printf '%s\n' PyJWT bcrypt boto3 pyotp
       ;;
     session_management)
       printf '%s\n' PyJWT boto3
