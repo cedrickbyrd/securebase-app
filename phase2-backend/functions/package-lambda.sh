@@ -157,12 +157,17 @@ resolve_session_management_function_name() {
     return 0
   fi
 
-  discovered_names="$(
+  if ! discovered_names="$(
     aws lambda list-functions \
       --query "Functions[?contains(FunctionName, 'session-management')].FunctionName" \
       --output text \
-      2>/dev/null || true
-  )"
+      2>&1
+  )"; then
+    echo "⚠️ WARNING: Could not look up session_management Lambda name; using ${default_name}" >&2
+    echo "   aws lambda list-functions failed with: ${discovered_names}" >&2
+    printf '%s\n' "${default_name}"
+    return 0
+  fi
 
   if [ -z "${discovered_names}" ]; then
     printf '%s\n' "${default_name}"
