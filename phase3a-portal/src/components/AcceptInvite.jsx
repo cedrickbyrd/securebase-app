@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiService } from '../services/apiService';
+import { apiService, persistSessionToken } from '../services/apiService';
 import BRANDING from '../config/branding';
 import './Login.css';
 
@@ -50,7 +50,9 @@ export default function AcceptInvite({ setAuth }) {
     try {
       const data = await apiService.post('/auth/accept-invite', { token, password });
       if (data.token) {
-        sessionStorage.setItem('sessionToken', data.token);
+        // Use persistSessionToken with rememberMe=true to match the login default —
+        // new users should not be immediately logged out on tab close after activation.
+        persistSessionToken(data.token, true);
         localStorage.setItem('userEmail', data.user?.email || '');
         localStorage.setItem('userRole',  data.user?.role  || 'user');
         setAuth(true);
