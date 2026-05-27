@@ -159,3 +159,71 @@ test.describe('Portal SPA routes', () => {
   });
 
 });
+
+// ── Golden path — real customer (Matthew) + Marketplace customer ────────────
+
+test.describe('Golden path — real customer (Matthew) + Marketplace customer', () => {
+
+  test('Real customer: forgot-password → reset → login → JWT', async () => {
+    // Guard: only run when SMOKE_RESET_TOKEN is available in the environment
+    test.skip(!process.env.SMOKE_RESET_TOKEN, 'Requires SMOKE_RESET_TOKEN env var');
+
+    const ctx = await request.newContext();
+    const newPassword = `GoldenPath_${crypto.randomBytes(8).toString('hex')}!`;
+
+    // Step 1: Reset password using pre-generated token
+    const resetRes = await ctx.post(`${API}/auth/reset-password`, {
+      data: { token: process.env.SMOKE_RESET_TOKEN, password: newPassword },
+    });
+    expect(resetRes.status()).toBe(200);
+
+    // Step 2: Login with new password
+    const loginRes = await ctx.post(`${API}/auth/login`, {
+      data: { email: process.env.SMOKE_EMAIL, password: newPassword },
+    });
+    expect(loginRes.status()).toBe(200);
+    const loginBody = await loginRes.json();
+
+    // Step 3: Assert valid 3-part JWT returned
+    expect(loginBody.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+  });
+
+  test('Real customer: valid JWT can be renewed via /auth/refresh', async () => {
+    test.skip(!process.env.SMOKE_JWT, 'Requires SMOKE_JWT env var');
+
+    const ctx = await request.newContext();
+    const refreshRes = await ctx.post(`${API}/auth/refresh`, {
+      data: { token: process.env.SMOKE_JWT },
+    });
+    expect(refreshRes.status()).toBe(200);
+    const body = await refreshRes.json();
+
+    // Assert new token is a valid JWT and structurally different from the input
+    expect(body.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+    expect(body.token).not.toBe(process.env.SMOKE_JWT);
+  });
+
+  test('Marketplace customer: renewed token preserves aws_marketplace source', async () => {
+    test.skip(!process.env.SMOKE_MARKETPLACE_JWT, 'Requires SMOKE_MARKETPLACE_JWT env var');
+
+    const ctx = await request.newContext();
+    const refreshRes = await ctx.post(`${API}/auth/refresh`, {
+      data: { token: process.env.SMOKE_MARKETPLACE_JWT },
+    });
+    expect(refreshRes.status()).toBe(200);
+    const body = await refreshRes.json();
+
+    // Decode payload (middle segment) without verifying signature
+    const payload = JSON.parse(Buffer.from(body.token.split('.')[1], 'base64url').toString());
+    expect(payload.source).toBe('aws_marketplace');
+    expect(payload.email).toMatch(/^marketplace\+/);
+  });
+
+  test('/api/auth/refresh proxies correctly (returns 400 not 404)', async () => {
+    const ctx = await request.newContext();
+    const res = await ctx.post(`${PORTAL}/api/auth/refresh`, { data: {} });
+    // 400 = Lambda reached and validated input. 404 = proxy broken.
+    expect(res.status()).toBe(400);
+  });
+
+});

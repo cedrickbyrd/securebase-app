@@ -466,6 +466,43 @@ const resendInvite = async (body) => {
   return response(200, { message: "If a matching invite exists, a new link has been sent" });
 };
 
+// ── token refresh ─────────────────────────────────────────────────────────────
+
+const refreshToken = async (body) => {
+  const { token } = body;
+  if (!token) return response(400, { message: "Token required" });
+  if (!JWT_SECRET) return response(500, { message: "Auth service misconfigured" });
+
+  let decoded;
+  try {
+    // clockTolerance: 86400 (24h) is intentional — Marketplace JWTs have a 24-hour
+    // lifetime and must remain renewable for their full validity window. Standard
+    // clock-drift tolerance (seconds) is too narrow here; this allows a fully-expired
+    // Marketplace JWT to be refreshed as long as it hasn't been expired for more than 24h.
+    decoded = jwt.verify(token, JWT_SECRET, { clockTolerance: 86400 });
+  } catch (err) {
+    return response(401, { message: "Invalid or expired token" });
+  }
+
+  const newToken = jwt.sign(
+    {
+      sub:         decoded.sub,
+      // decoded.email is present in standard JWTs; Marketplace JWTs may omit it and
+      // use 'sub' (synthetic email address) as the primary identity claim instead.
+      email:       decoded.email || decoded.sub,
+      role:        decoded.role || "user",
+      plan:        decoded.plan,
+      tier:        decoded.tier,
+      source:      decoded.source,       // preserves "aws_marketplace" for Marketplace customers
+      mfa_enabled: decoded.mfa_enabled || false,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRY }
+  );
+
+  return response(200, { token: newToken });
+};
+
 // ── router ────────────────────────────────────────────────────────────────────
 
 export const handler = async (event) => {
@@ -505,6 +542,7 @@ export const handler = async (event) => {
     if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
     if (method === "POST" && path.endsWith("/auth/mfa/setup"))       return await mfaSetup(body);
     if (method === "POST" && path.endsWith("/auth/mfa/verify"))      return await mfaVerify(body);
+    if (method === "POST" && path.endsWith("/auth/refresh"))         return await refreshToken(body);
     return response(404, { message: "Not found" });
   } catch (err) {
     console.error("Auth Lambda error:", err);
