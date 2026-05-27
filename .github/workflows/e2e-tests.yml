@@ -5,6 +5,7 @@ on:
     paths:
       - 'phase3a-portal/**'
       - 'phase6-backend/**'
+      - '.github/workflows/e2e-tests.yml'
   workflow_dispatch:
 
 permissions:
