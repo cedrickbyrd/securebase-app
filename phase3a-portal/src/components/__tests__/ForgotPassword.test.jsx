@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithRouter } from '../../test/testUtils';
-import ForgotPassword from '../ForgotPassword';
+import ForgotPassword, { maskEmail } from '../ForgotPassword';
 
 const postMock = vi.fn();
 const forgotPasswordMock = vi.fn();
@@ -58,5 +58,32 @@ describe('ForgotPassword', () => {
 
     const supportLink = screen.getByRole('link', { name: 'support@test.example.com' });
     expect(supportLink).toHaveAttribute('href', 'mailto:support@test.example.com');
+  });
+
+  it('masks the email shown in success state', async () => {
+    renderWithRouter(<ForgotPassword />);
+
+    fireEvent.change(screen.getByLabelText(/work email/i), { target: { value: 'user@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('****@example.com')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('user@example.com')).not.toBeInTheDocument();
+  });
+});
+
+describe('maskEmail', () => {
+  it('returns masked email for valid email strings', () => {
+    expect(maskEmail('user@company.com')).toBe('****@company.com');
+  });
+
+  it('handles invalid inputs without throwing', () => {
+    expect(maskEmail('')).toBe('****');
+    expect(maskEmail('invalid-email')).toBe('****');
+    expect(maskEmail('@domain.com')).toBe('****');
+    expect(maskEmail('user@')).toBe('****');
+    expect(maskEmail(null)).toBe('****');
   });
 });

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import SystemHealth from './SystemHealth';
 import AlertingDashboard from './AlertingDashboard';
 import { adminService } from '../../services/adminService';
+import { apiService } from '../../services/apiService';
 
 const INITIAL_DELAY_MS = 60000;
 
@@ -70,6 +71,10 @@ const AdminDashboard = () => {
   const [complianceScoresLoading, setComplianceScoresLoading] = useState(false);
   const [complianceSortKey, setComplianceSortKey] = useState('tenant_display_name');
   const [complianceSortDir, setComplianceSortDir] = useState('asc');
+  const [resetEmail, setResetEmail] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState('');
+  const [resetErrorMessage, setResetErrorMessage] = useState('');
   const delayRef = useRef(INITIAL_DELAY_MS);
   const costStartDateRef = useRef('');
   const costEndDateRef = useRef('');
@@ -280,6 +285,23 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleSendPasswordReset = async (event) => {
+    event.preventDefault();
+    setResetErrorMessage('');
+    setResetSuccessMessage('');
+    setIsSendingReset(true);
+
+    try {
+      await apiService.post('/auth/forgot-password', { email: resetEmail });
+      setResetSuccessMessage('Password reset email sent.');
+      setResetEmail('');
+    } catch (_error) {
+      setResetErrorMessage('Failed to send password reset email. Please try again.');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -331,6 +353,42 @@ const AdminDashboard = () => {
         <div className="border border-red-200 bg-red-50 rounded-lg p-3 text-sm text-red-700">
           Unable to refresh admin metrics. Retrying with exponential back-off.
         </div>
+      )}
+
+      {isAdmin && (
+        <section className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">User Actions</h2>
+          <form onSubmit={handleSendPasswordReset} className="space-y-3">
+            <div>
+              <label htmlFor="admin-reset-email" className="block text-sm font-medium text-gray-700 mb-1">
+                User Email
+              </label>
+              <input
+                id="admin-reset-email"
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(event) => setResetEmail(event.target.value)}
+                className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="user@company.com"
+                disabled={isSendingReset}
+              />
+            </div>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              disabled={isSendingReset}
+            >
+              {isSendingReset ? 'Sending…' : 'Send Password Reset'}
+            </button>
+            {resetSuccessMessage && (
+              <p className="text-sm text-green-700">{resetSuccessMessage}</p>
+            )}
+            {resetErrorMessage && (
+              <p className="text-sm text-red-700">{resetErrorMessage}</p>
+            )}
+          </form>
+        </section>
       )}
 
       <section className="bg-white border border-gray-200 rounded-xl p-6">

@@ -4,6 +4,13 @@ import { apiService } from '../services/apiService';
 import BRANDING from '../config/branding';
 import './Login.css';
 
+export function maskEmail(value) {
+  if (typeof value !== 'string' || value.length === 0) return '****';
+  const atIndex = value.lastIndexOf('@');
+  if (atIndex <= 0 || atIndex === value.length - 1) return '****';
+  return `****${value.slice(atIndex)}`;
+}
+
 export default function ForgotPassword() {
   const [email, setEmail]     = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,7 +55,7 @@ export default function ForgotPassword() {
               <h2 style={{ color: '#1a202c' }}>Check your inbox</h2>
               <p style={{ color: '#6b7280', lineHeight: '1.6' }}>We sent a secure reset link to:</p>
               <div style={{ background: '#eff6ff', borderRadius: '6px', padding: '4px 10px', display: 'inline-block', fontFamily: 'monospace', color: '#1d4ed8', fontSize: '13px', margin: '8px 0' }}>
-                {email}
+                {maskEmail(email)}
               </div>
               <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>The link expires in 24 hours.</p>
               <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '12px' }}>
