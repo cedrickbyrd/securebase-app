@@ -107,7 +107,7 @@ jobs:
 
       - name: Terraform apply
         if: steps.backend_check.outputs.configured == 'true'
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -var-file=terraform.tfvars
 
   notify-slack:
     name: Notify Slack
