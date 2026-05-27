@@ -77,6 +77,79 @@ class TestGetMeteringQuantity(unittest.TestCase):
 
 
 class TestMarketplaceMeteringWorker(unittest.TestCase):
+    def test_get_metering_quantity_uses_users_query_for_users_dimension(self):
+        from marketplace_metering_worker import _get_metering_quantity
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = (3,)
+
+        with patch('marketplace_metering_worker.get_connection', return_value=mock_conn), \
+             patch('marketplace_metering_worker.release_connection') as mock_release:
+            quantity = _get_metering_quantity('c1', 'users')
+
+        sql = mock_cursor.execute.call_args.args[0]
+        params = mock_cursor.execute.call_args.args[1]
+        self.assertIn("FROM users", sql)
+        self.assertIn("status = 'active'", sql)
+        self.assertEqual(params, ('c1',))
+        self.assertEqual(quantity, 3)
+        mock_release.assert_called_once_with(mock_conn)
+
+    def test_get_metering_quantity_uses_usage_metrics_for_tenant_dimensions(self):
+        from marketplace_metering_worker import _get_metering_quantity
+
+        for dimension in ('hipaa_tenants', 'fintech_tenants', 'gov_tenants'):
+            with self.subTest(dimension=dimension):
+                mock_conn = MagicMock()
+                mock_cursor = MagicMock()
+                mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+                mock_cursor.fetchone.return_value = (8,)
+
+                with patch('marketplace_metering_worker.get_connection', return_value=mock_conn), \
+                     patch('marketplace_metering_worker.release_connection'):
+                    quantity = _get_metering_quantity('c1', dimension)
+
+                sql = mock_cursor.execute.call_args.args[0]
+                params = mock_cursor.execute.call_args.args[1]
+                self.assertIn("FROM usage_metrics", sql)
+                self.assertIn("account_count", sql)
+                self.assertIn("ORDER BY month DESC", sql)
+                self.assertIn("LIMIT 1", sql)
+                self.assertEqual(params, ('c1',))
+                self.assertEqual(quantity, 8)
+
+    def test_get_metering_quantity_returns_one_when_tenant_metric_row_is_missing(self):
+        from marketplace_metering_worker import _get_metering_quantity
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = None
+
+        with patch('marketplace_metering_worker.get_connection', return_value=mock_conn), \
+             patch('marketplace_metering_worker.release_connection'):
+            quantity = _get_metering_quantity('c1', 'hipaa_tenants')
+
+        self.assertEqual(quantity, 1)
+
+    def test_get_metering_quantity_returns_one_on_db_error(self):
+        from marketplace_metering_worker import _get_metering_quantity
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_cursor.execute.side_effect = Exception('db down')
+
+        with patch('marketplace_metering_worker.get_connection', return_value=mock_conn), \
+             patch('marketplace_metering_worker.release_connection'), \
+             patch('marketplace_metering_worker.logger') as mock_logger:
+            quantity = _get_metering_quantity('c1', 'hipaa_tenants')
+
+        self.assertEqual(quantity, 1)
+        mock_logger.exception.assert_called_once()
+
     @patch('marketplace_metering_worker._get_metering_quantity', return_value=7)
     @patch('marketplace_metering_worker.metering_client')
     @patch('marketplace_metering_worker._insert_metering_record')
