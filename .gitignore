@@ -79,6 +79,7 @@ infrastructure/email/*.zip
 .env
 .env.*
 !.env.example
+!.env.local.example
 
 # Stripe ID dotfiles
 .enterprise-*-price-id
@@ -139,3 +140,7 @@ venv/
 *.backup
 *.so
 !landing-zone/files/phase6/*.zip
+
+# Local dev
+.env.local
+localstack_data/
