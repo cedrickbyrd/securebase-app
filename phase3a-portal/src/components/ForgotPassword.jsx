@@ -6,7 +6,7 @@ import './Login.css';
 
 export function maskEmail(value) {
   if (typeof value !== 'string' || value.length === 0) return '****';
-  const atIndex = value.lastIndexOf('@');
+  const atIndex = value.indexOf('@');
   if (atIndex <= 0 || atIndex === value.length - 1) return '****';
   return `****${value.slice(atIndex)}`;
 }

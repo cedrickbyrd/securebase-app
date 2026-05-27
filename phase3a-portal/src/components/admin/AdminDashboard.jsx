@@ -295,8 +295,14 @@ const AdminDashboard = () => {
       await apiService.post('/auth/forgot-password', { email: resetEmail });
       setResetSuccessMessage('Password reset email sent.');
       setResetEmail('');
-    } catch (_error) {
-      setResetErrorMessage('Failed to send password reset email. Please try again.');
+    } catch (error) {
+      const isNetworkIssue = typeof error?.message === 'string'
+        && error.message.toLowerCase().includes('network');
+      setResetErrorMessage(
+        isNetworkIssue
+          ? 'Failed to send password reset email due to a network issue. Please try again.'
+          : 'Failed to send password reset email. Verify the user account and try again.',
+      );
     } finally {
       setIsSendingReset(false);
     }
@@ -355,41 +361,39 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {isAdmin && (
-        <section className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">User Actions</h2>
-          <form onSubmit={handleSendPasswordReset} className="space-y-3">
-            <div>
-              <label htmlFor="admin-reset-email" className="block text-sm font-medium text-gray-700 mb-1">
-                User Email
-              </label>
-              <input
-                id="admin-reset-email"
-                type="email"
-                required
-                value={resetEmail}
-                onChange={(event) => setResetEmail(event.target.value)}
-                className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="user@company.com"
-                disabled={isSendingReset}
-              />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+      <section className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">User Actions</h2>
+        <form onSubmit={handleSendPasswordReset} className="space-y-3">
+          <div>
+            <label htmlFor="admin-reset-email" className="block text-sm font-medium text-gray-700 mb-1">
+              User Email
+            </label>
+            <input
+              id="admin-reset-email"
+              type="email"
+              required
+              value={resetEmail}
+              onChange={(event) => setResetEmail(event.target.value)}
+              className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="user@company.com"
               disabled={isSendingReset}
-            >
-              {isSendingReset ? 'Sending…' : 'Send Password Reset'}
-            </button>
-            {resetSuccessMessage && (
-              <p className="text-sm text-green-700">{resetSuccessMessage}</p>
-            )}
-            {resetErrorMessage && (
-              <p className="text-sm text-red-700">{resetErrorMessage}</p>
-            )}
-          </form>
-        </section>
-      )}
+            />
+          </div>
+          <button
+            type="submit"
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSendingReset}
+          >
+            {isSendingReset ? 'Sending…' : 'Send Password Reset'}
+          </button>
+          {resetSuccessMessage && (
+            <p className="text-sm text-green-700">{resetSuccessMessage}</p>
+          )}
+          {resetErrorMessage && (
+            <p className="text-sm text-red-700">{resetErrorMessage}</p>
+          )}
+        </form>
+      </section>
 
       <section className="bg-white border border-gray-200 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">System Overview</h2>

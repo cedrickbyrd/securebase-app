@@ -132,7 +132,7 @@ describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem('userRole', 'admin');
-    apiService.post.mockResolvedValue({ ok: true });
+    apiService.post.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -265,6 +265,24 @@ describe('AdminDashboard', () => {
     await waitFor(() => {
       expect(apiService.post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'user@example.com' });
       expect(screen.getByText('Password reset email sent.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows an error message when sending password reset fails', async () => {
+    setupMocks();
+    apiService.post.mockRejectedValue(new Error('backend error'));
+    const user = userEvent.setup();
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /user actions/i })).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/user email/i), 'user@example.com');
+    await user.click(screen.getByRole('button', { name: /send password reset/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to send password reset email. Verify the user account and try again.')).toBeInTheDocument();
     });
   });
 });

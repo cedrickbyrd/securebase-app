@@ -85,5 +85,6 @@ describe('maskEmail', () => {
     expect(maskEmail('@domain.com')).toBe('****');
     expect(maskEmail('user@')).toBe('****');
     expect(maskEmail(null)).toBe('****');
+    expect(maskEmail(undefined)).toBe('****');
   });
 });
