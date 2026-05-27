@@ -1,0 +1,393 @@
+openapi: 3.0.3
+info:
+  title: SecureBase Phase 6 API
+  version: 1.0.0
+  description: >-
+    OpenAPI contract for shipped Phase 6.1, 6.1.1, and 6.2 APIs in
+    `phase6-backend/functions`.
+servers:
+  - url: https://api.securebase.tximhotep.com
+security:
+  - bearerAuth: []
+paths:
+  /admin/evidence:
+    get:
+      tags: [Evidence]
+      summary: List evidence packages for the authenticated tenant
+      parameters:
+        - in: query
+          name: framework
+          schema:
+            type: string
+            enum: [SOC2, HIPAA, FedRAMP, ALL]
+        - in: query
+          name: status
+          schema:
+            type: string
+            example: complete
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Evidence packages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/evidence/{package_id}:
+    get:
+      tags: [Evidence]
+      summary: Get evidence package details and download URL
+      parameters:
+        - $ref: '#/components/parameters/PackageId'
+      responses:
+        '200':
+          description: Evidence package details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePackageDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Evidence package not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/evidence/generate:
+    post:
+      tags: [Evidence]
+      summary: Trigger asynchronous evidence package generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceGenerateRequest'
+      responses:
+        '202':
+          description: Generation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceGenerateAccepted'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tenant/compliance/history:
+    get:
+      tags: [Compliance]
+      summary: Retrieve tenant compliance trend and violation history
+      parameters:
+        - in: query
+          name: framework
+          schema:
+            type: string
+            enum: [SOC2, HIPAA, FedRAMP, all]
+            default: all
+        - in: query
+          name: days
+          schema:
+            type: integer
+            enum: [30, 60, 90]
+            default: 90
+      responses:
+        '200':
+          description: Compliance history by framework
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceHistoryResponse'
+        '400':
+          description: Invalid framework or days query value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '503':
+          description: DynamoDB service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /admin/compliance/scores:
+    get:
+      tags: [Compliance]
+      summary: Retrieve cross-tenant compliance scores for admins
+      responses:
+        '200':
+          description: Admin compliance score report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminComplianceScoresResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PackageId:
+      in: path
+      name: package_id
+      required: true
+      schema:
+        type: string
+      description: Evidence package ID
+  responses:
+    UnauthorizedError:
+      description: Unauthorized request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    EvidencePackageSummary:
+      type: object
+      required:
+        - id
+        - package_name
+        - framework
+        - status
+        - date_range_start
+        - date_range_end
+        - log_count
+        - size_bytes
+        - sha256
+        - created_at
+      properties:
+        id:
+          type: string
+        package_name:
+          type: string
+        framework:
+          type: string
+          enum: [SOC2, HIPAA, FEDRAMP, ALL, FedRAMP]
+        status:
+          type: string
+          example: complete
+        date_range_start:
+          type: string
+          format: date-time
+        date_range_end:
+          type: string
+          format: date-time
+        log_count:
+          type: integer
+        size_bytes:
+          type: integer
+        sha256:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    EvidencePackageDetail:
+      allOf:
+        - $ref: '#/components/schemas/EvidencePackageSummary'
+        - type: object
+          required: [retention_until, download_url_expires_in]
+          properties:
+            retention_until:
+              type: string
+              format: date-time
+            download_url:
+              type: string
+              nullable: true
+            download_url_expires_in:
+              type: integer
+              default: 3600
+    EvidenceListResponse:
+      type: object
+      required: [packages, count]
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidencePackageSummary'
+        count:
+          type: integer
+    EvidenceGenerateRequest:
+      type: object
+      required: [framework, date_range_start, date_range_end]
+      properties:
+        framework:
+          type: string
+          enum: [SOC2, HIPAA, FEDRAMP, ALL]
+        date_range_start:
+          type: string
+          format: date-time
+        date_range_end:
+          type: string
+          format: date-time
+    EvidenceGenerateAccepted:
+      type: object
+      required: [message, request_id, framework, date_range_start, date_range_end]
+      properties:
+        message:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+        framework:
+          type: string
+        date_range_start:
+          type: string
+          format: date-time
+        date_range_end:
+          type: string
+          format: date-time
+    ComplianceHistoryPoint:
+      type: object
+      required: [date, score]
+      properties:
+        date:
+          type: string
+          format: date
+        score:
+          type: number
+          format: float
+    ComplianceViolation:
+      type: object
+      required: [control_id, control_name, rule_name, severity, status, days_failing]
+      properties:
+        control_id:
+          type: string
+          nullable: true
+        control_name:
+          type: string
+          nullable: true
+        rule_name:
+          type: string
+        severity:
+          type: string
+          enum: [Critical, High, Medium, Low]
+        status:
+          type: string
+        days_failing:
+          type: integer
+    ComplianceFrameworkPayload:
+      type: object
+      required: [current_score, score_delta_7d, status, trend, history, violations]
+      properties:
+        current_score:
+          type: number
+          format: float
+          nullable: true
+        score_delta_7d:
+          type: number
+          format: float
+          nullable: true
+        status:
+          type: string
+          enum: [Passing, At Risk, Failing]
+        trend:
+          type: string
+          enum: [Improving, Declining, Stable]
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceHistoryPoint'
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceViolation'
+    ComplianceHistoryResponse:
+      type: object
+      required: [tenant_id, generated_at, frameworks]
+      properties:
+        tenant_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        frameworks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComplianceFrameworkPayload'
+    FrameworkScore:
+      type: object
+      required: [score, status, last_calculated]
+      properties:
+        score:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [Passing, At Risk, Critical]
+        last_calculated:
+          type: string
+    TenantComplianceScore:
+      type: object
+      required: [tenant_id, tenant_display_name, SOC2, HIPAA, FedRAMP]
+      properties:
+        tenant_id:
+          type: string
+        tenant_display_name:
+          type: string
+        SOC2:
+          allOf:
+            - $ref: '#/components/schemas/FrameworkScore'
+          nullable: true
+        HIPAA:
+          allOf:
+            - $ref: '#/components/schemas/FrameworkScore'
+          nullable: true
+        FedRAMP:
+          allOf:
+            - $ref: '#/components/schemas/FrameworkScore'
+          nullable: true
+    AdminComplianceScoresResponse:
+      type: object
+      required: [generated_at, tenants]
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantComplianceScore'

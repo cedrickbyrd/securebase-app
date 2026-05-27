@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "echo 'No unit tests configured for root marketing app' && exit 0",
-    "test:coverage": "echo 'No unit tests configured for root marketing app' && exit 0"
+    "test:coverage": "echo 'No unit tests configured for root marketing app' && exit 0",
+    "validate:openapi": "swagger-cli validate docs/api/openapi.yaml"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.992.0",
