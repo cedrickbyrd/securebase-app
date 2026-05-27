@@ -11,6 +11,17 @@ variable "aws_region" {
 variable "lambda_packages" {
   description = "Map of lambda package zip paths"
   type        = map(string)
+
+  validation {
+    condition = alltrue([
+      for k in [
+        "marketplace_resolve_customer",
+        "marketplace_subscription_handler",
+        "marketplace_metering_worker"
+      ] : can(regex("^s3://[^/]+/.+", lookup(var.lambda_packages, k, "")))
+    ])
+    error_message = "marketplace lambda_packages entries must be set to s3://bucket/key URIs for marketplace_resolve_customer, marketplace_subscription_handler, and marketplace_metering_worker."
+  }
 }
 
 variable "lambda_role_arn" {
