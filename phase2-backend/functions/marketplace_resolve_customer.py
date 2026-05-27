@@ -4,9 +4,10 @@ import json
 import os
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import boto3
+import jwt
 from botocore.exceptions import ClientError
 
 if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
@@ -24,9 +25,20 @@ logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 metering_client = boto3.client("meteringmarketplace")
 lambda_client = boto3.client("lambda")
+secrets_client = boto3.client("secretsmanager")
 
 ONBOARDING_FUNCTION_NAME = os.environ.get("ONBOARDING_FUNCTION_NAME", "securebase-trigger-onboarding")
 MARKETPLACE_PRODUCT_CODE = os.environ.get("MARKETPLACE_PRODUCT_CODE", "")
+VALID_TIERS = {"standard", "healthcare", "fintech", "gov-federal"}
+TIER_FRAMEWORK_MAP = {
+    "standard": "cis",
+    "healthcare": "hipaa",
+    "fintech": "ffiec",
+    "gov-federal": "fedramp",
+}
+
+_JWT_SECRET_CACHE: dict = {}
+_JWT_SECRET_TTL_SECONDS = 300
 
 
 def _response(status_code: int, body: dict) -> dict:
@@ -54,13 +66,37 @@ def _parse_body(event: dict) -> dict:
     return event if isinstance(event, dict) else {}
 
 
+def _get_jwt_secret() -> str:
+    """Fetch JWT secret from Secrets Manager with 5-minute in-memory cache."""
+    now = datetime.now(timezone.utc).timestamp()
+    cached = _JWT_SECRET_CACHE.get('secret')
+    if cached and now < _JWT_SECRET_CACHE.get('expires_at', 0):
+        return cached
+
+    secret_name = os.environ.get('JWT_SECRET', 'securebase-jwt-production')
+    try:
+        resp = secrets_client.get_secret_value(SecretId=secret_name)
+        raw = resp.get('SecretString', '')
+        try:
+            parsed = json.loads(raw)
+            value = parsed.get('jwt_secret') or parsed.get(secret_name) or raw
+        except (json.JSONDecodeError, AttributeError):
+            value = raw
+    except Exception:
+        value = secret_name
+
+    _JWT_SECRET_CACHE['secret'] = value
+    _JWT_SECRET_CACHE['expires_at'] = now + _JWT_SECRET_TTL_SECONDS
+    return value
+
+
 def _get_customer_by_marketplace_id(marketplace_customer_id: str):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, marketplace_customer_id, marketplace_product_code
+                SELECT id, marketplace_customer_id, marketplace_product_code, tier
                 FROM customers
                 WHERE marketplace_customer_id = %s
                 """,
@@ -72,7 +108,30 @@ def _get_customer_by_marketplace_id(marketplace_customer_id: str):
         release_connection(conn)
 
 
-def _insert_marketplace_customer(marketplace_customer_id: str, product_code: str):
+def _mint_marketplace_jwt(customer_id: str, email: str, tier: str) -> str:
+    """Mint a 24-hour JWT for a marketplace-provisioned customer."""
+    secret = _get_jwt_secret()
+    now = datetime.now(timezone.utc)
+    payload = {
+        'sub': email,
+        'email': email,
+        'plan': tier,
+        'tier': tier,
+        'status': 'active',
+        'source': 'aws_marketplace',
+        'iat': int(now.timestamp()),
+        'exp': int((now + timedelta(hours=24)).timestamp()),
+        'jti': str(uuid.uuid4()),
+    }
+    return jwt.encode(payload, secret, algorithm='HS256')
+
+
+def _insert_marketplace_customer(
+    marketplace_customer_id: str,
+    product_code: str,
+    tier: str = "standard",
+    framework: str = "cis",
+):
     customer_id = str(uuid.uuid4())
     synthetic_email = f"marketplace+{marketplace_customer_id.lower()}@securebase.local"
     synthetic_name = f"marketplace-{marketplace_customer_id.lower()}"
@@ -102,8 +161,8 @@ def _insert_marketplace_customer(marketplace_customer_id: str, product_code: str
                 (
                     customer_id,
                     synthetic_name,
-                    "standard",
-                    "cis",
+                    tier,
+                    framework,
                     synthetic_email,
                     synthetic_email,
                     "aws_marketplace",
@@ -124,10 +183,10 @@ def _insert_marketplace_customer(marketplace_customer_id: str, product_code: str
         release_connection(conn)
 
 
-def _trigger_onboarding(customer_id: str, email: str):
+def _trigger_onboarding(customer_id: str, email: str, tier: str = "standard"):
     payload = {
         "customer_id": customer_id,
-        "tier": "standard",
+        "tier": tier,
         "email": email,
         "name": email,
         "source": "aws_marketplace",
@@ -168,31 +227,64 @@ def lambda_handler(event, _context):
 
     existing = _get_customer_by_marketplace_id(marketplace_customer_id)
     if existing:
-        return _response(
-            200,
-            {
-                "customer_id": str(existing[0]),
-                "marketplace_customer_id": existing[1],
-                "marketplace_product_code": existing[2],
-                "redirect_url": "/dashboard",
-                "idempotent": True,
-            },
-        )
+        existing_customer_id = str(existing[0])
+        existing_tier = existing[3] if len(existing) > 3 and existing[3] else "standard"
+        synthetic_email = f"marketplace+{marketplace_customer_id.lower()}@securebase.local"
 
-    customer_id = _insert_marketplace_customer(marketplace_customer_id, product_code or MARKETPLACE_PRODUCT_CODE)
+        try:
+            token = _mint_marketplace_jwt(existing_customer_id, synthetic_email, existing_tier)
+        except Exception:
+            logger.exception("JWT minting failed for returning marketplace customer %s", existing_customer_id)
+            token = None
+
+        response_body = {
+            "customer_id": existing_customer_id,
+            "marketplace_customer_id": existing[1],
+            "marketplace_product_code": existing[2],
+            "redirect_url": "/dashboard",
+            "idempotent": True,
+            "user": {"email": synthetic_email, "role": "user"},
+        }
+        if token:
+            response_body["token"] = token
+
+        return _response(200, response_body)
+
+    requested_plan = (
+        request.get("plan")
+        or ((event.get("queryStringParameters") or {}).get("plan") if isinstance(event, dict) else None)
+        or "standard"
+    ).strip().lower()
+    tier = requested_plan if requested_plan in VALID_TIERS else "standard"
+    framework = TIER_FRAMEWORK_MAP.get(tier, "cis")
+
+    customer_id = _insert_marketplace_customer(
+        marketplace_customer_id,
+        product_code or MARKETPLACE_PRODUCT_CODE,
+        tier,
+        framework,
+    )
     synthetic_email = f"marketplace+{marketplace_customer_id.lower()}@securebase.local"
 
     try:
-        _trigger_onboarding(customer_id, synthetic_email)
+        _trigger_onboarding(customer_id, synthetic_email, tier)
     except Exception:
         logger.exception("Marketplace onboarding trigger failed for %s", customer_id)
 
-    return _response(
-        200,
-        {
-            "customer_id": customer_id,
-            "marketplace_customer_id": marketplace_customer_id,
-            "marketplace_product_code": product_code,
-            "redirect_url": "/dashboard",
-        },
-    )
+    try:
+        token = _mint_marketplace_jwt(customer_id, synthetic_email, tier)
+    except Exception:
+        logger.exception("JWT minting failed for marketplace customer %s", customer_id)
+        token = None
+
+    response_body = {
+        "customer_id": customer_id,
+        "marketplace_customer_id": marketplace_customer_id,
+        "marketplace_product_code": product_code,
+        "redirect_url": "/dashboard",
+        "user": {"email": synthetic_email, "role": "user"},
+    }
+    if token:
+        response_body["token"] = token
+
+    return _response(200, response_body)
