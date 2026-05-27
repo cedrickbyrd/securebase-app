@@ -141,7 +141,7 @@ class TestMarketplaceResolveCustomer(unittest.TestCase):
     @patch('marketplace_resolve_customer._insert_marketplace_customer')
     @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
     @patch('marketplace_resolve_customer.metering_client')
-    def test_jwt_mint_failure_still_returns_customer_data(
+    def test_jwt_mint_failure_returns_500_for_new_customer(
         self,
         mock_metering,
         mock_get_existing,
@@ -161,10 +161,28 @@ class TestMarketplaceResolveCustomer(unittest.TestCase):
         event = {'body': json.dumps({'token': 'valid-token'})}
         response = lambda_handler(event, None)
 
-        self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(response['statusCode'], 500)
         body = json.loads(response['body'])
-        self.assertEqual(body['customer_id'], 'uuid-no-jwt')
-        self.assertNotIn('token', body)
+        self.assertEqual(body['error'], 'jwt_error')
+
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', side_effect=Exception('secrets unavailable'))
+    @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
+    @patch('marketplace_resolve_customer.metering_client')
+    def test_jwt_mint_failure_returns_500_for_existing_customer(self, mock_metering, mock_get_existing, _mock_mint):
+        from marketplace_resolve_customer import lambda_handler
+
+        mock_metering.resolve_customer.return_value = {
+            'CustomerIdentifier': 'cust-existing-no-jwt',
+            'ProductCode': 'prod-xyz',
+        }
+        mock_get_existing.return_value = ('uuid-existing-no-jwt', 'cust-existing-no-jwt', 'prod-xyz', 'standard')
+
+        event = {'body': json.dumps({'token': 'valid-token'})}
+        response = lambda_handler(event, None)
+
+        self.assertEqual(response['statusCode'], 500)
+        body = json.loads(response['body'])
+        self.assertEqual(body['error'], 'jwt_error')
 
     @patch('marketplace_resolve_customer.metering_client')
     def test_invalid_token(self, mock_metering):

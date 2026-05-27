@@ -27,7 +27,7 @@ metering_client = boto3.client("meteringmarketplace")
 lambda_client = boto3.client("lambda")
 secrets_client = boto3.client("secretsmanager")
 
-ONBOARDING_FUNCTION_NAME = os.environ.get("ONBOARDING_FUNCTION_NAME", "securebase-trigger-onboarding")
+ONBOARDING_FUNCTION_NAME = os.environ.get("ONBOARDING_FUNCTION_NAME") or "securebase-trigger-onboarding"
 MARKETPLACE_PRODUCT_CODE = os.environ.get("MARKETPLACE_PRODUCT_CODE", "")
 VALID_TIERS = {"standard", "healthcare", "fintech", "gov-federal"}
 TIER_FRAMEWORK_MAP = {
@@ -156,6 +156,7 @@ def _insert_marketplace_customer(
                     marketplace_subscription_start
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (marketplace_customer_id) DO NOTHING
                 RETURNING id
                 """,
                 (
@@ -174,6 +175,15 @@ def _insert_marketplace_customer(
                 ),
             )
             created = cur.fetchone()
+            if created is None:
+                cur.execute(
+                    "SELECT id FROM customers WHERE marketplace_customer_id = %s",
+                    (marketplace_customer_id,),
+                )
+                existing = cur.fetchone()
+                if existing is None:
+                    raise RuntimeError("Failed to create or fetch marketplace customer")
+                return str(existing[0])
         conn.commit()
         return str(created[0])
     except Exception:
@@ -236,6 +246,8 @@ def lambda_handler(event, _context):
         except Exception:
             logger.exception("JWT minting failed for returning marketplace customer %s", existing_customer_id)
             token = None
+        if not token:
+            return _response(500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
 
         response_body = {
             "customer_id": existing_customer_id,
@@ -276,6 +288,8 @@ def lambda_handler(event, _context):
     except Exception:
         logger.exception("JWT minting failed for marketplace customer %s", customer_id)
         token = None
+    if not token:
+        return _response(500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
 
     response_body = {
         "customer_id": customer_id,

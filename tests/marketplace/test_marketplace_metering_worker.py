@@ -21,9 +21,10 @@ sys.modules.setdefault('db_utils', MagicMock())
 
 
 class TestMarketplaceMeteringWorker(unittest.TestCase):
+    @patch('marketplace_metering_worker._get_metering_quantity', return_value=7)
     @patch('marketplace_metering_worker.metering_client')
     @patch('marketplace_metering_worker._insert_metering_record')
-    def test_dimension_mapping(self, mock_insert, mock_metering):
+    def test_dimension_mapping(self, mock_insert, mock_metering, mock_quantity):
         from marketplace_metering_worker import _meter_customer
 
         mock_metering.batch_meter_usage.return_value = {
@@ -34,6 +35,8 @@ class TestMarketplaceMeteringWorker(unittest.TestCase):
 
         args = mock_metering.batch_meter_usage.call_args.kwargs
         self.assertEqual(args['UsageRecords'][0]['Dimension'], 'hipaa_tenants')
+        self.assertEqual(args['UsageRecords'][0]['Quantity'], 7)
+        mock_quantity.assert_called_once_with('c1', 'hipaa_tenants')
         mock_insert.assert_called_once()
 
     @patch('marketplace_metering_worker._publish_alert')
