@@ -18,14 +18,16 @@ sys.modules.setdefault('psycopg2', MagicMock())
 sys.modules.setdefault('psycopg2.pool', MagicMock())
 sys.modules.setdefault('psycopg2.extras', MagicMock())
 sys.modules.setdefault('db_utils', MagicMock())
+sys.modules.setdefault('jwt', MagicMock())
 
 
 class TestMarketplaceResolveCustomer(unittest.TestCase):
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', return_value='jwt-token')
     @patch('marketplace_resolve_customer._trigger_onboarding')
     @patch('marketplace_resolve_customer._insert_marketplace_customer')
     @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
     @patch('marketplace_resolve_customer.metering_client')
-    def test_new_customer_creation(self, mock_metering, mock_get_existing, mock_insert, mock_onboard):
+    def test_new_customer_creation(self, mock_metering, mock_get_existing, mock_insert, mock_onboard, mock_mint):
         from marketplace_resolve_customer import lambda_handler
 
         mock_metering.resolve_customer.return_value = {
@@ -41,19 +43,23 @@ class TestMarketplaceResolveCustomer(unittest.TestCase):
         self.assertEqual(response['statusCode'], 200)
         body = json.loads(response['body'])
         self.assertEqual(body['customer_id'], 'uuid-123')
-        mock_insert.assert_called_once()
-        mock_onboard.assert_called_once()
+        self.assertEqual(body['token'], 'jwt-token')
+        self.assertEqual(body['user']['email'], 'marketplace+cust-abc123@securebase.local')
+        mock_insert.assert_called_once_with('cust-abc123', 'prod-xyz', 'standard', 'cis')
+        mock_onboard.assert_called_once_with('uuid-123', 'marketplace+cust-abc123@securebase.local', 'standard')
+        mock_mint.assert_called_once_with('uuid-123', 'marketplace+cust-abc123@securebase.local', 'standard')
 
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', return_value='jwt-token')
     @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
     @patch('marketplace_resolve_customer.metering_client')
-    def test_idempotent_existing_customer(self, mock_metering, mock_get_existing):
+    def test_idempotent_existing_customer(self, mock_metering, mock_get_existing, mock_mint):
         from marketplace_resolve_customer import lambda_handler
 
         mock_metering.resolve_customer.return_value = {
             'CustomerIdentifier': 'cust-abc123',
             'ProductCode': 'prod-xyz',
         }
-        mock_get_existing.return_value = ('uuid-existing', 'cust-abc123', 'prod-xyz')
+        mock_get_existing.return_value = ('uuid-existing', 'cust-abc123', 'prod-xyz', 'healthcare')
 
         event = {'body': json.dumps({'token': 'valid-token'})}
         response = lambda_handler(event, None)
@@ -62,6 +68,103 @@ class TestMarketplaceResolveCustomer(unittest.TestCase):
         body = json.loads(response['body'])
         self.assertTrue(body['idempotent'])
         self.assertEqual(body['customer_id'], 'uuid-existing')
+        self.assertEqual(body['token'], 'jwt-token')
+        mock_mint.assert_called_once_with(
+            'uuid-existing',
+            'marketplace+cust-abc123@securebase.local',
+            'healthcare',
+        )
+
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', return_value='jwt-token')
+    @patch('marketplace_resolve_customer._trigger_onboarding')
+    @patch('marketplace_resolve_customer._insert_marketplace_customer')
+    @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
+    @patch('marketplace_resolve_customer.metering_client')
+    def test_healthcare_plan_uses_healthcare_tier_and_hipaa_framework(
+        self,
+        mock_metering,
+        mock_get_existing,
+        mock_insert,
+        mock_onboard,
+        _mock_mint,
+    ):
+        from marketplace_resolve_customer import lambda_handler
+
+        mock_metering.resolve_customer.return_value = {
+            'CustomerIdentifier': 'cust-health',
+            'ProductCode': 'prod-xyz',
+        }
+        mock_get_existing.return_value = None
+        mock_insert.return_value = 'uuid-health'
+
+        event = {'body': json.dumps({'token': 'valid-token', 'plan': 'healthcare'})}
+        response = lambda_handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        mock_insert.assert_called_once_with('cust-health', 'prod-xyz', 'healthcare', 'hipaa')
+        mock_onboard.assert_called_once_with(
+            'uuid-health',
+            'marketplace+cust-health@securebase.local',
+            'healthcare',
+        )
+
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', return_value='jwt-token')
+    @patch('marketplace_resolve_customer._trigger_onboarding')
+    @patch('marketplace_resolve_customer._insert_marketplace_customer')
+    @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
+    @patch('marketplace_resolve_customer.metering_client')
+    def test_invalid_plan_falls_back_to_standard(
+        self,
+        mock_metering,
+        mock_get_existing,
+        mock_insert,
+        _mock_onboard,
+        _mock_mint,
+    ):
+        from marketplace_resolve_customer import lambda_handler
+
+        mock_metering.resolve_customer.return_value = {
+            'CustomerIdentifier': 'cust-invalid-plan',
+            'ProductCode': 'prod-xyz',
+        }
+        mock_get_existing.return_value = None
+        mock_insert.return_value = 'uuid-standard'
+
+        event = {'body': json.dumps({'token': 'valid-token', 'plan': 'unknown-tier'})}
+        response = lambda_handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        mock_insert.assert_called_once_with('cust-invalid-plan', 'prod-xyz', 'standard', 'cis')
+
+    @patch('marketplace_resolve_customer._mint_marketplace_jwt', side_effect=Exception('secrets unavailable'))
+    @patch('marketplace_resolve_customer._trigger_onboarding')
+    @patch('marketplace_resolve_customer._insert_marketplace_customer')
+    @patch('marketplace_resolve_customer._get_customer_by_marketplace_id')
+    @patch('marketplace_resolve_customer.metering_client')
+    def test_jwt_mint_failure_still_returns_customer_data(
+        self,
+        mock_metering,
+        mock_get_existing,
+        mock_insert,
+        _mock_onboard,
+        _mock_mint,
+    ):
+        from marketplace_resolve_customer import lambda_handler
+
+        mock_metering.resolve_customer.return_value = {
+            'CustomerIdentifier': 'cust-no-jwt',
+            'ProductCode': 'prod-xyz',
+        }
+        mock_get_existing.return_value = None
+        mock_insert.return_value = 'uuid-no-jwt'
+
+        event = {'body': json.dumps({'token': 'valid-token'})}
+        response = lambda_handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        body = json.loads(response['body'])
+        self.assertEqual(body['customer_id'], 'uuid-no-jwt')
+        self.assertNotIn('token', body)
 
     @patch('marketplace_resolve_customer.metering_client')
     def test_invalid_token(self, mock_metering):
