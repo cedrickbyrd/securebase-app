@@ -14,13 +14,17 @@ locals {
     ManagedBy   = "terraform"
   })
 
+  lambda_s3_parts = {
+    for k, uri in var.lambda_packages : k => split("/", replace(uri, "s3://", ""))
+  }
+
   lambda_s3 = {
-    for k, uri in var.lambda_packages : k => {
-      bucket = split("/", replace(uri, "s3://", ""))[0]
+    for k, parts in local.lambda_s3_parts : k => {
+      bucket = parts[0]
       key    = join("/", slice(
-        split("/", replace(uri, "s3://", "")),
+        parts,
         1,
-        length(split("/", replace(uri, "s3://", "")))
+        length(parts)
       ))
     }
   }
