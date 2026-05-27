@@ -63,6 +63,18 @@ The SecureBase funnel has three stages across two separate web properties:
 [BOFU]  securebase.tximhotep.com/checkout  ←  Stripe payment capture
 ```
 
+### AWS Marketplace Channel
+
+SecureBase is listed on AWS Marketplace. Buyers who subscribe are redirected to:
+
+```
+[Marketplace] portal.securebase.tximhotep.com/marketplace-redirect?x-amzn-marketplace-token=<token>
+```
+
+- The portal resolves the token via `POST /api/marketplace/resolve` → `securebase-marketplace-resolver` Lambda
+- Session is always persisted to `localStorage` (buyers arrive from an external redirect — no "Remember me" UI)
+- Implementation: `phase3a-portal/src/pages/MarketplaceRedirect.jsx` + `persistSessionToken()` from `apiService.js`
+
 ### Key Rules for Every Developer
 
 - **Demo → Pricing is the primary acquisition path.** `demo.securebase.tximhotep.com` must always carry a prominent CTA back to `securebase.tximhotep.com/pricing`. Do NOT add self-serve signup flows inside the demo portal — pricing is the handoff point.

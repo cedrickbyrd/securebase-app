@@ -134,10 +134,19 @@ phase3a-portal/
 
 ---
 
+## Pages Map
+
+| Page | Location | Purpose |
+|------|----------|---------|
+| `MarketplaceRedirect.jsx` | `pages/` | AWS Marketplace SaaS fulfillment landing page — called by AWS after subscription; resolves `x-amzn-marketplace-token` via `/api/marketplace/resolve`, provisions customer, always persists session to `localStorage` (external redirect flow), redirects to `/dashboard` |
+
+---
+
 ## Component Map
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
+| `MarketplaceRedirect.jsx` | `pages/` | AWS Marketplace SaaS fulfillment — resolves `x-amzn-marketplace-token`, provisions customer, redirects to `/dashboard` |
 | `Login.jsx` | `components/` | Lambda JWT auth — inputs use `id="email"` and `id="password"` |
 | `AcceptInvite.jsx` | `components/` | Token-based account activation |
 | `ForgotPassword.jsx` | `components/` | Password reset request |
@@ -204,6 +213,7 @@ VITE_STRIPE_PUBLIC_KEY=pk_live_...
 
 | Rule | Why |
 |------|-----|
+| Do NOT manually `localStorage.setItem('sessionToken', ...)` | Use `persistSessionToken()` from `apiService.js` |
 | Do NOT add `@supabase/supabase-js` anywhere | Not used — portal auth is Lambda JWT |
 | Do NOT install packages from repo root | Wrong `node_modules` scope |
 | Do NOT create new Netlify Functions | Use AWS Lambda + API Gateway + `netlify.toml` redirect |
