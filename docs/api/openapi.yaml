@@ -206,7 +206,7 @@ components:
           type: string
         framework:
           type: string
-          enum: [SOC2, HIPAA, FEDRAMP, ALL, FedRAMP]
+          enum: [SOC2, HIPAA, FedRAMP, ALL]
         status:
           type: string
           example: complete
@@ -256,7 +256,7 @@ components:
       properties:
         framework:
           type: string
-          enum: [SOC2, HIPAA, FEDRAMP, ALL]
+          enum: [SOC2, HIPAA, FedRAMP, ALL]
         date_range_start:
           type: string
           format: date-time

@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import type { Preview } from '@storybook/react';
 
 function jsonResponse(body: unknown, status = 200): Promise<Response> {
@@ -11,7 +12,7 @@ function jsonResponse(body: unknown, status = 200): Promise<Response> {
 
 function buildFetch(scenario = 'default') {
   return async (input: RequestInfo | URL): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const url = typeof input === 'string' ? input : input.url;
 
     if (url.includes('/tenant/compliance/history')) {
       if (scenario === 'compliance-empty') {
@@ -129,10 +130,26 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const scenario = context.parameters.fetchScenario || 'default';
-      globalThis.fetch = buildFetch(scenario);
-      globalThis.localStorage?.setItem('sessionToken', 'storybook-token');
-      globalThis.sessionStorage?.setItem('sessionToken', 'storybook-token');
-      return Story();
+      function FetchMockProvider({ children }: { children: React.ReactNode }) {
+        useEffect(() => {
+          const originalFetch = globalThis.fetch;
+          globalThis.fetch = buildFetch(scenario);
+          globalThis.localStorage?.setItem('sessionToken', 'storybook-token');
+          globalThis.sessionStorage?.setItem('sessionToken', 'storybook-token');
+
+          return () => {
+            globalThis.fetch = originalFetch;
+          };
+        }, [scenario]);
+
+        return React.createElement(React.Fragment, null, children);
+      }
+
+      return React.createElement(
+        FetchMockProvider,
+        null,
+        React.createElement(Story)
+      );
     },
   ],
   parameters: {
