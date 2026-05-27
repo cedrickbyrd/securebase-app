@@ -1,0 +1,88 @@
+services:
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb,s3,sqs,config,cloudwatch,events,sts,iam
+      - DEFAULT_REGION=us-east-1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:2.3.0
+    ports:
+      - "8000:8000"
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: securebase
+      POSTGRES_USER: securebase
+      POSTGRES_PASSWORD: localdev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./phase6-backend/database/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securebase"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  portal:
+    build:
+      context: ./phase3a-portal
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./phase3a-portal/src:/app/src
+      - ./phase3a-portal/public:/app/public
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3001
+      - VITE_USE_MOCK_API=true
+      - VITE_ENV=development
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  sam-local:
+    image: public.ecr.aws/sam/build-python3.11:latest
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./phase6-backend:/var/task
+      - ~/.aws:/root/.aws:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - DYNAMODB_ENDPOINT=http://localstack:4566
+      - COMPLIANCE_SCORES_TABLE=securebase-compliance-scores
+      - CONTROL_VIOLATION_TABLE=control_violation_log
+      - RDS_HOST=postgres
+      - RDS_DATABASE=securebase
+      - RDS_USER=securebase
+      - RDS_PASSWORD=localdev
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      localstack:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: ["sleep", "infinity"]
+
+volumes:
+  localstack_data:
+  postgres_data:
