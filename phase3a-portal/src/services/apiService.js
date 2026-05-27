@@ -95,6 +95,10 @@ class ApiService {
   register  = async (email, password) => this.post('/auth/register', { email, password });
   setupMFA  = async (email) => this.post('/auth/mfa/setup', { email });
   verifyMFA = async (email, totp_code) => this.post('/auth/mfa/verify', { email, totp_code });
+  refreshToken = async (token) => {
+    const response = await this.post('/auth/refresh', { token });
+    return response.token;
+  };
 
   getMetrics          = async () => this.get('/billing/metrics');
   getDashboardData    = async () => this.get('/billing/dashboard');
