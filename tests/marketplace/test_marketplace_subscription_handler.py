@@ -36,12 +36,12 @@ def sns_event(event_type):
 
 
 class TestMarketplaceSubscriptionHandler(unittest.TestCase):
-    @patch.dict(os.environ, {'BYPASS_SNS_SIGNATURE_VERIFY': 'true'})
+    @patch('marketplace_subscription_handler._verify_sns_signature', return_value=True)
     @patch('marketplace_subscription_handler._publish_ceo_alert')
     @patch('marketplace_subscription_handler._update_customer_status')
     @patch('marketplace_subscription_handler._upsert_audit_event')
     @patch('marketplace_subscription_handler._lookup_customer')
-    def test_subscribe_success_updates_customer(self, mock_lookup, mock_audit, mock_update, _mock_alert):
+    def test_subscribe_success_updates_customer(self, mock_lookup, mock_audit, mock_update, _mock_alert, _mock_verify):
         from marketplace_subscription_handler import lambda_handler
 
         mock_lookup.return_value = 'uuid-1'
@@ -52,22 +52,38 @@ class TestMarketplaceSubscriptionHandler(unittest.TestCase):
         self.assertEqual(resp['statusCode'], 200)
         mock_update.assert_called_once_with('uuid-1', 'active', 'active')
 
-    @patch.dict(os.environ, {'BYPASS_SNS_SIGNATURE_VERIFY': 'true'})
+    @patch('marketplace_subscription_handler._verify_sns_signature', return_value=True)
+    @patch('marketplace_subscription_handler._publish_ceo_alert')
+    @patch('marketplace_subscription_handler._update_customer_status')
+    @patch('marketplace_subscription_handler._upsert_audit_event')
+    @patch('marketplace_subscription_handler._lookup_customer')
+    def test_unsubscribe_pending_updates_subscription_status(self, mock_lookup, mock_audit, mock_update, _mock_alert, _mock_verify):
+        from marketplace_subscription_handler import lambda_handler
+
+        mock_lookup.return_value = 'uuid-1'
+        mock_audit.return_value = True
+
+        resp = lambda_handler(sns_event('unsubscribe-pending'), None)
+
+        self.assertEqual(resp['statusCode'], 200)
+        mock_update.assert_called_once_with('uuid-1', 'unsubscribe-pending', 'unsubscribe-pending')
+
+    @patch('marketplace_subscription_handler._verify_sns_signature', return_value=True)
     @patch('marketplace_subscription_handler._refresh_entitlements')
     @patch('marketplace_subscription_handler._update_customer_status')
     @patch('marketplace_subscription_handler._upsert_audit_event')
     @patch('marketplace_subscription_handler._lookup_customer')
-    def test_entitlement_updated_refreshes(self, mock_lookup, mock_audit, mock_update, mock_refresh):
+    def test_entitlement_updated_refreshes(self, mock_lookup, mock_audit, mock_update, mock_refresh, _mock_verify):
         from marketplace_subscription_handler import lambda_handler
 
         mock_lookup.return_value = 'uuid-2'
         mock_audit.return_value = True
-        mock_refresh.return_value = 'inactive'
+        mock_refresh.return_value = ('inactive', None)
 
         resp = lambda_handler(sns_event('entitlement-updated'), None)
 
         self.assertEqual(resp['statusCode'], 200)
-        mock_update.assert_called_once_with('uuid-2', 'inactive', None)
+        mock_update.assert_called_once_with('uuid-2', 'inactive', None, tier=None)
 
     @patch('marketplace_subscription_handler._lookup_customer')
     def test_invalid_signature_skipped(self, mock_lookup):
@@ -78,6 +94,25 @@ class TestMarketplaceSubscriptionHandler(unittest.TestCase):
 
         self.assertFalse(handler._verify_sns_signature({'Sns': {'SignatureVersion': '2'}}))
         mock_lookup.assert_not_called()
+
+    def test_verify_signature_cryptographically(self):
+        import marketplace_subscription_handler as handler
+
+        handler.BYPASS_SNS_SIGNATURE_VERIFY = False
+        cert_mock = MagicMock()
+        cert_mock.public_key.return_value.verify.return_value = None
+        handler.SNS_CERT_CACHE.clear()
+
+        response_mock = MagicMock()
+        response_mock.read.return_value = b'fake-pem'
+        response_mock.__enter__.return_value = response_mock
+        with patch('marketplace_subscription_handler.base64.b64decode', return_value=b'signature'), \
+             patch('marketplace_subscription_handler.urlopen', return_value=response_mock), \
+             patch('marketplace_subscription_handler.x509.load_pem_x509_certificate', return_value=cert_mock):
+            verified = handler._verify_sns_signature(sns_event('subscribe-success')['Records'][0])
+
+        self.assertTrue(verified)
+        cert_mock.public_key.return_value.verify.assert_called_once()
 
 
 if __name__ == '__main__':
