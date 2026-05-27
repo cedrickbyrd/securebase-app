@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import AdminDashboard from '../admin/AdminDashboard';
 import { adminService } from '../../services/adminService';
+import { apiService } from '../../services/apiService';
 
 vi.mock('../../services/adminService', () => ({
   adminService: {
@@ -15,6 +16,13 @@ vi.mock('../../services/adminService', () => ({
     getOperationsStatus: vi.fn(),
     getRecentAlerts: vi.fn(),
     getVaultSummary: vi.fn(),
+    getComplianceScores: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/apiService', () => ({
+  apiService: {
+    post: vi.fn(),
   },
 }));
 
@@ -92,6 +100,25 @@ const setupMocks = (overrides = {}) => {
   adminService.getOperationsStatus.mockResolvedValue(overrides.operations ?? basePayload.operations);
   adminService.getRecentAlerts.mockResolvedValue(overrides.alerts ?? basePayload.alerts);
   adminService.getVaultSummary.mockResolvedValue(overrides.vault ?? vaultPayload);
+  adminService.getComplianceScores.mockResolvedValue(overrides.complianceScores ?? {
+    generated_at: new Date('2026-05-17T02:06:00Z').toISOString(),
+    tenants: [
+      {
+        tenant_id: 'customer-1',
+        tenant_display_name: 'Customer #1',
+        SOC2: { score: 96, last_calculated: '2026-05-17T02:06:00Z' },
+        HIPAA: { score: 98, last_calculated: '2026-05-17T02:06:00Z' },
+        FedRAMP: { score: 93, last_calculated: '2026-05-17T02:06:00Z' },
+      },
+      {
+        tenant_id: 'customer-2',
+        tenant_display_name: 'Customer #2',
+        SOC2: { score: 91, last_calculated: '2026-05-17T02:06:00Z' },
+        HIPAA: { score: 89, last_calculated: '2026-05-17T02:06:00Z' },
+        FedRAMP: { score: 90, last_calculated: '2026-05-17T02:06:00Z' },
+      },
+    ],
+  });
 };
 
 const renderDashboard = () =>
@@ -105,6 +132,7 @@ describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem('userRole', 'admin');
+    apiService.post.mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -220,5 +248,23 @@ describe('AdminDashboard', () => {
 
     await vi.advanceTimersByTimeAsync(60000);
     await waitFor(() => expect(adminService.getSystemOverview).toHaveBeenCalledTimes(2));
+  });
+
+  it('renders admin user actions and sends forgot-password request', async () => {
+    setupMocks();
+    const user = userEvent.setup();
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /user actions/i })).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/user email/i), 'user@example.com');
+    await user.click(screen.getByRole('button', { name: /send password reset/i }));
+
+    await waitFor(() => {
+      expect(apiService.post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'user@example.com' });
+      expect(screen.getByText('Password reset email sent.')).toBeInTheDocument();
+    });
   });
 });
