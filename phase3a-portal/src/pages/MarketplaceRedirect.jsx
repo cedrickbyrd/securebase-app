@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiService, persistSessionToken } from '../services/apiService';
 import '../components/Login.css';
 
@@ -11,6 +11,7 @@ function MarketplaceRedirect({ setAuth }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('x-amzn-marketplace-token');
+    const plan = params.get('plan');
 
     if (!token) {
       setLoading(false);
@@ -21,7 +22,10 @@ function MarketplaceRedirect({ setAuth }) {
     let mounted = true;
 
     apiService
-      .post('/marketplace/resolve', { token })
+      .post('/marketplace/resolve', {
+        token,
+        ...(plan ? { plan } : {}),
+      })
       .then((response) => {
         if (!mounted) return;
         // Store session token via shared helper — always localStorage for marketplace
@@ -65,13 +69,18 @@ function MarketplaceRedirect({ setAuth }) {
           {!loading && error && (
             <div className="login-form">
               <div className="error-message">
-                <span className="error-icon">⚠️</span> {error}
+                <span className="error-icon">⚠️</span>{' '}
+                {error.toLowerCase().includes('invalid') || error.toLowerCase().includes('expired')
+                  ? 'Your Marketplace link has expired. Please return to AWS Marketplace and click the link again.'
+                  : error}
               </div>
+              {(error.toLowerCase().includes('invalid') || error.toLowerCase().includes('expired')) && (
+                <p style={{ marginTop: '1rem' }}>
+                  <a href="https://aws.amazon.com/marketplace">Return to AWS Marketplace</a>
+                </p>
+              )}
               <p style={{ marginTop: '1rem', color: '#4a5568' }}>
                 Need help? Contact <a href="mailto:support@securebase.tximhotep.com">support@securebase.tximhotep.com</a>
-              </p>
-              <p style={{ marginTop: '1rem' }}>
-                <Link to="/pricing">Return to pricing</Link>
               </p>
             </div>
           )}

@@ -31,6 +31,29 @@ TIER_DIMENSIONS = {
 }
 
 
+def _get_metering_quantity(customer_id: str, dimension: str) -> int:
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            if dimension == "users":
+                cur.execute(
+                    "SELECT COUNT(*) FROM users WHERE customer_id = %s AND status = 'active'",
+                    (customer_id,)
+                )
+            else:
+                cur.execute(
+                    "SELECT COUNT(*) FROM customers WHERE id = %s AND status = 'active'",
+                    (customer_id,)
+                )
+            row = cur.fetchone()
+            return max(1, int(row[0])) if row and row[0] else 1
+    except Exception:
+        logger.exception("Failed to get metering quantity for %s/%s", customer_id, dimension)
+        return 1
+    finally:
+        release_connection(conn)
+
+
 def _fetch_active_marketplace_customers():
     conn = get_connection()
     try:
@@ -92,7 +115,8 @@ def _publish_alert(subject: str, message: str):
 
 
 def _meter_customer(customer_id: str, marketplace_customer_id: str, tier: str):
-    dimension, quantity = TIER_DIMENSIONS.get(tier, ("users", 1))
+    dimension, _ = TIER_DIMENSIONS.get(tier, ("users", 1))
+    quantity = _get_metering_quantity(customer_id, dimension)
 
     payload = {
         "CustomerIdentifier": marketplace_customer_id,
@@ -145,7 +169,8 @@ def lambda_handler(_event, _context):
                 failures += 1
         except Exception as exc:
             logger.exception("Metering failed for %s", customer_id)
-            dimension, quantity = TIER_DIMENSIONS.get(tier, ("users", 1))
+            dimension, _ = TIER_DIMENSIONS.get(tier, ("users", 1))
+            quantity = _get_metering_quantity(customer_id, dimension)
             _insert_metering_record(customer_id, marketplace_customer_id, dimension, quantity, "failed", None, str(exc))
             _publish_alert("[SecureBase Marketplace] Metering exception", json.dumps({"customer_id": customer_id, "error": str(exc)}))
             failures += 1
