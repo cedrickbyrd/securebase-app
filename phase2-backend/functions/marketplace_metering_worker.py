@@ -55,7 +55,7 @@ def _get_metering_quantity(customer_id: str, dimension: str) -> int:
                 )
             else:
                 cur.execute(
-                    "SELECT COUNT(*) FROM users WHERE customer_id = %s AND status = 'active'",
+                    "SELECT COUNT(*) FROM customers WHERE id = %s AND status = 'active'",
                     (customer_id,)
                 )
             row = cur.fetchone()
