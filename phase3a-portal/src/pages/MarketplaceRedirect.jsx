@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiService } from '../services/apiService';
+import { apiService, persistSessionToken } from '../services/apiService';
 import '../components/Login.css';
 
 function MarketplaceRedirect({ setAuth }) {
@@ -24,9 +24,14 @@ function MarketplaceRedirect({ setAuth }) {
       .post('/marketplace/resolve', { token })
       .then((response) => {
         if (!mounted) return;
+        // Store session token via shared helper — always localStorage for marketplace
+        // buyers (external redirect, no "remember me" UI available)
+        if (response.token) {
+          persistSessionToken(response.token, true); // true = localStorage
+        }
+        localStorage.setItem('userRole', response.user?.role || 'user');
+        localStorage.setItem('userEmail', response.user?.email || `marketplace+${response.customer_id || 'buyer'}@securebase.local`);
         setAuth(true);
-        localStorage.setItem('userRole', 'user');
-        localStorage.setItem('userEmail', `marketplace+${response.customer_id || 'buyer'}@securebase.local`);
         navigate(response.redirect_url || '/dashboard', { replace: true });
       })
       .catch((err) => {
