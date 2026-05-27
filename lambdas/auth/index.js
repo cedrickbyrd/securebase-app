@@ -475,7 +475,10 @@ const refreshToken = async (body) => {
 
   let decoded;
   try {
-    // Accept tokens expired up to 24h ago (covers Marketplace 24h JWT + clock drift)
+    // clockTolerance: 86400 (24h) is intentional — Marketplace JWTs have a 24-hour
+    // lifetime and must remain renewable for their full validity window. Standard
+    // clock-drift tolerance (seconds) is too narrow here; this allows a fully-expired
+    // Marketplace JWT to be refreshed as long as it hasn't been expired for more than 24h.
     decoded = jwt.verify(token, JWT_SECRET, { clockTolerance: 86400 });
   } catch (err) {
     return response(401, { message: "Invalid or expired token" });
@@ -484,6 +487,8 @@ const refreshToken = async (body) => {
   const newToken = jwt.sign(
     {
       sub:         decoded.sub,
+      // decoded.email is present in standard JWTs; Marketplace JWTs may omit it and
+      // use 'sub' (synthetic email address) as the primary identity claim instead.
       email:       decoded.email || decoded.sub,
       role:        decoded.role || "user",
       plan:        decoded.plan,

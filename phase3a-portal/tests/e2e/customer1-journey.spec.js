@@ -169,7 +169,7 @@ test.describe('Golden path — real customer (Matthew) + Marketplace customer', 
     test.skip(!process.env.SMOKE_RESET_TOKEN, 'Requires SMOKE_RESET_TOKEN env var');
 
     const ctx = await request.newContext();
-    const newPassword = `GoldenPath_${crypto.randomBytes(4).toString('hex')}!`;
+    const newPassword = `GoldenPath_${crypto.randomBytes(8).toString('hex')}!`;
 
     // Step 1: Reset password using pre-generated token
     const resetRes = await ctx.post(`${API}/auth/reset-password`, {
