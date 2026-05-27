@@ -30,6 +30,10 @@ TIER_DIMENSIONS = {
     "gov-federal": ("gov_tenants", 1),
 }
 
+# Dimensions that represent tenant/sub-account counts rather than user counts.
+# These query the `tenants` table grouped by customer_id.
+TENANT_DIMENSIONS = {"hipaa_tenants", "fintech_tenants", "gov_tenants"}
+
 
 def _get_metering_quantity(customer_id: str, dimension: str) -> int:
     conn = get_connection()
@@ -38,6 +42,11 @@ def _get_metering_quantity(customer_id: str, dimension: str) -> int:
             if dimension == "users":
                 cur.execute(
                     "SELECT COUNT(*) FROM users WHERE customer_id = %s AND status = 'active'",
+                    (customer_id,)
+                )
+            elif dimension in TENANT_DIMENSIONS:
+                cur.execute(
+                    "SELECT COUNT(*) FROM tenants WHERE customer_id = %s AND status = 'active'",
                     (customer_id,)
                 )
             else:
