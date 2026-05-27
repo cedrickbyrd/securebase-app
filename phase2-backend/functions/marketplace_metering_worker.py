@@ -30,6 +30,8 @@ TIER_DIMENSIONS = {
     "gov-federal": ("gov_tenants", 1),
 }
 
+# Dimensions that represent tenant/sub-account counts rather than user counts.
+# These query the `tenants` table grouped by customer_id.
 TENANT_DIMENSIONS = {"hipaa_tenants", "fintech_tenants", "gov_tenants"}
 
 
