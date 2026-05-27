@@ -13,6 +13,17 @@ locals {
     Phase       = "marketplace"
     ManagedBy   = "terraform"
   })
+
+  lambda_s3 = {
+    for k, uri in var.lambda_packages : k => {
+      bucket = split("/", replace(uri, "s3://", ""))[0]
+      key    = join("/", slice(
+        split("/", replace(uri, "s3://", "")),
+        1,
+        length(split("/", replace(uri, "s3://", "")))
+      ))
+    }
+  }
 }
 
 resource "aws_sns_topic" "marketplace_subscriptions" {
@@ -37,11 +48,11 @@ resource "aws_sns_topic_policy" "marketplace_subscriptions" {
 }
 
 resource "aws_lambda_function" "marketplace_resolve_customer" {
-  filename         = var.lambda_packages["marketplace_resolve_customer"]
+  s3_bucket        = local.lambda_s3["marketplace_resolve_customer"].bucket
+  s3_key           = local.lambda_s3["marketplace_resolve_customer"].key
   function_name    = "securebase-${var.environment}-marketplace-resolve-customer"
   role             = var.lambda_role_arn
   handler          = "marketplace_resolve_customer.lambda_handler"
-  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_resolve_customer"])
   runtime          = "python3.11"
   timeout          = 30
   memory_size      = 512
@@ -64,11 +75,11 @@ resource "aws_lambda_function" "marketplace_resolve_customer" {
 }
 
 resource "aws_lambda_function" "marketplace_subscription_handler" {
-  filename         = var.lambda_packages["marketplace_subscription_handler"]
+  s3_bucket        = local.lambda_s3["marketplace_subscription_handler"].bucket
+  s3_key           = local.lambda_s3["marketplace_subscription_handler"].key
   function_name    = "securebase-${var.environment}-marketplace-subscription-handler"
   role             = var.lambda_role_arn
   handler          = "marketplace_subscription_handler.lambda_handler"
-  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_subscription_handler"])
   runtime          = "python3.11"
   timeout          = 60
   memory_size      = 512
@@ -92,11 +103,11 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
 }
 
 resource "aws_lambda_function" "marketplace_metering_worker" {
-  filename         = var.lambda_packages["marketplace_metering_worker"]
+  s3_bucket        = local.lambda_s3["marketplace_metering_worker"].bucket
+  s3_key           = local.lambda_s3["marketplace_metering_worker"].key
   function_name    = "securebase-${var.environment}-marketplace-metering-worker"
   role             = var.lambda_role_arn
   handler          = "marketplace_metering_worker.lambda_handler"
-  source_code_hash = filebase64sha256(var.lambda_packages["marketplace_metering_worker"])
   runtime          = "python3.11"
   timeout          = 120
   memory_size      = 512
