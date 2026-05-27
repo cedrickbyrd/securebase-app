@@ -46,7 +46,13 @@ def _get_metering_quantity(customer_id: str, dimension: str) -> int:
                 )
             elif dimension in TENANT_DIMENSIONS:
                 cur.execute(
-                    "SELECT COUNT(*) FROM tenants WHERE customer_id = %s AND status = 'active'",
+                    """
+                    SELECT COALESCE(account_count, 0)
+                    FROM usage_metrics
+                    WHERE customer_id = %s
+                    ORDER BY month DESC
+                    LIMIT 1
+                    """,
                     (customer_id,)
                 )
             else:
