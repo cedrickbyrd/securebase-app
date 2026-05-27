@@ -123,7 +123,7 @@ requirements_for() {
       printf '%s\n' boto3
       ;;
     marketplace_resolve_customer)
-      printf '%s\n' boto3
+      printf '%s\n' boto3 PyJWT
       ;;
     marketplace_subscription_handler)
       printf '%s\n' boto3
