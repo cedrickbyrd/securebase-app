@@ -65,33 +65,35 @@ jobs:
       - name: Check backend configuration
         id: backend_check
         run: |
-          if [ -z "$TF_BACKEND_BUCKET" ]; then
+          if [ -z "$TF_BACKEND_BUCKET" ] || [ -z "$TF_BACKEND_LOCK_TABLE" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::TF_BACKEND_BUCKET secret is not set. Apply for '${{ matrix.workspace }}' will be skipped."
+            echo "::warning::TF_BACKEND_BUCKET or TF_BACKEND_LOCK_TABLE secret is not set. Apply for '${{ matrix.workspace }}' will be skipped."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
         env:
           TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+          TF_BACKEND_LOCK_TABLE: ${{ secrets.TF_BACKEND_LOCK_TABLE }}
 
       - name: Terraform init
         if: steps.backend_check.outputs.configured == 'true'
         run: |
           terraform init -input=false -reconfigure \
-            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
-            -backend-config="key=landing-zone/${{ matrix.workspace }}/terraform.tfstate" \
-            -backend-config="region=us-east-1" \
-            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_LOCK_TABLE }}"
+            -backend-config="backend.hcl" \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}"
 
       - name: Check for existing state lock
         if: steps.backend_check.outputs.configured == 'true'
-        # The LockID key matches the backend S3 key pattern used in the init
-        # step above.  If the backend key path ever changes, update both places.
         run: |
           echo "## Terraform State Lock Check — ${{ matrix.workspace }}" >> "$GITHUB_STEP_SUMMARY"
+          TF_STATE_KEY=$(grep '^[[:space:]]*key[[:space:]]*=' backend.hcl | awk -F'"' '{print $2}')
+          if [ -z "$TF_STATE_KEY" ]; then
+            echo "::error::Failed to extract state key from backend.hcl"
+            exit 1
+          fi
           LOCK=$(aws dynamodb get-item \
             --table-name "${{ secrets.TF_BACKEND_LOCK_TABLE }}" \
-            --key "{\"LockID\":{\"S\":\"landing-zone/${{ matrix.workspace }}/terraform.tfstate\"}}" \
+            --key "$(jq -n --arg bucket "${{ secrets.TF_BACKEND_BUCKET }}" --arg key "$TF_STATE_KEY" '{LockID: {S: "\($bucket)/\($key)"}}')" \
             --query "Item.Info.S" \
             --output text 2>/dev/null || echo "None")
           if [ "$LOCK" != "None" ] && [ -n "$LOCK" ]; then
