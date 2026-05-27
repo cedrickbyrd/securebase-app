@@ -39,6 +39,18 @@ variable "db_secret_arn" {
   type        = string
 }
 
+variable "onboarding_function_name" {
+  description = "Name of the onboarding Lambda function"
+  type        = string
+  default     = ""
+}
+
+variable "jwt_secret_name" {
+  description = "Secrets Manager secret name for JWT signing"
+  type        = string
+  default     = "securebase-jwt-production"
+}
+
 variable "alerts_sns_topic_arn" {
   description = "SNS topic ARN for operational alerts"
   type        = string

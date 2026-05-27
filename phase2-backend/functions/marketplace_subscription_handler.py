@@ -1,12 +1,18 @@
 """Handle AWS Marketplace SNS subscription lifecycle events."""
 
+import base64
 import json
 import os
 import logging
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import boto3
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
     os.environ["RDS_HOST"] = os.environ["DB_HOST"]
@@ -29,12 +35,39 @@ BYPASS_SNS_SIGNATURE_VERIFY = os.environ.get("BYPASS_SNS_SIGNATURE_VERIFY", "fal
 EVENT_STATUS_UPDATES = {
     "subscribe-success": ("active", "active"),
     "subscribe-fail": ("failed", None),
-    "unsubscribe-pending": ("unsubscribe-pending", None),
+    "unsubscribe-pending": ("unsubscribe-pending", "unsubscribe-pending"),
     "unsubscribe-success": ("inactive", "cancelled"),
 }
 
 
 ALERT_EVENTS = {"subscribe-success", "subscribe-fail", "unsubscribe-pending", "unsubscribe-success"}
+SNS_CERT_HOST_RE = re.compile(r"^sns\.[a-z0-9-]+\.amazonaws\.com$")
+SNS_CERT_CACHE: dict[str, x509.Certificate] = {}
+DIMENSION_TO_TIER = {
+    "users": "standard",
+    "hipaa_tenants": "healthcare",
+    "fintech_tenants": "fintech",
+    "gov_tenants": "gov-federal",
+}
+
+
+def _build_sns_signing_string(sns_payload: dict) -> str:
+    fields = [
+        ("Message", sns_payload.get("Message")),
+        ("MessageId", sns_payload.get("MessageId")),
+    ]
+    if sns_payload.get("Subject"):
+        fields.append(("Subject", sns_payload.get("Subject")))
+    if sns_payload.get("SubscribeURL"):
+        fields.append(("SubscribeURL", sns_payload.get("SubscribeURL")))
+    fields.extend(
+        [
+            ("Timestamp", sns_payload.get("Timestamp")),
+            ("TopicArn", sns_payload.get("TopicArn")),
+            ("Type", sns_payload.get("Type")),
+        ]
+    )
+    return "".join(f"{name}\n{value}\n" for name, value in fields if value is not None)
 
 
 def _verify_sns_signature(record: dict) -> bool:
@@ -53,7 +86,32 @@ def _verify_sns_signature(record: dict) -> bool:
     if parsed.scheme != "https":
         return False
     host = (parsed.hostname or "").lower()
-    return host.endswith("amazonaws.com") and host.startswith("sns.")
+    if not SNS_CERT_HOST_RE.match(host):
+        return False
+
+    sns_payload = record.get("Sns", {})
+    canonical_string = _build_sns_signing_string(sns_payload)
+    if not canonical_string:
+        return False
+
+    try:
+        cert = SNS_CERT_CACHE.get(signing_cert_url)
+        if cert is None:
+            with urlopen(signing_cert_url, timeout=5) as response:
+                cert_pem = response.read()
+            cert = x509.load_pem_x509_certificate(cert_pem)
+            SNS_CERT_CACHE[signing_cert_url] = cert
+
+        decoded_signature = base64.b64decode(signature)
+        cert.public_key().verify(
+            decoded_signature,
+            canonical_string.encode("utf-8"),
+            padding.PKCS1v15(),
+            hashes.SHA1(),
+        )
+        return True
+    except Exception:
+        return False
 
 
 def _extract_event_payload(record: dict) -> tuple[str, dict, str]:
@@ -132,7 +190,12 @@ def _upsert_audit_event(customer_id: str, event_type: str, message_id: str, meta
         release_connection(conn)
 
 
-def _update_customer_status(customer_id: str, entitlement_status: str | None, subscription_status: str | None):
+def _update_customer_status(
+    customer_id: str,
+    entitlement_status: str | None,
+    subscription_status: str | None,
+    tier: str | None = None,
+):
     updates = []
     params = []
     if entitlement_status is not None:
@@ -141,6 +204,9 @@ def _update_customer_status(customer_id: str, entitlement_status: str | None, su
     if subscription_status is not None:
         updates.append("subscription_status = %s")
         params.append(subscription_status)
+    if tier is not None:
+        updates.append("tier = %s")
+        params.append(tier)
 
     if not updates:
         return
@@ -164,14 +230,24 @@ def _update_customer_status(customer_id: str, entitlement_status: str | None, su
 
 def _refresh_entitlements(marketplace_customer_id: str):
     if not MARKETPLACE_PRODUCT_CODE:
-        return None
+        return None, None
 
     response = entitlement_client.get_entitlements(
         ProductCode=MARKETPLACE_PRODUCT_CODE,
         Filter={"CUSTOMER_IDENTIFIER": [marketplace_customer_id]},
     )
     entitlements = response.get("Entitlements", [])
-    return "active" if entitlements else "inactive"
+    if not entitlements:
+        return "inactive", None
+
+    entitlement = entitlements[0] or {}
+    value_obj = entitlement.get("Value") or {}
+    value_dimension = next(
+        (value for key, value in value_obj.items() if key.endswith("Value") and isinstance(value, str)),
+        None,
+    )
+    dimension = entitlement.get("Dimension") or value_dimension
+    return "active", DIMENSION_TO_TIER.get(dimension)
 
 
 def _publish_ceo_alert(event_type: str, marketplace_customer_id: str):
@@ -226,8 +302,8 @@ def lambda_handler(event, _context):
             continue
 
         if event_type == "entitlement-updated":
-            entitlement_status = _refresh_entitlements(marketplace_customer_id)
-            _update_customer_status(customer_id, entitlement_status, None)
+            entitlement_status, new_tier = _refresh_entitlements(marketplace_customer_id)
+            _update_customer_status(customer_id, entitlement_status, None, tier=new_tier)
         else:
             entitlement_status, subscription_status = EVENT_STATUS_UPDATES.get(event_type, (None, None))
             _update_customer_status(customer_id, entitlement_status, subscription_status)

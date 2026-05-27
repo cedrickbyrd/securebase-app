@@ -67,6 +67,8 @@ resource "aws_lambda_function" "marketplace_resolve_customer" {
       DB_HOST                  = var.db_host
       DB_NAME                  = "securebase"
       DB_SECRET_ARN            = var.db_secret_arn
+      ONBOARDING_FUNCTION_NAME = var.onboarding_function_name
+      JWT_SECRET               = var.jwt_secret_name
     }
   }
 
@@ -95,6 +97,7 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
       DB_NAME                  = "securebase"
       DB_SECRET_ARN            = var.db_secret_arn
       CEO_SNS_TOPIC_ARN        = var.ceo_sns_topic_arn
+      BYPASS_SNS_SIGNATURE_VERIFY = "false"
     }
   }
 
@@ -183,6 +186,52 @@ resource "aws_cloudwatch_metric_alarm" "metering_worker_errors" {
 
   dimensions = {
     FunctionName = aws_lambda_function.marketplace_metering_worker.function_name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
+  ok_actions    = [var.alerts_sns_topic_arn]
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "resolve_customer_errors" {
+  count               = var.alerts_sns_topic_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-marketplace-resolve-customer-errors"
+  alarm_description   = "Marketplace resolve customer lambda reported errors in the last 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.marketplace_resolve_customer.function_name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
+  ok_actions    = [var.alerts_sns_topic_arn]
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "subscription_handler_errors" {
+  count               = var.alerts_sns_topic_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-marketplace-subscription-handler-errors"
+  alarm_description   = "Marketplace subscription handler lambda reported errors in the last 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.marketplace_subscription_handler.function_name
   }
 
   alarm_actions = [var.alerts_sns_topic_arn]
