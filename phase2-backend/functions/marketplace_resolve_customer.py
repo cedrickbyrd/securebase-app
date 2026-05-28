@@ -4,7 +4,9 @@ import json
 import os
 import uuid
 import logging
+import base64
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs
 
 import boto3
 import jwt
@@ -57,13 +59,72 @@ def _response(status_code: int, body: dict) -> dict:
 def _parse_body(event: dict) -> dict:
     body = event.get("body") if isinstance(event, dict) else None
     if isinstance(body, str):
+        if isinstance(event, dict) and event.get("isBase64Encoded"):
+            try:
+                body = base64.b64decode(body).decode("utf-8")
+            except Exception:
+                return {}
         try:
             return json.loads(body)
         except json.JSONDecodeError:
+            parsed = parse_qs(body, keep_blank_values=False)
+            if parsed:
+                return {key: values[0] for key, values in parsed.items() if values}
             return {}
     if isinstance(body, dict):
         return body
     return event if isinstance(event, dict) else {}
+
+
+def _normalize_string(value) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    return ""
+
+
+def _extract_marketplace_token(event: dict, request: dict) -> tuple[str, str | None]:
+    candidates = []
+
+    def _add(source: str, value):
+        normalized = _normalize_string(value)
+        if normalized:
+            candidates.append((normalized, source))
+
+    request = request if isinstance(request, dict) else {}
+    event = event if isinstance(event, dict) else {}
+    headers = event.get("headers")
+    query = event.get("queryStringParameters")
+    multi_value_headers = event.get("multiValueHeaders")
+    multi_value_query = event.get("multiValueQueryStringParameters")
+
+    request_keys = ("regToken", "regtoken", "token", "x-amzn-marketplace-token")
+    for key in request_keys:
+        _add(f"body:{key}", request.get(key))
+
+    if isinstance(query, dict):
+        for key in request_keys:
+            _add(f"query:{key}", query.get(key))
+
+    if isinstance(multi_value_query, dict):
+        for key in request_keys:
+            values = multi_value_query.get(key)
+            if isinstance(values, list) and values:
+                _add(f"multi_query:{key}", values[0])
+
+    if isinstance(headers, dict):
+        normalized_headers = {str(k).lower(): v for k, v in headers.items()}
+        _add("header:x-amzn-marketplace-token", normalized_headers.get("x-amzn-marketplace-token"))
+        _add("header:regtoken", normalized_headers.get("regtoken"))
+        _add("header:token", normalized_headers.get("token"))
+
+    if isinstance(multi_value_headers, dict):
+        normalized_multi_headers = {str(k).lower(): v for k, v in multi_value_headers.items()}
+        for header_key in ("x-amzn-marketplace-token", "regtoken", "token"):
+            values = normalized_multi_headers.get(header_key)
+            if isinstance(values, list) and values:
+                _add(f"multi_header:{header_key}", values[0])
+
+    return candidates[0] if candidates else ("", None)
 
 
 def _get_jwt_secret() -> str:
@@ -213,9 +274,11 @@ def lambda_handler(event, _context):
         return _response(200, {"ok": True})
 
     request = _parse_body(event)
-    token = (request.get("token") or request.get("x-amzn-marketplace-token") or "").strip()
+    token, token_source = _extract_marketplace_token(event, request)
     if not token:
+        logger.warning("Marketplace token missing from request")
         return _response(400, {"error": "invalid_token", "message": "Marketplace token is required."})
+    logger.info("Marketplace token accepted from %s", token_source or "unknown")
 
     try:
         resolution = metering_client.resolve_customer(RegistrationToken=token)
