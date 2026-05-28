@@ -39,7 +39,7 @@ const response = (statusCode, body) => ({
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   },
   body: JSON.stringify(body),
 });
@@ -179,7 +179,6 @@ const emailHtml = (heading, body, ctaLabel, ctaUrl, ttlHours = RESET_TOKEN_TTL_H
 // ── auth handlers ─────────────────────────────────────────────────────────────
 
 const login = async (body) => {
-  // Guard: JWT_SECRET must be set to issue tokens
   if (!JWT_SECRET) return response(500, { message: "Auth service misconfigured" });
 
   const email = normalizeEmail(body.email);
@@ -188,11 +187,8 @@ const login = async (body) => {
   if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
 
   const user = await getUser(email);
-  // Return 401 for both "user not found" and "invited but not yet activated" —
-  // never leak which case applies (prevents user enumeration)
   if (!user || !user.password_hash) return response(401, { message: "Invalid credentials" });
 
-  // Check account lockout before bcrypt to avoid timing side-channel
   const now = Math.floor(Date.now() / 1000);
   if (user.locked_until && user.locked_until > now) {
     const retryAfter = user.locked_until - now;
@@ -202,7 +198,7 @@ const login = async (body) => {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": CORS_ORIGIN,
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
         "Retry-After": String(retryAfter),
       },
       body: JSON.stringify({ message: "Too many failed login attempts. Please try again later." }),
@@ -215,7 +211,6 @@ const login = async (body) => {
     return response(401, { message: "Invalid credentials" });
   }
 
-  // Successful auth — clear brute-force counters
   await clearFailedLogins(email);
 
   if (user.mfa_enabled) {
@@ -314,7 +309,6 @@ const invite = async (body) => {
 };
 
 const acceptInvite = async (body) => {
-  // Guard: JWT_SECRET must be set to issue tokens
   if (!JWT_SECRET) return response(500, { message: "Auth service misconfigured" });
 
   const { token, password } = body;
@@ -345,13 +339,10 @@ const forgotPassword = async (body) => {
   if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
 
   const user = await getUser(email);
-  // Always return 200 — never leak whether the email exists
   if (!user) return response(200, { message: "If that email exists, a reset link has been sent" });
 
   const token = generateToken();
 
-  // Guard: if we can't persist the token, log and return the same uniform response to
-  // prevent user enumeration — a 503 only for existing users would be an enumeration signal.
   try {
     await storeToken(email, token, "reset");
   } catch (dbErr) {
@@ -394,12 +385,10 @@ const resetPassword = async (body) => {
 };
 
 const mfaSetup = async (body) => {
-  // Null guard — missing email returns 400 not 500
   if (!body || !body.email) return response(400, { message: "Email required" });
   const email = normalizeEmail(body.email);
   if (!isValidEmail(email)) return response(400, { message: "Invalid email address" });
   const user = await getUser(email);
-  // Return 400 (not 404) to avoid disclosing whether the account exists.
   if (!user) return response(400, { message: "MFA setup not available" });
   const secret  = authenticator.generateSecret();
   const otpauth = authenticator.keyuri(email, APP_NAME, secret);
@@ -413,7 +402,6 @@ const mfaSetup = async (body) => {
 };
 
 const mfaVerify = async (body) => {
-  // Null guard — missing fields return 400 not 500
   if (!body || !body.email || !body.totp_code) return response(400, { message: "Email and totp_code required" });
   const email = normalizeEmail(body.email);
   const { totp_code } = body;
@@ -434,14 +422,12 @@ const resendInvite = async (body) => {
   const { token } = body;
   if (!token) return response(400, { message: "Token required" });
 
-  // Look up the original token record — deliberately do NOT consume it
   const r = await db.send(new GetItemCommand({
     TableName: TOKENS_TABLE,
     Key: marshall({ token }),
   }));
   const item = r.Item ? unmarshall(r.Item) : null;
 
-  // Uniform 200 response — never reveal whether the token/email exists (prevent enumeration)
   if (!item || item.used || item.type !== "invite") {
     return response(200, { message: "If a matching invite exists, a new link has been sent" });
   }
@@ -475,10 +461,6 @@ const refreshToken = async (body) => {
 
   let decoded;
   try {
-    // clockTolerance: 86400 (24h) is intentional — Marketplace JWTs have a 24-hour
-    // lifetime and must remain renewable for their full validity window. Standard
-    // clock-drift tolerance (seconds) is too narrow here; this allows a fully-expired
-    // Marketplace JWT to be refreshed as long as it hasn't been expired for more than 24h.
     decoded = jwt.verify(token, JWT_SECRET, { clockTolerance: 86400 });
   } catch (err) {
     return response(401, { message: "Invalid or expired token" });
@@ -487,13 +469,11 @@ const refreshToken = async (body) => {
   const newToken = jwt.sign(
     {
       sub:         decoded.sub,
-      // decoded.email is present in standard JWTs; Marketplace JWTs may omit it and
-      // use 'sub' (synthetic email address) as the primary identity claim instead.
       email:       decoded.email || decoded.sub,
       role:        decoded.role || "user",
       plan:        decoded.plan,
       tier:        decoded.tier,
-      source:      decoded.source,       // preserves "aws_marketplace" for Marketplace customers
+      source:      decoded.source,
       mfa_enabled: decoded.mfa_enabled || false,
     },
     JWT_SECRET,
@@ -503,6 +483,28 @@ const refreshToken = async (body) => {
   return response(200, { token: newToken });
 };
 
+// ── health check ──────────────────────────────────────────────────────────────
+
+/**
+ * Lightweight DynamoDB ping for synthetic monitoring and the RC1 journey gate.
+ * GET /health or GET /auth/health — confirms Lambda is warm and DynamoDB reachable.
+ * Returns 200 { status: "ok", ts, table } or 503 { status: "degraded", error }.
+ * Probe traffic identifiable in CloudWatch by path /health.
+ */
+const healthCheck = async () => {
+  try {
+    // Non-existent key lookup — cheap read confirming DynamoDB connectivity
+    await db.send(new GetItemCommand({
+      TableName: USERS_TABLE,
+      Key: marshall({ email: "__healthcheck__" }),
+    }));
+    return response(200, { status: "ok", ts: Date.now(), table: USERS_TABLE });
+  } catch (err) {
+    console.error("Health check DynamoDB ping failed:", err);
+    return response(503, { status: "degraded", error: err.message });
+  }
+};
+
 // ── router ────────────────────────────────────────────────────────────────────
 
 export const handler = async (event) => {
@@ -510,17 +512,24 @@ export const handler = async (event) => {
     const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
     const isAcceptInvitePath = ACCEPT_INVITE_PATH_PATTERN.test(path);
-    const isInvitePath = INVITE_PATH_PATTERN.test(path) && !isAcceptInvitePath;
+    // isInvitePath: matches /invite or /auth/invite — excludes accept-invite and invite/resend
+    const isInvitePath = INVITE_PATH_PATTERN.test(path) && !isAcceptInvitePath && !path.includes("/invite/resend");
+
     if (method === "OPTIONS") {
       return {
         statusCode: 200,
         headers: {
           "Access-Control-Allow-Origin": CORS_ORIGIN,
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
         body: "",
       };
+    }
+
+    // Health check — GET /health or GET /auth/health, no auth required
+    if (method === "GET" && (path.endsWith("/health") || path === "/health")) {
+      return await healthCheck();
     }
 
     // Guard: malformed JSON body returns 400 instead of throwing a 500
@@ -537,7 +546,9 @@ export const handler = async (event) => {
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
     if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
     if (method === "POST" && path.includes("/auth/invite/resend"))   return await resendInvite(body);
-    if (method === "POST" && isInvitePath)                            return await invite(body);
+    // invite: explicit endsWith check catches both /auth/invite (full path) and
+    // /invite (API Gateway prefix-stripped path), plus regex fallback for edge cases.
+    if (method === "POST" && (path.endsWith("/auth/invite") || path === "/invite" || isInvitePath)) return await invite(body);
     if (method === "POST" && path.includes("/auth/forgot-password")) return await forgotPassword(body);
     if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
     if (method === "POST" && path.endsWith("/auth/mfa/setup"))       return await mfaSetup(body);
