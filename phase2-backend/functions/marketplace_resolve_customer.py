@@ -5,6 +5,7 @@ import os
 import uuid
 import logging
 import base64
+import binascii
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs
 
@@ -62,14 +63,22 @@ def _parse_body(event: dict) -> dict:
         if isinstance(event, dict) and event.get("isBase64Encoded"):
             try:
                 body = base64.b64decode(body).decode("utf-8")
-            except Exception:
+            except (binascii.Error, ValueError, UnicodeDecodeError):
+                logger.warning("Failed to decode base64-encoded marketplace request body")
                 return {}
         try:
             return json.loads(body)
         except json.JSONDecodeError:
             parsed = parse_qs(body, keep_blank_values=False)
             if parsed:
-                return {key: values[0] for key, values in parsed.items() if values}
+                flattened = {}
+                for key, values in parsed.items():
+                    if not values:
+                        continue
+                    if len(values) > 1:
+                        logger.info("Using first value for repeated marketplace parameter %s", key)
+                    flattened[key] = values[0]
+                return flattened
             return {}
     if isinstance(body, dict):
         return body
