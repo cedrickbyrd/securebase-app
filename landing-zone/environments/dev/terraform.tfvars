@@ -28,7 +28,7 @@ lambda_packages = {
   demo_auth                        = "s3://securebase-terraform-state-dev/lambda/demo_auth.zip"
   session_management               = "s3://securebase-terraform-state-dev/lambda/session_management.zip"
   stripe_handler                   = "s3://securebase-terraform-state-dev/lambda/stripe_handler.zip"
-  marketplace_resolve_customer     = "s3://securebase-terraform-state-dev/lambda/marketplace-registration.zip"
+  marketplace_resolve_customer     = "s3://securebase-terraform-state-dev/lambda/marketplace_resolve_customer.zip"
   marketplace_subscription_handler = "s3://securebase-terraform-state-dev/lambda/marketplace-entitlement.zip"
   marketplace_metering_worker      = "s3://securebase-terraform-state-dev/lambda/marketplace-metering.zip"
 }
