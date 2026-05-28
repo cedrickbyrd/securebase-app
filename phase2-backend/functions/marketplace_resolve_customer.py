@@ -76,7 +76,7 @@ def _parse_body(event: dict) -> dict:
                     if not values:
                         continue
                     if len(values) > 1:
-                        logger.info("Using first value for repeated marketplace parameter %s", key)
+                        logger.info("Using first value for repeated marketplace parameter")
                     flattened[key] = values[0]
                 return flattened
             return {}
