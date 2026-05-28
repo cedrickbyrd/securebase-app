@@ -26,6 +26,17 @@ PORTAL_URL=https://staging.securebase.tximhotep.com \
 npx playwright test tests/e2e/customer1-journey.spec.js --grep "API contract|proxy"
 ```
 
+### Customer recovery gate
+
+Use the dedicated operator gate for real customer recovery validation:
+
+```bash
+cd phase3a-portal
+npm run test:e2e:customer-recovery
+```
+
+Detailed setup and interpretation: `tests/e2e/CUSTOMER_RECOVERY_GATE.md`.
+
 ## Environment variables
 
 | Var | Default | Description |
