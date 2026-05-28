@@ -20,20 +20,14 @@ import { areAlertsConfigured } from './AlertSettings';
 import './Dashboard.css';
 
 const TEXAS_FINTECH_TIERS = new Set([CUSTOMER_TIERS.FINTECH_PRO, CUSTOMER_TIERS.FINTECH_ELITE]);
-const FIRST_RUN_SCORE_FALLBACK = 84;
-const FIRST_RUN_HIGH_FINDINGS_FALLBACK = 4;
-const FIRST_RUN_CONTROLS_PASSING_FALLBACK = 42;
 const SUPPORTED_FRAMEWORK_IDS = ['hipaa', 'soc2', 'pcidss'];
-const MOCK_FRAMEWORKS = [
-  { id: 'hipaa', name: 'HIPAA', description: 'Health Insurance Portability & Accountability Act', score: 84, controls_passing: 42, high_findings: 4, color: '#0f4c81', icon: '🏥' },
-  { id: 'soc2', name: 'SOC 2', description: 'Service Organization Control 2', score: 76, controls_passing: 38, high_findings: 6, color: '#7c3aed', icon: '🔐' },
-  { id: 'pcidss', name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', score: 91, controls_passing: 54, high_findings: 1, color: '#0d9488', icon: '💳' },
-];
-const MOCK_USERS = [
-  { email: 'matthew.matturro@trinetx.com', role: 'admin' },
-  { email: 'sarah.chen@trinetx.com', role: 'analyst' },
-  { email: 'david.park@trinetx.com', role: 'auditor' },
-];
+
+// Framework display metadata — no scores, no mock data
+const FRAMEWORK_META = {
+  hipaa:  { name: 'HIPAA',   description: 'Health Insurance Portability & Accountability Act', color: '#0f4c81', icon: '🏥' },
+  soc2:   { name: 'SOC 2',   description: 'Service Organization Control 2',                    color: '#7c3aed', icon: '🔐' },
+  pcidss: { name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard',       color: '#0d9488', icon: '💳' },
+};
 
 function getTokenHeaders() {
   const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
@@ -57,69 +51,60 @@ function clampScore(score, min = 0, max = 100) {
 }
 
 function getHIPAAScore(source) {
-  if (!source) return FIRST_RUN_SCORE_FALLBACK;
-  return toSafeNumber(
-    source.overallScore
+  if (!source) return null;
+  const raw = source.overallScore
     ?? source.overall_score
     ?? source.compliance_score
     ?? source.score
-    ?? FIRST_RUN_SCORE_FALLBACK,
-    FIRST_RUN_SCORE_FALLBACK
-  );
-}
-
-function getFirstRunScore(metrics, compliance) {
-  if (metrics?.overallScore !== undefined && metrics?.overallScore !== null) {
-    return toSafeNumber(metrics.overallScore, FIRST_RUN_SCORE_FALLBACK);
-  }
-  return getHIPAAScore(compliance);
+    ?? null;
+  if (raw === null || raw === undefined) return null;
+  return toSafeNumber(raw, null);
 }
 
 function getHighFindingsCount(source) {
-  if (!source) return FIRST_RUN_HIGH_FINDINGS_FALLBACK;
-  return toSafeNumber(
-    source.high_findings
+  if (!source) return null;
+  const raw = source.high_findings
     ?? source.highSeverityFindings
     ?? source.high_severity_findings
     ?? source.failing
-    ?? FIRST_RUN_HIGH_FINDINGS_FALLBACK,
-    FIRST_RUN_HIGH_FINDINGS_FALLBACK
-  );
+    ?? null;
+  if (raw === null || raw === undefined) return null;
+  return toSafeNumber(raw, 0);
 }
 
 function getControlsPassingCount(source) {
-  if (!source) return FIRST_RUN_CONTROLS_PASSING_FALLBACK;
-  return toSafeNumber(
-    source.controls_passing
+  if (!source) return null;
+  const raw = source.controls_passing
     ?? source.controlsPassing
     ?? source.passing
-    ?? FIRST_RUN_CONTROLS_PASSING_FALLBACK,
-    FIRST_RUN_CONTROLS_PASSING_FALLBACK
-  );
+    ?? null;
+  if (raw === null || raw === undefined) return null;
+  return toSafeNumber(raw, 0);
 }
 
+// Returns [] when API has no data — callers must handle empty array
 function normalizeFrameworks(payload) {
   const source = Array.isArray(payload) ? payload : payload?.data || [];
-  if (!Array.isArray(source) || source.length === 0) return MOCK_FRAMEWORKS;
+  if (!Array.isArray(source) || source.length === 0) return [];
   const normalized = source
     .map((framework) => {
       const id = String(framework.id || '').toLowerCase();
-      const fallback = MOCK_FRAMEWORKS.find((item) => item.id === id);
-      if (!fallback) return null;
+      const meta = FRAMEWORK_META[id];
+      if (!meta) return null;
       return {
-        ...fallback,
-        name: framework.name || fallback.name,
-        score: clampScore(toSafeNumber(framework.score, fallback.score)),
-        controls_passing: toSafeNumber(framework.controls_passing ?? framework.controlsPassing, fallback.controls_passing),
-        high_findings: toSafeNumber(framework.high_findings ?? framework.highFindings, fallback.high_findings),
+        id,
+        ...meta,
+        score: clampScore(toSafeNumber(framework.score, 0)),
+        controls_passing: toSafeNumber(framework.controls_passing ?? framework.controlsPassing, 0),
+        high_findings: toSafeNumber(framework.high_findings ?? framework.highFindings, 0),
       };
     })
     .filter(Boolean);
-  return normalized.length > 0 ? normalized : MOCK_FRAMEWORKS;
+  return normalized;
 }
 
-function getLowestFramework(frameworks = MOCK_FRAMEWORKS) {
-  if (!Array.isArray(frameworks) || frameworks.length === 0) return MOCK_FRAMEWORKS[0];
+function getLowestFramework(frameworks = []) {
+  if (!Array.isArray(frameworks) || frameworks.length === 0) return null;
   return frameworks.reduce((lowest, current) => (current.score < lowest.score ? current : lowest), frameworks[0]);
 }
 
@@ -130,9 +115,9 @@ function getScoreBadgeColor(score) {
 }
 
 function formatLastAssessed(lastAssessed) {
-  if (!lastAssessed) return 'Today';
+  if (!lastAssessed) return null;
   const assessedDate = new Date(lastAssessed);
-  if (Number.isNaN(assessedDate.getTime())) return 'Today';
+  if (Number.isNaN(assessedDate.getTime())) return null;
   const elapsedMs = Date.now() - assessedDate.getTime();
   if (elapsedMs < 0) return assessedDate.toLocaleDateString();
   const elapsedMinutes = Math.floor(elapsedMs / 60000);
@@ -165,7 +150,7 @@ HIPAA COMPLIANCE EVIDENCE PACKAGE
 ==================================
 Organization: ${org}
 Generated: ${date}
-Overall Score: ${score}%
+Overall Score: ${score !== null ? score + '%' : 'Not yet assessed'}
 
 OPEN FINDINGS
 -------------
@@ -206,7 +191,7 @@ function Dashboard() {
   const [showFirstRunOverlay, setShowFirstRunOverlay] = useState(false);
   const [animatedOverlayScore, setAnimatedOverlayScore] = useState(0);
   const [hipaaMetric, setHipaaMetric] = useState(null);
-  const [frameworks, setFrameworks] = useState(MOCK_FRAMEWORKS);
+  const [frameworks, setFrameworks] = useState([]);
   const [frameworkProgressAnimated, setFrameworkProgressAnimated] = useState(false);
   const [hipaaMetricLoading, setHipaaMetricLoading] = useState(false);
   const [hipaaMetricError, setHipaaMetricError] = useState('');
@@ -220,21 +205,26 @@ function Dashboard() {
   const isHealthcareTier = effectiveTier === CUSTOMER_TIERS.HEALTHCARE;
   const hasTexasCompliance = TEXAS_FINTECH_TIERS.has(effectiveTier) || isDemoMode;
   const showsHIPAADashboard = effectiveTier === CUSTOMER_TIERS.HEALTHCARE || effectiveTier === CUSTOMER_TIERS.GOVERNMENT;
-  const firstRunTargetScore = clampScore(getFirstRunScore(metrics, compliance));
-  const hipaaLastAssessed = formatLastAssessed(hipaaMetric?.last_assessed || compliance?.last_assessed);
-  const hipaaLiveScore = clampScore(getHIPAAScore(hipaaMetric || compliance));
+
+  // Scores are null until real API data arrives — never fabricated
+  const hipaaLiveScore = getHIPAAScore(hipaaMetric || compliance);
   const hipaaHighFindings = getHighFindingsCount(hipaaMetric || compliance);
   const hipaaControlsPassing = getControlsPassingCount(hipaaMetric || compliance);
+  const hipaaLastAssessed = formatLastAssessed(hipaaMetric?.last_assessed || compliance?.last_assessed);
+
+  const firstRunTargetScore = hipaaLiveScore !== null ? clampScore(hipaaLiveScore) : null;
   const organizationName = customer?.name || customer?.orgName || localStorage.getItem('orgName') || 'Your Organization';
   const lowestFramework = getLowestFramework(frameworks);
-  const lowestFrameworkBadgeColors = getScoreBadgeColor(lowestFramework.score);
+  const lowestFrameworkBadgeColors = lowestFramework ? getScoreBadgeColor(lowestFramework.score) : null;
   const alertsConfigured = areAlertsConfigured(readStoredAlertSettings());
 
-  const overlayRiskLevel = firstRunTargetScore >= 90
-    ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
-    : firstRunTargetScore >= 75
-      ? { label: 'Moderate Risk', badgeBackground: '#fef3c7', badgeColor: '#92400e', detail: 'Targeted remediation will improve posture' }
-      : { label: 'High Risk', badgeBackground: '#fee2e2', badgeColor: '#991b1b', detail: 'Immediate remediation is recommended' };
+  const overlayRiskLevel = firstRunTargetScore === null
+    ? { label: 'Pending', badgeBackground: '#f3f4f6', badgeColor: '#6b7280', detail: 'Assessment in progress' }
+    : firstRunTargetScore >= 90
+      ? { label: 'Low Risk', badgeBackground: '#d1fae5', badgeColor: '#065f46', detail: 'Strong baseline controls are active' }
+      : firstRunTargetScore >= 75
+        ? { label: 'Moderate Risk', badgeBackground: '#fef3c7', badgeColor: '#92400e', detail: 'Targeted remediation will improve posture' }
+        : { label: 'High Risk', badgeBackground: '#fee2e2', badgeColor: '#991b1b', detail: 'Immediate remediation is recommended' };
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -258,7 +248,7 @@ function Dashboard() {
     if (checkDemoMode()) {
       const mockMetrics = await fetchData('/metrics');
       setMetrics(mockMetrics);
-      setFrameworks(MOCK_FRAMEWORKS);
+      // Demo mode keeps its own data — frameworks stay empty for real users
       setLoading(false);
       return;
     }
@@ -286,9 +276,8 @@ function Dashboard() {
       if (frameworksResponse?.ok) {
         const frameworksPayload = await frameworksResponse.json();
         setFrameworks(normalizeFrameworks(frameworksPayload));
-      } else {
-        setFrameworks(MOCK_FRAMEWORKS);
       }
+      // If API fails or returns empty, frameworks stays [] — blank state shows
       if (texasData) setTexasCompliance(texasData.data || texasData);
 
       const hasSeenFirstRun = localStorage.getItem('hipaa_first_run_seen') === 'true';
@@ -297,7 +286,7 @@ function Dashboard() {
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
-      setFrameworks(MOCK_FRAMEWORKS);
+      // frameworks stays [] — no mock fallback
     } finally {
       setLoading(false);
     }
@@ -312,7 +301,6 @@ function Dashboard() {
   const handleDownloadReport = async () => {
     setDownloading(true);
     setDownloadError('');
-
     try {
       if (isHealthcareTier) {
         const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
@@ -331,7 +319,7 @@ function Dashboard() {
           organizationName,
           reportDate,
           findings,
-          clampScore(getHIPAAScore(hipaaMetric || compliance))
+          hipaaLiveScore !== null ? clampScore(hipaaLiveScore) : null
         );
         const blob = new Blob([report], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -344,21 +332,15 @@ function Dashboard() {
         URL.revokeObjectURL(url);
         return;
       }
-
       const token = sessionStorage.getItem('sessionToken') || localStorage.getItem('sessionToken');
       const res = await fetch('/api/compliance/findings', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
-      }
-
+      if (!res.ok) throw new Error(`Failed to fetch compliance findings: ${res.status} ${res.statusText}`);
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-
       a.href = url;
       a.download = `securebase-compliance-report-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
@@ -396,14 +378,12 @@ function Dashboard() {
   const handleFirstRunExport = async () => {
     if (typeof handleDownloadReport === 'function') {
       await handleDownloadReport();
-    } else {
-      console.log('export triggered');
     }
     markFirstRunSeen();
   };
 
   useEffect(() => {
-    if (!showFirstRunOverlay) {
+    if (!showFirstRunOverlay || firstRunTargetScore === null) {
       setAnimatedOverlayScore(0);
       return;
     }
@@ -420,7 +400,6 @@ function Dashboard() {
 
   useEffect(() => {
     if (!isHealthcareTier) return undefined;
-
     let active = true;
     const loadHipaaMetric = async () => {
       setHipaaMetricLoading(true);
@@ -430,24 +409,19 @@ function Dashboard() {
         const response = await fetch('/api/hipaa/compliance', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (!response.ok) {
-          throw new Error(`HIPAA metric request failed: ${response.status} ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HIPAA metric request failed: ${response.status}`);
         const payload = await response.json();
         if (!active) return;
         setHipaaMetric(payload?.data || payload);
       } catch (error) {
         console.error('Failed to load HIPAA compliance metric.');
-        if (active) setHipaaMetricError('Unable to refresh HIPAA metric. Showing last known values.');
+        if (active) setHipaaMetricError('Unable to load HIPAA data. Connect your AWS account to begin assessment.');
       } finally {
         if (active) setHipaaMetricLoading(false);
       }
     };
-
     loadHipaaMetric();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [isHealthcareTier]);
 
   useEffect(() => {
@@ -466,8 +440,8 @@ function Dashboard() {
         );
         if (active) setIsExecutiveAdmin(String(matched?.role || '').toLowerCase() === 'admin');
       } catch {
-        const fallback = MOCK_USERS.find((user) => user.email.toLowerCase() === currentUserEmail);
-        if (active) setIsExecutiveAdmin(String(fallback?.role || '').toLowerCase() === 'admin');
+        // No mock fallback — if we can't confirm admin role, don't show admin features
+        if (active) setIsExecutiveAdmin(false);
       }
     };
     loadUserRole();
@@ -508,7 +482,6 @@ function Dashboard() {
       <div className="dashboard-page">
         <PersonalizedBanner />
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-
         <header className="dashboard-header">
           <div className="header-content">
             <div className="header-left">
@@ -521,11 +494,9 @@ function Dashboard() {
             </div>
           </div>
         </header>
-
         <main className="dashboard-main">
           <div className="dashboard-empty-state">
             <div style={{ maxWidth: '560px', margin: '0 auto', padding: '3rem 1.5rem' }}>
-              {/* Spinner */}
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }} />
                 <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
@@ -535,10 +506,7 @@ function Dashboard() {
                   SecureBase is running your first HIPAA compliance assessment. Results are typically ready in 10–15 minutes.
                 </p>
               </div>
-
               <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
-
-              {/* Scan steps */}
               <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
                 Building your HIPAA posture report
               </p>
@@ -565,8 +533,6 @@ function Dashboard() {
                   );
                 })}
               </div>
-
-              {/* Email notification */}
               {(() => {
                 const userEmail = localStorage.getItem('userEmail');
                 if (!userEmail) return null;
@@ -574,17 +540,13 @@ function Dashboard() {
                 return (
                   <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>📬 Want a notification when it's ready?</p>
-                    <a href={mailto}
-                      style={{ display: 'inline-block', border: '1px solid #d1d5db', borderRadius: '8px', padding: '0.6rem 1.25rem', fontSize: '0.875rem', color: '#374151', textDecoration: 'none', background: 'white' }}>
+                    <a href={mailto} style={{ display: 'inline-block', border: '1px solid #d1d5db', borderRadius: '8px', padding: '0.6rem 1.25rem', fontSize: '0.875rem', color: '#374151', textDecoration: 'none', background: 'white' }}>
                       Send me an email notification
                     </a>
                   </div>
                 );
               })()}
-
               <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
-
-              {/* Preview cards */}
               <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem' }}>While you wait — explore what's coming:</p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {[['🛡️', 'HIPAA Posture Score'], ['⚠️', 'Open Findings & Remediation'], ['📄', 'Evidence Export Package']].map(([icon, title]) => (
@@ -629,7 +591,8 @@ function Dashboard() {
           <DemoCustomerIndicator customer={customer} customerIndex={customerIndex} />
         )}
 
-        {isHealthcareTier && (
+        {/* Compliance Frameworks — only renders when real API data exists */}
+        {isHealthcareTier && frameworks.length > 0 && (
           <section className="dashboard-card" style={{ marginBottom: '1.5rem' }}>
             <div className="card-header">
               <h2>Compliance Frameworks</h2>
@@ -661,25 +624,21 @@ function Dashboard() {
           </section>
         )}
 
-        {personalization.isWave3 && (
-          <section style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '1rem', padding: '2rem', marginBottom: '1.5rem', color: '#fff' }}>
-            {personalization.urgencyMessage && (
-              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '0.6rem 1rem', marginBottom: '1.25rem', fontSize: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span>{personalization.urgencyMessage}</span>
-                {personalization.urgencyExpiry && <span style={{ opacity: 0.85 }}>⏰ {personalization.urgencyExpiry}</span>}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 280px' }}>
-                <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.3 }}>{personalization.heroHeading}</h2>
-                <p style={{ margin: '0 0 1rem', opacity: 0.9, fontSize: '0.95rem' }}>{personalization.heroParagraph}</p>
-                <p style={{ margin: '0 0 1rem', opacity: 0.8, fontSize: '0.82rem' }}>{personalization.socialProof}</p>
-                <button onClick={() => { trackCTAClick('wave3_primary_cta', 'dashboard_hero'); trackWave3HighValueAction('primary_cta_clicked'); }} style={{ background: '#fff', color: '#764ba2', border: 'none', borderRadius: '0.5rem', padding: '0.7rem 1.25rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>{personalization.primaryCTA}</button>
-              </div>
-              <div style={{ flex: '1 1 260px', background: 'rgba(255,255,255,0.12)', borderRadius: '0.75rem', padding: '1.25rem' }}>
-                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Get a personalized demo →</p>
-                <LeadCaptureForm trigger="demo" onSuccess={() => trackWave3HighValueAction('demo_lead_captured')} />
-              </div>
+        {/* Connect prompt — shows when healthcare tier but no framework data yet */}
+        {isHealthcareTier && frameworks.length === 0 && !loading && (
+          <section className="dashboard-card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #1a73e8' }}>
+            <div className="card-content" style={{ padding: '2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>☁️</div>
+              <h2 style={{ margin: '0 0 0.5rem', color: '#111827' }}>Connect your AWS account to begin</h2>
+              <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+                Your HIPAA posture score, compliance frameworks, and findings will appear here once your AWS environment is connected.
+              </p>
+              <button
+                onClick={() => navigate('/cloud-connection')}
+                style={{ background: '#1a73e8', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}
+              >
+                Connect AWS Account →
+              </button>
             </div>
           </section>
         )}
@@ -708,7 +667,7 @@ function Dashboard() {
             </div>
             <div className="metric-content">
               <h3>Compliance Status</h3>
-              <p className="metric-value">{compliance?.overall_status || 'Unknown'}</p>
+              <p className="metric-value">{compliance?.overall_status || '—'}</p>
             </div>
           </div>
 
@@ -736,7 +695,6 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Phase 6.1 — Audit Evidence */}
           <div className="metric-card clickable" onClick={() => navigate('/evidence')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/evidence')} aria-label="Audit Evidence Packages" style={{ borderLeft: '3px solid #1e3a5f' }}>
             <div className="metric-icon" style={{ background: '#e8f0fe' }}>🔒</div>
             <div className="metric-content">
@@ -745,7 +703,6 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Phase 6.2 — Compliance Trend */}
           <div className="metric-card clickable" onClick={() => navigate('/compliance/trend')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/compliance/trend')} aria-label="Compliance Score Trend" style={{ borderLeft: '3px solid #0f4c81' }}>
             <div className="metric-icon" style={{ background: '#eff6ff' }}>📈</div>
             <div className="metric-content">
@@ -754,7 +711,6 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Cloud Connection — cross-account IAM role */}
           <div className="metric-card clickable" onClick={() => navigate('/cloud-connection')} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/cloud-connection')} aria-label="Cloud Connection">
             <div className="metric-icon" style={{ background: '#f0f4ff' }}>☁️</div>
             <div className="metric-content">
@@ -770,18 +726,24 @@ function Dashboard() {
                 <div className="metric-content">
                   <h3>Live HIPAA Score</h3>
                   <p className="metric-value" style={{ color: '#0f4c81' }}>
-                    {hipaaMetricLoading && !hipaaMetric ? '...' : `${Math.round(hipaaLiveScore)}%`}
+                    {hipaaMetricLoading
+                      ? '...'
+                      : hipaaLiveScore !== null
+                        ? `${Math.round(clampScore(hipaaLiveScore))}%`
+                        : '—'}
                   </p>
                 </div>
               </div>
-              {hipaaMetricLoading && !hipaaMetric ? (
-                <div style={{ height: '10px', borderRadius: '999px', background: '#e5e7eb' }} />
-              ) : (
+              {hipaaLiveScore !== null ? (
                 <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden', marginBottom: '0.5rem' }}>
-                  <div style={{ height: '100%', width: `${Math.round(hipaaLiveScore)}%`, background: '#0f4c81', borderRadius: '999px' }} />
+                  <div style={{ height: '100%', width: `${Math.round(clampScore(hipaaLiveScore))}%`, background: '#0f4c81', borderRadius: '999px' }} />
                 </div>
+              ) : (
+                <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '999px', marginBottom: '0.5rem' }} />
               )}
-              <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>Last assessed: {hipaaLastAssessed}</p>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280' }}>
+                {hipaaLastAssessed ? `Last assessed: ${hipaaLastAssessed}` : 'Not yet assessed — connect your AWS account'}
+              </p>
               {hipaaMetricError && <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#92400e' }}>{hipaaMetricError}</p>}
             </div>
           )}
@@ -792,7 +754,7 @@ function Dashboard() {
               <div className="metric-content">
                 <h3>Texas DOB Compliance</h3>
                 <p className="metric-value" style={{ color: '#10b981', fontSize: '0.95rem' }}>
-                  {texasCompliance ? `${texasCompliance.passingControls}/${texasCompliance.totalControls} controls` : '5/5 controls'}
+                  {texasCompliance ? `${texasCompliance.passingControls}/${texasCompliance.totalControls} controls` : '—'}
                 </p>
               </div>
             </div>
@@ -841,7 +803,7 @@ function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : <p className="empty-state">No invoices found</p>}
+                ) : <p className="empty-state">No invoices yet</p>}
               </div>
             </section>
 
@@ -857,7 +819,7 @@ function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : <p className="empty-state">No API keys found</p>}
+                ) : <p className="empty-state">No API keys yet</p>}
               </div>
             </section>
           </div>
@@ -886,7 +848,9 @@ function Dashboard() {
                       <div className="stat"><span className="stat-value" style={{ color: '#ef4444' }}>{compliance.failing || 0}</span><span className="stat-label">Failing</span></div>
                     </div>
                   </div>
-                ) : <p className="empty-state">No compliance data available</p>}
+                ) : (
+                  <p className="empty-state">Connect your AWS account to see compliance data</p>
+                )}
               </div>
             </section>
 
@@ -930,7 +894,6 @@ function Dashboard() {
               </div>
             </section>
 
-            {/* Phase 6.2 — Compliance Trend (compact inline) */}
             <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
               <div className="card-header">
                 <h2>📈 Compliance Trend</h2>
@@ -941,35 +904,33 @@ function Dashboard() {
               </div>
             </section>
 
-            {hasTexasCompliance && (
+            {hasTexasCompliance && texasCompliance && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #1e3a5f' }}>
                 <div className="card-header">
                   <h2>⭐ Texas DOB Compliance</h2>
                   <button className="view-all-btn" onClick={() => navigate('/fintech-portal')}>Access Examiner Portal →</button>
                 </div>
                 <div className="card-content">
-                  {texasCompliance ? (
-                    <div>
-                      <div className="compliance-status" style={{ marginBottom: '1rem' }}>
-                        <div className="status-indicator passing" style={{ background: '#f0fdf4' }}>✅</div>
-                        <div><p className="status-label">Texas DOB Status</p><p className="status-value" style={{ color: '#10b981' }}>{texasCompliance.passingControls}/{texasCompliance.totalControls} Controls Passing</p></div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {(texasCompliance.controls || []).slice(0, 3).map(ctrl => (
-                          <div key={ctrl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#f8fafc', borderRadius: 6 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>✅ {ctrl.id}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{ctrl.name}</span>
-                          </div>
-                        ))}
-                        {(texasCompliance.controls || []).length > 3 && <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', margin: '0.25rem 0 0' }}>+{(texasCompliance.controls || []).length - 3} more controls</p>}
-                      </div>
+                  <div>
+                    <div className="compliance-status" style={{ marginBottom: '1rem' }}>
+                      <div className="status-indicator passing" style={{ background: '#f0fdf4' }}>✅</div>
+                      <div><p className="status-label">Texas DOB Status</p><p className="status-value" style={{ color: '#10b981' }}>{texasCompliance.passingControls}/{texasCompliance.totalControls} Controls Passing</p></div>
                     </div>
-                  ) : <p className="empty-state">Loading Texas compliance data…</p>}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {(texasCompliance.controls || []).slice(0, 3).map(ctrl => (
+                        <div key={ctrl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#f8fafc', borderRadius: 6 }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>✅ {ctrl.id}</span>
+                          <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{ctrl.name}</span>
+                        </div>
+                      ))}
+                      {(texasCompliance.controls || []).length > 3 && <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', margin: '0.25rem 0 0' }}>+{(texasCompliance.controls || []).length - 3} more controls</p>}
+                    </div>
+                  </div>
                 </div>
               </section>
             )}
 
-            {showsHIPAADashboard && (
+            {showsHIPAADashboard && lowestFramework && (
               <section className="dashboard-card" style={{ borderLeft: '4px solid #0f4c81' }}>
                 <div className="card-header">
                   <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -985,27 +946,7 @@ function Dashboard() {
                   <button className="view-all-btn" onClick={() => handleViewFrameworkDetails(localStorage.getItem('active_framework') || 'hipaa')}>Open Compliance Dashboard →</button>
                 </div>
                 <div className="card-content">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {[
-                      { label: 'Administrative Safeguards', pct: 90,   passed: 18, total: 20 },
-                      { label: 'Physical Safeguards',       pct: 92.9, passed: 13, total: 14 },
-                      { label: 'Technical Safeguards',      pct: 83.3, passed: 20, total: 24 },
-                    ].map(sg => (
-                      <div key={sg.label} style={{ padding: '0.6rem', background: '#f8fafc', borderRadius: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>{sg.label}</span>
-                          <span style={{ fontSize: '0.82rem', color: sg.pct >= 90 ? '#10b981' : '#f59e0b', fontWeight: 700 }}>{sg.passed}/{sg.total}</span>
-                        </div>
-                        <div style={{ height: 6, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${sg.pct}%`, background: sg.pct >= 90 ? '#10b981' : '#f59e0b', borderRadius: 999 }} />
-                        </div>
-                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.72rem', color: '#6b7280' }}>
-                          Last assessed: {hipaaLastAssessed}
-                        </p>
-                      </div>
-                    ))}
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>BAA on file · PHI encrypted at rest &amp; in transit</p>
-                  </div>
+                  <p className="empty-state">Connect your AWS account to see HIPAA safeguard breakdown</p>
                 </div>
               </section>
             )}
@@ -1013,7 +954,7 @@ function Dashboard() {
         </div>
       </main>
 
-      {showFirstRunOverlay && (
+      {showFirstRunOverlay && firstRunTargetScore !== null && (
         <div className="hipaa-first-run-overlay" role="dialog" aria-modal="true" aria-label="HIPAA first run summary">
           <div className="hipaa-first-run-card">
             <div style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '0.5rem' }}>🎉</div>
@@ -1021,7 +962,6 @@ function Dashboard() {
             <p style={{ margin: '0.6rem 0 1.5rem', textAlign: 'center', fontSize: '0.82rem', color: '#6b7280' }}>
               {organizationName} · Healthcare Tier
             </p>
-
             <div style={{ background: 'linear-gradient(135deg, #0f4c81 0%, #1a73e8 100%)', borderRadius: '14px', padding: '1.5rem', color: '#fff', marginBottom: '1rem' }}>
               <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.08em' }}>HIPAA POSTURE SCORE</p>
               <div style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.1, margin: '0.35rem 0 0.5rem' }}>{animatedOverlayScore}%</div>
@@ -1032,32 +972,21 @@ function Dashboard() {
                 <span style={{ fontSize: '0.82rem', opacity: 0.95 }}>{overlayRiskLevel.detail}</span>
               </div>
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
               <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '1rem', border: '1px solid #e5e7eb', fontSize: '0.9rem', fontWeight: 700, color: '#1f2937' }}>
-                ⚠️ {hipaaHighFindings} High findings
+                ⚠️ {hipaaHighFindings !== null ? hipaaHighFindings : '—'} High findings
               </div>
               <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '1rem', border: '1px solid #e5e7eb', fontSize: '0.9rem', fontWeight: 700, color: '#1f2937' }}>
-                ✓ {hipaaControlsPassing} Controls passing
+                ✓ {hipaaControlsPassing !== null ? hipaaControlsPassing : '—'} Controls passing
               </div>
             </div>
-
-            <button
-              onClick={handleFirstRunReview}
-              style={{ width: '100%', background: '#0f4c81', color: '#fff', border: 'none', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', marginBottom: '0.65rem' }}
-            >
+            <button onClick={handleFirstRunReview} style={{ width: '100%', background: '#0f4c81', color: '#fff', border: 'none', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', marginBottom: '0.65rem' }}>
               Review Critical Findings →
             </button>
-            <button
-              onClick={handleFirstRunExport}
-              style={{ width: '100%', background: '#fff', color: '#0f4c81', border: '2px solid #0f4c81', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}
-            >
+            <button onClick={handleFirstRunExport} style={{ width: '100%', background: '#fff', color: '#0f4c81', border: '2px solid #0f4c81', borderRadius: '10px', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
               Download Evidence Package
             </button>
-            <button
-              onClick={markFirstRunSeen}
-              style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.78rem', cursor: 'pointer' }}
-            >
+            <button onClick={markFirstRunSeen} style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.78rem', cursor: 'pointer' }}>
               ✕ Skip for now
             </button>
           </div>
