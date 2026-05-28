@@ -1,4 +1,4 @@
-# Customer Recovery Gate (Customer #1 style)
+# Customer Recovery Gate
 
 This gate is a Playwright E2E check for founder/customer-success recovery validation of a real onboarding journey.
 
@@ -23,6 +23,10 @@ If you cannot safely provide invite/reset tokens, you can still run the gate by 
 
 This keeps the run explicit about what was manual vs automated.
 
+> ⚠️ Manual confirmation mode bypasses automated verification of invite/reset execution.
+> Use it only when tokens cannot be provided safely, and only after independently confirming
+> invite availability/acceptance and password setup/reset in a real operator workflow.
+
 ## Environment variables
 
 | Variable | Required | Description |
@@ -39,14 +43,14 @@ This keeps the run explicit about what was manual vs automated.
 ## Run
 
 ```bash
-cd /tmp/workspace/cedrickbyrd/securebase-app/phase3a-portal
+cd phase3a-portal
 npx playwright test tests/e2e/customer-recovery-gate.spec.js
 ```
 
 Or via npm script:
 
 ```bash
-cd /tmp/workspace/cedrickbyrd/securebase-app/phase3a-portal
+cd phase3a-portal
 npm run test:e2e:customer-recovery
 ```
 
