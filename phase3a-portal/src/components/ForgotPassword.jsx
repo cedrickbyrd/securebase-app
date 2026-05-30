@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     setError('');
     setLoading(true);
     try {
-      await apiService.post('/auth/forgot-password', { email });
+      await apiService.forgotPassword(email);
       setSent(true);
     } catch (err) {
       setError('Something went wrong. Please try again.');
