@@ -52,8 +52,6 @@ _tokens_table = ddb.Table(os.environ.get('TOKENS_TABLE', 'securebase-tokens'))
 _users_table  = ddb.Table(os.environ.get('USERS_TABLE',  'securebase-users'))
 
 # ── In-memory JWT secret cache ────────────────────────────────────────────────
-# Avoids a Secrets Manager round-trip on every decode/mint under concurrent load.
-# TTL is kept short (5 min) so rotation takes effect within a single Lambda run.
 _JWT_SECRET_CACHE: dict = {}
 _JWT_SECRET_TTL_SECONDS = int(os.environ.get('JWT_SECRET_CACHE_TTL', '300'))
 
@@ -74,6 +72,13 @@ _ACCEPT_INVITE_PATHS    = {'/auth/accept-invite', '/accept-invite'}
 _VALIDATE_SESSION_PATHS = {'/auth/validate-session', '/auth/verify'}
 _LOGIN_PATHS            = {'/auth', '/auth/login', '/login'}
 
+# Statuses that mean a token is still usable.
+# None covers legacy Wave 1 records written before `status` was added to
+# write_invite_token(). Once scripts/backfill_wave1_tokens.py has been run
+# against production, every record will have status='active' and this set
+# can be narrowed back to {'active'}.
+_USABLE_STATUSES = {'active', None}
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,13 +95,6 @@ def _normalize_email(email: str) -> str:
 
 
 def _get_jwt_secret() -> str:
-    """Return the JWT secret, serving from an in-memory cache when possible.
-
-    The cache avoids a Secrets Manager call on every Lambda invocation, which
-    is the dominant latency contributor under concurrent RBAC verification load.
-    The TTL (_JWT_SECRET_TTL_SECONDS) ensures that key rotation propagates within
-    a predictable window without restarting the function.
-    """
     now = datetime.now(timezone.utc).timestamp()
     cached = _JWT_SECRET_CACHE.get('secret')
     if cached and now < _JWT_SECRET_CACHE.get('expires_at', 0):
@@ -154,12 +152,6 @@ def _get_user_record(email: str) -> dict | None:
 
 
 def _has_active_invite(email: str) -> bool:
-    """Best-effort check for an active invite token for this email.
-
-    Uses ProjectionExpression + Limit so the scan reads only the minimum data
-    required. A future improvement is to add a GSI on (email, status) to
-    convert this to a key-based query and eliminate the scan entirely.
-    """
     email = _normalize_email(email)
     try:
         resp = _tokens_table.scan(
@@ -193,18 +185,12 @@ def _normalize_token_email(token: str, email: str) -> str:
 
 
 def _mark_token_used(token: str) -> None:
-    """Mark an invite token as used using an optimistic conditional write.
-
-    The ConditionExpression ensures that only one concurrent accept-invite
-    request can succeed for the same token. If two requests race, the second
-    will receive a ConditionalCheckFailedException, which is silently ignored
-    because the token was already consumed by the winner.
-    """
+    """Mark an invite token as used (optimistic conditional write)."""
     try:
         _tokens_table.update_item(
             Key={'token': token},
             UpdateExpression='SET #s = :used',
-            ConditionExpression='#s = :active',
+            ConditionExpression='#s = :active OR attribute_not_exists(#s)',
             ExpressionAttributeNames={'#s': 'status'},
             ExpressionAttributeValues={':used': 'used', ':active': 'active'},
         )
@@ -219,7 +205,6 @@ def _mask_email(email: str) -> str:
     email = _normalize_email(email)
     if not email:
         return ''
-
     local, sep, domain = email.partition('@')
     visible = local[:2] if len(local) > 1 else ''
     if sep and domain:
@@ -228,7 +213,6 @@ def _mask_email(email: str) -> str:
 
 
 def _store_password(email: str, password: str, user: dict) -> None:
-    """Hash password with bcrypt and store/update user record."""
     email = _normalize_email(email)
     pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     _users_table.put_item(Item={
@@ -240,16 +224,10 @@ def _store_password(email: str, password: str, user: dict) -> None:
 
 
 def _publish_activation_event(email: str, event_type: str, metadata: dict) -> None:
-    """Publish a customer activation event to SNS for admin tracking (best-effort).
-
-    The raw email is never included in the SNS payload; a SHA-256 prefix is used
-    as a privacy-safe correlation ID that operators can verify locally.
-    """
     if not _ACTIVATION_TOPIC_ARN:
         return
     try:
         email = _normalize_email(email)
-        # Use a truncated SHA-256 hash as a correlation ID — never raw email (PII)
         correlation_id = hashlib.sha256(email.encode()).hexdigest()[:16]
         message = json.dumps({
             'event_type':     event_type,
@@ -262,10 +240,7 @@ def _publish_activation_event(email: str, event_type: str, metadata: dict) -> No
             Subject=f"[SecureBase] Customer {event_type.replace('_', ' ').title()} [{correlation_id}]",
             Message=message,
             MessageAttributes={
-                'event_type': {
-                    'DataType': 'String',
-                    'StringValue': event_type,
-                },
+                'event_type': {'DataType': 'String', 'StringValue': event_type},
             },
         )
         logger.info(f"Activation event published: {event_type} [corr={correlation_id}]")
@@ -274,10 +249,6 @@ def _publish_activation_event(email: str, event_type: str, metadata: dict) -> No
 
 
 def _record_first_login(email: str, user: dict) -> None:
-    """Record first-login timestamp and publish activation event (best-effort).
-
-    Uses a DynamoDB conditional write so concurrent requests cannot double-fire.
-    """
     email = _normalize_email(email)
     try:
         _users_table.update_item(
@@ -304,7 +275,6 @@ def _get_marketplace_cached_status(customer_id: str) -> str | None:
         item = table.get_item(Key={'SessionId': cache_key}).get('Item')
         if not item:
             return None
-
         checked_at = int(item.get('checked_at', 0))
         now_ts = int(datetime.now(timezone.utc).timestamp())
         if (now_ts - checked_at) > _MARKETPLACE_CACHE_TTL_SECONDS:
@@ -333,14 +303,9 @@ def _set_marketplace_cached_status(customer_id: str, status: str) -> None:
 def _block_inactive_marketplace_subscription(email: str, request_id: str) -> dict | None:
     if db_query_one is None:
         return None
-
     try:
         customer = db_query_one(
-            """
-            SELECT id, payment_method, marketplace_entitlement_status
-            FROM customers
-            WHERE email = %s
-            """,
+            "SELECT id, payment_method, marketplace_entitlement_status FROM customers WHERE email = %s",
             (email,),
         )
     except Exception as e:
@@ -349,9 +314,7 @@ def _block_inactive_marketplace_subscription(email: str, request_id: str) -> dic
 
     if not customer:
         return None
-
-    payment_method = customer.get('payment_method')
-    if payment_method != 'aws_marketplace':
+    if customer.get('payment_method') != 'aws_marketplace':
         return None
 
     customer_id = str(customer.get('id'))
@@ -366,14 +329,13 @@ def _block_inactive_marketplace_subscription(email: str, request_id: str) -> dic
             'message': 'Your AWS Marketplace subscription is inactive.',
             'request_id': request_id,
         })
-
     return None
 
 
 # ── Route handlers ────────────────────────────────────────────────────────────
 
 def validate_invite_token(event: dict, request_id: str) -> dict:
-    """GET /auth/accept-invite?token=... or /accept-invite?token=..."""
+    """GET /auth/accept-invite?token=..."""
     query = event.get('queryStringParameters') or {}
     token_val = (query.get('token') or '').strip()
     if not token_val:
@@ -383,7 +345,8 @@ def validate_invite_token(event: dict, request_id: str) -> dict:
     if not token_record:
         return _resp(401, {'error': 'Invalid or expired invite link', 'request_id': request_id})
 
-    if token_record.get('status') != 'active':
+    # None status = legacy Wave 1 record (no status field written); treat as active.
+    if token_record.get('status') not in _USABLE_STATUSES:
         return _resp(401, {'error': 'Invite link has already been used', 'request_id': request_id})
 
     expires_at = token_record.get('expires_at', '')
@@ -406,16 +369,7 @@ def validate_invite_token(event: dict, request_id: str) -> dict:
 
 
 def accept_invite(event: dict, request_id: str) -> dict:
-    """
-    POST /auth/accept-invite
-    Body: {"token": "<invite_token>", "password": "<chosen_password>"}
-
-    1. Validate invite token in securebase-tokens
-    2. Hash and store password in securebase-users
-    3. Mint JWT
-    4. Mark token used
-    Returns: {"token": "<jwt>", "user": {"email": ..., "role": ...}}
-    """
+    """POST /auth/accept-invite"""
     try:
         body = json.loads(event.get('body') or '{}')
     except (json.JSONDecodeError, TypeError):
@@ -434,11 +388,11 @@ def accept_invite(event: dict, request_id: str) -> dict:
         logger.warning(f"Invite token not found [{request_id}]")
         return _resp(401, {'error': 'Invalid or expired invite link', 'request_id': request_id})
 
-    if token_record.get('status') != 'active':
+    # None status = legacy Wave 1 record (no status field written); treat as active.
+    if token_record.get('status') not in _USABLE_STATUSES:
         logger.warning(f"Invite token already used [{request_id}]")
         return _resp(401, {'error': 'Invite link has already been used', 'request_id': request_id})
 
-    # Check expiry
     expires_at = token_record.get('expires_at', '')
     if expires_at:
         try:
@@ -455,7 +409,6 @@ def accept_invite(event: dict, request_id: str) -> dict:
         logger.error(f"Token record missing email [{request_id}]")
         return _resp(500, {'error': 'Invalid token record', 'request_id': request_id})
 
-    # Get or build user record
     user = _get_user_record(email) or {
         'email':      email,
         'plan':       token_record.get('plan', 'standard'),
@@ -465,7 +418,6 @@ def accept_invite(event: dict, request_id: str) -> dict:
         'created_at': datetime.now(timezone.utc).date().isoformat(),
     }
 
-    # Store hashed password
     try:
         _store_password(email, password, user)
     except Exception as e:
@@ -477,13 +429,11 @@ def accept_invite(event: dict, request_id: str) -> dict:
 
     logger.info(f"Invite accepted + password set: {email} plan={user.get('plan')} [{request_id}]")
 
-    # Publish best-effort activation event for admin tracking/compliance audit
     _publish_activation_event(email, 'invite_accepted', {
         'plan': user.get('plan', 'standard'),
         'tier': user.get('pilot_tier', user.get('plan', 'standard')),
     })
 
-    # Return 'token' and 'user' — matches what AcceptInvite.jsx expects
     return _resp(200, {
         'token': session_token,
         'user': {
@@ -497,10 +447,7 @@ def accept_invite(event: dict, request_id: str) -> dict:
 
 
 def login(event: dict, request_id: str) -> dict:
-    """
-    POST /auth/login
-    Body: {"email": "...", "password": "..."}
-    """
+    """POST /auth/login"""
     try:
         body = json.loads(event.get('body') or '{}')
     except (json.JSONDecodeError, TypeError):
@@ -539,7 +486,6 @@ def login(event: dict, request_id: str) -> dict:
     session_token = _mint_jwt(email, user)
     logger.info(f"Login success: {email} [{request_id}]")
 
-    # Track first login for audit/compliance (best-effort, conditional write)
     if not user.get('first_login_at'):
         _record_first_login(email, user)
 
@@ -610,7 +556,6 @@ def lambda_handler(event, context) -> dict:
     if method == 'POST' and path in _LOGIN_PATHS:
         return login(event, request_id)
 
-    # Bearer token validation fallback
     auth_header = event.get('headers', {}).get('Authorization', '')
     if auth_header.startswith('Bearer '):
         return validate_session(event, request_id)
