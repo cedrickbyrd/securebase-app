@@ -41,7 +41,7 @@ describe('ForgotPassword', () => {
       expect(screen.getByText(/check your inbox/i)).toBeInTheDocument();
     });
 
-    expect(postMock).toHaveBeenCalledWith('/auth/forgot-password', { email: 'user@example.com' });
+    expect(forgotPasswordMock).toHaveBeenCalledWith('user@example.com');
     expect(screen.getByText(/24 hours|24h/i)).toBeInTheDocument();
     expect(screen.queryByText(/30 minutes/i)).not.toBeInTheDocument();
   });
