@@ -151,6 +151,28 @@ resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
   source_arn    = aws_sns_topic.marketplace_subscriptions.arn
 }
 
+# ---------------------------------------------------------------------------
+# Subscribe marketplace_subscription_handler to the AWS-owned Marketplace SNS
+# topic. This is the topic AWS publishes subscribe/unsubscribe/entitlement
+# events to — distinct from the internal topic above. Only created when
+# aws_marketplace_sns_topic_arn is set (non-empty).
+# ---------------------------------------------------------------------------
+resource "aws_sns_topic_subscription" "aws_marketplace_to_handler" {
+  count     = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
+  topic_arn = var.aws_marketplace_sns_topic_arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.marketplace_subscription_handler.arn
+}
+
+resource "aws_lambda_permission" "allow_aws_marketplace_sns" {
+  count         = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
+  statement_id  = "AllowAWSMarketplaceSNSInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.marketplace_subscription_handler.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = var.aws_marketplace_sns_topic_arn
+}
+
 resource "aws_cloudwatch_event_rule" "marketplace_metering_hourly" {
   name                = "securebase-${var.environment}-marketplace-metering-hourly"
   schedule_expression = "rate(1 hour)"
