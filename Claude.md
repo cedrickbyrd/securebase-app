@@ -3,7 +3,7 @@
 **Repository:** `cedrickbyrd/securebase-app`
 **Role Context:** Principal Cloud Architect | Compliance-First SaaS Platform
 **Mission:** Build SOC 2, FedRAMP, and HIPAA-ready infrastructure and features
-**Last Updated:** May 27, 2026
+**Last Updated:** May 31, 2026
 
 ---
 
@@ -21,23 +21,60 @@ SecureBase is a security-first, multi-tenant AWS PaaS platform delivering **comp
 | Phase 4 | Enterprise Features (RBAC, Analytics, Notifications) | ✅ Complete |
 | Phase 5 | Observability, Multi-Region DR & Incident Response | ✅ Complete |
 | Phase 6 | Compliance Automation & Operations Scale | 🔨 In Progress |
+| Phase 7 | GCP Multi-Cloud Integration | 📐 Architecture drafted |
+
+---
 
 ### Phase 6 — Active Sprint
 
-> See [`PHASE6_SCOPE.md`](PHASE6_SCOPE.md) for full scope.
+> See [`PHASE6_SCOPE.md`](PHASE6_SCOPE.md) for full scope. See [`TODO_PHASE6.md`](TODO_PHASE6.md) for granular task status.
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| 6.1 | Immutable Audit Logging + Evidence Baseline | ✅ Complete (May 17, 2026) |
+| 6.1 | Immutable Audit Logging + Evidence Vault | ✅ Complete (May 17, 2026) |
+| 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
 | 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | ✅ Complete (May 17, 2026) |
-| 6.3 | Scalability / performance validation (10k VUs, cache hit rate, cold-start reduction) | 🔨 In Progress |
-| 6.4 | Distributed Tracing & Advanced Observability | ✅ Complete (documented May 27, 2026) |
-| 6.5 | Cost Optimization & Per-Tenant Cost Governance | ✅ Complete (documented May 27, 2026) |
-| 6.6 | Build Debt & Developer Experience | 🔴 Deferred pending commercial / staffing triggers |
+| 6.3 | Scalability / performance validation (10k VUs, p95 < 200ms) | 🔴 Deferred — trigger: Matthew Matturro converts |
+| 6.4 | Distributed Tracing & Advanced Observability | ✅ Complete (May 27, 2026) |
+| 6.5 | Cost Optimization & Per-Tenant Cost Governance | ✅ Complete (May 27, 2026) |
+| 6.6 | Build Debt & Developer Experience | 🔴 Deferred — trigger: Matthew converts + 2nd engineer onboarded |
 
-#### Phase 6.1 — The Vault (Complete)
+#### ⚠️ CRITICAL: Production wiring — PR open, not yet merged
 
-The Vault is the immutable evidence store. S3 Object Lock (COMPLIANCE mode, 7yr), KMS-encrypted, SHA-256 manifests, auditor-grade PDF cover pages. First customer baseline written May 17, 2026.
+Phase 6.1 and 6.2 modules are wired in `dev` but **not yet in prod**. PR `feat/wire-phase6-prod-migrations` is open and must be merged + deployed before June 13.
+
+**What the PR does:**
+- Adds `phase6_audit_logging`, `phase6_compliance`, `phase6_lambdas`, `phase6_alerting` to `landing-zone/environments/prod/main.tf`
+- Adds 5 new variables to `landing-zone/environments/prod/variables.tf`
+- Adds `scripts/run-phase6-migrations.sh` — idempotent Aurora migration runner
+- Adds `.github/workflows/phase6-db-migrations.yml` — CI migration workflow (auto dev, manual prod)
+- Adds `.github/workflows/phase6-prod-plan.yml` — posts `terraform plan` as PR comment
+
+**Deploy sequence after merge:**
+1. Merge PR → CI auto-migrates dev Aurora (001 + 002)
+2. Dispatch `phase6-db-migrations.yml` → staging, confirm OK
+3. Dispatch `phase6-db-migrations.yml` → prod (`confirmed=MIGRATE`)
+4. Dispatch `terraform-securebase-apply.yml` (`confirmed=DEPLOY`)
+
+**GitHub Actions variables required before prod deploy:**
+
+| Variable | Where | Value needed |
+|---|---|---|
+| `PROD_RDS_PROXY_ENDPOINT` | vars | Aurora RDS Proxy endpoint |
+| `PROD_PRIVATE_SUBNET_IDS` | vars | JSON array of private subnet IDs |
+| `PROD_LAMBDA_SG_IDS` | vars | JSON array of Lambda security group IDs |
+| `CEO_ALERT_EMAIL` | vars | Macie findings email |
+| `TF_STATE_BUCKET` | vars | Terraform state S3 bucket |
+| `TF_LOCK_TABLE` | vars | DynamoDB lock table |
+| `PROD_DB_CREDENTIALS_SECRET_ARN` | secrets | Secrets Manager ARN for Aurora creds |
+
+#### ⚠️ CRITICAL: Aurora migrations not yet run in prod
+
+`001_audit_evidence_tables.sql` and `002_compliance_score_history.sql` have been written but not yet applied to the production Aurora cluster. Without them, the Vault and compliance scoring produce no data. Run them via the migration workflow above.
+
+#### Phase 6.1 — The Vault (Complete in dev)
+
+S3 Object Lock (COMPLIANCE mode, 7yr), KMS-encrypted, SHA-256 manifests, auditor-grade PDF cover pages.
 
 Key files:
 - `phase6-backend/functions/audit_log_packager.py` — WORM evidence packager
@@ -46,62 +83,46 @@ Key files:
 
 Portal components: evidence history table, async polling, presigned download, admin vault panel.
 
-#### Phase 6.2 — Compliance Score Engine (Complete)
+#### Phase 6.2 — Compliance Score Engine (Complete in dev)
 
-Phase 6.2 delivered organization-wide compliance automation with 50+ AWS Config rules, weighted daily scoring, tenant compliance history, and admin cross-tenant visibility.
+50+ AWS Config rules, weighted daily scoring, tenant compliance history, admin cross-tenant visibility.
 
 Key files:
-- `phase6-backend/compliance/config_rules.tf` — AWS Config rule inventory and framework mapping
+- `phase6-backend/compliance/config_rules.tf` — Config rule inventory and framework mapping
 - `phase6-backend/functions/compliance_score_recalculator.py` — daily weighted score snapshots
 - `phase6-backend/functions/compliance_history_api.py` — tenant compliance trend API
-- `landing-zone/modules/phase6-lambda-functions/outputs.tf` — score recalculator/log outputs for downstream wiring
 
-#### Phase 6.4 — Distributed Tracing & Advanced Observability (Complete)
+#### Phase 6.4 — Distributed Tracing & Observability (Complete)
 
-Track 4 added tenant-aware tracing and anomaly detection for platform operations.
+Key files: `landing-zone/modules/phase6-tracing/` · `PHASE6_TRACK4_COMPLETE.md`
 
-Key files:
-- `landing-zone/modules/phase6-tracing/main.tf`
-- `landing-zone/modules/phase6-tracing/variables.tf`
-- `landing-zone/modules/phase6-tracing/outputs.tf`
-- `landing-zone/modules/api-gateway/main.tf` — access logs include `tenantId` for attribution
-- `PHASE6_TRACK4_COMPLETE.md`
+Delivered: X-Ray tenant-segmented trace groups, Lambda Insights, CloudWatch Contributor Insights, anomaly detection alarms.
 
-Delivered capabilities:
-- X-Ray tenant-segmented trace groups
-- Lambda Insights IAM policy attachments
-- CloudWatch Contributor Insights for top tenant error contributors
-- Anomaly detection alarms for Lambda p99 duration / error rate and API Gateway 4xx/5xx
+#### Phase 6.5 — Cost-per-Tenant Governance (Complete)
 
-#### Phase 6.5 — Cost Optimization & Per-Tenant Cost Governance (Complete)
+Key files: `landing-zone/modules/phase6-cost/` · `PHASE6_TRACK5_COMPLETE.md`
 
-Track 5 added daily cost-per-tenant aggregation, monthly cost export, custom CloudWatch metrics, and alerting on tenant spend thresholds.
+Delivered: Daily EventBridge cost aggregation, monthly S3 export, CloudWatch cost threshold alarms, `tenant_id` cost allocation tags.
 
-Key files:
-- `landing-zone/modules/phase6-cost/main.tf`
-- `package-phase6-lambdas.sh` — includes `cost_per_tenant`
-- `PHASE6_TRACK5_COMPLETE.md`
+---
 
-Delivered capabilities:
-- Daily EventBridge cost aggregation
-- Monthly cost export to S3
-- CloudWatch alarm for max tenant projected monthly cost
-- Cost allocation tags for `tenant_id`, `Phase`, and `Environment`
+## 🗓 Active Deadline: June 13, 2026 — Matthew Matturro / TriNetX
 
-#### Active Remaining Work
+**Customer:** Matthew Matturro, TriNetX (healthcare data company)
+**Status:** Trial in progress, conversion deadline June 13
+**What he needs:**
+- Day 1: Evidence packages visible in portal (`/evidence`) — requires Vault prod deploy
+- Day 7: 90-day HIPAA compliance trend — requires compliance scoring prod deploy
 
-- **6.3 Scalability / validation** — complete 10k VU load testing, verify p95 < 200ms, confirm cache hit rate and warm-path cold-start targets
-- **6.6 Internal follow-on work** — build debt cleanup and developer experience improvements remain deferred pending customer conversion / staffing trigger
+**CEO SNS alert:** PR #778 wired first-activation and first-login events → SNS → email. You will receive an email when Matthew activates and first logs in.
 
-**Security rule:** Customer PII (names, emails, tokens) must never appear in repo files, issues, or commit messages. Use Customer #1, #2, etc.
+**Do NOT** start work on 6.3 (scalability), 6.4 build debt, 6.5 DevEx, or 6.6 GTM Ops until Matthew's conversion is confirmed.
 
 ---
 
 ## 🛒 Sales Funnel Architecture
 
 > **Source of truth for conversion:** `securebase.tximhotep.com` (marketing site, root `/`)
-
-The SecureBase funnel has three stages across two separate web properties:
 
 ```
 [TOFU]  demo.securebase.tximhotep.com   ←  prospect explores live product
@@ -113,22 +134,22 @@ The SecureBase funnel has three stages across two separate web properties:
 
 ### AWS Marketplace Channel
 
-SecureBase is listed on AWS Marketplace. Buyers who subscribe are redirected to:
-
 ```
 [Marketplace] portal.securebase.tximhotep.com/marketplace-redirect?x-amzn-marketplace-token=<token>
 ```
 
-- The portal resolves the token via `POST /api/marketplace/resolve` → `securebase-marketplace-resolver` Lambda
-- Session is always persisted to `localStorage` (buyers arrive from an external redirect — no "Remember me" UI)
+- Token resolved via `POST /api/marketplace/resolve` → `securebase-marketplace-resolver` Lambda
+- Session always persisted to `localStorage` (external redirect — no "Remember me" UI)
 - Implementation: `phase3a-portal/src/pages/MarketplaceRedirect.jsx` + `persistSessionToken()` from `apiService.js`
+- SNS subscription wired in PR #844 (May 31, 2026) — Marketplace channel is production-ready
 
-### Key Rules for Every Developer
+### Key Funnel Rules
 
-- **Demo → Pricing is the primary acquisition path.** `demo.securebase.tximhotep.com` must always carry a prominent CTA back to `securebase.tximhotep.com/pricing`. Do NOT add self-serve signup flows from demo pages.
-- **Pricing → Checkout, NOT Pricing → Signup.** `src/components/Pricing.jsx` routes `handleSelectPlan()` directly to `/checkout`. The `/signup` page exists for a separate direct-traffic path.
-- **The pricing page is the revenue bottleneck.** All conversion optimisation work (CTAs, copy, layout) is concentrated in `src/components/Pricing.jsx`.
-- **Banking/FFIEC visitors are routed to `/contact-sales`, not checkout.** This is intentional — do NOT remove the `isBanking` guard.
+- **Demo → Pricing is the primary acquisition path.** CTAs on `demo.securebase.tximhotep.com` must always point to `securebase.tximhotep.com/pricing`. Never add self-serve signup from demo pages.
+- **Pricing → Checkout, NOT Pricing → Signup.** `src/components/Pricing.jsx` routes `handleSelectPlan()` directly to `/checkout`.
+- **The pricing page is the revenue bottleneck.** All conversion work lives in `src/components/Pricing.jsx`.
+- **Banking/FFIEC visitors → `/contact-sales`.** The `isBanking` guard is intentional — never remove it.
+- **"Start Free Trial" header CTA routes to Healthcare checkout.** Current hardcode: `plan=healthcare`. Change to `plan=standard` or `plan=fintech` if targeting those verticals first.
 
 ### GA4 Properties
 
@@ -137,55 +158,77 @@ SecureBase is listed on AWS Marketplace. Buyers who subscribe are redirected to:
 | SecureBase - tximhotep.com | `533585511` | Marketing site — **source of truth** |
 | SecureBase Demo Portal | `530646932` | `demo.securebase.tximhotep.com` |
 
-Both properties are live and receiving data. The `G-XXXXXXXXXX` placeholder in env templates below is intentional — real IDs are set in Netlify environment variables, never in the repo.
+### ⚠️ Marketing Site Deploy Gap
 
-### Known Conversion Issues (May 22, 2026)
+The marketing site (`securebase.tximhotep.com`, root `/`) has **no auto-deploy workflow**. Changes to `src/components/Pricing.jsx` and other root `src/` files merged to `main` do **not** go live automatically. Every change requires a manual deploy:
 
-| Issue | Root Cause | Fix |
+```bash
+# From repo root (NOT phase3a-portal/)
+npm ci --legacy-peer-deps
+npm run build
+npx netlify deploy --prod --dir=dist --site=<marketing-site-id>
+```
+
+Or trigger a deploy from the Netlify dashboard. The portal (`phase3a-portal/`) does have an auto-deploy via `deploy-phase3a-production.yml`. The marketing site does not.
+
+**Fix:** Add `.github/workflows/deploy-marketing.yml` that triggers on `push` to `main` for paths `src/**`, `public/**`, `index.html`, `vite.config.js`.
+
+### Known Conversion Issues
+
+| Issue | Root Cause | Status |
 |---|---|---|
-| 0s average engagement time across all pages | SPA client-side routing not firing GA4 `page_view` events on route change | PR in progress |
-| ~15.7% of `/login` sessions hit `/forgot-password` | JWT stored in `sessionStorage` — cleared on tab close, forcing re-login | Add "Remember me" → `localStorage` path |
-| Demo dashboard invisible from pricing page | No link from `Pricing.jsx` to `demo.securebase.tximhotep.com` | Add secondary CTA to pricing cards |
-| No acquisition CTA in pricing page header | Header only shows "Sign In" — no path for new prospects | Add "Start Free Trial" to sticky header |
+| 0s avg engagement time across all pages | SPA routing not firing GA4 `page_view` on route change | Fix merged (SPA virtual page_view tracking) — needs marketing deploy |
+| ~15.7% of `/login` sessions hit `/forgot-password` | JWT in `sessionStorage` cleared on tab close | "Remember me" → `localStorage` partially addressed in recent PRs |
+| "Start Free Trial" CTA not live on pricing page | Code merged in PR #768 (May 22) but no auto-deploy | Manual deploy required |
+| "See Live Demo →" card links not live | Same as above | Manual deploy required |
 
 ---
 
 ## 🛠 Build & Environment Constraints
 
 ### Package Management
+
 ```bash
 # REQUIRED: Always use --legacy-peer-deps for chart dependencies
 npm install react-chartjs-2 chart.js --save --legacy-peer-deps
 npm install --legacy-peer-deps
 ```
 
+### Monorepo Structure — Two Separate Apps
+
+| | Root `/` | `phase3a-portal/` |
+|---|---|---|
+| **Purpose** | Marketing site + signup | Authenticated customer portal |
+| **React** | 19 | 18 |
+| **Vite** | 6 | 5 |
+| **Auth** | AWS Lambda (`/api/signup`) | AWS Lambda JWT via API Gateway |
+| **Deploy** | Manual — no auto-deploy workflow | `deploy-phase3a-production.yml` |
+| **Node** | LTS v20 | ≥ 20.19.0 (bumped to v22 in PR #842) |
+
+The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/CD failures**. Always run `npm install` and commit the lock file after adding packages. Never run `npm install` from repo root expecting it to affect `phase3a-portal/`.
+
 ### Lock File Policy
 
-The `package-lock.json` out-of-sync with `package.json` is the **#1 cause of CI/CD failures**. All deploy workflows use `npm ci`.
-
-- Always run `npm install` locally when adding packages; commit the updated lock file
-- Two separate packages: root `/` (React 19, Vite 6) and `phase3a-portal/` (React 18, Vite 5)
-- `@supabase/supabase-js` is root-only — do NOT add to `phase3a-portal/` (PR #508)
-
-### Technology Stack
-- **Frontend:** React 18+ (portal `.jsx`, marketing site `.tsx`), Vite, Tailwind CSS
-- **Charts:** react-chartjs-2 + chart.js | **PDF:** jspdf + html2canvas
-- **Analytics:** GA4 (privacy-first, HIPAA-compliant, no PII/PHI)
-- **Backend/Auth:** Lambda JWT (portal) | Supabase removed from portal in PR #508
-- **Runtime:** Node.js LTS v20.x
+- Root and `phase3a-portal/` have separate `package.json` and `package-lock.json`
+- `@supabase/supabase-js` is root-only — never add to `phase3a-portal/` (PR #508)
+- All CI deploys use `npm ci` — lock file drift breaks builds immediately
 
 ### Auth Architecture
 
 | Context | Auth Method |
 |---|---|
 | Marketing site `/signup` | AWS Lambda (`/api/signup`) |
-| Portal (`phase3a-portal`) | AWS Lambda JWT via API Gateway |
+| Portal (`phase3a-portal`) | AWS Lambda JWT via API Gateway — `securebase-production-auth-v2` |
+| Demo mode | `demoApiService.js` + `VITE_DEMO_MODE=true` |
+
+**Supabase is fully removed** from the portal (PR #508). Never add `@supabase/supabase-js` to `phase3a-portal/`.
 
 ### Environment Variables
+
 ```env
 VITE_API_BASE_URL=https://api.securebase.tximhotep.com
 VITE_API_ENDPOINT=https://api.securebase.tximhotep.com
-VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX  # placeholder — real ID in Netlify env vars (property 533585511)
+VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX  # placeholder — real IDs in Netlify env vars
 VITE_DEMO_MODE=false
 VITE_DEMO_USER_EMAIL=demo@securebase.tximhotep.com
 VITE_USE_MOCK_API=false
@@ -200,29 +243,37 @@ VITE_USE_MOCK_API=false
 **HIPAA:** Never log PHI, hash/mask PHI in dev, log every PHI access with user + timestamp
 
 ### Security Checklist for Every Commit
+
 - [ ] No hardcoded credentials, API keys, or secrets
 - [ ] PII/PHI never logged; GA4 events free of PII/PHI
-- [ ] Customer PII never in repo files, issues, or commit messages (use Customer #1, #2, etc.)
+- [ ] Customer PII never in repo files, issues, or commit messages — use Customer #1, #2, etc.
 - [ ] RLS enforced; input validation on all user data
 - [ ] `npm audit --production` clean
 - [ ] New docs go in `docs/`, not repo root
+- [ ] `sensitive_data.sql` in repo root — audit this file; confirm no real PII or credentials
 
 ---
 
 ## 📝 Code Style & Patterns
 
 ```typescript
-// Functional components with TypeScript, Tailwind utilities
+// Functional components, Tailwind utilities, no inline styles
 export const ComplianceCheck: React.FC<{ controlId: string; status: 'passing'|'failing'|'pending' }> = ({ controlId, status }) => (
   <div className="p-4 border rounded-lg">{/* content */}</div>
 );
 ```
 
+- Functional components only — no class components
+- `.jsx` for portal components; prefer `.tsx` for new portal files
+- Tailwind utility classes only — no `style={{}}` inline styles
+- No `localStorage.setItem('sessionToken', ...)` directly — use `persistSessionToken()` from `apiService.js`
+- SRE Dashboard memory metric accent `#9333EA` — never change
+
 ---
 
 ## 🚀 Git Workflow
 
-> **Docs policy:** New files go in `docs/`. Never create `*.md` in the repo root.
+> **Docs policy:** New files go in `docs/`. Never create `*.md` in the repo root (Claude.md and a few legacy files are grandfathered).
 
 ```bash
 git commit -m "feat: add automated SOC 2 evidence collection"
@@ -237,11 +288,21 @@ git commit -m "docs: update roadmap — phase 6.1 complete"
 ## ⚙️ GitHub Actions & CI/CD
 
 Always use OIDC for AWS — never long-lived access keys:
+
 ```yaml
 permissions:
   contents: read
   id-token: write
 ```
+
+Key workflows:
+| Workflow | Trigger | Does |
+|---|---|---|
+| `deploy-phase3a-production.yml` | Manual (`DEPLOY TO PRODUCTION`) | Deploys portal to `securebase-portal` Netlify site |
+| `terraform-securebase-apply.yml` | Manual (`DEPLOY`) | Applies prod Terraform |
+| `phase6-db-migrations.yml` | Auto (dev on push), manual (staging/prod) | Runs Aurora migrations |
+| `phase6-prod-plan.yml` | PR to main touching prod/ | Posts terraform plan as PR comment |
+| `auth-regression-tests.yml` | PR | Auth regression gate |
 
 ---
 
@@ -263,6 +324,7 @@ Policy: Do NOT introduce new Netlify Functions. Use AWS Lambda + API Gateway.
 ## 🔭 Phase 5 Infrastructure Reference (Complete)
 
 ### Terraform Modules
+
 | Module | Phase | Key Resources |
 |--------|-------|---------------|
 | `phase5-admin-metrics/` | 5.1 | CloudWatch Lambda, DynamoDB, 7 `/admin/*` routes |
@@ -273,11 +335,13 @@ Policy: Do NOT introduce new Netlify Functions. Use AWS Lambda + API Gateway.
 | `phase5-logging/` | 5.6 | X-Ray tracing, CloudWatch log groups, 20+ Insights queries, VPC Flow Logs |
 | `multi-region/` | 5.4 | Aurora Global DB, DynamoDB Global Tables, S3 CRR, CloudFront failover (49/49 applied) |
 
-### Phase 5 SLA Commitments
+### SLA Commitments
+
 - **RTO:** < 15 min | **RPO:** < 1 min | **Uptime:** 99.95%
 - **Alert detection:** < 5 min | **X-Ray coverage:** 100% of Lambda functions
 
 ### CloudFront Wiring Note (5.4)
+
 Primary origin: `d-ky35u7ca93.execute-api.us-east-1.amazonaws.com` (API GW custom domain regional endpoint).
 Do NOT use the raw execute-api URL — returns 403 when `Host: api.securebase.tximhotep.com`.
 Route 53 disabled — DNS in Netlify; CloudFront origin group provides failover.
@@ -294,6 +358,18 @@ cd landing-zone/environments/prod && terraform apply
 terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 ```
 
+### Prod environment module inventory (as of May 31, 2026)
+
+| Module | Status |
+|---|---|
+| `phase6_audit_logging` | ⚠️ In open PR — not yet applied |
+| `phase6_compliance` | ⚠️ In open PR — not yet applied |
+| `phase6_lambdas` | ⚠️ In open PR — not yet applied |
+| `phase6_alerting` | ⚠️ In open PR — not yet applied |
+| `phase6_tracing` | ✅ Applied |
+| `phase6_cost` | ✅ Applied |
+| `marketplace` | ✅ Applied (conditional on vars) |
+
 ---
 
 ## 🔍 AI Assistant Audit Checklist
@@ -308,6 +384,9 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 - [ ] New docs in `docs/`, not repo root
 - [ ] Funnel rule: demo CTAs point to `securebase.tximhotep.com/pricing`, not internal signup
 - [ ] Pricing page: `handleSelectPlan()` routes to `/checkout` — do NOT reroute to `/signup`
+- [ ] Marketing site changes require a **manual Netlify deploy** — no auto-deploy workflow exists
+- [ ] `phase3a-portal/` deploys separately from root `/` — never deploy portal from repo root
+- [ ] Before touching `landing-zone/environments/prod/`: check open PR `feat/wire-phase6-prod-migrations` to avoid conflicts
 
 ---
 
@@ -319,4 +398,4 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 
 ---
 
-**Last Updated:** 2026-05-27 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
+**Last Updated:** 2026-05-31 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
