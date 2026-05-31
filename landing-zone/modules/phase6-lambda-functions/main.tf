@@ -1,6 +1,6 @@
 # Phase 6 Lambda Functions Module
-# Deploys audit_evidence_api and compliance_history_api Lambdas
-# wired to the evidence S3 bucket, KMS key, and DynamoDB scores table.
+# Deploys audit_evidence_api, audit_log_packager, compliance_history_api,
+# and compliance_score_recalculator Lambdas.
 
 terraform {
   required_providers {
@@ -98,8 +98,6 @@ resource "aws_iam_role_policy" "phase6_permissions" {
           "config:DescribeComplianceByConfigRule",
           "config:GetComplianceSummaryByConfigRule",
         ]
-        # AWS Config read APIs do not support resource-level ARN restrictions.
-        # Wildcard is required; access is scoped to the deployment region via condition.
         Resource = "*"
         Condition = {
           StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
@@ -109,8 +107,6 @@ resource "aws_iam_role_policy" "phase6_permissions" {
         Sid    = "SecurityHubRead"
         Effect = "Allow"
         Action = ["securityhub:GetFindings"]
-        # Security Hub read APIs do not support resource-level ARN restrictions.
-        # Wildcard is required; access is scoped to the deployment region via condition.
         Resource = "*"
         Condition = {
           StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
@@ -124,7 +120,6 @@ resource "aws_iam_role_policy" "phase6_permissions" {
           "guardduty:GetFindings",
           "guardduty:ListDetectors",
         ]
-        # GuardDuty read APIs require wildcard resource; scoped to deployment region.
         Resource = "*"
         Condition = {
           StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
@@ -134,7 +129,6 @@ resource "aws_iam_role_policy" "phase6_permissions" {
   })
 }
 
-# Optional: S3 GetObject permission for compliance mapping files stored in S3
 resource "aws_iam_role_policy" "phase6_s3_mappings" {
   count = var.mappings_bucket != "" ? 1 : 0
   name  = "securebase-${var.environment}-phase6-s3-mappings"
@@ -171,14 +165,16 @@ resource "aws_lambda_function" "audit_evidence_api" {
 
   environment {
     variables = {
-      ENVIRONMENT          = var.environment
-      EVIDENCE_BUCKET      = var.evidence_bucket_name
-      EVIDENCE_KMS_KEY_ARN = var.evidence_kms_key_arn
-      RDS_HOST             = var.rds_proxy_endpoint
-      RDS_DATABASE         = var.database_name
-      RDS_USER             = var.database_user
-      LOG_LEVEL            = "INFO"
-      PRESIGNED_URL_EXPIRY = "3600"
+      ENVIRONMENT           = var.environment
+      EVIDENCE_BUCKET       = var.evidence_bucket_name
+      EVIDENCE_KMS_KEY_ARN  = var.evidence_kms_key_arn
+      RDS_HOST              = var.rds_proxy_endpoint
+      RDS_DATABASE          = var.database_name
+      RDS_USER              = var.database_user
+      LOG_LEVEL             = "INFO"
+      PRESIGNED_URL_EXPIRES = "3600"
+      # Must match aws_lambda_function.audit_log_packager.function_name below.
+      PACKAGER_FUNCTION     = "securebase-${var.environment}-audit-log-packager"
     }
   }
 
@@ -194,6 +190,143 @@ resource "aws_cloudwatch_log_group" "audit_evidence_api" {
   name              = "/aws/lambda/securebase-${var.environment}-phase6-audit-evidence-api"
   retention_in_days = 90
   tags              = var.tags
+}
+
+# ============================================================================
+# audit_log_packager Lambda
+# Invoked by: audit_evidence_api (async, POST /admin/evidence/generate)
+#             EventBridge weekly schedule (Sunday 03:00 UTC)
+# ============================================================================
+
+resource "aws_lambda_function" "audit_log_packager" {
+  filename         = var.audit_log_packager_zip
+  function_name    = "securebase-${var.environment}-audit-log-packager"
+  # Re-use the dedicated IAM role from phase6-audit-logging — it holds the
+  # least-privilege S3 + KMS policies for reading source logs and writing
+  # COMPLIANCE-mode objects to the evidence bucket.
+  role             = var.audit_packager_role_arn
+  handler          = "audit_log_packager.lambda_handler"
+  source_code_hash = filebase64sha256(var.audit_log_packager_zip)
+  runtime          = "python3.11"
+  # 10-minute timeout: packaging 10k objects + ZIP build + S3 upload.
+  # Sized conservatively for the current tenant count; revisit after 6.3 scaling.
+  timeout          = 600
+  memory_size      = 1024
+
+  tracing_config { mode = "Active" }
+
+  environment {
+    variables = {
+      ENVIRONMENT              = var.environment
+      AUDIT_SOURCE_BUCKET      = var.audit_source_bucket_name
+      EVIDENCE_BUCKET          = var.evidence_bucket_name
+      EVIDENCE_KMS_KEY_ARN     = var.evidence_kms_key_arn
+      EVIDENCE_RETENTION_YEARS = "7"
+      RDS_HOST                 = var.rds_proxy_endpoint
+      RDS_DATABASE             = var.database_name
+      RDS_USER                 = var.database_user
+      LOG_LEVEL                = "INFO"
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = var.security_group_ids
+  }
+
+  tags = merge(var.tags, {
+    Phase = "6.1"
+    Name  = "securebase-${var.environment}-audit-log-packager"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "audit_log_packager" {
+  name              = "/aws/lambda/securebase-${var.environment}-audit-log-packager"
+  retention_in_days = 90
+  tags              = var.tags
+}
+
+# Grant audit_evidence_api permission to invoke the packager asynchronously
+resource "aws_lambda_permission" "audit_evidence_api_invoke_packager" {
+  statement_id  = "AllowAuditEvidenceApiInvokePackager"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.audit_log_packager.function_name
+  principal     = "lambda.amazonaws.com"
+  source_arn    = aws_lambda_function.audit_evidence_api.arn
+}
+
+# IAM: allow phase6_lambda role (used by audit_evidence_api) to invoke the packager
+resource "aws_iam_role_policy" "audit_evidence_api_invoke_packager" {
+  name = "securebase-${var.environment}-audit-evidence-invoke-packager"
+  role = aws_iam_role.phase6_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "InvokePackagerLambda"
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = aws_lambda_function.audit_log_packager.arn
+    }]
+  })
+}
+
+# ============================================================================
+# EventBridge — Weekly evidence packaging schedule (Sunday 03:00 UTC)
+# Phase 6.1.1: default cadence for pilot tenants.
+# ============================================================================
+
+resource "aws_cloudwatch_event_rule" "evidence_packager_weekly" {
+  name                = "securebase-${var.environment}-phase6-evidence-packager-weekly"
+  description         = "Phase 6.1.1: trigger audit_log_packager weekly (Sunday 03:00 UTC)"
+  schedule_expression = "cron(0 3 ? * SUN *)"
+
+  tags = merge(var.tags, {
+    Phase = "6.1"
+    Name  = "securebase-${var.environment}-phase6-evidence-packager-weekly"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "evidence_packager_weekly" {
+  rule      = aws_cloudwatch_event_rule.evidence_packager_weekly.name
+  target_id = "phase6-audit-log-packager"
+  arn       = aws_lambda_function.audit_log_packager.arn
+
+  retry_policy {
+    maximum_event_age_in_seconds = 300
+    maximum_retry_attempts       = 2
+  }
+}
+
+resource "aws_lambda_permission" "evidence_packager_eventbridge" {
+  statement_id  = "AllowEventBridgePhase61EvidencePackager"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.audit_log_packager.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.evidence_packager_weekly.arn
+}
+
+# Alert if packager has not run in 7 days (stale Vault)
+resource "aws_cloudwatch_metric_alarm" "packager_stale_vault" {
+  count               = var.alert_sns_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-phase6-packager-stale-vault"
+  alarm_description   = "audit_log_packager invoked 0 times in 7 days — Vault may be stale"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Invocations"
+  namespace           = "AWS/Lambda"
+  period              = 604800
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.audit_log_packager.function_name
+  }
+
+  alarm_actions = [var.alert_sns_arn]
+
+  tags = merge(var.tags, { Phase = "6.1", Severity = "high" })
 }
 
 # ============================================================================
@@ -221,7 +354,6 @@ resource "aws_lambda_function" "compliance_history_api" {
     }
   }
 
-  # No VPC needed — only reads from DynamoDB (public endpoint via VPC endpoint or NAT)
   tags = merge(var.tags, { Phase = "6.2", Name = "securebase-${var.environment}-phase6-compliance-history-api" })
 }
 
@@ -241,28 +373,13 @@ resource "aws_dynamodb_table" "compliance_scores" {
   hash_key     = "PK"
   range_key    = "SK"
 
-  attribute {
-    name = "PK"
-    type = "S"
-  }
-  attribute {
-    name = "SK"
-    type = "S"
-  }
+  attribute { name = "PK"; type = "S" }
+  attribute { name = "SK"; type = "S" }
 
-  ttl {
-    attribute_name = "ttl"
-    enabled        = true
-  }
+  ttl { attribute_name = "ttl"; enabled = true }
+  point_in_time_recovery { enabled = true }
 
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  tags = merge(var.tags, {
-    Phase = "6.2"
-    Name  = "securebase-compliance-scores"
-  })
+  tags = merge(var.tags, { Phase = "6.2", Name = "securebase-compliance-scores" })
 }
 
 resource "aws_dynamodb_table" "control_violation_log" {
@@ -271,28 +388,13 @@ resource "aws_dynamodb_table" "control_violation_log" {
   hash_key     = "PK"
   range_key    = "SK"
 
-  attribute {
-    name = "PK"
-    type = "S"
-  }
-  attribute {
-    name = "SK"
-    type = "S"
-  }
+  attribute { name = "PK"; type = "S" }
+  attribute { name = "SK"; type = "S" }
 
-  ttl {
-    attribute_name = "ttl"
-    enabled        = true
-  }
+  ttl { attribute_name = "ttl"; enabled = true }
+  point_in_time_recovery { enabled = true }
 
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  tags = merge(var.tags, {
-    Phase = "6.2"
-    Name  = "control_violation_log"
-  })
+  tags = merge(var.tags, { Phase = "6.2", Name = "control_violation_log" })
 }
 
 # ============================================================================
@@ -307,8 +409,7 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
   handler          = "compliance_score_recalculator.lambda_handler"
   source_code_hash = filebase64sha256(var.compliance_score_recalculator_zip)
   runtime          = "python3.11"
-  timeout     = 600  # 10 minutes — sequential per-tenant scoring across 3 frameworks.
-  # Viable for up to ~200 tenants. For larger deployments, consider SQS fanout or Step Functions.
+  timeout          = 600
   memory_size      = 512
 
   tracing_config { mode = "Active" }
@@ -323,16 +424,12 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
     }
   }
 
-  # Runs against AWS Config / Security Hub / GuardDuty — no VPC required
-  tags = merge(var.tags, {
-    Phase = "6.2"
-    Name  = "securebase-${var.environment}-phase6-compliance-score-recalculator"
-  })
-
   depends_on = [
     aws_dynamodb_table.compliance_scores,
     aws_dynamodb_table.control_violation_log,
   ]
+
+  tags = merge(var.tags, { Phase = "6.2", Name = "securebase-${var.environment}-phase6-compliance-score-recalculator" })
 }
 
 resource "aws_cloudwatch_log_group" "compliance_score_recalculator" {
@@ -347,13 +444,10 @@ resource "aws_cloudwatch_log_group" "compliance_score_recalculator" {
 
 resource "aws_cloudwatch_event_rule" "score_recalculator_daily" {
   name                = "securebase-${var.environment}-phase6-score-recalculator-daily"
-  description         = "Phase 6.2: trigger compliance_score_recalculator Lambda daily at 02:00 UTC"
+  description         = "Phase 6.2: trigger compliance_score_recalculator daily at 02:00 UTC"
   schedule_expression = "cron(0 2 * * ? *)"
 
-  tags = merge(var.tags, {
-    Phase = "6.2"
-    Name  = "securebase-${var.environment}-phase6-score-recalculator-daily"
-  })
+  tags = merge(var.tags, { Phase = "6.2", Name = "securebase-${var.environment}-phase6-score-recalculator-daily" })
 }
 
 resource "aws_cloudwatch_event_target" "score_recalculator_daily" {
@@ -375,10 +469,6 @@ resource "aws_lambda_permission" "score_recalculator_eventbridge" {
   source_arn    = aws_cloudwatch_event_rule.score_recalculator_daily.arn
 }
 
-# ============================================================================
-# CloudWatch Alarms — Score Recalculator
-# ============================================================================
-
 resource "aws_cloudwatch_metric_alarm" "score_recalculator_errors" {
   count               = var.alert_sns_arn != "" ? 1 : 0
   alarm_name          = "securebase-${var.environment}-compliance-score-recalculator-failure"
@@ -392,9 +482,7 @@ resource "aws_cloudwatch_metric_alarm" "score_recalculator_errors" {
   threshold           = 0
   treat_missing_data  = "notBreaching"
 
-  dimensions = {
-    FunctionName = aws_lambda_function.compliance_score_recalculator.function_name
-  }
+  dimensions = { FunctionName = aws_lambda_function.compliance_score_recalculator.function_name }
 
   alarm_actions = [var.alert_sns_arn]
   ok_actions    = [var.alert_sns_arn]
