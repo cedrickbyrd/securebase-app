@@ -7,12 +7,12 @@ if [ -z "$TARGET_ENV" ]; then
   exit 1
 fi
 
-DB_SECRET_NAME_OR_ARN="${DB_SECRET_NAME_OR_ARN:-${DB_SECRET_IDENTIFIER:-${DB_SECRET_ID:-${DB_SECRET_ARN:-securebase/${TARGET_ENV}/rds/admin-password}}}}"
+DB_SECRET_ARN="${DB_SECRET_ARN:-securebase/${TARGET_ENV}/rds/admin-password}"
 MIGRATION_FILES="${MIGRATION_FILES:-phase6-backend/database/migrations/001_audit_evidence_tables.sql phase6-backend/database/migrations/002_compliance_score_history.sql}"
 VALIDATE_REQUIRED_TABLES="${VALIDATE_REQUIRED_TABLES:-0}"
 REQUIRED_TABLES="${REQUIRED_TABLES:-schema_migrations evidence_packages macie_findings compliance_score_daily control_violation_log}"
 
-SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_NAME_OR_ARN" --query 'SecretString' --output text)
+SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --query 'SecretString' --output text)
 
 DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host // .hostname')
 DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port // 5432')
@@ -21,7 +21,7 @@ DB_USER=$(echo "$SECRET_JSON" | jq -r '.username // .user')
 DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password')
 
 if [ -z "$DB_HOST" ] || [ "$DB_HOST" = "null" ] || [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ] || [ -z "$DB_PASS" ] || [ "$DB_PASS" = "null" ]; then
-  echo "Failed to parse DB credentials from Secrets Manager secret: $DB_SECRET_NAME_OR_ARN" >&2
+  echo "Failed to parse DB credentials from Secrets Manager secret: $DB_SECRET_ARN" >&2
   exit 1
 fi
 
@@ -50,9 +50,12 @@ apply_migration() {
   psql "$PSQL_CONN" -v ON_ERROR_STOP=1 -v version="$version" -c "INSERT INTO schema_migrations(version) VALUES (:'version') ON CONFLICT (version) DO NOTHING;"
 }
 
-for migration_file in $MIGRATION_FILES; do
-  apply_migration "$migration_file"
-done
+if [ -n "$MIGRATION_FILES" ]; then
+  IFS=' ' read -r -a migration_files_array <<< "$MIGRATION_FILES"
+  for migration_file in "${migration_files_array[@]}"; do
+    apply_migration "$migration_file"
+  done
+fi
 
 if [ "$VALIDATE_REQUIRED_TABLES" = "1" ]; then
   for table in $REQUIRED_TABLES; do
