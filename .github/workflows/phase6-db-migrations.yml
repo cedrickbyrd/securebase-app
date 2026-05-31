@@ -42,7 +42,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: phase6-nonprod-migration
           aws-region: us-east-1
+          mask-aws-account-id: true
 
       - name: Install PostgreSQL client tools
         run: |
@@ -74,8 +76,13 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-session-name: phase6-prod-migration
           aws-region: us-east-1
+          mask-aws-account-id: true
+
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
 
       - name: Install PostgreSQL client tools
         run: |
