@@ -85,7 +85,7 @@ jobs:
       - name: Run Phase 6 migrations
         env:
           TARGET_ENV: prod
-          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+          DB_SECRET_IDENTIFIER: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
         run: |
           chmod +x ./scripts/run-phase6-migrations.sh
           ./scripts/run-phase6-migrations.sh
@@ -93,7 +93,7 @@ jobs:
       - name: Validate required tables in production
         env:
           TARGET_ENV: prod
-          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+          DB_SECRET_IDENTIFIER: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
           MIGRATION_FILES: ""
           VALIDATE_REQUIRED_TABLES: "1"
         run: |
