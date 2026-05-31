@@ -1,0 +1,207 @@
+name: Phase 6 - DB migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'phase6-backend/database/migrations/001_audit_evidence_tables.sql'
+      - 'phase6-backend/database/migrations/002_compliance_score_history.sql'
+      - '.github/workflows/phase6-db-migrations.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+      confirmed:
+        description: "Required for prod only: type MIGRATE"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate-nonprod:
+    if: github.event_name == 'push' || github.event.inputs.environment != 'prod'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Run Phase 6 migrations
+        env:
+          MIGRATION_ONE: phase6-backend/database/migrations/001_audit_evidence_tables.sql
+          MIGRATION_TWO: phase6-backend/database/migrations/002_compliance_score_history.sql
+        run: |
+          set -euo pipefail
+
+          SECRET_ID="securebase/${TARGET_ENV}/rds/admin-password"
+          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --query 'SecretString' --output text)
+
+          DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host // .hostname')
+          DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port // 5432')
+          DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname // .database // "securebase"')
+          DB_USER=$(echo "$SECRET_JSON" | jq -r '.username // .user')
+          DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password')
+
+          if [ -z "$DB_HOST" ] || [ "$DB_HOST" = "null" ] || [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ] || [ -z "$DB_PASS" ] || [ "$DB_PASS" = "null" ]; then
+            echo "Failed to parse DB credentials from Secrets Manager secret: $SECRET_ID" >&2
+            exit 1
+          fi
+
+          export PGPASSWORD="$DB_PASS"
+
+          psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+            version TEXT PRIMARY KEY,
+            applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          SQL
+
+          apply_migration() {
+            local migration_file="$1"
+            local version
+            version="$(basename "$migration_file" .sql)"
+
+            if psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -tA -c "SELECT 1 FROM schema_migrations WHERE version='${version}' LIMIT 1;" | grep -q '^1$'; then
+              echo "[skip] ${version} already applied"
+              return
+            fi
+
+            echo "[apply] ${version}"
+            psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 -f "$migration_file"
+            psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 -c "INSERT INTO schema_migrations(version) VALUES ('${version}') ON CONFLICT (version) DO NOTHING;"
+          }
+
+          apply_migration "$MIGRATION_ONE"
+          apply_migration "$MIGRATION_TWO"
+
+          unset PGPASSWORD
+
+  migrate-prod:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate production confirmation token
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "MIGRATE" ]; then
+            echo "Production migration aborted: set confirmed=MIGRATE to continue." >&2
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Run Phase 6 migrations
+        env:
+          TARGET_ENV: prod
+          MIGRATION_ONE: phase6-backend/database/migrations/001_audit_evidence_tables.sql
+          MIGRATION_TWO: phase6-backend/database/migrations/002_compliance_score_history.sql
+          PROD_DB_CREDENTIALS_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+        run: |
+          set -euo pipefail
+
+          SECRET_ID="${PROD_DB_CREDENTIALS_SECRET_ARN:-securebase/prod/rds/admin-password}"
+          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --query 'SecretString' --output text)
+
+          DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host // .hostname')
+          DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port // 5432')
+          DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname // .database // "securebase"')
+          DB_USER=$(echo "$SECRET_JSON" | jq -r '.username // .user')
+          DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password')
+
+          if [ -z "$DB_HOST" ] || [ "$DB_HOST" = "null" ] || [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ] || [ -z "$DB_PASS" ] || [ "$DB_PASS" = "null" ]; then
+            echo "Failed to parse DB credentials from Secrets Manager secret: $SECRET_ID" >&2
+            exit 1
+          fi
+
+          export PGPASSWORD="$DB_PASS"
+
+          psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+            version TEXT PRIMARY KEY,
+            applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          SQL
+
+          apply_migration() {
+            local migration_file="$1"
+            local version
+            version="$(basename "$migration_file" .sql)"
+
+            if psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -tA -c "SELECT 1 FROM schema_migrations WHERE version='${version}' LIMIT 1;" | grep -q '^1$'; then
+              echo "[skip] ${version} already applied"
+              return
+            fi
+
+            echo "[apply] ${version}"
+            psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 -f "$migration_file"
+            psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -v ON_ERROR_STOP=1 -c "INSERT INTO schema_migrations(version) VALUES ('${version}') ON CONFLICT (version) DO NOTHING;"
+          }
+
+          apply_migration "$MIGRATION_ONE"
+          apply_migration "$MIGRATION_TWO"
+
+          unset PGPASSWORD
+
+      - name: Validate required tables in production
+        env:
+          PROD_DB_CREDENTIALS_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+        run: |
+          set -euo pipefail
+
+          SECRET_ID="${PROD_DB_CREDENTIALS_SECRET_ARN:-securebase/prod/rds/admin-password}"
+          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --query 'SecretString' --output text)
+
+          DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host // .hostname')
+          DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port // 5432')
+          DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname // .database // "securebase"')
+          DB_USER=$(echo "$SECRET_JSON" | jq -r '.username // .user')
+          DB_PASS=$(echo "$SECRET_JSON" | jq -r '.password')
+
+          export PGPASSWORD="$DB_PASS"
+
+          REQUIRED_TABLES=("schema_migrations" "evidence_packages" "macie_findings" "compliance_score_daily" "control_violation_log")
+          for table in "${REQUIRED_TABLES[@]}"; do
+            exists=$(psql "host=$DB_HOST port=$DB_PORT dbname=$DB_NAME user=$DB_USER sslmode=require" -tA -c "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='${table}');")
+            if [ "$exists" != "t" ]; then
+              echo "Missing required table: ${table}" >&2
+              exit 1
+            fi
+            echo "[ok] found table: ${table}"
+          done
+
+          unset PGPASSWORD
