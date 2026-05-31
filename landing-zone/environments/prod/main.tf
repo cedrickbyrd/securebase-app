@@ -63,18 +63,19 @@ module "marketplace" {
 
   source = "../../modules/marketplace"
 
-  environment               = var.environment
-  aws_region                = var.target_region
-  lambda_packages           = var.lambda_packages
-  lambda_role_arn           = var.marketplace_lambda_role_arn
-  db_host                   = var.marketplace_db_host
-  db_secret_arn             = var.marketplace_db_secret_arn
-  alerts_sns_topic_arn      = var.marketplace_alerts_sns_topic_arn
-  ceo_sns_topic_arn         = var.marketplace_ceo_sns_topic_arn
-  marketplace_product_code  = var.marketplace_product_code
-  private_subnet_ids        = var.marketplace_private_subnet_ids
-  lambda_security_group_id  = var.marketplace_lambda_security_group_id
-  tags                      = merge(var.tags, { Phase = "marketplace" })
+  environment                   = var.environment
+  aws_region                    = var.target_region
+  lambda_packages               = var.lambda_packages
+  lambda_role_arn               = var.marketplace_lambda_role_arn
+  db_host                       = var.marketplace_db_host
+  db_secret_arn                 = var.marketplace_db_secret_arn
+  alerts_sns_topic_arn          = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn             = var.marketplace_ceo_sns_topic_arn
+  marketplace_product_code      = var.marketplace_product_code
+  private_subnet_ids            = var.marketplace_private_subnet_ids
+  lambda_security_group_id      = var.marketplace_lambda_security_group_id
+  aws_marketplace_sns_topic_arn = var.aws_marketplace_sns_topic_arn
+  tags                          = merge(var.tags, { Phase = "marketplace" })
 }
 
 terraform {
