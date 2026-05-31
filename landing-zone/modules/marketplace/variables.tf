@@ -78,6 +78,12 @@ variable "lambda_security_group_id" {
   type        = string
 }
 
+variable "aws_marketplace_sns_topic_arn" {
+  description = "AWS Marketplace SNS topic ARN that publishes subscription lifecycle events for this product (owned by AWS account 287250355862). Subscribe the marketplace_subscription_handler Lambda to this topic to receive subscribe/unsubscribe/entitlement-updated events."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Resource tags"
   type        = map(string)
