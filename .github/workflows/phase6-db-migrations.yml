@@ -1,0 +1,102 @@
+name: Phase 6 - DB migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'phase6-backend/database/migrations/001_audit_evidence_tables.sql'
+      - 'phase6-backend/database/migrations/002_compliance_score_history.sql'
+      - '.github/workflows/phase6-db-migrations.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+      confirmed:
+        description: "Required for prod only: type MIGRATE"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate-nonprod:
+    if: github.event_name == 'push' || github.event.inputs.environment != 'prod'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Run Phase 6 migrations
+        env:
+          TARGET_ENV: ${{ env.TARGET_ENV }}
+        run: |
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
+
+  migrate-prod:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate production confirmation token
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "MIGRATE" ]; then
+            echo "Production migration aborted: set confirmed=MIGRATE to continue." >&2
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Run Phase 6 migrations
+        env:
+          TARGET_ENV: prod
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+        run: |
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
+
+      - name: Validate required tables in production
+        env:
+          TARGET_ENV: prod
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+          MIGRATION_FILES: ""
+          VALIDATE_REQUIRED_TABLES: "1"
+        run: |
+          # Table-only validation: MIGRATION_FILES is intentionally empty to avoid reapplying migrations.
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
