@@ -161,7 +161,9 @@ resource "aws_lambda_function" "audit_evidence_api" {
   timeout          = 30
   memory_size      = 512
 
-  tracing_config { mode = "Active" }
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -173,7 +175,6 @@ resource "aws_lambda_function" "audit_evidence_api" {
       RDS_USER              = var.database_user
       LOG_LEVEL             = "INFO"
       PRESIGNED_URL_EXPIRES = "3600"
-      # Must match aws_lambda_function.audit_log_packager.function_name below.
       PACKAGER_FUNCTION     = "securebase-${var.environment}-audit-log-packager"
     }
   }
@@ -194,26 +195,21 @@ resource "aws_cloudwatch_log_group" "audit_evidence_api" {
 
 # ============================================================================
 # audit_log_packager Lambda
-# Invoked by: audit_evidence_api (async, POST /admin/evidence/generate)
-#             EventBridge weekly schedule (Sunday 03:00 UTC)
 # ============================================================================
 
 resource "aws_lambda_function" "audit_log_packager" {
   filename         = var.audit_log_packager_zip
   function_name    = "securebase-${var.environment}-audit-log-packager"
-  # Re-use the dedicated IAM role from phase6-audit-logging — it holds the
-  # least-privilege S3 + KMS policies for reading source logs and writing
-  # COMPLIANCE-mode objects to the evidence bucket.
   role             = var.audit_packager_role_arn
   handler          = "audit_log_packager.lambda_handler"
   source_code_hash = filebase64sha256(var.audit_log_packager_zip)
   runtime          = "python3.11"
-  # 10-minute timeout: packaging 10k objects + ZIP build + S3 upload.
-  # Sized conservatively for the current tenant count; revisit after 6.3 scaling.
   timeout          = 600
   memory_size      = 1024
 
-  tracing_config { mode = "Active" }
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -246,7 +242,6 @@ resource "aws_cloudwatch_log_group" "audit_log_packager" {
   tags              = var.tags
 }
 
-# Grant audit_evidence_api permission to invoke the packager asynchronously
 resource "aws_lambda_permission" "audit_evidence_api_invoke_packager" {
   statement_id  = "AllowAuditEvidenceApiInvokePackager"
   action        = "lambda:InvokeFunction"
@@ -255,7 +250,6 @@ resource "aws_lambda_permission" "audit_evidence_api_invoke_packager" {
   source_arn    = aws_lambda_function.audit_evidence_api.arn
 }
 
-# IAM: allow phase6_lambda role (used by audit_evidence_api) to invoke the packager
 resource "aws_iam_role_policy" "audit_evidence_api_invoke_packager" {
   name = "securebase-${var.environment}-audit-evidence-invoke-packager"
   role = aws_iam_role.phase6_lambda.id
@@ -273,7 +267,6 @@ resource "aws_iam_role_policy" "audit_evidence_api_invoke_packager" {
 
 # ============================================================================
 # EventBridge — Weekly evidence packaging schedule (Sunday 03:00 UTC)
-# Phase 6.1.1: default cadence for pilot tenants.
 # ============================================================================
 
 resource "aws_cloudwatch_event_rule" "evidence_packager_weekly" {
@@ -306,7 +299,6 @@ resource "aws_lambda_permission" "evidence_packager_eventbridge" {
   source_arn    = aws_cloudwatch_event_rule.evidence_packager_weekly.arn
 }
 
-# Alert if packager has not run in 7 days (stale Vault)
 resource "aws_cloudwatch_metric_alarm" "packager_stale_vault" {
   count               = var.alert_sns_arn != "" ? 1 : 0
   alarm_name          = "securebase-${var.environment}-phase6-packager-stale-vault"
@@ -331,7 +323,6 @@ resource "aws_cloudwatch_metric_alarm" "packager_stale_vault" {
 
 # ============================================================================
 # compliance_history_api Lambda
-# Handles: GET /tenant/compliance/history
 # ============================================================================
 
 resource "aws_lambda_function" "compliance_history_api" {
@@ -344,7 +335,9 @@ resource "aws_lambda_function" "compliance_history_api" {
   timeout          = 30
   memory_size      = 512
 
-  tracing_config { mode = "Active" }
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -373,11 +366,24 @@ resource "aws_dynamodb_table" "compliance_scores" {
   hash_key     = "PK"
   range_key    = "SK"
 
-  attribute { name = "PK"; type = "S" }
-  attribute { name = "SK"; type = "S" }
+  attribute {
+    name = "PK"
+    type = "S"
+  }
 
-  ttl { attribute_name = "ttl"; enabled = true }
-  point_in_time_recovery { enabled = true }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
 
   tags = merge(var.tags, { Phase = "6.2", Name = "securebase-compliance-scores" })
 }
@@ -388,18 +394,30 @@ resource "aws_dynamodb_table" "control_violation_log" {
   hash_key     = "PK"
   range_key    = "SK"
 
-  attribute { name = "PK"; type = "S" }
-  attribute { name = "SK"; type = "S" }
+  attribute {
+    name = "PK"
+    type = "S"
+  }
 
-  ttl { attribute_name = "ttl"; enabled = true }
-  point_in_time_recovery { enabled = true }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
 
   tags = merge(var.tags, { Phase = "6.2", Name = "control_violation_log" })
 }
 
 # ============================================================================
 # compliance_score_recalculator Lambda
-# Trigger: EventBridge daily at 02:00 UTC
 # ============================================================================
 
 resource "aws_lambda_function" "compliance_score_recalculator" {
@@ -412,7 +430,9 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
   timeout          = 600
   memory_size      = 512
 
-  tracing_config { mode = "Active" }
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -482,7 +502,9 @@ resource "aws_cloudwatch_metric_alarm" "score_recalculator_errors" {
   threshold           = 0
   treat_missing_data  = "notBreaching"
 
-  dimensions = { FunctionName = aws_lambda_function.compliance_score_recalculator.function_name }
+  dimensions = {
+    FunctionName = aws_lambda_function.compliance_score_recalculator.function_name
+  }
 
   alarm_actions = [var.alert_sns_arn]
   ok_actions    = [var.alert_sns_arn]
