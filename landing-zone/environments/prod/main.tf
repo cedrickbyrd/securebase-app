@@ -168,6 +168,30 @@ module "marketplace" {
   tags                          = merge(var.tags, { Phase = "marketplace" })
 }
 
+# ============================================================================
+# Phase 6 / DB Migrator — VPC-resident Lambda for Aurora schema migrations
+# Targets the shared Aurora cluster (securebase-phase2-dev) via RDS Proxy
+# ============================================================================
+module "db_migrator" {
+  source = "../../modules/db-migrator"
+
+  environment        = var.environment
+  vpc_id             = "vpc-003c9d5b0f9f1a02b"
+  private_subnet_ids = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
+  zip_path           = "${path.module}/../../../files/phase6/db_migrator.zip"
+  allowed_secret_arns = [
+    "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/dev/rds/admin-password-sejDay"
+  ]
+  invoker_role_arns = [
+    "arn:aws:iam::731184206915:role/GitHubActionsRole"
+  ]
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "migrations"
+  })
+}
+
 terraform {
   required_version = ">= 1.5.0"
 
