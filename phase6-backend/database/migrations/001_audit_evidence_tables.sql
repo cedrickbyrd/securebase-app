@@ -1,6 +1,7 @@
 -- Phase 6.1: Audit Evidence Tables
 -- Migration: 001_audit_evidence_tables.sql
 -- Created: 2026-05-08
+-- Updated: 2026-06-01 — drop FK references to users(id); users.id is INTEGER not UUID
 -- Purpose: Immutable evidence packages for SOC 2 / HIPAA audit readiness
 --
 -- Tables:
@@ -41,7 +42,7 @@ CREATE TABLE IF NOT EXISTS evidence_packages (
                         CHECK (status IN ('pending', 'processing', 'complete', 'error')),
     error_message       TEXT,
     retention_until     TIMESTAMPTZ NOT NULL,                -- Must match S3 Object Lock expiry
-    generated_by        UUID REFERENCES users(id),           -- NULL = system/Lambda
+    generated_by        INTEGER,                             -- users.id (INTEGER) — no FK; NULL = system/Lambda
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS macie_findings (
                         CHECK (status IN ('active', 'suppressed', 'resolved')),
     suppression_reason  TEXT,
     resolved_at         TIMESTAMPTZ,
-    resolved_by         UUID REFERENCES users(id),
+    resolved_by         INTEGER,                             -- users.id (INTEGER) — no FK
     raw_finding         JSONB,                               -- Full Macie finding JSON
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
