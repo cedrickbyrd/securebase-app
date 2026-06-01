@@ -104,7 +104,10 @@ def _invoke_failover_lambda(lam) -> dict:
         InvocationType="RequestResponse",
         Payload=json.dumps({"action": "failover", "reason": "DR drill", "source": "dr_drill"}),
     )
-    payload = json.loads(response["Payload"].read())
+    payload_raw = response["Payload"].read()
+    if isinstance(payload_raw, bytes):
+        payload_raw = payload_raw.decode("utf-8")
+    payload = json.loads(payload_raw or "{}")
     if response.get("FunctionError"):
         raise RuntimeError(f"Failover Lambda error: {payload}")
     return payload
@@ -140,14 +143,26 @@ def _invoke_failover_validator_lambda(lam, drill_id: str) -> dict:
     if not FAILOVER_VALIDATOR_LAMBDA_ARN:
         return {"skipped": True, "message": "FAILOVER_VALIDATOR_LAMBDA_ARN not configured"}
 
-    response = lam.invoke(
-        FunctionName=FAILOVER_VALIDATOR_LAMBDA_ARN,
-        InvocationType="RequestResponse",
-        Payload=json.dumps({"source": "dr_drill", "drill_id": drill_id}),
-    )
-    payload = json.loads(response["Payload"].read() or "{}")
+    try:
+        response = lam.invoke(
+            FunctionName=FAILOVER_VALIDATOR_LAMBDA_ARN,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"source": "dr_drill", "drill_id": drill_id}),
+        )
+    except ClientError as exc:
+        return {"passed": False, "error": str(exc), "statusCode": None, "overall_passed": False}
+
+    payload_raw = response["Payload"].read()
+    if isinstance(payload_raw, bytes):
+        payload_raw = payload_raw.decode("utf-8")
+    payload = json.loads(payload_raw or "{}")
     if response.get("FunctionError"):
-        raise RuntimeError(f"Failover validator Lambda error: {payload}")
+        return {
+            "passed": False,
+            "error": f"Failover validator Lambda error: {payload}",
+            "statusCode": payload.get("statusCode"),
+            "overall_passed": False,
+        }
 
     status_code = payload.get("statusCode")
     body = payload.get("body")
@@ -155,14 +170,20 @@ def _invoke_failover_validator_lambda(lam, drill_id: str) -> dict:
         try:
             body = json.loads(body)
         except json.JSONDecodeError:
+            logger.warning("Failover validator body was not JSON: %s", body)
             body = {"raw_body": body}
 
     overall_passed = body.get("overall_passed") if isinstance(body, dict) else None
-    passed = status_code == 200 and overall_passed is not False
+    missing_overall_flag = overall_passed is None
+    if missing_overall_flag:
+        passed = status_code == 200
+    else:
+        passed = status_code == 200 and overall_passed is not False
     return {
         "passed": passed,
         "statusCode": status_code,
         "overall_passed": overall_passed,
+        "warning": "overall_passed missing from validator response" if missing_overall_flag else None,
     }
 
 
@@ -289,10 +310,15 @@ def handler(event, _context):
             _step("validate_failover_post_checks", "SKIP", validator_result.get("message", ""))
         else:
             validator_passed = validator_result.get("passed", False)
+            validator_details = f"status={validator_result.get('statusCode')} overall_passed={validator_result.get('overall_passed')}"
+            if validator_result.get("error"):
+                validator_details = f"{validator_details} error={validator_result.get('error')}"
+            elif validator_result.get("warning"):
+                validator_details = f"{validator_details} warning={validator_result.get('warning')}"
             _step(
                 "validate_failover_post_checks",
                 "PASS" if validator_passed else "FAIL",
-                f"status={validator_result.get('statusCode')} overall_passed={validator_result.get('overall_passed')}",
+                validator_details,
             )
 
         report["passed"] = rto_passed and rpo_passed and validator_passed
@@ -357,5 +383,6 @@ def _finish(report, drill_id, ssm, s3, sns, lam, _step):
         "result":     report["result"],
         "rto_seconds": report.get("rto_seconds"),
         "rpo_lag_ms":  report.get("rpo_lag_ms"),
+        "validator":   report.get("validator"),
         "report_uri":  report_uri,
     }
