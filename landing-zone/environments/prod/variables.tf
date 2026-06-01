@@ -108,7 +108,6 @@ variable "tags" {
     ManagedBy   = "Terraform"
     Environment = "production"
     Phase       = "6"
-    tenant_id   = "multi-tenant"
   }
 }
 
