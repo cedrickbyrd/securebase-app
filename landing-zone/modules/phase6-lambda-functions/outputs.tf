@@ -62,3 +62,23 @@ output "score_recalculator_eventbridge_rule_arn" {
   description = "ARN of the EventBridge rule that triggers the daily score recalculator"
   value       = aws_cloudwatch_event_rule.score_recalculator_daily.arn
 }
+
+output "audit_log_packager_arn" {
+  description = "ARN of the audit_log_packager Lambda"
+  value       = aws_lambda_function.audit_log_packager.arn
+}
+
+output "audit_log_packager_name" {
+  description = "Name of the audit_log_packager Lambda"
+  value       = aws_lambda_function.audit_log_packager.function_name
+}
+
+output "audit_log_packager_log_group" {
+  description = "CloudWatch log group for audit_log_packager"
+  value       = aws_cloudwatch_log_group.audit_log_packager.name
+}
+
+output "evidence_packager_eventbridge_rule_arn" {
+  description = "ARN of the EventBridge rule that triggers the weekly evidence packager"
+  value       = aws_cloudwatch_event_rule.evidence_packager_weekly.arn
+}
