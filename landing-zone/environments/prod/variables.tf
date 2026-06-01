@@ -16,6 +16,36 @@ variable "alert_topic_name" {
   default     = "securebase-prod-alerts"
 }
 
+variable "alert_email" {
+  description = "Email address for Macie and compliance alerts"
+  type        = string
+  default     = ""
+}
+
+variable "audit_log_bucket_name" {
+  description = "S3 bucket containing raw audit logs (source for evidence packager)"
+  type        = string
+  default     = "securebase-audit-logs-prod"
+}
+
+variable "rds_proxy_endpoint" {
+  description = "RDS Proxy endpoint for Phase 6 Lambda VPC database access"
+  type        = string
+  default     = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
+}
+
+variable "lambda_private_subnet_ids" {
+  description = "Private subnet IDs for Phase 6 Lambda VPC config"
+  type        = list(string)
+  default     = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
+}
+
+variable "lambda_security_group_ids" {
+  description = "Security group IDs for Phase 6 Lambda VPC config"
+  type        = list(string)
+  default     = ["sg-0127b93c1653cf90f"]
+}
+
 variable "api_gateway_name" {
   description = "Production API Gateway name dimension"
   type        = string
@@ -138,7 +168,7 @@ variable "marketplace_lambda_security_group_id" {
 }
 
 variable "aws_marketplace_sns_topic_arn" {
-  description = "AWS Marketplace SNS topic ARN for subscription lifecycle notifications (owned by AWS account 287250355862). Set to the value from the AWS Marketplace Management Portal product summary page. Never commit the actual ARN — pass via CI/CD secret or Terraform Cloud variable."
+  description = "AWS Marketplace SNS topic ARN for subscription lifecycle notifications"
   type        = string
   default     = ""
 }
