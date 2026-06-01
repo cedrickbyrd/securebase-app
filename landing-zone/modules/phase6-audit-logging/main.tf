@@ -96,11 +96,11 @@ resource "aws_s3_bucket" "evidence" {
   object_lock_enabled = true
 
   tags = merge(var.tags, {
-    Name                = var.evidence_bucket_name
-    Environment         = var.environment
-    Phase               = "6.1"
-    DataClassification  = "compliance-evidence"
-    ComplianceFramework = "SOC2,HIPAA,FedRAMP"
+    Name               = var.evidence_bucket_name
+    Environment        = var.environment
+    Phase              = "6.1"
+    DataClassification = "compliance-evidence"
+    ComplianceFramework = "SOC2-HIPAA-FedRAMP"
   })
 }
 
@@ -129,8 +129,8 @@ resource "aws_s3_bucket_object_lock_configuration" "evidence" {
 
   rule {
     default_retention {
-      mode  = "COMPLIANCE"
-      days  = var.object_lock_retention_days
+      mode = "COMPLIANCE"
+      days = var.object_lock_retention_days
     }
   }
 }
@@ -157,8 +157,8 @@ resource "aws_s3_bucket_policy" "evidence" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "DenyNonTLS"
-        Effect = "Deny"
+        Sid       = "DenyNonTLS"
+        Effect    = "Deny"
         Principal = "*"
         Action    = "s3:*"
         Resource = [
@@ -170,15 +170,15 @@ resource "aws_s3_bucket_policy" "evidence" {
         }
       },
       {
-        Sid    = "DenyObjectDelete"
-        Effect = "Deny"
+        Sid       = "DenyObjectDelete"
+        Effect    = "Deny"
         Principal = "*"
         Action    = "s3:DeleteObject"
         Resource  = "${aws_s3_bucket.evidence.arn}/*"
       },
       {
-        Sid    = "DenyRetentionOverride"
-        Effect = "Deny"
+        Sid       = "DenyRetentionOverride"
+        Effect    = "Deny"
         Principal = "*"
         Action    = "s3:PutObjectRetention"
         Resource  = "${aws_s3_bucket.evidence.arn}/*"
@@ -300,8 +300,6 @@ resource "aws_iam_role_policy" "packager_kms" {
 # ============================================================================
 
 resource "aws_macie2_account" "this" {
-  # Guard: enable Macie only if not already enabled by another module.
-  # Set var.macie_already_enabled = true to skip this resource.
   count = var.macie_already_enabled ? 0 : 1
 
   finding_publishing_frequency = "FIFTEEN_MINUTES"
