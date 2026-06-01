@@ -1,0 +1,97 @@
+name: Phase 6 - DB migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        default: dev
+        options: [dev, staging, prod]
+      confirmed:
+        description: "Required for prod only: type MIGRATE"
+        required: false
+        type: string
+      validate_tables:
+        description: "Run post-migration table validation"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment == 'prod' && 'production' || '' }}
+    steps:
+      - name: Validate prod confirmation token
+        if: github.event.inputs.environment == 'prod'
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "MIGRATE" ]; then
+            echo "::error::Production migration aborted: set confirmed=MIGRATE to continue."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ github.event.inputs.environment == 'prod' && secrets.AWS_ROLE_ARN_PROD || secrets.AWS_ROLE_ARN }}
+          role-session-name: phase6-migration-${{ github.event.inputs.environment }}
+          aws-region: us-east-1
+          mask-aws-account-id: true
+
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
+
+      - name: Resolve Lambda name and secret ARN
+        id: config
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "function_name=securebase-${ENV}-db-migrator" >> "$GITHUB_OUTPUT"
+          if [ "$ENV" = "prod" ]; then
+            echo "secret_arn=${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
+          elif [ "$ENV" = "staging" ]; then
+            echo "secret_arn=${{ secrets.STAGING_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "secret_arn=${{ secrets.DEV_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build migration payload
+        run: |
+          VALIDATE="${{ github.event.inputs.validate_tables }}"
+          cat > /tmp/payload.json <<EOF
+          {
+            "db_secret_arn": "${{ steps.config.outputs.secret_arn }}",
+            "migration_files": ["001_audit_evidence_tables", "002_compliance_score_history"],
+            "validate_required_tables": ${VALIDATE:-false}
+          }
+          EOF
+
+      - name: Invoke db-migrator Lambda
+        run: |
+          aws lambda invoke \
+            --function-name "${{ steps.config.outputs.function_name }}" \
+            --payload file:///tmp/payload.json \
+            --cli-binary-format raw-in-base64-out \
+            --log-type Tail \
+            --query 'LogResult' \
+            --output text \
+            /tmp/lambda-response.json \
+            | base64 --decode || true
+          echo "--- Lambda response ---"
+          cat /tmp/lambda-response.json
+
+      - name: Assert migration succeeded
+        run: |
+          STATUS=$(jq -r '.statusCode' /tmp/lambda-response.json)
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Migration failed — statusCode=${STATUS}"
+            jq '.' /tmp/lambda-response.json
+            exit 1
+          fi
+          echo "Migration succeeded:"
+          jq '.results[]' /tmp/lambda-response.json
