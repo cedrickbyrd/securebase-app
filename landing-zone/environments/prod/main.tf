@@ -22,6 +22,7 @@ module "phase6_audit_logging" {
   audit_source_bucket_name   = var.audit_log_bucket_name
   object_lock_retention_days = 2555
   macie_already_enabled      = true
+  enable_macie_scan          = false
   macie_alert_email          = var.alert_email
 
   tags = merge(var.tags, {
