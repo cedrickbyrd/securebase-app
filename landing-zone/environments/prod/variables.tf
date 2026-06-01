@@ -7,13 +7,13 @@ variable "target_region" {
 variable "environment" {
   description = "Environment identifier"
   type        = string
-  default     = "prod"
+  default     = "production"
 }
 
 variable "alert_topic_name" {
   description = "Existing SNS alert topic name used for production alarms"
   type        = string
-  default     = "securebase-prod-alerts"
+  default     = "securebase-prod-analytics-alerts"
 }
 
 variable "alert_email" {
@@ -94,7 +94,6 @@ variable "xray_tenant_filters" {
   }
 }
 
-# Track 5 — used by module "phase6_cost"
 variable "alert_sns_arn" {
   description = "SNS topic ARN for cost anomaly and threshold alerts (Track 5)"
   type        = string
@@ -107,7 +106,7 @@ variable "tags" {
   default = {
     Project     = "SecureBase"
     ManagedBy   = "Terraform"
-    Environment = "prod"
+    Environment = "production"
     Phase       = "6"
     tenant_id   = "multi-tenant"
   }
