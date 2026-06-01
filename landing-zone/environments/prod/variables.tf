@@ -136,3 +136,9 @@ variable "marketplace_lambda_security_group_id" {
   type        = string
   default     = ""
 }
+
+variable "aws_marketplace_sns_topic_arn" {
+  description = "AWS Marketplace SNS topic ARN for subscription lifecycle notifications (owned by AWS account 287250355862). Set to the value from the AWS Marketplace Management Portal product summary page. Never commit the actual ARN — pass via CI/CD secret or Terraform Cloud variable."
+  type        = string
+  default     = ""
+}

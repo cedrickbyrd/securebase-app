@@ -1,6 +1,13 @@
 name: Phase 6 - DB migrations
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'phase6-backend/database/migrations/001_audit_evidence_tables.sql'
+      - 'phase6-backend/database/migrations/002_compliance_score_history.sql'
+      - '.github/workflows/phase6-db-migrations.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -8,90 +15,95 @@ on:
         required: true
         type: choice
         default: dev
-        options: [dev, staging, prod]
+        options:
+          - dev
+          - staging
+          - prod
       confirmed:
         description: "Required for prod only: type MIGRATE"
         required: false
         type: string
-      validate_tables:
-        description: "Run post-migration table validation"
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  migrate:
+  migrate-nonprod:
+    if: github.event_name == 'push' || github.event.inputs.environment != 'prod'
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment == 'prod' && 'production' || '' }}
+    env:
+      TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || github.event.inputs.environment }}
     steps:
-      - name: Validate prod confirmation token
-        if: github.event.inputs.environment == 'prod'
-        run: |
-          if [ "${{ github.event.inputs.confirmed }}" != "MIGRATE" ]; then
-            echo "::error::Production migration aborted: set confirmed=MIGRATE to continue."
-            exit 1
-          fi
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ github.event.inputs.environment == 'prod' && secrets.AWS_ROLE_ARN_PROD || secrets.AWS_ROLE_ARN }}
-          role-session-name: phase6-migration-${{ github.event.inputs.environment }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: phase6-nonprod-migration
+          aws-region: us-east-1
+          mask-aws-account-id: true
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+
+      - name: Run Phase 6 migrations
+        env:
+          TARGET_ENV: ${{ env.TARGET_ENV }}
+        run: |
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
+
+  migrate-prod:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate production confirmation token
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "MIGRATE" ]; then
+            echo "Production migration aborted: set confirmed=MIGRATE to continue." >&2
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          role-session-name: phase6-prod-migration
           aws-region: us-east-1
           mask-aws-account-id: true
 
       - name: Verify caller identity
         run: aws sts get-caller-identity
 
-      - name: Resolve Lambda name and secret ARN
-        id: config
+      - name: Install PostgreSQL client tools
         run: |
-          ENV="${{ github.event.inputs.environment }}"
-          echo "function_name=securebase-${ENV}-db-migrator" >> "$GITHUB_OUTPUT"
-          if [ "$ENV" = "prod" ]; then
-            echo "secret_arn=${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
-          elif [ "$ENV" = "staging" ]; then
-            echo "secret_arn=${{ secrets.STAGING_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "secret_arn=${{ secrets.DEV_DB_CREDENTIALS_SECRET_ARN }}" >> "$GITHUB_OUTPUT"
-          fi
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
 
-      - name: Build migration payload
+      - name: Run Phase 6 migrations
+        env:
+          TARGET_ENV: prod
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
         run: |
-          VALIDATE="${{ github.event.inputs.validate_tables }}"
-          cat > /tmp/payload.json <<EOF
-          {
-            "db_secret_arn": "${{ steps.config.outputs.secret_arn }}",
-            "migration_files": ["001_audit_evidence_tables", "002_compliance_score_history"],
-            "validate_required_tables": ${VALIDATE:-false}
-          }
-          EOF
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
 
-      - name: Invoke db-migrator Lambda
+      - name: Validate required tables in production
+        env:
+          TARGET_ENV: prod
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+          MIGRATION_FILES: ""
+          VALIDATE_REQUIRED_TABLES: "1"
         run: |
-          aws lambda invoke \
-            --function-name "${{ steps.config.outputs.function_name }}" \
-            --payload file:///tmp/payload.json \
-            --cli-binary-format raw-in-base64-out \
-            --log-type Tail \
-            --query 'LogResult' \
-            --output text \
-            /tmp/lambda-response.json \
-            | base64 --decode || true
-          echo "--- Lambda response ---"
-          cat /tmp/lambda-response.json
-
-      - name: Assert migration succeeded
-        run: |
-          STATUS=$(jq -r '.statusCode' /tmp/lambda-response.json)
-          if [ "$STATUS" != "200" ]; then
-            echo "::error::Migration failed — statusCode=${STATUS}"
-            jq '.' /tmp/lambda-response.json
-            exit 1
-          fi
-          echo "Migration succeeded:"
-          jq '.results[]' /tmp/lambda-response.json
+          # Table-only validation: MIGRATION_FILES is intentionally empty to avoid reapplying migrations.
+          chmod +x ./scripts/run-phase6-migrations.sh
+          ./scripts/run-phase6-migrations.sh
