@@ -28,7 +28,7 @@ resource "aws_iam_role_policy_attachment" "lambda_insights" {
 resource "aws_xray_group" "tenant_segments" {
   for_each = var.xray_tenant_filters
 
-  group_name        = "securebase-${var.environment}-${each.key}-traces"
+  group_name        = "sb-${substr(var.environment, 0, 4)}-${substr(each.key, 0, 20)}"
   filter_expression = each.value
 
   insights_configuration {
