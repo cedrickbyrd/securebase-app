@@ -12,7 +12,6 @@ locals {
     Environment = var.environment
     Phase       = "6"
     Track       = "4"
-    tenant_id   = "multi-tenant"
   })
 
   lambda_names = toset(var.lambda_function_names)
@@ -45,22 +44,21 @@ resource "aws_xray_group" "tenant_segments" {
 resource "aws_cloudwatch_contributor_insight_rule" "tenant_error_contributors" {
   count = var.api_gateway_log_group_name != null ? 1 : 0
 
-  name = "securebase-${var.environment}-tenant-error-contributors"
-
-  log_group_names = [var.api_gateway_log_group_name]
+  rule_name = "securebase-${var.environment}-tenant-error-contributors"
 
   rule_definition = jsonencode({
     Schema = {
       Name    = "CloudWatchLogRule"
       Version = 1
     }
-    LogFormat = "JSON"
+    LogGroupNames = [var.api_gateway_log_group_name]
+    LogFormat     = "JSON"
     Contribution = {
       Keys = ["$.tenantId"]
       Filters = [
         {
-          Match  = "$.status"
-          In     = ["400", "401", "403", "404", "429", "500", "502", "503", "504"]
+          Match = "$.status"
+          In    = ["400", "401", "403", "404", "429", "500", "502", "503", "504"]
         }
       ]
     }
