@@ -32,7 +32,8 @@ module "phase6_audit_logging" {
 }
 
 # ============================================================================
-# Phase 6 / Track 2: Compliance Automation (50+ Config rules, scoring)
+# Phase 6 / Track 2: Compliance Automation (26 Config rules)
+# Conformance packs disabled — require valid CloudFormation templates in S3
 # ============================================================================
 module "phase6_compliance" {
   source = "../../modules/phase6-compliance"
@@ -41,8 +42,8 @@ module "phase6_compliance" {
   project_name                    = "securebase"
   config_delivery_bucket_name     = var.audit_log_bucket_name
   config_recorder_already_enabled = true
-  enable_hipaa_conformance_pack   = true
-  enable_nist_conformance_pack    = true
+  enable_hipaa_conformance_pack   = false
+  enable_nist_conformance_pack    = false
 
   tags = merge(var.tags, {
     Phase = "6"
@@ -53,8 +54,7 @@ module "phase6_compliance" {
 }
 
 # ============================================================================
-# Phase 6 / Track 2: Lambda functions (evidence API, audit_log_packager,
-#                    compliance history API, score recalculator)
+# Phase 6 / Track 2: Lambda functions
 # ============================================================================
 module "phase6_lambdas" {
   source = "../../modules/phase6-lambda-functions"
@@ -79,7 +79,7 @@ module "phase6_lambdas" {
 }
 
 # ============================================================================
-# Phase 6 / Track 2: Alerting — packager failure + score recalculator alarms
+# Phase 6 / Track 2: Alerting
 # ============================================================================
 module "phase6_alerting" {
   source = "../../modules/phase6-alerting"
@@ -158,7 +158,7 @@ module "marketplace" {
 }
 
 # ============================================================================
-# Phase 6 / DB Migrator — VPC-resident Lambda for Aurora schema migrations
+# Phase 6 / DB Migrator
 # ============================================================================
 module "db_migrator" {
   source = "../../modules/db-migrator"
