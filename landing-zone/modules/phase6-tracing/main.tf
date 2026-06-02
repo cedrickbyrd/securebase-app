@@ -78,8 +78,8 @@ resource "aws_cloudwatch_metric_alarm" "lambda_duration_p99_anomaly" {
   treat_missing_data  = "notBreaching"
 
   metric_query {
-    id = "m1"
-
+    id          = "m1"
+    return_data = true
     metric {
       metric_name = "Duration"
       namespace   = "AWS/Lambda"
@@ -110,7 +110,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_rate_anomaly" {
   for_each = local.lambda_names
 
   alarm_name          = "securebase-${var.environment}-${each.key}-error-rate-anomaly"
-  alarm_description   = "Anomaly detection for Lambda error rate on ${each.key}"
+  alarm_description   = "Anomaly detection for Lambda error count on ${each.key}"
   comparison_operator = "GreaterThanUpperThreshold"
   evaluation_periods  = 3
   datapoints_to_alarm = 2
@@ -118,8 +118,8 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_rate_anomaly" {
   treat_missing_data  = "notBreaching"
 
   metric_query {
-    id = "m_errors"
-
+    id          = "m_errors"
+    return_data = true
     metric {
       metric_name = "Errors"
       namespace   = "AWS/Lambda"
@@ -132,30 +132,9 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_rate_anomaly" {
   }
 
   metric_query {
-    id = "m_invocations"
-
-    metric {
-      metric_name = "Invocations"
-      namespace   = "AWS/Lambda"
-      period      = 300
-      stat        = "Sum"
-      dimensions = {
-        FunctionName = each.key
-      }
-    }
-  }
-
-  metric_query {
-    id          = "m_rate"
-    expression  = "IF(m_invocations>0,(m_errors/m_invocations)*100,0)"
-    label       = "Lambda error rate (%)"
-    return_data = false
-  }
-
-  metric_query {
     id          = "ad1"
-    expression  = "ANOMALY_DETECTION_BAND(m_rate, 2)"
-    label       = "Lambda error-rate expected band"
+    expression  = "ANOMALY_DETECTION_BAND(m_errors, 2)"
+    label       = "Lambda errors expected band"
     return_data = true
   }
 
@@ -169,7 +148,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_rate_anomaly" {
 
 resource "aws_cloudwatch_metric_alarm" "api_gateway_4xx_rate_anomaly" {
   alarm_name          = "securebase-${var.environment}-api-4xx-rate-anomaly"
-  alarm_description   = "Anomaly detection for API Gateway 4xx error rate"
+  alarm_description   = "Anomaly detection for API Gateway 4xx errors"
   comparison_operator = "GreaterThanUpperThreshold"
   evaluation_periods  = 3
   datapoints_to_alarm = 2
@@ -177,8 +156,8 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_4xx_rate_anomaly" {
   treat_missing_data  = "notBreaching"
 
   metric_query {
-    id = "m_4xx"
-
+    id          = "m_4xx"
+    return_data = true
     metric {
       metric_name = "4XXError"
       namespace   = "AWS/ApiGateway"
@@ -192,30 +171,8 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_4xx_rate_anomaly" {
   }
 
   metric_query {
-    id = "m_count"
-
-    metric {
-      metric_name = "Count"
-      namespace   = "AWS/ApiGateway"
-      period      = 300
-      stat        = "Sum"
-      dimensions = {
-        ApiName = var.api_gateway_name
-        Stage   = var.api_gateway_stage
-      }
-    }
-  }
-
-  metric_query {
-    id          = "m_rate"
-    expression  = "IF(m_count>0,(m_4xx/m_count)*100,0)"
-    label       = "API Gateway 4xx rate (%)"
-    return_data = false
-  }
-
-  metric_query {
     id          = "ad1"
-    expression  = "ANOMALY_DETECTION_BAND(m_rate, 2)"
+    expression  = "ANOMALY_DETECTION_BAND(m_4xx, 2)"
     label       = "API Gateway 4xx expected band"
     return_data = true
   }
@@ -230,7 +187,7 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_4xx_rate_anomaly" {
 
 resource "aws_cloudwatch_metric_alarm" "api_gateway_5xx_rate_anomaly" {
   alarm_name          = "securebase-${var.environment}-api-5xx-rate-anomaly"
-  alarm_description   = "Anomaly detection for API Gateway 5xx error rate"
+  alarm_description   = "Anomaly detection for API Gateway 5xx errors"
   comparison_operator = "GreaterThanUpperThreshold"
   evaluation_periods  = 3
   datapoints_to_alarm = 2
@@ -238,8 +195,8 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_5xx_rate_anomaly" {
   treat_missing_data  = "notBreaching"
 
   metric_query {
-    id = "m_5xx"
-
+    id          = "m_5xx"
+    return_data = true
     metric {
       metric_name = "5XXError"
       namespace   = "AWS/ApiGateway"
@@ -253,30 +210,8 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_5xx_rate_anomaly" {
   }
 
   metric_query {
-    id = "m_count"
-
-    metric {
-      metric_name = "Count"
-      namespace   = "AWS/ApiGateway"
-      period      = 300
-      stat        = "Sum"
-      dimensions = {
-        ApiName = var.api_gateway_name
-        Stage   = var.api_gateway_stage
-      }
-    }
-  }
-
-  metric_query {
-    id          = "m_rate"
-    expression  = "IF(m_count>0,(m_5xx/m_count)*100,0)"
-    label       = "API Gateway 5xx rate (%)"
-    return_data = false
-  }
-
-  metric_query {
     id          = "ad1"
-    expression  = "ANOMALY_DETECTION_BAND(m_rate, 2)"
+    expression  = "ANOMALY_DETECTION_BAND(m_5xx, 2)"
     label       = "API Gateway 5xx expected band"
     return_data = true
   }
