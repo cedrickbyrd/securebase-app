@@ -275,6 +275,11 @@ const register = async (body) => {
 };
 
 const invite = async (body) => {
+  // FIX: normalizeEmail() lowercases the email before any DynamoDB write.
+  // Previously, manually-created user stubs could have mixed-case keys (e.g. "Matthew.")
+  // causing acceptInvite's UpdateItem to target a non-existent lowercase key — silently
+  // writing a stub with no password_hash. All user records are now keyed in lowercase,
+  // matching storeToken output and getUser lookups. Root cause of RC1 activation failure.
   const email = normalizeEmail(body.email);
   const { invited_by } = body;
   if (!email) return response(400, { message: "Email required" });
@@ -284,6 +289,7 @@ const invite = async (body) => {
   if (!existing) {
     await db.send(new PutItemCommand({
       TableName: USERS_TABLE,
+      // email is already normalized to lowercase — consistent with storeToken and getUser
       Item: marshall({ email, role: "user", mfa_enabled: false, status: "invited", created_at: new Date().toISOString() }),
     }));
   }
@@ -316,15 +322,21 @@ const acceptInvite = async (body) => {
   if (password.length < 8)  return response(400, { message: "Password must be at least 8 characters" });
   const item = await consumeToken(token, "invite");
   if (!item) return response(400, { message: "Invalid or expired invite link" });
+
+  // FIX: normalize email from token record before UpdateItem lookup.
+  // Tokens written by the legacy Python Lambda may have stored mixed-case emails.
+  // Normalizing here ensures the DynamoDB key matches the lowercase user record.
+  const email = normalizeEmail(item.email);
+
   const password_hash = await bcrypt.hash(password, 12);
   await db.send(new UpdateItemCommand({
     TableName: USERS_TABLE,
-    Key: marshall({ email: item.email }),
+    Key: marshall({ email }),
     UpdateExpression: "SET password_hash = :h, #st = :s",
     ExpressionAttributeNames:  { "#st": "status" },
     ExpressionAttributeValues: marshall({ ":h": password_hash, ":s": "active" }),
   }));
-  const user = await getUser(item.email);
+  const user = await getUser(email);
   const jwt_token = jwt.sign(
     { sub: user.email, role: user.role || "user", mfa_enabled: false },
     JWT_SECRET,
@@ -432,8 +444,12 @@ const resendInvite = async (body) => {
     return response(200, { message: "If a matching invite exists, a new link has been sent" });
   }
 
+  // FIX: normalize email from token record — legacy Python Lambda tokens may have
+  // stored mixed-case emails. Normalizing ensures consistent user record key lookups.
+  const email = normalizeEmail(item.email);
+
   const newToken = generateToken();
-  await storeToken(item.email, newToken, "invite", INVITE_TOKEN_TTL_H);
+  await storeToken(email, newToken, "invite", INVITE_TOKEN_TTL_H);
   const link = `${APP_URL}/accept-invite?token=${newToken}`;
   const html = emailHtml(
     `Your new ${APP_NAME} invite link`,
@@ -444,7 +460,7 @@ const resendInvite = async (body) => {
     INVITE_TOKEN_TTL_H,
   );
   try {
-    await sendEmail(item.email, `New invite link — ${APP_NAME}`, html);
+    await sendEmail(email, `New invite link — ${APP_NAME}`, html);
   } catch (sesErr) {
     console.error("SES resend failed — token stored, email not delivered:", sesErr);
   }
@@ -485,15 +501,8 @@ const refreshToken = async (body) => {
 
 // ── health check ──────────────────────────────────────────────────────────────
 
-/**
- * Lightweight DynamoDB ping for synthetic monitoring and the RC1 journey gate.
- * GET /health or GET /auth/health — confirms Lambda is warm and DynamoDB reachable.
- * Returns 200 { status: "ok", ts, table } or 503 { status: "degraded", error }.
- * Probe traffic identifiable in CloudWatch by path /health.
- */
 const healthCheck = async () => {
   try {
-    // Non-existent key lookup — cheap read confirming DynamoDB connectivity
     await db.send(new GetItemCommand({
       TableName: USERS_TABLE,
       Key: marshall({ email: "__healthcheck__" }),
@@ -512,7 +521,6 @@ export const handler = async (event) => {
     const path   = event.path || "";
     const method = event.httpMethod || event.requestContext?.http?.method || "";
     const isAcceptInvitePath = ACCEPT_INVITE_PATH_PATTERN.test(path);
-    // isInvitePath: matches /invite or /auth/invite — excludes accept-invite and invite/resend
     const isInvitePath = INVITE_PATH_PATTERN.test(path) && !isAcceptInvitePath && !path.includes("/invite/resend");
 
     if (method === "OPTIONS") {
@@ -527,12 +535,10 @@ export const handler = async (event) => {
       };
     }
 
-    // Health check — GET /health or GET /auth/health, no auth required
     if (method === "GET" && (path.endsWith("/health") || path === "/health")) {
       return await healthCheck();
     }
 
-    // Guard: malformed JSON body returns 400 instead of throwing a 500
     let body;
     try {
       body = typeof event.body === "string"
@@ -546,8 +552,6 @@ export const handler = async (event) => {
     if (method === "POST" && path.endsWith("/auth/register"))        return await register(body);
     if (method === "POST" && isAcceptInvitePath)                      return await acceptInvite(body);
     if (method === "POST" && path.includes("/auth/invite/resend"))   return await resendInvite(body);
-    // invite: explicit endsWith check catches both /auth/invite (full path) and
-    // /invite (API Gateway prefix-stripped path), plus regex fallback for edge cases.
     if (method === "POST" && (path.endsWith("/auth/invite") || path === "/invite" || isInvitePath)) return await invite(body);
     if (method === "POST" && path.includes("/auth/forgot-password")) return await forgotPassword(body);
     if (method === "POST" && path.includes("/auth/reset-password"))  return await resetPassword(body);
