@@ -101,11 +101,14 @@ jobs:
           python3 -c "import sys,json; r=json.load(open('response.json')); sys.exit(1 if r.get('errorMessage') or r.get('error') else 0)"
 
       - name: Verify required tables via Lambda
+        env:
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
         run: |
           echo "Validating required tables..."
+          PAYLOAD=$(printf '{"environment":"production","validate_only":true,"db_secret_arn":"%s"}' "$DB_SECRET_ARN")
           aws lambda invoke \
             --function-name securebase-prod-db-migrator \
-            --payload '{"environment":"production","validate_only":true}' \
+            --payload "$PAYLOAD" \
             --cli-binary-format raw-in-base64-out \
             --region us-east-1 \
             validate.json
