@@ -108,6 +108,7 @@ jobs:
             fi
           }
 
+          import_if_missing aws_api_gateway_method.auth_options        9xyetu7zq3/sfrsaw/OPTIONS
           import_if_missing aws_api_gateway_resource.auth              9xyetu7zq3/sfrsaw
           import_if_missing aws_api_gateway_resource.auth_login        9xyetu7zq3/ogsr28
           import_if_missing aws_api_gateway_resource.checkout          9xyetu7zq3/qlr2au
