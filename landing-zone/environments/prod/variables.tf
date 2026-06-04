@@ -170,3 +170,13 @@ variable "aws_marketplace_sns_topic_arn" {
   type        = string
   default     = ""
 }
+
+# ============================================================================
+# Phase 6 / DB Migrator — prod secret ARN
+# Set via GitHub secret PROD_DB_CREDENTIALS_SECRET_ARN passed as TF_VAR_prod_db_credentials_secret_arn
+# ============================================================================
+variable "prod_db_credentials_secret_arn" {
+  description = "Secrets Manager ARN for prod Aurora credentials — used by db_migrator Lambda IAM policy"
+  type        = string
+  default     = ""
+}
