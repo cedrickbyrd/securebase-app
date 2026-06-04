@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiService, persistSessionToken } from '../services/apiService';
+import { apiService, persistSessionToken, clearStoredSessionToken } from '../services/apiService';
 import BRANDING from '../config/branding';
 import './Login.css';
 
@@ -39,6 +39,10 @@ export default function AcceptInvite({ setAuth }) {
 
   useEffect(() => {
     if (!token) navigate('/login', { replace: true });
+    // Clear any stale session so the activation request goes in unauthenticated.
+    // A lingering sessionToken causes apiService to attach Authorization: Bearer
+    // which triggers a 401 → redirect loop before the response is handled.
+    clearStoredSessionToken();
   }, [token, navigate]);
 
   const handleSubmit = async (e) => {
