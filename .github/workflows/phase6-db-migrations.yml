@@ -85,11 +85,14 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Invoke db_migrator Lambda (prod)
+        env:
+          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
         run: |
           echo "Invoking securebase-prod-db-migrator..."
+          PAYLOAD=$(printf '{"environment":"production","db_secret_arn":"%s"}' "$DB_SECRET_ARN")
           aws lambda invoke \
             --function-name securebase-prod-db-migrator \
-            --payload '{"environment":"production"}' \
+            --payload "$PAYLOAD" \
             --cli-binary-format raw-in-base64-out \
             --region us-east-1 \
             response.json
