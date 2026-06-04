@@ -84,26 +84,28 @@ jobs:
       - name: Verify caller identity
         run: aws sts get-caller-identity
 
-      - name: Install PostgreSQL client tools
+      - name: Invoke db_migrator Lambda (prod)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client jq
+          echo "Invoking securebase-production-db-migrator..."
+          aws lambda invoke \
+            --function-name securebase-production-db-migrator \
+            --payload '{"environment":"production"}' \
+            --cli-binary-format raw-in-base64-out \
+            --region us-east-1 \
+            response.json
+          echo "--- Lambda response ---"
+          cat response.json
+          python3 -c "import sys,json; r=json.load(open('response.json')); sys.exit(1 if r.get('errorMessage') or r.get('error') else 0)"
 
-      - name: Run Phase 6 migrations
-        env:
-          TARGET_ENV: prod
-          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
+      - name: Verify required tables via Lambda
         run: |
-          chmod +x ./scripts/run-phase6-migrations.sh
-          ./scripts/run-phase6-migrations.sh
-
-      - name: Validate required tables in production
-        env:
-          TARGET_ENV: prod
-          DB_SECRET_ARN: ${{ secrets.PROD_DB_CREDENTIALS_SECRET_ARN }}
-          MIGRATION_FILES: ""
-          VALIDATE_REQUIRED_TABLES: "1"
-        run: |
-          # Table-only validation: MIGRATION_FILES is intentionally empty to avoid reapplying migrations.
-          chmod +x ./scripts/run-phase6-migrations.sh
-          ./scripts/run-phase6-migrations.sh
+          echo "Validating required tables..."
+          aws lambda invoke \
+            --function-name securebase-production-db-migrator \
+            --payload '{"environment":"production","validate_only":true}' \
+            --cli-binary-format raw-in-base64-out \
+            --region us-east-1 \
+            validate.json
+          echo "--- Validation response ---"
+          cat validate.json
+          python3 -c "import sys,json; r=json.load(open('validate.json')); sys.exit(1 if r.get('errorMessage') or r.get('error') else 0)" 
