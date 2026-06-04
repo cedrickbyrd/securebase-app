@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { useMFAStatus } from './lib/useMFAStatus';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import AcceptInvite from './components/AcceptInvite';
 import SecureBaseLandingZone from './SecureBaseLandingZone';
 import TrustCenter from './components/TrustCenter';
 import SREDashboardWrapper from './components/SREDashboardWrapper';
@@ -88,6 +89,9 @@ function App() {
 
           {/* Zero-friction signup — public, no auth required */}
           <Route path="/signup" element={<Signup />} />
+
+          {/* Invite activation — public, must be before wildcard catch-all */}
+          <Route path="/accept-invite" element={<AcceptInvite />} />
 
           <Route 
             path="/login" 
