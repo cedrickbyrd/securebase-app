@@ -1,0 +1,68 @@
+/* AcceptInvite — extends Login.css design system */
+/* All sb-Login__*, sb-FormGroup__*, sb-Button*, sb-Alert* classes
+   are defined in Login.css and reused here. */
+
+.sb-AcceptInvite {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  padding: 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.sb-AcceptInvite__container {
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Loading spinner */
+.sb-AcceptInvite__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.sb-AcceptInvite__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: sb-spin 0.7s linear infinite;
+}
+
+@keyframes sb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Masked email hint */
+.sb-AcceptInvite__emailHint {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  margin-top: -0.5rem;
+}
+
+/* Help / contact link */
+.sb-AcceptInvite__help {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.sb-AcceptInvite__link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sb-AcceptInvite__link:hover {
+  text-decoration: underline;
+}
