@@ -86,9 +86,9 @@ jobs:
 
       - name: Invoke db_migrator Lambda (prod)
         run: |
-          echo "Invoking securebase-production-db-migrator..."
+          echo "Invoking securebase-prod-db-migrator..."
           aws lambda invoke \
-            --function-name securebase-production-db-migrator \
+            --function-name securebase-prod-db-migrator \
             --payload '{"environment":"production"}' \
             --cli-binary-format raw-in-base64-out \
             --region us-east-1 \
@@ -101,7 +101,7 @@ jobs:
         run: |
           echo "Validating required tables..."
           aws lambda invoke \
-            --function-name securebase-production-db-migrator \
+            --function-name securebase-prod-db-migrator \
             --payload '{"environment":"production","validate_only":true}' \
             --cli-binary-format raw-in-base64-out \
             --region us-east-1 \
