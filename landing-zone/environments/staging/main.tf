@@ -8,13 +8,40 @@ provider "aws" {
 
 # Call the root module
 module "securebase" {
-  source = "../.."
-  
-  org_name       = var.org_name
-  target_region  = var.target_region
-  environment    = var.environment
-  accounts       = var.accounts
+  source = "../.."  
+
+  org_name        = var.org_name
+  target_region   = var.target_region
+  environment     = var.environment
+  accounts        = var.accounts
   allowed_regions = var.allowed_regions
-  clients        = var.clients
-  tags           = var.tags
+  clients         = var.clients
+  tags            = var.tags
+}
+
+# ============================================================================
+# Phase 6 / DB Migrator
+# VPC-resident Lambda that applies Aurora migrations from within the private subnet.
+# GitHub Actions runners have no direct VPC path to Aurora — this Lambda bridges that gap.
+# Secret ARN is injected via GitHub secret STAGING_DB_CREDENTIALS_SECRET_ARN
+# passed as TF_VAR_staging_db_credentials_secret_arn.
+# ============================================================================
+module "db_migrator" {
+  source = "../../modules/db-migrator"
+
+  environment        = var.environment
+  vpc_id             = var.vpc_id
+  private_subnet_ids = var.private_subnet_ids
+  zip_path           = "${path.module}/../../files/phase6/db_migrator.zip"
+
+  allowed_secret_arns = [var.staging_db_credentials_secret_arn]
+
+  invoker_role_arns = [
+    "arn:aws:iam::731184206915:role/GitHubActionsRole"
+  ]
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "migrations"
+  })
 }

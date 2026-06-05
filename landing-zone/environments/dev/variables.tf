@@ -352,3 +352,14 @@ variable "marketplace_lambda_security_group_id" {
   type        = string
   default     = ""
 }
+
+# ============================================================================
+# Phase 6 / DB Migrator — dev secret ARN
+# Set via GitHub secret DEV_DB_CREDENTIALS_SECRET_ARN
+# passed as TF_VAR_dev_db_credentials_secret_arn
+# ============================================================================
+variable "dev_db_credentials_secret_arn" {
+  description = "Secrets Manager ARN for dev Aurora credentials — used by db_migrator Lambda IAM policy"
+  type        = string
+  default     = ""
+}
