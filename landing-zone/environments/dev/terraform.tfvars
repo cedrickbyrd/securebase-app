@@ -11,11 +11,14 @@ lambda_subnets   = ["subnet-09fb0628c71ceb4a8", "subnet-0cc564ec5c26cb829"]
 database_subnets = ["subnet-09fb0628c71ceb4a8", "subnet-0cc564ec5c26cb829"]
 
 # Marketplace
-marketplace_product_code             = "prod-p7z4iqf7gg6dk"
+# NOTE: marketplace_product_code is the product CODE (blblyu28f6s5mzwl089d4xoea),
+# NOT the product ID (prod-p7z4iqf7gg6dk). Fixed June 5, 2026.
+marketplace_product_code             = "blblyu28f6s5mzwl089d4xoea"
 marketplace_db_host                  = "securebase-phase2-dev.cluster-coti40osot2c.us-east-1.rds.amazonaws.com"
 marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/dev/rds/admin-password-sejDay"
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase_lambda_exec_role"
 marketplace_lambda_security_group_id = "sg-01f9c85ea97298066"
+aws_marketplace_sns_topic_arn        = "arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-blblyu28f6s5mzwl089d4xoea"
 
 lambda_packages = {
   auth_v2                          = "s3://securebase-terraform-state-dev/lambda/auth_v2.zip"
