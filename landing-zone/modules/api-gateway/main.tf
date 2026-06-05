@@ -8,20 +8,6 @@ terraform {
       version = "~> 5.0"
     }
   }
-
-  resource "aws_api_gateway_method_settings" "marketplace_resolve_throttle" {
-    count       = local.marketplace_enabled ? 1 : 0
-    rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-    stage_name  = aws_api_gateway_stage.main.stage_name
-    method_path = "marketplace/resolve/POST"
-
-    settings {
-      throttling_burst_limit = 10
-      throttling_rate_limit  = 0.1667
-      metrics_enabled        = true
-      logging_level          = "INFO"
-    }
-  }
 }
 
 locals {
@@ -846,7 +832,6 @@ resource "aws_api_gateway_deployment" "main" {
       try(aws_api_gateway_method.marketplace_resolve_post[0].id, null),
       try(aws_api_gateway_integration.marketplace_resolve_post[0].id, null),
       try(aws_lambda_permission.marketplace_resolve_api_gateway[0].id, null),
-      # Add any other methods/integrations here to trigger a fresh deploy on change
     ]))
   }
 
@@ -913,8 +898,6 @@ resource "aws_api_gateway_gateway_response" "cors_5xx" {
   }
 }
 
-# API Gateway returns MISSING_AUTHENTICATION_TOKEN (403) for undefined paths.
-# This response type is separate from DEFAULT_4XX, so it needs its own CORS headers.
 resource "aws_api_gateway_gateway_response" "cors_missing_auth_token" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   response_type = "MISSING_AUTHENTICATION_TOKEN"
@@ -927,7 +910,6 @@ resource "aws_api_gateway_gateway_response" "cors_missing_auth_token" {
   }
 }
 
-# API Gateway returns ACCESS_DENIED (403) for resource-policy denials and WAF blocks.
 resource "aws_api_gateway_gateway_response" "cors_access_denied" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   response_type = "ACCESS_DENIED"
@@ -939,6 +921,7 @@ resource "aws_api_gateway_gateway_response" "cors_access_denied" {
     "gatewayresponse.header.Access-Control-Allow-Credentials" = "'true'"
   }
 }
+
 # ============================================================================
 # CloudWatch Alarms for API Monitoring
 # ============================================================================
@@ -1017,18 +1000,23 @@ resource "aws_api_gateway_method_settings" "all" {
   }
 }
 
+# Per-route throttle for marketplace/resolve — tighter limits to prevent abuse
+resource "aws_api_gateway_method_settings" "marketplace_resolve_throttle" {
+  count       = local.marketplace_enabled ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
+  stage_name  = aws_api_gateway_stage.main.stage_name
+  method_path = "marketplace/resolve/POST"
+
+  settings {
+    throttling_burst_limit = 10
+    throttling_rate_limit  = 0.1667
+    metrics_enabled        = true
+    logging_level          = "INFO"
+  }
+}
+
 # ============================================================================
 # Per-Tenant Usage Plan and API Key
-#
-# Enforces a per-customer request rate/burst ceiling so that a single tenant
-# spiking to 100+ concurrent users cannot starve adjacent tenants.
-#
-# Rate:  var.default_rate_limit  (default 100 req/s  per tenant)
-# Burst: var.default_burst_limit (default 200 tokens per tenant)
-#
-# Each tenant receives one API key; the key is associated with this usage plan.
-# Tenants that need a higher limit can be given a bespoke usage plan by
-# extending the module.
 # ============================================================================
 
 resource "aws_api_gateway_usage_plan" "per_tenant" {
@@ -1051,39 +1039,6 @@ resource "aws_api_gateway_usage_plan" "per_tenant" {
     Component   = "api-gateway"
   })
 }
-
-#
-#resource "aws_api_gateway_rest_api_policy" "netlify_only" {
-#  rest_api_id = aws_api_gateway_rest_api.securebase_api.id
-#
-#  policy = jsonencode({
-#    Version = "2012-10-17"
-#    Statement = [
-#      {
-#        Effect    = "Allow"
-#        Principal = "*"
-#        Action    = "execute-api:Invoke"
-#        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-#      },
-#      {
-#        Effect    = "Deny"
-#        Principal = "*"
-#        Action    = "execute-api:Invoke"
-#        Resource  = "${aws_api_gateway_rest_api.securebase_api.execution_arn}/*"
-#        Condition = {
-#          StringNotEquals = {
-#            "aws:Referer" = "Netlify" # Maps to your X-From header if passed correctly
-#            # OR use custom header validation if your Gateway is behind a WAF
-#          }
-#        }
-#      }
-#    ]
-#  })
-#}
-###############
-# ============================================================================
-# Consolidated API Resource Policy
-# ============================================================================
 
 resource "aws_api_gateway_rest_api_policy" "securebase_api_policy" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1206,7 +1161,6 @@ resource "aws_api_gateway_resource" "demo_auth" {
   path_part   = "demo-auth"
 }
 
-# POST /demo-auth — validate demo credentials and issue HttpOnly JWT cookie
 resource "aws_api_gateway_method" "demo_auth_post" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   resource_id   = aws_api_gateway_resource.demo_auth.id
@@ -1223,7 +1177,6 @@ resource "aws_api_gateway_integration" "demo_auth_post" {
   uri                     = var.demo_auth_lambda_invoke_arn
 }
 
-# OPTIONS /demo-auth — CORS preflight
 resource "aws_api_gateway_method" "demo_auth_options" {
   rest_api_id   = aws_api_gateway_rest_api.securebase_api.id
   resource_id   = aws_api_gateway_resource.demo_auth.id
@@ -1258,7 +1211,6 @@ resource "aws_api_gateway_resource" "compliance" {
   path_part   = "compliance"
 }
 
-# /compliance/soc2
 resource "aws_api_gateway_resource" "compliance_soc2" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1277,7 +1229,6 @@ resource "aws_api_gateway_resource" "compliance_soc2_export" {
   path_part   = "audit-export"
 }
 
-# /compliance/fedramp
 resource "aws_api_gateway_resource" "compliance_fedramp" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1290,7 +1241,6 @@ resource "aws_api_gateway_resource" "compliance_fedramp_collect" {
   path_part   = "collect"
 }
 
-# /compliance/export
 resource "aws_api_gateway_resource" "compliance_export" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1303,7 +1253,6 @@ resource "aws_api_gateway_resource" "compliance_export_job" {
   path_part   = "{job_id}"
 }
 
-# /compliance/controls
 resource "aws_api_gateway_resource" "compliance_controls" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1322,7 +1271,6 @@ resource "aws_api_gateway_resource" "compliance_controls_test" {
   path_part   = "test"
 }
 
-# /compliance/vendors
 resource "aws_api_gateway_resource" "compliance_vendors" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1341,7 +1289,6 @@ resource "aws_api_gateway_resource" "compliance_vendor_baa" {
   path_part   = "baa"
 }
 
-# /compliance/baa
 resource "aws_api_gateway_resource" "compliance_baa" {
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.compliance.id
@@ -1353,9 +1300,6 @@ resource "aws_api_gateway_resource" "compliance_baa_expiring" {
   parent_id   = aws_api_gateway_resource.compliance_baa.id
   path_part   = "expiring"
 }
-
-# ---- CORS modules for all Phase 6 resources ----
-# Use cors-with-credentials for all compliance endpoints (JWT auth + cookie)
 
 module "cors_compliance_soc2_collect" {
   source      = "./cors-with-credentials"
@@ -1425,15 +1369,12 @@ module "cors_compliance_baa_expiring" {
 
 # ============================================================================
 # API Resources - Phase 5.3 SRE Metrics (/sre/*)
-# All resources/methods/integrations are conditional on sre_metrics_lambda_invoke_arn
-# being set, so existing deployments are unaffected.
 # ============================================================================
 
 locals {
   sre_enabled = var.sre_metrics_lambda_invoke_arn != null
 }
 
-# /sre parent resource
 resource "aws_api_gateway_resource" "sre" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1441,7 +1382,6 @@ resource "aws_api_gateway_resource" "sre" {
   path_part   = "sre"
 }
 
-# /sre/infrastructure
 resource "aws_api_gateway_resource" "sre_infrastructure" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1449,7 +1389,6 @@ resource "aws_api_gateway_resource" "sre_infrastructure" {
   path_part   = "infrastructure"
 }
 
-# /sre/deployments
 resource "aws_api_gateway_resource" "sre_deployments" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1457,7 +1396,6 @@ resource "aws_api_gateway_resource" "sre_deployments" {
   path_part   = "deployments"
 }
 
-# /sre/scaling
 resource "aws_api_gateway_resource" "sre_scaling" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1465,7 +1403,6 @@ resource "aws_api_gateway_resource" "sre_scaling" {
   path_part   = "scaling"
 }
 
-# /sre/database
 resource "aws_api_gateway_resource" "sre_database" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1473,7 +1410,6 @@ resource "aws_api_gateway_resource" "sre_database" {
   path_part   = "database"
 }
 
-# /sre/cache
 resource "aws_api_gateway_resource" "sre_cache" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1481,7 +1417,6 @@ resource "aws_api_gateway_resource" "sre_cache" {
   path_part   = "cache"
 }
 
-# /sre/errors
 resource "aws_api_gateway_resource" "sre_errors" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1489,7 +1424,6 @@ resource "aws_api_gateway_resource" "sre_errors" {
   path_part   = "errors"
 }
 
-# /sre/lambda
 resource "aws_api_gateway_resource" "sre_lambda" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1497,7 +1431,6 @@ resource "aws_api_gateway_resource" "sre_lambda" {
   path_part   = "lambda"
 }
 
-# /sre/costs
 resource "aws_api_gateway_resource" "sre_costs" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
@@ -1505,15 +1438,12 @@ resource "aws_api_gateway_resource" "sre_costs" {
   path_part   = "costs"
 }
 
-# /sre/health
 resource "aws_api_gateway_resource" "sre_health" {
   count       = local.sre_enabled ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.securebase_api.id
   parent_id   = aws_api_gateway_resource.sre[0].id
   path_part   = "health"
 }
-
-# ---- GET methods ----
 
 resource "aws_api_gateway_method" "sre_infrastructure_get" {
   count         = local.sre_enabled ? 1 : 0
@@ -1586,8 +1516,6 @@ resource "aws_api_gateway_method" "sre_health_get" {
   http_method   = "GET"
   authorization = "NONE"
 }
-
-# ---- Lambda proxy integrations ----
 
 resource "aws_api_gateway_integration" "sre_infrastructure_lambda" {
   count                   = local.sre_enabled ? 1 : 0
@@ -1678,8 +1606,6 @@ resource "aws_api_gateway_integration" "sre_health_lambda" {
   type                    = "AWS_PROXY"
   uri                     = var.sre_metrics_lambda_invoke_arn
 }
-
-# ---- OPTIONS preflight (MOCK) for each SRE endpoint ----
 
 resource "aws_api_gateway_method" "sre_infrastructure_options" {
   count         = local.sre_enabled ? 1 : 0
@@ -2076,8 +2002,6 @@ resource "aws_api_gateway_integration_response" "sre_health_options" {
   }
   depends_on = [aws_api_gateway_integration.sre_health_options]
 }
-
-# ---- Lambda permission for API Gateway to invoke SRE metrics function ----
 
 resource "aws_lambda_permission" "sre_metrics_api_gateway" {
   count         = local.sre_enabled ? 1 : 0
