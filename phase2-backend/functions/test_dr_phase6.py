@@ -42,7 +42,7 @@ class TestDrDrill(unittest.TestCase):
         ssm.get_parameter.return_value = {"Parameter": {"Value": active_region}}
         lam = MagicMock()
         lam.invoke.return_value = {
-            "Payload": MagicMock(read=lambda: json.dumps({"statusCode": 200}).encode()),
+            "Payload": MagicMock(read=lambda: json.dumps({"statusCode": 200, "body": json.dumps({"overall_passed": True})}).encode()),
             "StatusCode": 200,
         }
         cw = MagicMock()
@@ -175,6 +175,45 @@ class TestDrDrill(unittest.TestCase):
         # Drill must set suppression=true at start and false at finish
         self.assertIn("true", values_set, "PagerDuty suppression should be set to 'true'")
         self.assertIn("false", values_set, "PagerDuty suppression should be cleared to 'false'")
+
+    @patch("boto3.client")
+    @patch.dict(os.environ, {
+        "PRIMARY_REGION": "us-east-1",
+        "SECONDARY_REGION": "us-west-2",
+        "FAILOVER_LAMBDA_ARN": "arn:aws:lambda:us-east-1:123456789012:function:failover",
+        "FAILOVER_VALIDATOR_LAMBDA_ARN": "arn:aws:lambda:us-east-1:123456789012:function:validator",
+        "DRILL_REPORT_BUCKET": "",
+        "ENVIRONMENT": "dev",
+    })
+    def test_drill_invokes_failover_validator_when_configured(self, mock_boto):
+        """Drill invokes failover-validator Lambda when ARN is configured."""
+        m = self._get_module()
+        clients = self._make_clients(active_region="us-west-2")
+
+        def _client_factory(service, **kwargs):
+            return {
+                "ssm": clients["ssm"],
+                "lambda": clients["lam"],
+                "cloudwatch": clients["cw"],
+                "s3": clients["s3"],
+                "sns": clients["sns"],
+            }[service]
+
+        mock_boto.side_effect = _client_factory
+        result = m.handler({}, _ctx())
+
+        function_names = [c.kwargs.get("FunctionName") for c in clients["lam"].invoke.call_args_list]
+        self.assertIn("arn:aws:lambda:us-east-1:123456789012:function:failover", function_names)
+        self.assertIn("arn:aws:lambda:us-east-1:123456789012:function:validator", function_names)
+        validator_call = next((
+            c for c in clients["lam"].invoke.call_args_list
+            if c.kwargs.get("FunctionName") == "arn:aws:lambda:us-east-1:123456789012:function:validator"
+        ), None)
+        self.assertIsNotNone(validator_call, "Expected validator Lambda invocation")
+        validator_payload = json.loads(validator_call.kwargs["Payload"])
+        self.assertEqual(validator_payload["source"], "dr_drill")
+        self.assertTrue(validator_payload["drill_id"].startswith("drill-"))
+        self.assertEqual(result["validator"]["overall_passed"], True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
