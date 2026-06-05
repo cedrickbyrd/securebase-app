@@ -240,9 +240,6 @@ module "phase6_alerting" {
   environment = var.environment
   sns_topic_arn = module.phase5_alerting.alert_sns_arn
 
-  # audit_log_packager is deployed by the securebase root module; its name/log group
-  # follow the standard naming convention. These are hardcoded here because the
-  # phase6-audit-logging module does not currently expose them as outputs.
   packager_function_name = "securebase-${var.environment}-audit-log-packager"
   packager_log_group     = "/aws/lambda/securebase-${var.environment}-audit-log-packager"
 
@@ -305,4 +302,31 @@ module "marketplace" {
   private_subnet_ids        = var.lambda_subnets
   lambda_security_group_id  = var.marketplace_lambda_security_group_id
   tags                      = merge(var.tags, { Phase = "marketplace" })
+}
+
+# ============================================================================
+# Phase 6 / DB Migrator
+# VPC-resident Lambda that applies Aurora migrations from within the private subnet.
+# GitHub Actions runners have no direct VPC path to Aurora — this Lambda bridges that gap.
+# Secret ARN is injected via GitHub secret DEV_DB_CREDENTIALS_SECRET_ARN
+# passed as TF_VAR_dev_db_credentials_secret_arn.
+# ============================================================================
+module "db_migrator" {
+  source = "../../modules/db-migrator"
+
+  environment        = var.environment
+  vpc_id             = var.default_vpc_id
+  private_subnet_ids = var.lambda_subnets
+  zip_path           = "${path.module}/../../files/phase6/db_migrator.zip"
+
+  allowed_secret_arns = [var.dev_db_credentials_secret_arn]
+
+  invoker_role_arns = [
+    "arn:aws:iam::731184206915:role/GitHubActionsRole"
+  ]
+
+  tags = merge(var.tags, {
+    Phase = "6"
+    Track = "migrations"
+  })
 }
