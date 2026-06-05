@@ -5,8 +5,8 @@
 #
 # What it does:
 #   1. Capture before state  → before.json
-#   2. Copy Lambda zips dev → prod S3
-#   3. terraform apply       → marketplace.tfvars
+#   2. Pull Lambda zips from live dev Lambdas → prod S3
+#   3. terraform plan + apply → marketplace.tfvars
 #   4. Capture after state   → after.json
 #   5. Print structured diff
 # =============================================================================
@@ -18,7 +18,6 @@ PROD_DIR="${REPO_ROOT}/landing-zone/environments/prod"
 BACKEND_HCL="${REPO_ROOT}/landing-zone/environments/production/backend.hcl"
 AUDIT_SCRIPT="${REPO_ROOT}/marketplace_audit.sh"
 REGION="us-east-1"
-DEV_BUCKET="securebase-terraform-state-dev"
 PROD_BUCKET="securebase-terraform-state-prod"
 
 echo ""
@@ -62,20 +61,24 @@ done
 echo ""
 
 # ---------------------------------------------------------------------------
-# 2. Copy Lambda zips from dev to prod S3
+# 2. Pull Lambda zips from live dev Lambdas → upload to prod S3
+# Dev Lambdas were deployed directly (not via S3), so we extract from live code
 # ---------------------------------------------------------------------------
-echo "▶ Copying Lambda zips dev → prod S3..."
-ZIP_PAIRS=(
-  "lambda/marketplace_resolve_customer.zip:lambda/marketplace_resolve_customer.zip"
-  "lambda/marketplace-entitlement.zip:lambda/marketplace-entitlement.zip"
-  "lambda/marketplace-metering.zip:lambda/marketplace-metering.zip"
+echo "▶ Pulling Lambda zips from dev → prod S3..."
+declare -A LAMBDA_ZIP_MAP=(
+  ["securebase-dev-marketplace-registration"]="marketplace_resolve_customer"
+  ["securebase-dev-marketplace-entitlement"]="marketplace-entitlement"
+  ["securebase-dev-marketplace-metering"]="marketplace-metering"
 )
-for pair in "${ZIP_PAIRS[@]}"; do
-  src="${pair%%:*}"
-  dst="${pair##*:}"
-  echo "  s3://${DEV_BUCKET}/${src} → s3://${PROD_BUCKET}/${dst}"
-  aws s3 cp "s3://${DEV_BUCKET}/${src}" "s3://${PROD_BUCKET}/${dst}" --region "$REGION"
-  echo "    ✓ Copied"
+for fn in "${!LAMBDA_ZIP_MAP[@]}"; do
+  key="${LAMBDA_ZIP_MAP[$fn]}"
+  echo "  $fn → s3://${PROD_BUCKET}/lambda/${key}.zip"
+  url=$(aws lambda get-function --function-name "$fn" \
+        --region "$REGION" --output json | jq -r '.Code.Location')
+  curl -sL "$url" -o "/tmp/${key}.zip"
+  aws s3 cp "/tmp/${key}.zip" "s3://${PROD_BUCKET}/lambda/${key}.zip" --region "$REGION"
+  rm -f "/tmp/${key}.zip"
+  echo "    ✓ Done"
 done
 echo ""
 
@@ -114,7 +117,7 @@ echo ""
 # 5. After state snapshot
 # ---------------------------------------------------------------------------
 echo "▶ Capturing AFTER state..."
-sleep 5  # give AWS a moment to propagate
+sleep 5
 bash "$AUDIT_SCRIPT" > "${REPO_ROOT}/after.json"
 echo "  Saved → after.json"
 echo ""
@@ -134,8 +137,8 @@ for fn in resolve-customer subscription-handler metering-worker; do
   after_state=$(jq -r ".lambdas[\"${FULL}\"]  // \"null\"" "${REPO_ROOT}/after.json")
   before_name=$(echo "$before_state" | jq -r '.FunctionName // "NOT PRESENT"' 2>/dev/null || echo "NOT PRESENT")
   after_name=$(echo "$after_state"  | jq -r '.FunctionName // "NOT PRESENT"' 2>/dev/null || echo "NOT PRESENT")
-  after_code=$(echo "$after_state"  | jq -r '.ProductCode  // "—"'           2>/dev/null || echo "—")
-  after_runtime=$(echo "$after_state" | jq -r '.Runtime    // "—"'           2>/dev/null || echo "—")
+  after_code=$(echo "$after_state"  | jq -r '.ProductCode  // "—"' 2>/dev/null || echo "—")
+  after_runtime=$(echo "$after_state" | jq -r '.Runtime // "—"' 2>/dev/null || echo "—")
 
   if [ "$before_name" = "NOT PRESENT" ] && [ "$after_name" != "NOT PRESENT" ]; then
     echo "  ✓ CREATED  ${FULL}"
