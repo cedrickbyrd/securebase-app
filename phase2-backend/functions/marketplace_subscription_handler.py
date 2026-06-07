@@ -43,11 +43,19 @@ EVENT_STATUS_UPDATES = {
 ALERT_EVENTS = {"subscribe-success", "subscribe-fail", "unsubscribe-pending", "unsubscribe-success"}
 SNS_CERT_HOST_RE = re.compile(r"^sns\.[a-z0-9-]+\.amazonaws\.com$")
 SNS_CERT_CACHE: dict[str, x509.Certificate] = {}
+
+# Maps AWS Marketplace dimension names (as set in AMMP) to internal SecureBase tiers.
+# Must stay in sync with the pricing dimensions defined in the AMMP listing.
+# Stripe pricing alignment:
+#   standard_monthly    $2,000/mo  -> standard   -> cis
+#   fintech_monthly     $8,000/mo  -> fintech     -> ffiec
+#   healthcare_monthly $15,000/mo  -> healthcare  -> hipaa
+#   government_monthly $25,000/mo  -> gov-federal -> fedramp
 DIMENSION_TO_TIER = {
-    "users": "standard",
-    "hipaa_tenants": "healthcare",
-    "fintech_tenants": "fintech",
-    "gov_tenants": "gov-federal",
+    "standard_monthly": "standard",
+    "fintech_monthly": "fintech",
+    "healthcare_monthly": "healthcare",
+    "government_monthly": "gov-federal",
 }
 
 
