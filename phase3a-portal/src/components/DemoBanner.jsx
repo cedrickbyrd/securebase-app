@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import { trackEvent, trackCTAClick } from '../utils/analytics';
+import { trackEvent } from '../utils/analytics';
 import { isDemoMode } from '../utils/demoData';
 
 const PRICING_URL = 'https://securebase.tximhotep.com/pricing';
@@ -9,8 +9,6 @@ const DemoBanner = () => {
   // isDemoMode() covers VITE_DEMO_MODE, localStorage demo_mode, and ?demo=true.
   // Also show when VITE_USE_MOCK_API=true (mock-API dev mode), which isDemoMode() does not cover.
   if (!isDemoMode() && import.meta.env.VITE_USE_MOCK_API !== 'true') return null;
-
-  const bookDemoUrl = import.meta.env.VITE_DEMO_CTA_BOOK_DEMO_URL || 'https://securebase.tximhotep.com/contact';
 
   const handlePricingClick = () => {
     trackEvent('demo_to_pricing_cta_click', { source_page: window.location.pathname });
@@ -38,15 +36,6 @@ const DemoBanner = () => {
             className="gradient-bg text-white border-2 border-white px-5 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition shadow-md"
           >
             Ready to deploy? See pricing →
-          </a>
-          <a
-            href={bookDemoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackCTAClick('book_demo', 'demo_banner')}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-400 transition"
-          >
-            Book Live Demo
           </a>
         </div>
       </div>
