@@ -20,7 +20,7 @@ aws_marketplace_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-subsc
 # TODO: provision securebase-phase2-prod cluster and update both this file and
 #       rds_proxy_endpoint default in variables.tf post-TriNetX conversion.
 marketplace_db_host                  = "securebase-phase2-dev.cluster-coti40osot2c.us-east-1.rds.amazonaws.com"
-marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:phase2/rds/app-5VPsB7"
+marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
 marketplace_lambda_security_group_id = "sg-0127b93c1653cf90f"
