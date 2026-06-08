@@ -34,6 +34,7 @@ jobs:
     timeout-minutes: 30
     
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Python: use build-mode none (buildless) to guarantee full source
@@ -55,6 +56,12 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended,security-and-quality
+          config: |
+            paths-ignore:
+              - '**/node_modules/**'
+              - '**/dist/**'
+              - '**/*.min.js'
+              - '**/package-lock.json'
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
