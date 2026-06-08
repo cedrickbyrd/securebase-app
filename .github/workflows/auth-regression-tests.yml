@@ -50,7 +50,7 @@ jobs:
         run: |
           cd lambdas/auth
           node --experimental-vm-modules --test index.test.cjs
-        env:
+          env:
           JWT_SECRET: test-secret
           USERS_TABLE: securebase-users
           TOKENS_TABLE: securebase-tokens

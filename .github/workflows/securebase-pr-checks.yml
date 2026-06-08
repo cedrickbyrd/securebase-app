@@ -28,10 +28,9 @@ jobs:
       - name: Setup Node environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19.0'
-          cache: 'npm'
-
-      - name: Install project dependencies
+node-version: '20.19.0'          
+       cache: 'npm'
+      - name: Install project dependencies  
         run: npm ci --prefer-offline
 
       - name: Run code linter
