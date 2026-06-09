@@ -142,28 +142,30 @@ module "marketplace" {
 
   source = "../../modules/marketplace"
 
-  environment                   = var.environment
-  aws_region                    = var.target_region
-  lambda_packages               = var.lambda_packages
-  lambda_role_arn               = var.marketplace_lambda_role_arn
-  db_host                       = var.marketplace_db_host
-  db_secret_arn                 = var.marketplace_db_secret_arn
-  alerts_sns_topic_arn          = var.marketplace_alerts_sns_topic_arn
-  ceo_sns_topic_arn             = var.marketplace_ceo_sns_topic_arn
-  marketplace_product_code      = var.marketplace_product_code
-  private_subnet_ids            = var.marketplace_private_subnet_ids
-  lambda_security_group_id      = var.marketplace_lambda_security_group_id
-  aws_marketplace_sns_topic_arn = var.aws_marketplace_sns_topic_arn
-  tags                          = merge(var.tags, { Phase = "marketplace" })
+  environment              = var.environment
+  aws_region               = var.target_region
+  lambda_packages          = var.lambda_packages
+  lambda_role_arn          = var.marketplace_lambda_role_arn
+  db_host                  = var.marketplace_db_host
+  db_secret_arn            = var.marketplace_db_secret_arn
+  alerts_sns_topic_arn     = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn        = var.marketplace_ceo_sns_topic_arn
+  marketplace_product_code = var.marketplace_product_code
+  private_subnet_ids       = var.marketplace_private_subnet_ids
+  lambda_security_group_id = var.marketplace_lambda_security_group_id
+
+  # Intentionally empty — Terraform cannot Subscribe to the AWS-owned Marketplace
+  # SNS topic (account 287250355862); the call returns 403 by design.
+  # Register the subscription_handler Lambda endpoint via AMMP UI after deploy.
+  aws_marketplace_sns_topic_arn = ""
+
+  tags = merge(var.tags, { Phase = "marketplace" })
 }
 
 # ============================================================================
 # Phase 6 / DB Migrator
 # VPC-resident Lambda that applies Aurora migrations from within the private subnet.
 # GitHub Actions runners have no direct VPC path to Aurora — this Lambda bridges that gap.
-#
-# FIX (blocker 1): zip_path corrected from ../../../ to ../../ (two levels up from prod/ to repo root)
-# FIX (blocker 2): allowed_secret_arns now references prod secret via var.prod_db_credentials_secret_arn
 # ============================================================================
 module "db_migrator" {
   source = "../../modules/db-migrator"
@@ -172,11 +174,11 @@ module "db_migrator" {
   vpc_id             = "vpc-003c9d5b0f9f1a02b"
   private_subnet_ids = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
 
-  # Corrected path: landing-zone/environments/prod/ → ../../ → landing-zone/ → ../../ → repo root
   zip_path = "${path.module}/../../files/phase6/db_migrator.zip"
 
-  # Prod secret ARN — set via GitHub secret PROD_DB_CREDENTIALS_SECRET_ARN
-  allowed_secret_arns = [var.prod_db_credentials_secret_arn]
+  # compact() prevents [""] when var is unset, which causes MalformedPolicyDocument.
+  # Falls back to "*" (all Secrets Manager) if no ARN provided — tighten post-launch.
+  allowed_secret_arns = length(compact([var.prod_db_credentials_secret_arn])) > 0 ? compact([var.prod_db_credentials_secret_arn]) : ["*"]
 
   invoker_role_arns = [
     "arn:aws:iam::731184206915:role/GitHubActionsRole"
