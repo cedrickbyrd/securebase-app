@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'landing-zone/**'
-      - 'terraform/**'
       - '.github/workflows/terraform-apply.yml'
 
 concurrency:
@@ -21,21 +20,15 @@ env:
 
 jobs:
   terraform-apply:
-    name: terraform apply (${{ matrix.workspace }})
+    name: terraform apply (prod)
     runs-on: ubuntu-latest
     concurrency:
-      group: terraform-apply-workspace-${{ matrix.workspace }}
+      group: terraform-apply-workspace-prod
       cancel-in-progress: false
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - workspace: prod
-            tf_dir: landing-zone/environments/prod
 
     defaults:
       run:
-        working-directory: ${{ matrix.tf_dir }}
+        working-directory: landing-zone/environments/prod
 
     steps:
       - name: Checkout
@@ -57,7 +50,7 @@ jobs:
         run: |
           if [ -z "$TF_BACKEND_BUCKET" ] || [ -z "$TF_BACKEND_LOCK_TABLE" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::TF_BACKEND_BUCKET or TF_BACKEND_LOCK_TABLE secret is not set. Apply for '${{ matrix.workspace }}' will be skipped."
+            echo "::warning::TF_BACKEND_BUCKET or TF_BACKEND_LOCK_TABLE not set. Skipping."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
@@ -75,7 +68,7 @@ jobs:
       - name: Check for existing state lock
         if: steps.backend_check.outputs.configured == 'true'
         run: |
-          echo "## Terraform State Lock Check — ${{ matrix.workspace }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Terraform State Lock Check — prod" >> "$GITHUB_STEP_SUMMARY"
           TF_STATE_KEY=$(grep '^[[:space:]]*key[[:space:]]*=' backend.hcl | awk -F'"' '{print $2}')
           if [ -z "$TF_STATE_KEY" ]; then
             echo "::error::Failed to extract state key from backend.hcl"
@@ -93,18 +86,11 @@ jobs:
             echo "**✅ No active state lock**" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Select workspace
-        if: steps.backend_check.outputs.configured == 'true'
-        run: | n          if [ "${{ matrix.workspace }}" != "prod" ]; thenn            terraform workspace select ${{ matrix.workspace }} || terraform workspace new ${{ matrix.workspace }}n          fi
-
       - name: Terraform apply
         if: steps.backend_check.outputs.configured == 'true'
         run: |
           APPLY_ARGS="-auto-approve -input=false"
-          if [ -f terraform.tfvars ]; then
-            APPLY_ARGS="$APPLY_ARGS -var-file=terraform.tfvars"
-          fi
-          if [ "${{ matrix.workspace }}" = "prod" ] && [ -f marketplace.tfvars ]; then
+          if [ -f marketplace.tfvars ]; then
             APPLY_ARGS="$APPLY_ARGS -var-file=marketplace.tfvars"
           fi
           terraform apply $APPLY_ARGS
@@ -123,7 +109,6 @@ jobs:
             echo "SLACK_WEBHOOK_URL not configured; skipping notification"
             exit 0
           fi
-
           if [ "${{ needs.terraform-apply.result }}" = "success" ]; then
             STATUS_TEXT="✅ Terraform apply succeeded on main"
             COLOR="good"
@@ -131,7 +116,6 @@ jobs:
             STATUS_TEXT="❌ Terraform apply failed on main"
             COLOR="danger"
           fi
-
           payload=$(cat <<EOF
           {
             "attachments": [
@@ -143,5 +127,4 @@ jobs:
           }
           EOF
           )
-
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
