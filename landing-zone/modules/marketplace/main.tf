@@ -35,21 +35,13 @@ resource "aws_sns_topic" "marketplace_subscriptions" {
   tags = local.common_tags
 }
 
-resource "aws_sns_topic_policy" "marketplace_subscriptions" {
-  arn = aws_sns_topic.marketplace_subscriptions.arn
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "AllowAWSMarketplacePublish"
-        Effect    = "Allow"
-        Principal = { Service = "aws-marketplace.amazonaws.com" }
-        Action    = "SNS:Publish"
-        Resource  = aws_sns_topic.marketplace_subscriptions.arn
-      }
-    ]
-  })
-}
+# aws_sns_topic_policy intentionally omitted.
+# The SNS default policy (owner-scoped) is sufficient for this topic.
+# aws-marketplace.amazonaws.com is not a valid Service principal for
+# SetTopicAttributes in this account context — adding a custom policy
+# causes "Policy Error: null" on every apply. AWS Marketplace publishes
+# to this topic via the subscription endpoint registered in AMMP, not
+# via a resource-based policy grant.
 
 resource "aws_lambda_function" "marketplace_resolve_customer" {
   s3_bucket        = local.lambda_s3["marketplace_resolve_customer"].bucket
@@ -92,11 +84,11 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
 
   environment {
     variables = {
-      MARKETPLACE_PRODUCT_CODE = var.marketplace_product_code
-      DB_HOST                  = var.db_host
-      DB_NAME                  = "securebase"
-      DB_SECRET_ARN            = var.db_secret_arn
-      CEO_SNS_TOPIC_ARN        = var.ceo_sns_topic_arn
+      MARKETPLACE_PRODUCT_CODE    = var.marketplace_product_code
+      DB_HOST                     = var.db_host
+      DB_NAME                     = "securebase"
+      DB_SECRET_ARN               = var.db_secret_arn
+      CEO_SNS_TOPIC_ARN           = var.ceo_sns_topic_arn
       BYPASS_SNS_SIGNATURE_VERIFY = "false"
     }
   }
@@ -151,18 +143,10 @@ resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
   source_arn    = aws_sns_topic.marketplace_subscriptions.arn
 }
 
-# ---------------------------------------------------------------------------
-# Subscribe marketplace_subscription_handler to the AWS-owned Marketplace SNS
-# topic. This is the topic AWS publishes subscribe/unsubscribe/entitlement
-# events to — distinct from the internal topic above. Only created when
-# aws_marketplace_sns_topic_arn is set (non-empty).
-# ---------------------------------------------------------------------------
-resource "aws_sns_topic_subscription" "aws_marketplace_to_handler" {
-  count     = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
-  topic_arn = var.aws_marketplace_sns_topic_arn
-  protocol  = "lambda"
-  endpoint  = aws_lambda_function.marketplace_subscription_handler.arn
-}
+# aws_sns_topic_subscription.aws_marketplace_to_handler intentionally omitted.
+# Terraform cannot Subscribe to the AWS-owned Marketplace SNS topic
+# (account 287250355862) — returns 403 by design. Register the
+# subscription_handler Lambda endpoint via AMMP UI after deploy.
 
 resource "aws_lambda_permission" "allow_aws_marketplace_sns" {
   count         = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
