@@ -101,7 +101,7 @@ jobs:
 
       - name: Select workspace
         if: steps.backend_check.outputs.configured == 'true'
-        run: terraform workspace select ${{ matrix.workspace }} || terraform workspace new ${{ matrix.workspace }}
+        run: | n          if [ "${{ matrix.workspace }}" != "prod" ]; thenn            terraform workspace select ${{ matrix.workspace }} || terraform workspace new ${{ matrix.workspace }}n          fi
 
       - name: Terraform apply
         if: steps.backend_check.outputs.configured == 'true'
