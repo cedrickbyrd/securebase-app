@@ -8,9 +8,11 @@
 # ---------------------------------------------------------------------------
 marketplace_product_code = "blblyu28f6s5mzwl089d4xoea"
 
-# AWS-owned SNS topic that publishes subscribe/unsubscribe/entitlement events
-# for this product. Account 287250355862 is the AWS Marketplace service account.
-aws_marketplace_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-blblyu28f6s5mzwl089d4xoea"
+# NOTE: aws_marketplace_sns_topic_arn is intentionally NOT set here.
+# Terraform cannot call SNS:Subscribe on AWS-owned topics (account 287250355862) —
+# the call returns 403 by design. The Lambda endpoint subscription is registered
+# through the AWS Marketplace Management Portal UI under the product's
+# "Integrations" tab after the Lambdas are deployed.
 
 # ---------------------------------------------------------------------------
 # Infra — reuse prod Lambda VPC config (same subnets/SG as phase6_lambdas)
@@ -25,6 +27,9 @@ marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:7311842
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
 marketplace_lambda_security_group_id = "sg-0127b93c1653cf90f"
+
+# db_migrator IAM policy — must be a valid non-empty ARN
+prod_db_credentials_secret_arn = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 
 # ---------------------------------------------------------------------------
 # Lambda packages — prod S3 bucket
