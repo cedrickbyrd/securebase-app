@@ -16,10 +16,11 @@ aws_marketplace_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-subsc
 # Infra — reuse prod Lambda VPC config (same subnets/SG as phase6_lambdas)
 # ---------------------------------------------------------------------------
 # NOTE: Only one Aurora cluster exists in this account (securebase-phase2-dev).
-# marketplace_db_host points at dev cluster until a prod Aurora cluster is provisioned.
+# Marketplace Lambdas connect via the RDS Proxy (same as all Phase 6 Lambdas).
+# Raw cluster endpoint is not reachable from prod VPC subnets without the proxy.
 # TODO: provision securebase-phase2-prod cluster and update both this file and
 #       rds_proxy_endpoint default in variables.tf post-TriNetX conversion.
-marketplace_db_host                  = "securebase-phase2-dev.cluster-coti40osot2c.us-east-1.rds.amazonaws.com"
+marketplace_db_host                  = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
 marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
