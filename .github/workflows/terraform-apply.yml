@@ -30,12 +30,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - workspace: dev
-            tf_dir: landing-zone/environments/dev
-          - workspace: staging
-            tf_dir: landing-zone/environments/staging
-          - workspace: prod-us-west-2
-            tf_dir: landing-zone/environments/prod-us-west-2
           - workspace: prod
             tf_dir: landing-zone/environments/prod
 
