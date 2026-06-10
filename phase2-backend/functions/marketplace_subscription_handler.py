@@ -331,6 +331,9 @@ def lambda_handler(event, _context):
             skipped += 1
             continue
 
+        if event_type == "subscribe-success":
+            _audit_get_entitlements(marketplace_customer_id)
+
         customer_id = _lookup_customer(marketplace_customer_id)
         if not customer_id:
             logger.warning("No customer found for marketplace id %s", marketplace_customer_id)
@@ -343,7 +346,6 @@ def lambda_handler(event, _context):
             continue
 
         if event_type == "subscribe-success":
-            _audit_get_entitlements(marketplace_customer_id)
             entitlement_status, subscription_status = EVENT_STATUS_UPDATES.get(event_type, (None, None))
             _update_customer_status(customer_id, entitlement_status, subscription_status)
         elif event_type == "entitlement-updated":
