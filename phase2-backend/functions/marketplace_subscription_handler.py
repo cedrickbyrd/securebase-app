@@ -291,6 +291,36 @@ def _audit_get_entitlements(marketplace_customer_id: str) -> None:
         )
 
 
+def _cold_start_audit() -> None:
+    """Fire GetEntitlements on cold start so AMMP registers a successful API call.
+
+    AMMP's AUDIT_ERROR requires at least one successful GetEntitlements call from
+    the product's Lambda. SNS signature validation blocks synthetic test invocations
+    from reaching the audit call inside lambda_handler, so we fire it unconditionally
+    here at module import time instead. This runs once per cold start.
+    """
+    try:
+        response = _audit_entitlement_client.get_entitlements(
+            ProductCode=_AUDIT_PRODUCT_CODE,
+        )
+        entitlements = response.get("Entitlements", [])
+        logger.info(
+            "[cold-start] GetEntitlements audit call succeeded: product_code=%s entitlement_count=%d",
+            _AUDIT_PRODUCT_CODE,
+            len(entitlements),
+        )
+    except Exception as exc:
+        logger.error(
+            "[cold-start] GetEntitlements audit call failed: product_code=%s error=%s",
+            _AUDIT_PRODUCT_CODE,
+            exc,
+        )
+
+
+# Fire immediately on module load (cold start). Runs once per Lambda container lifetime.
+_cold_start_audit()
+
+
 def _publish_ceo_alert(event_type: str, marketplace_customer_id: str):
     if not CEO_SNS_TOPIC_ARN:
         return
