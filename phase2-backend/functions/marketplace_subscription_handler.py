@@ -318,7 +318,7 @@ def _cold_start_audit() -> None:
 
 
 # Fire immediately on module load (cold start). Runs once per Lambda container lifetime.
-_cold_start_audit()
+#_cold_start_audit()  # disabled: VPC has no internet access
 
 
 def _publish_ceo_alert(event_type: str, marketplace_customer_id: str):
