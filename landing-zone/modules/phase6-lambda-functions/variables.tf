@@ -17,16 +17,25 @@ variable "audit_evidence_api_zip" {
 variable "audit_log_packager_zip" {
   description = "Path to the audit_log_packager Lambda zip package"
   type        = string
+  # Default allows terraform validate -backend=false to succeed in CI.
+  # Always overridden explicitly in environments/prod/main.tf.
+  default = ""
 }
 
 variable "audit_packager_role_arn" {
   description = "ARN of the IAM role for audit_log_packager (from phase6-audit-logging module output lambda_role_arn)"
   type        = string
+  # Default allows terraform validate -backend=false to succeed in CI.
+  # Always overridden explicitly in environments/prod/main.tf.
+  default = ""
 }
 
 variable "audit_source_bucket_name" {
   description = "S3 bucket containing raw audit log objects (read by packager)"
   type        = string
+  # Default allows terraform validate -backend=false to succeed in CI.
+  # Always overridden explicitly in environments/prod/main.tf.
+  default = ""
 }
 
 variable "compliance_history_api_zip" {
