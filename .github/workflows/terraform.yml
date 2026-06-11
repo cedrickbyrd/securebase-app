@@ -1,14 +1,7 @@
 name: Terraform CI/CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'landing-zone/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'landing-zone/**'
+  workflow_dispatch:
 
 # Serialize plan+apply per branch so concurrent pushes to main never race for
 # the same Terraform state.  cancel-in-progress: false prevents an in-flight
