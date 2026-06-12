@@ -1,0 +1,72 @@
+name: Deploy Marketing Site
+
+# Fires on any push to main that touches marketing site source files.
+# Claude.md identified this as a known gap — no auto-deploy existed for
+# the root src/ app (securebase-app site, tximhotep.com).
+# Site ID: a4fc5c81-e95f-4b2c-8c48-5080c0046328
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'netlify.toml'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deploy'
+        required: false
+        default: 'Manual trigger'
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: Build & Deploy Marketing Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build marketing site
+        run: npm run build
+        env:
+          VITE_ENV: production
+          VITE_ANALYTICS_ENABLED: 'true'
+          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+
+      - name: Deploy to Netlify
+        run: npx netlify deploy --prod --dir=dist --message="Auto-deploy from main: ${{ github.event.head_commit.message || github.event.inputs.reason }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MARKETING_SITE_ID }}
+
+      - name: Smoke test
+        run: |
+          sleep 10
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://tximhotep.com)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ tximhotep.com responding HTTP $STATUS"
+          else
+            echo "❌ tximhotep.com returned HTTP $STATUS"
+            exit 1
+          fi
