@@ -12,3 +12,7 @@ checkout_lambda_name = "securebase-create-checkout-session"
 signup_lambda_arn       = "arn:aws:lambda:us-east-1:731184206915:function:securebase-signup-handler"
 verify_email_lambda_arn = "arn:aws:lambda:us-east-1:731184206915:function:securebase-verify-email"
 onboarding_lambda_arn   = "arn:aws:lambda:us-east-1:731184206915:function:securebase-trigger-onboarding"
+
+# AWS Marketplace — resolve-customer Lambda
+marketplace_resolve_lambda_arn  = "arn:aws:lambda:us-east-1:731184206915:function:securebase-production-marketplace-resolve-customer"
+marketplace_resolve_lambda_name = "securebase-production-marketplace-resolve-customer"
