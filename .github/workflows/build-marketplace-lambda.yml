@@ -1,0 +1,35 @@
+name: Build Marketplace Resolve Lambda
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build Lambda zip with Linux dependencies
+        run: |
+          mkdir -p /tmp/build
+          cp phase2-backend/functions/marketplace_resolve_customer.py /tmp/build/
+          cp phase2-backend/lambda_layer/python/db_utils.py /tmp/build/
+          pip install PyJWT psycopg2-binary -t /tmp/build --quiet
+          cd /tmp/build && zip -r marketplace_resolve_customer.zip . -q
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+      - name: Upload and deploy
+        run: |
+          aws s3 cp /tmp/build/marketplace_resolve_customer.zip \
+            s3://securebase-terraform-state-prod/lambda/marketplace_resolve_customer.zip
+          aws lambda update-function-code \
+            --function-name securebase-production-marketplace-resolve-customer \
+            --s3-bucket securebase-terraform-state-prod \
+            --s3-key lambda/marketplace_resolve_customer.zip \
+            --region us-east-1
+          aws lambda wait function-updated \
+            --function-name securebase-production-marketplace-resolve-customer \
+            --region us-east-1
+          echo "✅ Lambda updated"
