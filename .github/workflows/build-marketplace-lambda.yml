@@ -11,12 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Build Lambda zip with Linux dependencies
+      - name: Build Lambda zip inside Lambda container
         run: |
           mkdir -p /tmp/build
           cp phase2-backend/functions/marketplace_resolve_customer.py /tmp/build/
           cp phase2-backend/lambda_layer/python/db_utils.py /tmp/build/
-          pip install PyJWT psycopg2-binary -t /tmp/build --quiet
+          docker run --rm \
+            -v /tmp/build:/var/task \
+            public.ecr.aws/lambda/python:3.11 \
+            pip install PyJWT psycopg2-binary -t /var/task --quiet
           cd /tmp/build && zip -r marketplace_resolve_customer.zip . -q
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c
