@@ -117,6 +117,8 @@ jobs:
           import_if_missing aws_api_gateway_resource.validate_session  9xyetu7zq3/wlmeaf
           import_if_missing aws_api_gateway_resource.stripe_webhook    9xyetu7zq3/uyk609
           import_if_missing aws_api_gateway_method_response.auth_options_200   9xyetu7zq3/sfrsaw/OPTIONS/200
+          import_if_missing aws_api_gateway_stage.main                         9xyetu7zq3/prod
+          import_if_missing aws_api_gateway_deployment.main                    9xyetu7zq3/ffe9ve
           import_if_missing aws_iam_role.validate_session_lambda       securebase-validate-session-role
           import_if_missing aws_iam_role.stripe_webhook_lambda         securebase-stripe-webhook-role
           import_if_missing aws_iam_role.pilot_availability_lambda     securebase-pilot-availability-role
