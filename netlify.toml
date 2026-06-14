@@ -1,5 +1,4 @@
 [build]
-  base = "phase3a-portal"
   command = "npm ci --legacy-peer-deps && npm run build"
   publish = "dist"
 
@@ -92,28 +91,19 @@
   status = 200
   force = true
 
-
-# DEMO AUTH - Routes to AWS Lambda via API Gateway.
-# Per CLAUDE.md / .github/copilot-instructions.md Cost Optimization policy,
-# this endpoint MUST NOT use a Netlify function.  The canonical Lambda lives at
-# landing-zone/modules/demo-backend/lambda/auth.py and exposes the five
-# tiered demo accounts used by validate-demo.yml.
-# See archived/netlify-functions/MIGRATION_NOTES.md for the April 2026
-# migration history.
 [[redirects]]
   from = "/api/demo-auth"
   to = "https://api.securebase.tximhotep.com/demo-auth"
   status = 200
   force = true
 
-# S3 PROXY SHIELD - Blocks direct S3 URL exposure; routes storage requests through API Gateway.
+# S3 PROXY SHIELD
 [[redirects]]
   from = "/storage/*"
   to = "https://api.securebase.tximhotep.com/storage/:splat"
   status = 200
   force = true
 
-# ADMIN METRICS / ALERTS - Served by the Phase 5 /admin/* API Gateway routes.
 [[redirects]]
   from = "/api/admin/metrics"
   to = "https://api.securebase.tximhotep.com/admin/metrics"
@@ -126,22 +116,18 @@
   status = 200
   force = true
 
-# TRUST CENTER METRICS - Served by the Phase 5 API Gateway.
 [[redirects]]
   from = "/api/trust-metrics"
   to = "https://api.securebase.tximhotep.com/trust-metrics"
   status = 200
   force = true
 
-# AUDIT REPORT - Served by the Phase 5 API Gateway.
 [[redirects]]
   from = "/api/audit-report"
   to = "https://api.securebase.tximhotep.com/audit-report"
   status = 200
   force = true
 
-
-# COMPLIANCE API - Phase 6 (Component 1-5)
 [[redirects]]
   from = "/api/compliance/soc2/collect"
   to = "https://api.securebase.tximhotep.com/compliance/soc2/collect"
@@ -208,7 +194,6 @@
   status = 200
   force = true
 
-
 # SPA FALLBACK (LAST)
 [[redirects]]
   from = "/*"
@@ -236,7 +221,7 @@
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-    X-Environment = "demo"
+    X-Environment = "production"
     X-Robots-Tag = "noindex, nofollow"
 
 [[headers]]
@@ -255,5 +240,5 @@
     """
     X-Frame-Options = "DENY"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    X-Environment = "demo"
+    X-Environment = "production"
     X-Robots-Tag = "noindex, nofollow"
