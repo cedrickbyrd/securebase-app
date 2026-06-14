@@ -144,3 +144,39 @@ venv/
 # Local dev
 .env.local
 localstack_data/
+
+# Scratch files
+before.json
+response.json
+verify.json
+*.patch
+marketplace-narrative-data-*.txt
+
+# Terraform plan artifacts
+landing-zone/environments/prod/FETCH_HEAD
+landing-zone/environments/prod/*.tfplan
+landing-zone/files/phase6/db_migrator.zip
+
+# Lambda build artifacts extracted during packaging
+phase2-backend/functions/db_utils.py
+phase2-backend/functions/package/bcrypt*/
+phase2-backend/functions/package/bcrypt/
+phase2-backend/functions/package/bin/
+phase2-backend/functions/package/boto3*/
+phase2-backend/functions/package/botocore*/
+phase2-backend/functions/package/cffi*/
+phase2-backend/functions/package/connection_pool.py
+phase2-backend/functions/package/cryptography*/
+phase2-backend/functions/package/dateutil/
+phase2-backend/functions/package/jmespath*/
+phase2-backend/functions/package/jwt/
+phase2-backend/functions/package/marketplace_subscription_handler.py
+phase2-backend/functions/package/psycopg2/
+phase2-backend/functions/package/psycopg2_binary*/
+phase2-backend/functions/package/pycparser*/
+phase2-backend/functions/package/pyjwt*/
+phase2-backend/functions/package/pyotp*/
+phase2-backend/functions/package/python_dateutil*/
+phase2-backend/functions/package/s3transfer*/
+phase2-backend/functions/package/six*/
+phase2-backend/functions/package/urllib3*/
