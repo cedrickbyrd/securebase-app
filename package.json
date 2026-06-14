@@ -24,6 +24,7 @@
     "@stripe/stripe-js": "^9.0.1",
     "@supabase/supabase-js": "^2.101.1",
     "antd": "^6.3.0",
+    "axios": "^1.7.9",
     "chart.js": "^4.5.1",
     "lucide-react": "^0.562.0",
     "qrcode.react": "^4.2.0",
