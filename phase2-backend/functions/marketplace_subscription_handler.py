@@ -92,7 +92,15 @@ def _verify_sns_signature(record: dict) -> bool:
     signature_version = sns_payload.get("SignatureVersion")
     signing_cert_url = sns_payload.get("SigningCertUrl") or sns_payload.get("SigningCertURL")
 
-    if not signature or signature_version != "1" or not signing_cert_url:
+    # AWS Marketplace SNS topics use SignatureVersion "2" (SHA256).
+    # Standard SNS topics use "1" (SHA1). Accept both.
+    if not signature or signature_version not in ("1", "2") or not signing_cert_url:
+        logger.warning(
+            "SNS signature envelope missing required fields: version=%s has_sig=%s has_cert=%s",
+            signature_version,
+            bool(signature),
+            bool(signing_cert_url),
+        )
         return False
 
     parsed = urlparse(signing_cert_url)
@@ -102,7 +110,6 @@ def _verify_sns_signature(record: dict) -> bool:
     if not SNS_CERT_HOST_RE.match(host):
         return False
 
-    sns_payload = record.get("Sns", {})
     canonical_string = _build_sns_signing_string(sns_payload)
     if not canonical_string:
         return False
@@ -116,14 +123,16 @@ def _verify_sns_signature(record: dict) -> bool:
             SNS_CERT_CACHE[signing_cert_url] = cert
 
         decoded_signature = base64.b64decode(signature)
+        hash_algorithm = hashes.SHA256() if signature_version == "2" else hashes.SHA1()
         cert.public_key().verify(
             decoded_signature,
             canonical_string.encode("utf-8"),
             padding.PKCS1v15(),
-            hashes.SHA1(),
+            hash_algorithm,
         )
         return True
-    except Exception:
+    except Exception as exc:
+        logger.warning("SNS signature verification failed: %s", exc)
         return False
 
 
