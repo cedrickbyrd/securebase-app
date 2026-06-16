@@ -166,26 +166,31 @@ variable "marketplace_lambda_security_group_id" {
 }
 
 variable "aws_marketplace_sns_topic_arn" {
-  description = "AWS Marketplace SNS topic ARN for subscription lifecycle notifications"
+  description = "AWS Marketplace subscription notification SNS topic ARN (account 287250355862). Delivers subscribe-success, unsubscribe-pending, unsubscribe-success events."
+  type        = string
+  default     = ""
+}
+
+variable "aws_marketplace_entitlement_sns_topic_arn" {
+  description = "AWS Marketplace entitlement notification SNS topic ARN (account 287250355862). Delivers entitlement-updated events for tier changes."
   type        = string
   default     = ""
 }
 
 variable "marketplace_onboarding_function_name" {
-  description = "Name of the onboarding Lambda invoked by marketplace_resolve_customer to provision new marketplace subscribers. Must match the deployed function name exactly."
+  description = "Name of the onboarding Lambda invoked by marketplace_resolve_customer to provision new marketplace subscribers."
   type        = string
   default     = "securebase-trigger-onboarding"
 }
 
 variable "marketplace_dlq_kms_key_arn" {
-  description = "Optional KMS key ARN for marketplace subscription handler DLQ encryption. Leave empty to use SSE-SQS (AWS-managed). Set to a CMEK ARN to enforce customer-managed encryption."
+  description = "Optional KMS key ARN for marketplace subscription handler DLQ encryption. Leave empty to use SSE-SQS."
   type        = string
   default     = ""
 }
 
 # ============================================================================
 # Phase 6 / DB Migrator — prod secret ARN
-# Set via GitHub secret PROD_DB_CREDENTIALS_SECRET_ARN passed as TF_VAR_prod_db_credentials_secret_arn
 # ============================================================================
 variable "prod_db_credentials_secret_arn" {
   description = "Secrets Manager ARN for prod Aurora credentials — used by db_migrator Lambda IAM policy"

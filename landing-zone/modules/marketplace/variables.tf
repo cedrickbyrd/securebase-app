@@ -79,7 +79,13 @@ variable "lambda_security_group_id" {
 }
 
 variable "aws_marketplace_sns_topic_arn" {
-  description = "AWS Marketplace SNS topic ARN that publishes subscription lifecycle events for this product (owned by AWS account 287250355862). Subscribe the marketplace_subscription_handler Lambda to this topic to receive subscribe/unsubscribe/entitlement-updated events."
+  description = "AWS Marketplace subscription notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-<product_code>). Delivers subscribe-success, unsubscribe-pending, unsubscribe-success events. Cannot be subscribed via Terraform — register the subscription_handler Lambda endpoint via AMMP UI after deploy."
+  type        = string
+  default     = ""
+}
+
+variable "aws_marketplace_entitlement_sns_topic_arn" {
+  description = "AWS Marketplace entitlement notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-<product_code>). Delivers entitlement-updated events (tier upgrades/downgrades). Set after confirming subscription notification topic is working."
   type        = string
   default     = ""
 }

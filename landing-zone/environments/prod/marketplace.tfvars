@@ -1,27 +1,26 @@
 # AWS Marketplace integration — production
 # Apply with: terraform apply -var-file=marketplace.tfvars
 # Product code source: AWS Marketplace Management Portal (confirmed May 19, 2026)
-# Status: Staging — product code is live and usable before listing goes public
+# Status: Limited — product live and usable before public listing
 
 # ---------------------------------------------------------------------------
 # Core marketplace identity
 # ---------------------------------------------------------------------------
 marketplace_product_code = "blblyu28f6s5mzwl089d4xoea"
 
-# NOTE: aws_marketplace_sns_topic_arn is intentionally NOT set here.
-# Terraform cannot call SNS:Subscribe on AWS-owned topics (account 287250355862) —
-# the call returns 403 by design. The Lambda endpoint subscription is registered
-# through the AWS Marketplace Management Portal UI under the product's
-# "Integrations" tab after the Lambdas are deployed.
+# AWS Marketplace SNS topics (account 287250355862) — populated from AMMP product page.
+# Terraform cannot SNS:Subscribe to these topics (403 by design).
+# Register the subscription_handler Lambda endpoint via AMMP UI → Fulfillment options.
+# These ARNs grant Lambda invoke permission to the Marketplace SNS topics.
+aws_marketplace_sns_topic_arn             = "arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-blblyu28f6s5mzwl089d4xoea"
+aws_marketplace_entitlement_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-blblyu28f6s5mzwl089d4xoea"
 
 # ---------------------------------------------------------------------------
-# Infra — reuse prod Lambda VPC config (same subnets/SG as phase6_lambdas)
+# Infra — reuse prod Lambda VPC config
 # ---------------------------------------------------------------------------
-# NOTE: Only one Aurora cluster exists in this account (securebase-phase2-dev).
-# Marketplace Lambdas connect via the RDS Proxy (same as all Phase 6 Lambdas).
-# Raw cluster endpoint is not reachable from prod VPC subnets without the proxy.
-# TODO: provision securebase-phase2-prod cluster and update both this file and
-#       rds_proxy_endpoint default in variables.tf post-TriNetX conversion.
+# NOTE: Only one Aurora cluster exists (securebase-phase2-dev).
+# Marketplace Lambdas connect via RDS Proxy.
+# TODO: provision securebase-phase2-prod cluster post-TriNetX conversion.
 marketplace_db_host                  = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
 marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
@@ -29,12 +28,11 @@ marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3d
 marketplace_lambda_security_group_id = "sg-0127b93c1653cf90f"
 marketplace_onboarding_function_name = "securebase-trigger-onboarding"
 
-# db_migrator IAM policy — must be a valid non-empty ARN
+# db_migrator IAM policy
 prod_db_credentials_secret_arn = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 
 # ---------------------------------------------------------------------------
 # Lambda packages — prod S3 bucket
-# Upload zips to s3://securebase-terraform-state-prod/lambda/ before applying
 # ---------------------------------------------------------------------------
 lambda_packages = {
   auth_v2                          = "s3://securebase-terraform-state-prod/lambda/auth_v2.zip"

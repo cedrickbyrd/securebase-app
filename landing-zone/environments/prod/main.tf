@@ -33,7 +33,6 @@ module "phase6_audit_logging" {
 
 # ============================================================================
 # Phase 6 / Track 2: Compliance Automation (26 Config rules)
-# Conformance packs disabled — require valid CloudFormation templates in S3
 # ============================================================================
 module "phase6_compliance" {
   source = "../../modules/phase6-compliance"
@@ -142,32 +141,27 @@ module "marketplace" {
 
   source = "../../modules/marketplace"
 
-  environment              = var.environment
-  aws_region               = var.target_region
-  lambda_packages          = var.lambda_packages
-  lambda_role_arn          = var.marketplace_lambda_role_arn
-  db_host                  = var.marketplace_db_host
-  db_secret_arn            = var.marketplace_db_secret_arn
-  alerts_sns_topic_arn     = var.marketplace_alerts_sns_topic_arn
-  ceo_sns_topic_arn        = var.marketplace_ceo_sns_topic_arn
-  marketplace_product_code = var.marketplace_product_code
-  private_subnet_ids       = var.marketplace_private_subnet_ids
-  lambda_security_group_id = var.marketplace_lambda_security_group_id
-  onboarding_function_name = var.marketplace_onboarding_function_name
-  dlq_kms_key_arn          = var.marketplace_dlq_kms_key_arn
-
-  # Intentionally empty — Terraform cannot Subscribe to the AWS-owned Marketplace
-  # SNS topic (account 287250355862); the call returns 403 by design.
-  # Register the subscription_handler Lambda endpoint via AMMP UI after deploy.
-  aws_marketplace_sns_topic_arn = ""
+  environment                          = var.environment
+  aws_region                           = var.target_region
+  lambda_packages                      = var.lambda_packages
+  lambda_role_arn                      = var.marketplace_lambda_role_arn
+  db_host                              = var.marketplace_db_host
+  db_secret_arn                        = var.marketplace_db_secret_arn
+  alerts_sns_topic_arn                 = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn                    = var.marketplace_ceo_sns_topic_arn
+  marketplace_product_code             = var.marketplace_product_code
+  private_subnet_ids                   = var.marketplace_private_subnet_ids
+  lambda_security_group_id             = var.marketplace_lambda_security_group_id
+  onboarding_function_name             = var.marketplace_onboarding_function_name
+  dlq_kms_key_arn                      = var.marketplace_dlq_kms_key_arn
+  aws_marketplace_sns_topic_arn        = var.aws_marketplace_sns_topic_arn
+  aws_marketplace_entitlement_sns_topic_arn = var.aws_marketplace_entitlement_sns_topic_arn
 
   tags = merge(var.tags, { Phase = "marketplace" })
 }
 
 # ============================================================================
 # Phase 6 / DB Migrator
-# VPC-resident Lambda that applies Aurora migrations from within the private subnet.
-# GitHub Actions runners have no direct VPC path to Aurora — this Lambda bridges that gap.
 # ============================================================================
 module "db_migrator" {
   source = "../../modules/db-migrator"
@@ -178,8 +172,6 @@ module "db_migrator" {
 
   zip_path = "${path.module}/../../files/phase6/db_migrator.zip"
 
-  # compact() prevents [""] when var is unset, which causes MalformedPolicyDocument.
-  # Falls back to "*" (all Secrets Manager) if no ARN provided — tighten post-launch.
   allowed_secret_arns = length(compact([var.prod_db_credentials_secret_arn])) > 0 ? compact([var.prod_db_credentials_secret_arn]) : ["*"]
 
   invoker_role_arns = [

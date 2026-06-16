@@ -194,16 +194,28 @@ resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
   source_arn    = aws_sns_topic.marketplace_subscriptions.arn
 }
 
-# Terraform cannot Subscribe to the AWS-owned Marketplace SNS topic
-# (account 287250355862) — returns 403 by design. Register via AMMP UI.
-
-resource "aws_lambda_permission" "allow_aws_marketplace_sns" {
+# Subscription notification topic (subscribe-success, unsubscribe-pending, unsubscribe-success).
+# Terraform cannot call SNS:Subscribe on this AWS-owned topic (account 287250355862) —
+# returns 403 by design. Register the Lambda endpoint via AMMP UI.
+# This permission block allows the topic to invoke the Lambda once registered.
+resource "aws_lambda_permission" "allow_aws_marketplace_subscription_sns" {
   count         = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
-  statement_id  = "AllowAWSMarketplaceSNSInvoke"
+  statement_id  = "AllowAWSMarketplaceSubscriptionSNSInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.marketplace_subscription_handler.function_name
   principal     = "sns.amazonaws.com"
   source_arn    = var.aws_marketplace_sns_topic_arn
+}
+
+# Entitlement notification topic (entitlement-updated — tier upgrades/downgrades).
+# Same registration constraint as above — must be done via AMMP UI.
+resource "aws_lambda_permission" "allow_aws_marketplace_entitlement_sns" {
+  count         = var.aws_marketplace_entitlement_sns_topic_arn != "" ? 1 : 0
+  statement_id  = "AllowAWSMarketplaceEntitlementSNSInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.marketplace_subscription_handler.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = var.aws_marketplace_entitlement_sns_topic_arn
 }
 
 resource "aws_cloudwatch_event_rule" "marketplace_metering_hourly" {
