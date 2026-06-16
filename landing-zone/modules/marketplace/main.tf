@@ -28,6 +28,10 @@ locals {
       ))
     }
   }
+
+  # Extract role name from ARN for aws_iam_role_policy.
+  # ARN format: arn:aws:iam::<account>:role/<name>
+  lambda_role_name = element(split("/", var.lambda_role_arn), length(split("/", var.lambda_role_arn)) - 1)
 }
 
 resource "aws_sns_topic" "marketplace_subscriptions" {
@@ -46,19 +50,34 @@ resource "aws_sns_topic" "marketplace_subscriptions" {
 # ---------------------------------------------------------------------------
 # DLQ — catches subscription_handler Lambda failures (errors or throttles).
 # A lost subscribe-success event = a customer who subscribed and was never
-# provisioned. 14-day retention gives ops time to replay. Encrypted at rest
-# with SSE-SQS (default) or a customer-managed KMS key if provided.
+# provisioned. 14-day retention gives ops time to replay.
 # ---------------------------------------------------------------------------
 resource "aws_sqs_queue" "subscription_handler_dlq" {
   name                       = "securebase-${var.environment}-marketplace-subscription-handler-dlq"
   message_retention_seconds  = 1209600 # 14 days
   visibility_timeout_seconds = 300     # match Lambda timeout ceiling
 
-  # Use customer-managed KMS if provided; fall back to SSE-SQS (free, AWS-managed).
   kms_master_key_id       = var.dlq_kms_key_arn != "" ? var.dlq_kms_key_arn : null
   sqs_managed_sse_enabled = var.dlq_kms_key_arn == "" ? true : null
 
   tags = local.common_tags
+}
+
+# Grant the Lambda execution role permission to write to the DLQ.
+# Lambda's UpdateFunctionConfiguration API validates this synchronously
+# before accepting dead_letter_config — apply will fail without it.
+resource "aws_iam_role_policy" "subscription_handler_dlq_send" {
+  name = "securebase-${var.environment}-marketplace-dlq-send"
+  role = local.lambda_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sqs:SendMessage"
+      Resource = aws_sqs_queue.subscription_handler_dlq.arn
+    }]
+  })
 }
 
 resource "aws_lambda_function" "marketplace_resolve_customer" {
@@ -100,9 +119,6 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
   timeout          = 60
   memory_size      = 512
 
-  # Route Lambda-level failures (unhandled exceptions, OOM, timeout) to DLQ.
-  # SNS invocation failures (not Lambda errors) are handled by the SNS retry
-  # policy; this DLQ captures what SNS retries cannot recover.
   dead_letter_config {
     target_arn = aws_sqs_queue.subscription_handler_dlq.arn
   }
@@ -122,6 +138,10 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [var.lambda_security_group_id]
   }
+
+  # IAM dependency: dead_letter_config requires sqs:SendMessage on the DLQ.
+  # Lambda API validates this synchronously on UpdateFunctionConfiguration.
+  depends_on = [aws_iam_role_policy.subscription_handler_dlq_send]
 
   tags = local.common_tags
 }
@@ -151,9 +171,8 @@ resource "aws_lambda_function" "marketplace_metering_worker" {
     security_group_ids = [var.lambda_security_group_id]
   }
 
-  # The pg8000 Lambda layer (securebase-pg8000:1) is attached to this function
-  # outside of Terraform (deployed via the layer packaging script). Ignore drift
-  # so Terraform does not strip it on every plan.
+  # pg8000 layer (securebase-pg8000:1) is managed outside Terraform.
+  # ignore_changes prevents drift correction from stripping it.
   lifecycle {
     ignore_changes = [layers]
   }
@@ -175,10 +194,8 @@ resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
   source_arn    = aws_sns_topic.marketplace_subscriptions.arn
 }
 
-# aws_sns_topic_subscription.aws_marketplace_to_handler intentionally omitted.
 # Terraform cannot Subscribe to the AWS-owned Marketplace SNS topic
-# (account 287250355862) — returns 403 by design. Register the
-# subscription_handler Lambda endpoint via AMMP UI after deploy.
+# (account 287250355862) — returns 403 by design. Register via AMMP UI.
 
 resource "aws_lambda_permission" "allow_aws_marketplace_sns" {
   count         = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
@@ -209,10 +226,6 @@ resource "aws_lambda_permission" "allow_eventbridge_invoke_metering" {
   source_arn    = aws_cloudwatch_event_rule.marketplace_metering_hourly.arn
 }
 
-# ---------------------------------------------------------------------------
-# CloudWatch alarm — DLQ depth > 0 means at least one subscribe/unsubscribe
-# event failed and landed in the dead-letter queue. Page ops immediately.
-# ---------------------------------------------------------------------------
 resource "aws_cloudwatch_metric_alarm" "subscription_handler_dlq_depth" {
   count               = var.alerts_sns_topic_arn != "" ? 1 : 0
   alarm_name          = "securebase-${var.environment}-marketplace-subscription-handler-dlq-depth"
