@@ -32,3 +32,13 @@ output "marketplace_metering_worker_name" {
   description = "Name of marketplace_metering_worker lambda"
   value       = aws_lambda_function.marketplace_metering_worker.function_name
 }
+
+output "subscription_handler_dlq_arn" {
+  description = "ARN of the subscription handler dead-letter queue"
+  value       = aws_sqs_queue.subscription_handler_dlq.arn
+}
+
+output "subscription_handler_dlq_url" {
+  description = "URL of the subscription handler dead-letter queue (use for manual replay via aws sqs receive-message)"
+  value       = aws_sqs_queue.subscription_handler_dlq.url
+}

@@ -84,6 +84,12 @@ variable "aws_marketplace_sns_topic_arn" {
   default     = ""
 }
 
+variable "dlq_kms_key_arn" {
+  description = "Optional KMS key ARN for SQS DLQ encryption. Leave empty to use SSE-SQS (AWS-managed, free). Set to a customer-managed KMS key ARN to enforce CMEK encryption on the dead-letter queue."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Resource tags"
   type        = map(string)

@@ -43,6 +43,24 @@ resource "aws_sns_topic" "marketplace_subscriptions" {
 # to this topic via the subscription endpoint registered in AMMP, not
 # via a resource-based policy grant.
 
+# ---------------------------------------------------------------------------
+# DLQ — catches subscription_handler Lambda failures (errors or throttles).
+# A lost subscribe-success event = a customer who subscribed and was never
+# provisioned. 14-day retention gives ops time to replay. Encrypted at rest
+# with SSE-SQS (default) or a customer-managed KMS key if provided.
+# ---------------------------------------------------------------------------
+resource "aws_sqs_queue" "subscription_handler_dlq" {
+  name                       = "securebase-${var.environment}-marketplace-subscription-handler-dlq"
+  message_retention_seconds  = 1209600 # 14 days
+  visibility_timeout_seconds = 300     # match Lambda timeout ceiling
+
+  # Use customer-managed KMS if provided; fall back to SSE-SQS (free, AWS-managed).
+  kms_master_key_id                 = var.dlq_kms_key_arn != "" ? var.dlq_kms_key_arn : null
+  sqs_managed_sse_enabled           = var.dlq_kms_key_arn == "" ? true : null
+
+  tags = local.common_tags
+}
+
 resource "aws_lambda_function" "marketplace_resolve_customer" {
   s3_bucket        = local.lambda_s3["marketplace_resolve_customer"].bucket
   s3_key           = local.lambda_s3["marketplace_resolve_customer"].key
@@ -81,6 +99,13 @@ resource "aws_lambda_function" "marketplace_subscription_handler" {
   runtime          = "python3.11"
   timeout          = 60
   memory_size      = 512
+
+  # Route Lambda-level failures (unhandled exceptions, OOM, timeout) to DLQ.
+  # SNS invocation failures (not Lambda errors) are handled by the SNS retry
+  # policy; this DLQ captures what SNS retries cannot recover.
+  dead_letter_config {
+    target_arn = aws_sqs_queue.subscription_handler_dlq.arn
+  }
 
   environment {
     variables = {
@@ -175,6 +200,33 @@ resource "aws_lambda_permission" "allow_eventbridge_invoke_metering" {
   function_name = aws_lambda_function.marketplace_metering_worker.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.marketplace_metering_hourly.arn
+}
+
+# ---------------------------------------------------------------------------
+# CloudWatch alarm — DLQ depth > 0 means at least one subscribe/unsubscribe
+# event failed and landed in the dead-letter queue. Page ops immediately.
+# ---------------------------------------------------------------------------
+resource "aws_cloudwatch_metric_alarm" "subscription_handler_dlq_depth" {
+  count               = var.alerts_sns_topic_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-marketplace-subscription-handler-dlq-depth"
+  alarm_description   = "Marketplace subscription handler DLQ has messages — a subscribe/unsubscribe event failed and requires manual replay"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.subscription_handler_dlq.name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
+  ok_actions    = [var.alerts_sns_topic_arn]
+
+  tags = local.common_tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "metering_worker_errors" {
