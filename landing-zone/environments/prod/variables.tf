@@ -171,6 +171,12 @@ variable "aws_marketplace_sns_topic_arn" {
   default     = ""
 }
 
+variable "marketplace_onboarding_function_name" {
+  description = "Name of the onboarding Lambda invoked by marketplace_resolve_customer to provision new marketplace subscribers. Must match the deployed function name exactly."
+  type        = string
+  default     = "securebase-trigger-onboarding"
+}
+
 variable "marketplace_dlq_kms_key_arn" {
   description = "Optional KMS key ARN for marketplace subscription handler DLQ encryption. Leave empty to use SSE-SQS (AWS-managed). Set to a CMEK ARN to enforce customer-managed encryption."
   type        = string

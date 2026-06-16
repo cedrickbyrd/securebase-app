@@ -55,8 +55,8 @@ resource "aws_sqs_queue" "subscription_handler_dlq" {
   visibility_timeout_seconds = 300     # match Lambda timeout ceiling
 
   # Use customer-managed KMS if provided; fall back to SSE-SQS (free, AWS-managed).
-  kms_master_key_id                 = var.dlq_kms_key_arn != "" ? var.dlq_kms_key_arn : null
-  sqs_managed_sse_enabled           = var.dlq_kms_key_arn == "" ? true : null
+  kms_master_key_id       = var.dlq_kms_key_arn != "" ? var.dlq_kms_key_arn : null
+  sqs_managed_sse_enabled = var.dlq_kms_key_arn == "" ? true : null
 
   tags = local.common_tags
 }
@@ -149,6 +149,13 @@ resource "aws_lambda_function" "marketplace_metering_worker" {
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [var.lambda_security_group_id]
+  }
+
+  # The pg8000 Lambda layer (securebase-pg8000:1) is attached to this function
+  # outside of Terraform (deployed via the layer packaging script). Ignore drift
+  # so Terraform does not strip it on every plan.
+  lifecycle {
+    ignore_changes = [layers]
   }
 
   tags = local.common_tags

@@ -27,6 +27,7 @@ marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:7311842
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
 marketplace_lambda_security_group_id = "sg-0127b93c1653cf90f"
+marketplace_onboarding_function_name = "securebase-trigger-onboarding"
 
 # db_migrator IAM policy — must be a valid non-empty ARN
 prod_db_credentials_secret_arn = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
