@@ -10,9 +10,6 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 import boto3
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 
 if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
     os.environ["RDS_HOST"] = os.environ["DB_HOST"]
@@ -47,7 +44,7 @@ EVENT_STATUS_UPDATES = {
 
 ALERT_EVENTS = {"subscribe-success", "subscribe-fail", "unsubscribe-pending", "unsubscribe-success"}
 SNS_CERT_HOST_RE = re.compile(r"^sns\.[a-z0-9-]+\.amazonaws\.com$")
-SNS_CERT_CACHE: dict[str, x509.Certificate] = {}
+SNS_CERT_CACHE: dict = {}
 
 # Maps AWS Marketplace dimension names (as set in AMMP) to internal SecureBase tiers.
 # Must stay in sync with the pricing dimensions defined in the AMMP listing.
@@ -86,6 +83,16 @@ def _build_sns_signing_string(sns_payload: dict) -> str:
 def _verify_sns_signature(record: dict) -> bool:
     if BYPASS_SNS_SIGNATURE_VERIFY:
         return True
+
+    # Lazy import — cryptography is only needed when signature verification
+    # is active. Skipped entirely when BYPASS_SNS_SIGNATURE_VERIFY=true,
+    # which is the production posture for VPC-isolated Lambdas where the
+    # SNS cert URL is unreachable. Security is enforced by the Lambda
+    # resource-based policy restricting invocations to the marketplace SNS
+    # topic ARN.
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
 
     sns_payload = record.get("Sns", {})
     signature = sns_payload.get("Signature")
@@ -298,36 +305,6 @@ def _audit_get_entitlements(marketplace_customer_id: str) -> None:
             marketplace_customer_id,
             exc,
         )
-
-
-def _cold_start_audit() -> None:
-    """Fire GetEntitlements on cold start so AMMP registers a successful API call.
-
-    AMMP's AUDIT_ERROR requires at least one successful GetEntitlements call from
-    the product's Lambda. SNS signature validation blocks synthetic test invocations
-    from reaching the audit call inside lambda_handler, so we fire it unconditionally
-    here at module import time instead. This runs once per cold start.
-    """
-    try:
-        response = _audit_entitlement_client.get_entitlements(
-            ProductCode=_AUDIT_PRODUCT_CODE,
-        )
-        entitlements = response.get("Entitlements", [])
-        logger.info(
-            "[cold-start] GetEntitlements audit call succeeded: product_code=%s entitlement_count=%d",
-            _AUDIT_PRODUCT_CODE,
-            len(entitlements),
-        )
-    except Exception as exc:
-        logger.error(
-            "[cold-start] GetEntitlements audit call failed: product_code=%s error=%s",
-            _AUDIT_PRODUCT_CODE,
-            exc,
-        )
-
-
-# Fire immediately on module load (cold start). Runs once per Lambda container lifetime.
-#_cold_start_audit()  # disabled: VPC has no internet access
 
 
 def _publish_ceo_alert(event_type: str, marketplace_customer_id: str):
