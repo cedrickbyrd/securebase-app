@@ -153,6 +153,7 @@ module "marketplace" {
   marketplace_product_code = var.marketplace_product_code
   private_subnet_ids       = var.marketplace_private_subnet_ids
   lambda_security_group_id = var.marketplace_lambda_security_group_id
+  dlq_kms_key_arn          = var.marketplace_dlq_kms_key_arn
 
   # Intentionally empty — Terraform cannot Subscribe to the AWS-owned Marketplace
   # SNS topic (account 287250355862); the call returns 403 by design.

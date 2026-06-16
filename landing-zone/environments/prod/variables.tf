@@ -171,6 +171,12 @@ variable "aws_marketplace_sns_topic_arn" {
   default     = ""
 }
 
+variable "marketplace_dlq_kms_key_arn" {
+  description = "Optional KMS key ARN for marketplace subscription handler DLQ encryption. Leave empty to use SSE-SQS (AWS-managed). Set to a CMEK ARN to enforce customer-managed encryption."
+  type        = string
+  default     = ""
+}
+
 # ============================================================================
 # Phase 6 / DB Migrator — prod secret ARN
 # Set via GitHub secret PROD_DB_CREDENTIALS_SECRET_ARN passed as TF_VAR_prod_db_credentials_secret_arn
