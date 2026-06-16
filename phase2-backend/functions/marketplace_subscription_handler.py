@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 import boto3
+from botocore.config import Config
 
 if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
     os.environ["RDS_HOST"] = os.environ["DB_HOST"]
@@ -21,13 +22,28 @@ from db_utils import get_connection, release_connection
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
+# Short timeout for marketplace API calls — no VPC endpoint available for
+# marketplace-entitlement; must fail fast rather than hanging the full Lambda timeout.
+_MARKETPLACE_API_CONFIG = Config(
+    connect_timeout=5,
+    read_timeout=5,
+    retries={"max_attempts": 1},
+)
+
 sns_client = boto3.client("sns")
-entitlement_client = boto3.client("marketplace-entitlement")
+entitlement_client = boto3.client(
+    "marketplace-entitlement",
+    config=_MARKETPLACE_API_CONFIG,
+)
 
 # Hardcoded for AWS audit compliance — GetEntitlements must be called with the
 # exact product code registered in AMMP and in us-east-1 (the only supported region).
 _AUDIT_PRODUCT_CODE = "blblyu28f6s5mzwl089d4xoea"
-_audit_entitlement_client = boto3.client("marketplace-entitlement", region_name="us-east-1")
+_audit_entitlement_client = boto3.client(
+    "marketplace-entitlement",
+    region_name="us-east-1",
+    config=_MARKETPLACE_API_CONFIG,
+)
 
 MARKETPLACE_PRODUCT_CODE = os.environ.get("MARKETPLACE_PRODUCT_CODE", "")
 CEO_SNS_TOPIC_ARN = os.environ.get("CEO_SNS_TOPIC_ARN", "")
