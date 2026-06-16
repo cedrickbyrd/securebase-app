@@ -23,50 +23,21 @@ sns_client = boto3.client("sns")
 MARKETPLACE_PRODUCT_CODE = os.environ.get("MARKETPLACE_PRODUCT_CODE", "")
 ALERTS_SNS_TOPIC_ARN = os.environ.get("ALERTS_SNS_TOPIC_ARN", "")
 
-TIER_DIMENSIONS = {
-    "standard": ("users", 1),
-    "healthcare": ("hipaa_tenants", 1),
-    "fintech": ("fintech_tenants", 1),
-    "gov-federal": ("gov_tenants", 1),
+# Maps internal tier names to AMMP pricing dimension API names.
+# Must stay in sync with DIMENSION_TO_TIER in marketplace_subscription_handler.py
+# and the dimensions registered in the AWS Marketplace Management Portal.
+TIER_TO_DIMENSION = {
+    "standard":    "standard_monthly",
+    "healthcare":  "healthcare_monthly",
+    "fintech":     "fintech_monthly",
+    "gov-federal": "government_monthly",
 }
 
-# Dimensions that represent tenant/sub-account counts rather than user counts.
-# These query the `tenants` table grouped by customer_id.
-TENANT_DIMENSIONS = {"hipaa_tenants", "fintech_tenants", "gov_tenants"}
 
-
-def _get_metering_quantity(customer_id: str, dimension: str) -> int:
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            if dimension == "users":
-                cur.execute(
-                    "SELECT COUNT(*) FROM users WHERE customer_id = %s AND status = 'active'",
-                    (customer_id,)
-                )
-            elif dimension in TENANT_DIMENSIONS:
-                cur.execute(
-                    """
-                    SELECT COALESCE(account_count, 0)
-                    FROM usage_metrics
-                    WHERE customer_id = %s
-                    ORDER BY month DESC
-                    LIMIT 1
-                    """,
-                    (customer_id,)
-                )
-            else:
-                cur.execute(
-                    "SELECT COUNT(*) FROM customers WHERE id = %s AND status = 'active'",
-                    (customer_id,)
-                )
-            row = cur.fetchone()
-            return max(1, int(row[0])) if row and row[0] else 1
-    except Exception:
-        logger.exception("Failed to get metering quantity for %s/%s", customer_id, dimension)
-        return 1
-    finally:
-        release_connection(conn)
+def _get_metering_quantity(customer_id: str) -> int:
+    # SaaS subscription dimensions are flat-rate monthly per subscriber.
+    # Quantity is always 1 — one active subscription per customer_id.
+    return 1
 
 
 def _fetch_active_marketplace_customers():
@@ -130,8 +101,8 @@ def _publish_alert(subject: str, message: str):
 
 
 def _meter_customer(customer_id: str, marketplace_customer_id: str, tier: str):
-    dimension, _ = TIER_DIMENSIONS.get(tier, ("users", 1))
-    quantity = _get_metering_quantity(customer_id, dimension)
+    dimension = TIER_TO_DIMENSION.get(tier, "standard_monthly")
+    quantity = _get_metering_quantity(customer_id)
 
     payload = {
         "CustomerIdentifier": marketplace_customer_id,
@@ -184,8 +155,8 @@ def lambda_handler(_event, _context):
                 failures += 1
         except Exception as exc:
             logger.exception("Metering failed for %s", customer_id)
-            dimension, _ = TIER_DIMENSIONS.get(tier, ("users", 1))
-            quantity = _get_metering_quantity(customer_id, dimension)
+            dimension = TIER_TO_DIMENSION.get(tier, "standard_monthly")
+            quantity = _get_metering_quantity(customer_id)
             _insert_metering_record(customer_id, marketplace_customer_id, dimension, quantity, "failed", None, str(exc))
             _publish_alert("[SecureBase Marketplace] Metering exception", json.dumps({"customer_id": customer_id, "error": str(exc)}))
             failures += 1
