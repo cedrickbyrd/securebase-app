@@ -3,7 +3,7 @@
 **Repository:** `cedrickbyrd/securebase-app`
 **Role Context:** Principal Cloud Architect | Compliance-First SaaS Platform
 **Mission:** Build SOC 2, FedRAMP, and HIPAA-ready infrastructure and features
-**Last Updated:** May 31, 2026
+**Last Updated:** June 16, 2026
 
 ---
 
@@ -34,43 +34,44 @@ SecureBase is a security-first, multi-tenant AWS PaaS platform delivering **comp
 | 6.1 | Immutable Audit Logging + Evidence Vault | ✅ Complete (May 17, 2026) |
 | 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
 | 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | ✅ Complete (May 17, 2026) |
-| 6.3 | Scalability / performance validation (10k VUs, p95 < 200ms) | 🔴 Deferred — trigger: Matthew Matturro converts |
+| 6.3 | Scalability / performance validation (10k VUs, p95 < 200ms) | 🔴 Deferred — trigger: AWS Marketplace listing published + first paid conversion |
 | 6.4 | Distributed Tracing & Advanced Observability | ✅ Complete (May 27, 2026) |
 | 6.5 | Cost Optimization & Per-Tenant Cost Governance | ✅ Complete (May 27, 2026) |
-| 6.6 | Build Debt & Developer Experience | 🔴 Deferred — trigger: Matthew converts + 2nd engineer onboarded |
+| 6.6 | Build Debt & Developer Experience | 🔴 Deferred — trigger: first paid conversion + 2nd engineer onboarded |
 
-#### ⚠️ CRITICAL: Production wiring — PR open, not yet merged
+#### Production wiring — PR #845 merged May 31, 2026
 
-Phase 6.1 and 6.2 modules are wired in `dev` but **not yet in prod**. PR `feat/wire-phase6-prod-migrations` is open and must be merged + deployed before June 13.
+Phase 6.1 and 6.2 modules are in `main` but **Terraform apply has not yet been run against `landing-zone/environments/prod`**. Resources are defined but not deployed to AWS.
 
-**What the PR does:**
-- Adds `phase6_audit_logging`, `phase6_compliance`, `phase6_lambdas`, `phase6_alerting` to `landing-zone/environments/prod/main.tf`
-- Adds 5 new variables to `landing-zone/environments/prod/variables.tf`
-- Adds `scripts/run-phase6-migrations.sh` — idempotent Aurora migration runner
-- Adds `.github/workflows/phase6-db-migrations.yml` — CI migration workflow (auto dev, manual prod)
-- Adds `.github/workflows/phase6-prod-plan.yml` — posts `terraform plan` as PR comment
+**Correct prod apply command (no CI workflow exists for landing-zone/environments/prod):**
+```bash
+cd landing-zone/environments/prod
+terraform init -backend-config=backend.hcl
+terraform plan -var-file=marketplace.tfvars
+terraform apply -var-file=marketplace.tfvars
+```
 
-**Deploy sequence after merge:**
-1. Merge PR → CI auto-migrates dev Aurora (001 + 002)
-2. Dispatch `phase6-db-migrations.yml` → staging, confirm OK
-3. Dispatch `phase6-db-migrations.yml` → prod (`confirmed=MIGRATE`)
-4. Dispatch `terraform-securebase-apply.yml` (`confirmed=DEPLOY`)
+> ⚠️ `terraform-securebase-apply.yml` targets `./terraform` (root workspace — API Gateway / Phase 1-2 Lambdas). It does NOT deploy `landing-zone/environments/prod`. Do NOT use it for Phase 6 modules.
 
-**GitHub Actions variables required before prod deploy:**
+**Aurora migrations — not yet run in prod:**
+1. Dispatch `phase6-db-migrations.yml` → prod (`confirmed=MIGRATE`) — runs 001 + 002
+2. Migration 003 (`marketplace_fields.sql`) must also be run after marketplace module apply
 
-| Variable | Where | Value needed |
-|---|---|---|
-| `PROD_RDS_PROXY_ENDPOINT` | vars | Aurora RDS Proxy endpoint |
-| `PROD_PRIVATE_SUBNET_IDS` | vars | JSON array of private subnet IDs |
-| `PROD_LAMBDA_SG_IDS` | vars | JSON array of Lambda security group IDs |
-| `CEO_ALERT_EMAIL` | vars | Macie findings email |
-| `TF_STATE_BUCKET` | vars | Terraform state S3 bucket |
-| `TF_LOCK_TABLE` | vars | DynamoDB lock table |
-| `PROD_DB_CREDENTIALS_SECRET_ARN` | secrets | Secrets Manager ARN for Aurora creds |
+**GitHub Actions variables — all populated as of June 16, 2026:**
 
-#### ⚠️ CRITICAL: Aurora migrations not yet run in prod
+| Variable | Value |
+|---|---|
+| `PROD_RDS_PROXY_ENDPOINT` | `securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com` |
+| `PROD_PRIVATE_SUBNET_IDS` | `subnet-0783b18ae893a8df9,subnet-0f3dfdab04381608c` |
+| `PROD_LAMBDA_SG_IDS` | `sg-024bf2ecdb05c58c6` |
+| `CEO_ALERT_EMAIL` | `cedrickjbyrd@me.com` |
+| `TF_STATE_BUCKET` | `securebase-terraform-state-prod` |
+| `TF_LOCK_TABLE` | `securebase-terraform-locks` |
+| `PROD_DB_CREDENTIALS_SECRET_ARN` | `arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/app-uw9J2e` |
 
-`001_audit_evidence_tables.sql` and `002_compliance_score_history.sql` have been written but not yet applied to the production Aurora cluster. Without them, the Vault and compliance scoring produce no data. Run them via the migration workflow above.
+#### ⚠️ Aurora migrations not yet run in prod
+
+Migrations 001 (`audit_evidence_tables`), 002 (`compliance_score_history`), and 003 (`marketplace_fields`) have been written but not applied to the production Aurora cluster. Run via `phase6-db-migrations.yml` workflow dispatch after Terraform apply succeeds. Without 001+002 the Vault and compliance scoring produce no data. Without 003 the marketplace resolve Lambda will fail on first subscribe.
 
 #### Phase 6.1 — The Vault (Complete in dev)
 
@@ -106,17 +107,28 @@ Delivered: Daily EventBridge cost aggregation, monthly S3 export, CloudWatch cos
 
 ---
 
-## 🗓 Active Deadline: June 13, 2026 — Matthew Matturro / TriNetX
+## 🗓 Conversion Strategy — AWS Marketplace (Updated June 16, 2026)
 
-**Customer:** Matthew Matturro, TriNetX (healthcare data company)
-**Status:** Trial in progress, conversion deadline June 13
-**What he needs:**
-- Day 1: Evidence packages visible in portal (`/evidence`) — requires Vault prod deploy
-- Day 7: 90-day HIPAA compliance trend — requires compliance scoring prod deploy
+**Matthew Matturro / TriNetX:** June 13 deadline passed. Did not convert. Conversion deferred — target path is AWS EDP spend via Marketplace subscription.
 
-**CEO SNS alert:** PR #778 wired first-activation and first-login events → SNS → email. You will receive an email when Matthew activates and first logs in.
+**Primary conversion path:** All Wave 1 prospects (TriNetX, Texas Capital Bank, AccentCare, Veritex, Cook Children's, Mercury) are being routed through AWS Marketplace to leverage EDP commitments.
 
-**Do NOT** start work on 6.3 (scalability), 6.4 build debt, 6.5 DevEx, or 6.6 GTM Ops until Matthew's conversion is confirmed.
+**Marketplace listing status:** `blblyu28f6s5mzwl089d4xoea` — **Limited / Under Review** in AMMP. AWS review must clear before SNS subscription/entitlement topics activate and live test subscribe is possible.
+
+**Marketplace infrastructure status:**
+- ✅ All 3 Lambdas deployed (resolve, subscription handler, metering worker)
+- ✅ Subscription handler DLQ wired
+- ✅ Metering worker DLQ wired (added June 16, 2026)
+- ✅ SNS Lambda invoke permissions set for both AMMP topics
+- ❌ AMMP endpoint registration blocked until listing publishes
+- ❌ Aurora migration 003 (marketplace fields) not run in prod
+- ❌ Stripe secret key rotation pending (phone verification required)
+
+**Next action:** Contact AWS Marketplace seller support to request review ETA for product code `blblyu28f6s5mzwl089d4xoea`.
+
+**Do NOT** start work on 6.3 (scalability) or 6.6 (DevEx) until first paid conversion confirmed.
+
+**Wave 1 co-sell:** Texas Capital Bank, AccentCare, Veritex Community Bank — 3 opportunities pending AWS Partner Central approval.
 
 ---
 
@@ -299,8 +311,8 @@ Key workflows:
 | Workflow | Trigger | Does |
 |---|---|---|
 | `deploy-phase3a-production.yml` | Manual (`DEPLOY TO PRODUCTION`) | Deploys portal to `securebase-portal` Netlify site |
-| `terraform-securebase-apply.yml` | Manual (`DEPLOY`) | Applies prod Terraform |
-| `phase6-db-migrations.yml` | Auto (dev on push), manual (staging/prod) | Runs Aurora migrations |
+| `terraform-securebase-apply.yml` | Manual (`DEPLOY`) | Applies `./terraform` root workspace only (Phase 1-2) — does NOT touch `landing-zone/environments/prod` |
+| `phase6-db-migrations.yml` | Auto (dev on push), manual (staging/prod) | Runs Aurora migrations via `db_migrator` Lambda |
 | `phase6-prod-plan.yml` | PR to main touching prod/ | Posts terraform plan as PR comment |
 | `auth-regression-tests.yml` | PR | Auth regression gate |
 
@@ -351,24 +363,31 @@ Route 53 disabled — DNS in Netlify; CloudFront origin group provides failover.
 ## 🏗 Terraform Deployment
 
 ```bash
-# Always target a specific environment
-cd landing-zone/environments/prod && terraform apply
+# Phase 6 modules — landing-zone/environments/prod (no CI workflow, run locally)
+cd landing-zone/environments/prod
+terraform init -backend-config=backend.hcl
+terraform plan -var-file=marketplace.tfvars
+terraform apply -var-file=marketplace.tfvars
 
 # Phase 5.4 multi-region only
 terraform apply -target=module.multi_region -var-file=multi-region.tfvars
+
+# Phase 1-2 root workspace (API Gateway, core Lambdas)
+# Use terraform-securebase-apply.yml workflow (confirmed=DEPLOY)
 ```
 
-### Prod environment module inventory (as of May 31, 2026)
+### Prod environment module inventory (as of June 16, 2026)
 
 | Module | Status |
 |---|---|
-| `phase6_audit_logging` | ⚠️ In open PR — not yet applied |
-| `phase6_compliance` | ⚠️ In open PR — not yet applied |
-| `phase6_lambdas` | ⚠️ In open PR — not yet applied |
-| `phase6_alerting` | ⚠️ In open PR — not yet applied |
+| `phase6_audit_logging` | ⚠️ In main (PR #845) — Terraform apply not yet run |
+| `phase6_compliance` | ⚠️ In main (PR #845) — Terraform apply not yet run |
+| `phase6_lambdas` | ⚠️ In main (PR #845) — Terraform apply not yet run |
+| `phase6_alerting` | ⚠️ In main (PR #845) — Terraform apply not yet run |
 | `phase6_tracing` | ✅ Applied |
 | `phase6_cost` | ✅ Applied |
-| `marketplace` | ✅ Applied (conditional on vars) |
+| `marketplace` | ✅ Applied (conditional on vars) — metering DLQ added June 16 |
+| `db_migrator` | ✅ In main (PRs #848, #853) — VPC-resident migration runner |
 
 ---
 
@@ -386,7 +405,7 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 - [ ] Pricing page: `handleSelectPlan()` routes to `/checkout` — do NOT reroute to `/signup`
 - [ ] Marketing site changes require a **manual Netlify deploy** — no auto-deploy workflow exists
 - [ ] `phase3a-portal/` deploys separately from root `/` — never deploy portal from repo root
-- [ ] Before touching `landing-zone/environments/prod/`: check open PR `feat/wire-phase6-prod-migrations` to avoid conflicts
+- [ ] `terraform-securebase-apply.yml` targets `./terraform` root only — use local apply for `landing-zone/environments/prod`
 
 ---
 
@@ -398,4 +417,4 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 
 ---
 
-**Last Updated:** 2026-05-31 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
+**Last Updated:** 2026-06-16 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
