@@ -91,7 +91,13 @@ variable "aws_marketplace_entitlement_sns_topic_arn" {
 }
 
 variable "dlq_kms_key_arn" {
-  description = "Optional KMS key ARN for SQS DLQ encryption. Leave empty to use SSE-SQS (AWS-managed, free). Set to a customer-managed KMS key ARN to enforce CMEK encryption on the dead-letter queue."
+  description = "Optional KMS key ARN for subscription_handler SQS DLQ encryption. Leave empty to use SSE-SQS (AWS-managed, free). Set to a customer-managed KMS key ARN to enforce CMEK encryption."
+  type        = string
+  default     = ""
+}
+
+variable "metering_worker_dlq_kms_key_arn" {
+  description = "Optional KMS key ARN for metering_worker SQS DLQ encryption. Leave empty to use SSE-SQS (AWS-managed, free). Set to a customer-managed KMS key ARN to enforce CMEK encryption."
   type        = string
   default     = ""
 }

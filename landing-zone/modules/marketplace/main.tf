@@ -80,6 +80,39 @@ resource "aws_iam_role_policy" "subscription_handler_dlq_send" {
   })
 }
 
+# ---------------------------------------------------------------------------
+# DLQ — catches metering_worker Lambda failures (errors or throttles).
+# A lost metering invocation = unbilled usage for that hour. 14-day
+# retention allows ops to replay and recover revenue.
+# visibility_timeout matches the metering_worker Lambda timeout (120s).
+# ---------------------------------------------------------------------------
+resource "aws_sqs_queue" "metering_worker_dlq" {
+  name                       = "securebase-${var.environment}-marketplace-metering-worker-dlq"
+  message_retention_seconds  = 1209600 # 14 days
+  visibility_timeout_seconds = 120     # match metering_worker Lambda timeout
+
+  kms_master_key_id       = var.metering_worker_dlq_kms_key_arn != "" ? var.metering_worker_dlq_kms_key_arn : null
+  sqs_managed_sse_enabled = var.metering_worker_dlq_kms_key_arn == "" ? true : null
+
+  tags = local.common_tags
+}
+
+# Grant the Lambda execution role permission to write to the metering DLQ.
+# Lambda API validates sqs:SendMessage synchronously on dead_letter_config.
+resource "aws_iam_role_policy" "metering_worker_dlq_send" {
+  name = "securebase-${var.environment}-marketplace-metering-dlq-send"
+  role = local.lambda_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sqs:SendMessage"
+      Resource = aws_sqs_queue.metering_worker_dlq.arn
+    }]
+  })
+}
+
 resource "aws_lambda_function" "marketplace_resolve_customer" {
   s3_bucket        = local.lambda_s3["marketplace_resolve_customer"].bucket
   s3_key           = local.lambda_s3["marketplace_resolve_customer"].key
@@ -156,6 +189,10 @@ resource "aws_lambda_function" "marketplace_metering_worker" {
   timeout          = 120
   memory_size      = 512
 
+  dead_letter_config {
+    target_arn = aws_sqs_queue.metering_worker_dlq.arn
+  }
+
   environment {
     variables = {
       MARKETPLACE_PRODUCT_CODE = var.marketplace_product_code
@@ -176,6 +213,10 @@ resource "aws_lambda_function" "marketplace_metering_worker" {
   lifecycle {
     ignore_changes = [layers]
   }
+
+  # IAM dependency: dead_letter_config requires sqs:SendMessage on the DLQ.
+  # Lambda API validates this synchronously on UpdateFunctionConfiguration.
+  depends_on = [aws_iam_role_policy.metering_worker_dlq_send]
 
   tags = local.common_tags
 }
@@ -253,6 +294,34 @@ resource "aws_cloudwatch_metric_alarm" "subscription_handler_dlq_depth" {
 
   dimensions = {
     QueueName = aws_sqs_queue.subscription_handler_dlq.name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
+  ok_actions    = [var.alerts_sns_topic_arn]
+
+  tags = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# CloudWatch alarm — metering worker DLQ depth.
+# Any message here = a metering invocation that crashed before BatchMeterUsage
+# completed. Unbilled usage. Requires immediate manual replay.
+# ---------------------------------------------------------------------------
+resource "aws_cloudwatch_metric_alarm" "metering_worker_dlq_depth" {
+  count               = var.alerts_sns_topic_arn != "" ? 1 : 0
+  alarm_name          = "securebase-${var.environment}-marketplace-metering-worker-dlq-depth"
+  alarm_description   = "Marketplace metering worker DLQ has messages — an hourly metering run crashed before BatchMeterUsage completed. Unbilled usage. Replay immediately."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.metering_worker_dlq.name
   }
 
   alarm_actions = [var.alerts_sns_topic_arn]
