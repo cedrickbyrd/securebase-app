@@ -126,7 +126,7 @@ requirements_for() {
       printf '%s\n' boto3 PyJWT
       ;;
     marketplace_subscription_handler)
-      printf '%s\n' boto3
+      printf '%s\n' boto3 psycopg2-binary
       ;;
     marketplace_metering_worker)
       printf '%s\n' boto3
@@ -146,7 +146,7 @@ validate_requirements() {
 
   for requirement in "$@"; do
     case "${requirement}" in
-      PyJWT|bcrypt|boto3|pyotp)
+      PyJWT|bcrypt|boto3|pyotp|psycopg2-binary)
         ;;
       *)
         echo "❌ ERROR: Unsupported dependency '${requirement}'"
