@@ -1,7 +1,16 @@
 # AWS Marketplace integration — production
 # Apply with: terraform apply -var-file=marketplace.tfvars
 # Product code source: AWS Marketplace Management Portal (confirmed May 19, 2026)
-# Status: Limited — product live and usable before public listing
+# Status: Limited — Under Review (as of June 16, 2026)
+
+# ---------------------------------------------------------------------------
+# Environment / alerting
+# ---------------------------------------------------------------------------
+# Override default (securebase-prod-analytics-alerts) — Phase 6 data source
+# lookup and alerting modules use this topic.
+alert_topic_name = "securebase-production-alerts"
+alert_email      = "cedrickjbyrd@me.com"
+alert_sns_arn    = "arn:aws:sns:us-east-1:731184206915:securebase-production-alerts"
 
 # ---------------------------------------------------------------------------
 # Core marketplace identity
@@ -10,25 +19,39 @@ marketplace_product_code = "blblyu28f6s5mzwl089d4xoea"
 
 # AWS Marketplace SNS topics (account 287250355862) — populated from AMMP product page.
 # Terraform cannot SNS:Subscribe to these topics (403 by design).
-# Register the subscription_handler Lambda endpoint via AMMP UI → Fulfillment options.
+# Register the subscription_handler Lambda endpoint via AMMP UI after listing publishes.
 # These ARNs grant Lambda invoke permission to the Marketplace SNS topics.
 aws_marketplace_sns_topic_arn             = "arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-blblyu28f6s5mzwl089d4xoea"
 aws_marketplace_entitlement_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-blblyu28f6s5mzwl089d4xoea"
+
+# ---------------------------------------------------------------------------
+# Marketplace alerting
+# ---------------------------------------------------------------------------
+marketplace_alerts_sns_topic_arn = "arn:aws:sns:us-east-1:731184206915:securebase-production-alerts"
+marketplace_ceo_sns_topic_arn    = "arn:aws:sns:us-east-1:731184206915:securebase-production-ceo-alerts"
+
+# DLQ encryption — SSE-SQS (AWS-managed). Set to a KMS key ARN to enforce CMEK.
+marketplace_dlq_kms_key_arn          = ""
+metering_worker_dlq_kms_key_arn      = ""
 
 # ---------------------------------------------------------------------------
 # Infra — reuse prod Lambda VPC config
 # ---------------------------------------------------------------------------
 # NOTE: Only one Aurora cluster exists (securebase-phase2-dev).
 # Marketplace Lambdas connect via RDS Proxy.
-# TODO: provision securebase-phase2-prod cluster post-TriNetX conversion.
+# TODO: provision securebase-phase2-prod cluster post first paid conversion.
 marketplace_db_host                  = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
-marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
+
+# App credential — read/write privileges appropriate for Lambda runtime.
+# (migrator secret securebase/prod/rds/migrator-CAjTMT is for db_migrator only)
+marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/app-uw9J2e"
+
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
 marketplace_lambda_security_group_id = "sg-0127b93c1653cf90f"
 marketplace_onboarding_function_name = "securebase-trigger-onboarding"
 
-# db_migrator IAM policy
+# db_migrator IAM policy — migrator secret retains DDL privileges (intentional)
 prod_db_credentials_secret_arn = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/migrator-CAjTMT"
 
 # ---------------------------------------------------------------------------
