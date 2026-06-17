@@ -30,9 +30,11 @@ aws_marketplace_entitlement_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:
 marketplace_alerts_sns_topic_arn = "arn:aws:sns:us-east-1:731184206915:securebase-production-alerts"
 marketplace_ceo_sns_topic_arn    = "arn:aws:sns:us-east-1:731184206915:securebase-production-ceo-alerts"
 
-# DLQ encryption — SSE-SQS (AWS-managed). Set to a KMS key ARN to enforce CMEK.
-marketplace_dlq_kms_key_arn          = ""
-metering_worker_dlq_kms_key_arn      = ""
+# DLQ encryption — SSE-SQS (AWS-managed, free). Set to a KMS ARN to enforce CMEK.
+# metering_worker_dlq_kms_key_arn is intentionally omitted — the variable is
+# declared in the marketplace module but not wired at the environment level;
+# the module default of "" (SSE-SQS) is correct.
+marketplace_dlq_kms_key_arn = ""
 
 # ---------------------------------------------------------------------------
 # Infra — reuse prod Lambda VPC config
@@ -40,11 +42,11 @@ metering_worker_dlq_kms_key_arn      = ""
 # NOTE: Only one Aurora cluster exists (securebase-phase2-dev).
 # Marketplace Lambdas connect via RDS Proxy.
 # TODO: provision securebase-phase2-prod cluster post first paid conversion.
-marketplace_db_host                  = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
+marketplace_db_host = "securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com"
 
 # App credential — read/write privileges appropriate for Lambda runtime.
 # (migrator secret securebase/prod/rds/migrator-CAjTMT is for db_migrator only)
-marketplace_db_secret_arn            = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/app-uw9J2e"
+marketplace_db_secret_arn = "arn:aws:secretsmanager:us-east-1:731184206915:secret:securebase/prod/rds/app-uw9J2e"
 
 marketplace_lambda_role_arn          = "arn:aws:iam::731184206915:role/securebase-production-lambda-execution"
 marketplace_private_subnet_ids       = ["subnet-0783b18ae893a8df9", "subnet-0f3dfdab04381608c"]
