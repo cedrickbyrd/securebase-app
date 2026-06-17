@@ -57,6 +57,131 @@ def _response(status_code: int, body: dict) -> dict:
     }
 
 
+def _extract_accept_header(event: dict) -> str:
+    headers = event.get("headers") if isinstance(event, dict) else None
+    if isinstance(headers, dict):
+        normalized = {str(k).lower(): v for k, v in headers.items()}
+        return str(normalized.get("accept", "") or "")
+    return ""
+
+
+def _wants_html(event: dict) -> bool:
+    """Detect a real browser top-level navigation vs. an internal SPA fetch call.
+
+    AWS Marketplace delivers the fulfillment POST via an auto-submitting HTML
+    form, so the buyer's browser sends a standard navigational Accept header
+    (text/html,application/xhtml+xml,...). The SPA's own apiService.js never
+    sets Accept: text/html on its fetch() calls to this same Lambda via
+    /api/marketplace/resolve — fetch defaults to '*/*' unless overridden, and
+    apiService.js does not override it. This is a reliable, low-risk signal
+    for branching response format without needing a second API Gateway route.
+    """
+    return "text/html" in _extract_accept_header(event).lower()
+
+
+def _escape_html(value: str) -> str:
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+def _success_html(token: str, role: str, email: str, redirect_url: str) -> str:
+    # json.dumps() on each value gives us safely-escaped JS string literals
+    # (handles quotes/backslashes in the JWT or email) without a templating lib.
+    token_js = json.dumps(token)
+    role_js = json.dumps(role or "user")
+    email_js = json.dumps(email or "")
+    redirect_js = json.dumps(redirect_url or "/dashboard")
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SecureBase — Activating your subscription</title>
+<meta name="robots" content="noindex">
+</head>
+<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#0f1923;color:#fff;">
+  <div style="text-align:center;">
+    <h2 style="font-weight:600;margin-bottom:0.5rem;">Activating your SecureBase subscription…</h2>
+    <p style="color:#9ca3af;">You'll be redirected automatically.</p>
+  </div>
+  <script>
+    localStorage.setItem('sessionToken', {token_js});
+    localStorage.setItem('userRole', {role_js});
+    localStorage.setItem('userEmail', {email_js});
+    window.location.replace({redirect_js});
+  </script>
+</body>
+</html>"""
+
+
+def _error_html(message: str) -> str:
+    safe_message = _escape_html(message)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SecureBase — AWS Marketplace</title>
+<meta name="robots" content="noindex">
+</head>
+<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#0f1923;color:#fff;">
+  <div style="text-align:center;max-width:480px;padding:0 1.5rem;">
+    <h2 style="font-weight:600;">⚠️ {safe_message}</h2>
+    <p style="color:#9ca3af;margin-top:1rem;">
+      Need help? Contact
+      <a href="mailto:support@securebase.tximhotep.com" style="color:#60a5fa;">support@securebase.tximhotep.com</a>
+    </p>
+  </div>
+</body>
+</html>"""
+
+
+def _html_response(status_code: int, body: dict) -> dict:
+    """Render the same logical outcome as an HTML page instead of raw JSON.
+
+    Always returns HTTP 200 at the transport level — AWS Marketplace's
+    audit explicitly checks for a successful (200) response on the
+    fulfillment URL itself, separate from whether the *business* outcome
+    (token valid, customer resolved, etc.) succeeded. A real buyer's
+    browser should never see a raw 400/500 status page; the friendly
+    error message in the body communicates the actual outcome instead,
+    exactly mirroring how MarketplaceRedirect.jsx already renders errors
+    for the client-side fetch path.
+    """
+    if status_code == 200 and body.get("token"):
+        user = body.get("user") or {}
+        html = _success_html(
+            token=body["token"],
+            role=user.get("role", "user"),
+            email=user.get("email", ""),
+            redirect_url=body.get("redirect_url", "/dashboard"),
+        )
+    else:
+        message = body.get("message") or "We couldn't activate your subscription. Please try again or contact support."
+        html = _error_html(message)
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+        },
+        "body": html,
+    }
+
+
+def _finish(event: dict, status_code: int, body: dict) -> dict:
+    """Single exit point — branches JSON vs HTML based on the caller type."""
+    if _wants_html(event):
+        return _html_response(status_code, body)
+    return _response(status_code, body)
+
+
 def _parse_body(event: dict) -> dict:
     body = event.get("body") if isinstance(event, dict) else None
     if isinstance(body, str):
@@ -286,7 +411,7 @@ def lambda_handler(event, _context):
     token, token_source = _extract_marketplace_token(event, request)
     if not token:
         logger.warning("Marketplace token missing from request")
-        return _response(400, {"error": "invalid_token", "message": "Marketplace token is required."})
+        return _finish(event, 400, {"error": "invalid_token", "message": "Marketplace token is required."})
     logger.info("Marketplace token accepted from %s", token_source or "unknown")
 
     try:
@@ -294,18 +419,18 @@ def lambda_handler(event, _context):
     except ClientError as exc:
         error_code = exc.response.get("Error", {}).get("Code", "Unknown")
         if error_code in {"InvalidTokenException", "ExpiredTokenException", "ValidationException"}:
-            return _response(400, {"error": "invalid_token", "message": "Invalid or expired marketplace token."})
+            return _finish(event, 400, {"error": "invalid_token", "message": "Invalid or expired marketplace token."})
         logger.exception("ResolveCustomer API failed")
-        return _response(500, {"error": "aws_api_error", "message": "Unable to resolve AWS Marketplace customer."})
+        return _finish(event, 500, {"error": "aws_api_error", "message": "Unable to resolve AWS Marketplace customer."})
 
     marketplace_customer_id = resolution.get("CustomerIdentifier")
     product_code = resolution.get("ProductCode")
 
     if not marketplace_customer_id:
-        return _response(500, {"error": "aws_api_error", "message": "Marketplace response missing customer identifier."})
+        return _finish(event, 500, {"error": "aws_api_error", "message": "Marketplace response missing customer identifier."})
 
     if MARKETPLACE_PRODUCT_CODE and product_code and product_code != MARKETPLACE_PRODUCT_CODE:
-        return _response(400, {"error": "invalid_product", "message": "Marketplace token product does not match this listing."})
+        return _finish(event, 400, {"error": "invalid_product", "message": "Marketplace token product does not match this listing."})
 
     existing = _get_customer_by_marketplace_id(marketplace_customer_id)
     if existing:
@@ -319,7 +444,7 @@ def lambda_handler(event, _context):
             logger.exception("JWT minting failed for returning marketplace customer %s", existing_customer_id)
             token = None
         if not token:
-            return _response(500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
+            return _finish(event, 500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
 
         response_body = {
             "customer_id": existing_customer_id,
@@ -332,7 +457,7 @@ def lambda_handler(event, _context):
         if token:
             response_body["token"] = token
 
-        return _response(200, response_body)
+        return _finish(event, 200, response_body)
 
     requested_plan = (
         request.get("plan")
@@ -361,7 +486,7 @@ def lambda_handler(event, _context):
         logger.exception("JWT minting failed for marketplace customer %s", customer_id)
         token = None
     if not token:
-        return _response(500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
+        return _finish(event, 500, {"error": "jwt_error", "message": "Failed to issue session token. Please try again."})
 
     response_body = {
         "customer_id": customer_id,
@@ -373,4 +498,4 @@ def lambda_handler(event, _context):
     if token:
         response_body["token"] = token
 
-    return _response(200, response_body)
+    return _finish(event, 200, response_body)
