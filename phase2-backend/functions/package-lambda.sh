@@ -123,7 +123,7 @@ requirements_for() {
       printf '%s\n' boto3
       ;;
     marketplace_resolve_customer)
-      printf '%s\n' boto3 PyJWT
+      printf '%s\n' boto3 PyJWT psycopg2-binary
       ;;
     marketplace_subscription_handler)
       printf '%s\n' boto3 psycopg2-binary
