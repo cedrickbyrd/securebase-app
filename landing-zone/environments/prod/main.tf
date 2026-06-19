@@ -152,6 +152,7 @@ module "marketplace" {
   marketplace_product_code             = var.marketplace_product_code
   private_subnet_ids                   = var.marketplace_private_subnet_ids
   lambda_security_group_id             = var.marketplace_lambda_security_group_id
+  vpc_id                               = "vpc-003c9d5b0f9f1a02b"
   onboarding_function_name             = var.marketplace_onboarding_function_name
   dlq_kms_key_arn                      = var.marketplace_dlq_kms_key_arn
   aws_marketplace_sns_topic_arn        = var.aws_marketplace_sns_topic_arn
