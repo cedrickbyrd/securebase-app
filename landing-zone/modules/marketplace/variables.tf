@@ -78,6 +78,17 @@ variable "lambda_security_group_id" {
   type        = string
 }
 
+variable "vpc_id" {
+  description = "VPC ID housing the marketplace Lambdas — used to attach interface VPC endpoints for the AWS Marketplace Entitlement and Metering Service APIs. Without these endpoints, GetEntitlements/BatchMeterUsage calls from inside the VPC have no route to the public AWS Marketplace API and will time out."
+  type        = string
+}
+
+variable "create_marketplace_vpc_endpoints" {
+  description = "Whether to create the aws-marketplace-entitlement and aws-marketplace-metering interface VPC endpoints. Set false only if equivalent endpoints already exist elsewhere in the VPC (e.g. a shared networking module) — AWS rejects a second interface endpoint for the same service in one VPC."
+  type        = bool
+  default     = true
+}
+
 variable "aws_marketplace_sns_topic_arn" {
   description = "AWS Marketplace subscription notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-<product_code>). Delivers subscribe-success, unsubscribe-pending, unsubscribe-success events. Cannot be subscribed via Terraform — register the subscription_handler Lambda endpoint via AMMP UI after deploy."
   type        = string
