@@ -370,3 +370,73 @@ resource "aws_cloudwatch_metric_alarm" "subscription_handler_errors" {
 
   tags = local.common_tags
 }
+
+# ---------------------------------------------------------------------------
+# VPC endpoints — AWS Marketplace Entitlement + Metering Service APIs.
+#
+# All three marketplace Lambdas run inside vpc_config (private subnets, no
+# NAT/IGW route to the public internet). Without these interface endpoints,
+# any GetEntitlements call (resolve_customer, subscription_handler's
+# _cold_start_audit) or BatchMeterUsage call (metering_worker) has no route
+# out and hangs until the client-side timeout fires (see the 5s timeout
+# added to the entitlement clients as a stopgap — that timeout stays in
+# place as defense-in-depth even with these endpoints present).
+#
+# Security group: a dedicated SG scoped to 443 ingress from the Lambda SG
+# only, rather than reusing lambda_security_group_id directly as the
+# endpoint's own SG. Interface endpoints evaluate ingress rules against
+# the ENI's SG, and self-referencing the Lambda SG for both call and
+# receive sides is harder to audit than a narrow purpose-built SG.
+# ---------------------------------------------------------------------------
+resource "aws_security_group" "marketplace_vpc_endpoints" {
+  count       = var.create_marketplace_vpc_endpoints ? 1 : 0
+  name        = "securebase-${var.environment}-marketplace-vpc-endpoints"
+  description = "Allows marketplace Lambdas to reach the AWS Marketplace Entitlement and Metering Service interface endpoints over HTTPS"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "HTTPS from marketplace Lambda SG"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [var.lambda_security_group_id]
+  }
+
+  egress {
+    description = "Required for AWS PrivateLink endpoint ENI responses"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_endpoint" "marketplace_entitlement" {
+  count               = var.create_marketplace_vpc_endpoints ? 1 : 0
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.aws_region}.aws-marketplace-entitlement"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.private_subnet_ids
+  security_group_ids  = [aws_security_group.marketplace_vpc_endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "securebase-${var.environment}-marketplace-entitlement"
+  })
+}
+
+resource "aws_vpc_endpoint" "marketplace_metering" {
+  count               = var.create_marketplace_vpc_endpoints ? 1 : 0
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.aws_region}.aws-marketplace-metering"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.private_subnet_ids
+  security_group_ids  = [aws_security_group.marketplace_vpc_endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "securebase-${var.environment}-marketplace-metering"
+  })
+}
