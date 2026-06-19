@@ -129,7 +129,7 @@ requirements_for() {
       printf '%s\n' boto3 psycopg2-binary
       ;;
     marketplace_metering_worker)
-      printf '%s\n' boto3
+      printf '%s\n' boto3 psycopg2-binary
       ;;
     *)
       printf ''
