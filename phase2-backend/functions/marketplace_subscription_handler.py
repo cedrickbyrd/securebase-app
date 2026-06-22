@@ -353,7 +353,8 @@ def lambda_handler(event, _context):
 
         event_type, payload, message_id = _extract_event_payload(record)
         marketplace_customer_id = (
-            payload.get("customerIdentifier")
+            payload.get("customer-identifier")
+            or payload.get("customerIdentifier")
             or payload.get("CustomerIdentifier")
             or payload.get("marketplaceCustomerId")
         )
