@@ -126,10 +126,21 @@ requirements_for() {
       printf '%s\n' boto3 PyJWT psycopg2-binary
       ;;
     marketplace_subscription_handler)
-      printf '%s\n' boto3 psycopg2-binary
+      printf '%s\n' boto3 psycopg2-binary cryptography
       ;;
     marketplace_metering_worker)
       printf '%s\n' boto3 psycopg2-binary
+      ;;
+    *)
+      printf ''
+      ;;
+  esac
+}
+
+extra_files_for() {
+  case "$1" in
+    marketplace_resolve_customer|marketplace_subscription_handler|marketplace_metering_worker)
+      printf '%s\n' "${SCRIPT_DIR}/../lambda_layer/python/db_utils.py"
       ;;
     *)
       printf ''
@@ -146,7 +157,7 @@ validate_requirements() {
 
   for requirement in "$@"; do
     case "${requirement}" in
-      PyJWT|bcrypt|boto3|pyotp|psycopg2-binary)
+      PyJWT|bcrypt|boto3|pyotp|psycopg2-binary|cryptography)
         ;;
       *)
         echo "❌ ERROR: Unsupported dependency '${requirement}'"
@@ -359,6 +370,17 @@ EOF
 
   echo "📦 Packaging ${name} Lambda..."
   cp "${source_file}" "${build_dir}/${name}.py"
+
+  local extra_file
+  while IFS= read -r extra_file; do
+    if [ -n "${extra_file}" ]; then
+      cp "${extra_file}" "${build_dir}/"
+      echo "  📎 Added extra file: $(basename "${extra_file}")"
+    fi
+  done <<EXTRAEOF
+$(extra_files_for "${name}")
+EXTRAEOF
+
   install_dependencies "${build_dir}" "${requirements[@]}"
 
   rm -f "${zip_file}"
