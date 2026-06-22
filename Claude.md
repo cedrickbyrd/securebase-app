@@ -418,3 +418,150 @@ terraform apply -target=module.multi_region -var-file=multi-region.tfvars
 ---
 
 **Last Updated:** 2026-06-16 | **Maintained By:** Cedrick Byrd (cedrickbyrd)
+
+
+## AWS Marketplace Integration — Session Notes (2026-06-22)
+
+### PrivateLink / VPC Endpoints
+AWS does NOT publish a PrivateLink interface endpoint for AWS Marketplace
+Entitlement Service in us-east-1 — confirmed via `describe-vpc-endpoint-services`.
+Only three Marketplace-related interface endpoints exist in this region:
+`agreement-marketplace`, `discovery-marketplace`, `metering-marketplace`.
+The `aws_vpc_endpoint.marketplace_entitlement` resource was removed from
+`landing-zone/modules/marketplace/main.tf` for this reason — do not re-add it.
+`GetEntitlements` calls from VPC-isolated Lambdas rely on the existing
+short-timeout (5s) defense-in-depth fallback documented elsewhere in that file.
+
+The metering endpoint (`com.amazonaws.us-east-1.metering-marketplace`,
+ipv4-only, no dual-stack) predates this session's Terraform work — it was
+created manually/out-of-band on 2026-06-15 and was not originally tracked in
+state. It has since been imported (`terraform import -var-file=marketplace.tfvars`)
+and is now correctly Terraform-managed, attached to a dedicated SG
+(`marketplace_vpc_endpoints`, ingress restricted to the marketplace Lambda SG
+`sg-0127b93c1653cf90f` on 443). Confirmed via `terraform plan` showing
+"No changes" after apply.
+
+### package-lambda.sh — db_utils.py packaging gap
+`marketplace_resolve_customer`, `marketplace_subscription_handler`, and
+`marketplace_metering_worker` all import `db_utils` at module level, but
+`package-lambda.sh`'s `package()` function only ever copied the single named
+handler file (`cp "${source_file}" "${build_dir}/${name}.py"`) — it never
+copied `db_utils.py`. This went undetected for `resolve_customer` and
+`metering_worker` because their currently-deployed zips were built by an
+earlier, different (manual/undocumented) process that did include it.
+`subscription_handler` had no such manual build and was broken from this gap.
+A fix (`extra_files_for()` function + copy-loop in `package()`) was designed
+and reviewed this session but its deployment status was NOT confirmed by
+session end — see "Known open issue" below before assuming this is resolved.
+
+CAUTION: `db_utils.py` exists in FOUR locations in this repo with THREE
+different MD5 hashes (as of 2026-06-22):
+- `phase2-backend/lambda_layer/python/db_utils.py` — canonical, intended as
+  the copy source for the `extra_files_for()` fix above (no stale RDS Proxy
+  `statement_timeout` option, matches `functions/package/`)
+- `phase2-backend/functions/db_utils.py` — differs by one comment line only
+- `phase2-backend/functions/package/db_utils.py` — matches the layer copy
+- `vendor/marketplace-entitlement/db_utils.py` — STALE (6/9 snapshot), has
+  the now-removed `statement_timeout` option AND its sibling handler file
+  only handles SNS `SignatureVersion "1"`. DO NOT deploy from this vendor
+  directory — reference only.
+
+These should be consolidated to one canonical location at some point.
+
+### Netlify — THREE separate sites from one repo
+This repo backs three independent Netlify projects, each with its own
+`netlify.toml`/build config:
+- `securebase-app` (a4fc5c81-...) -> tximhotep.com — builds from repo root
+- `securebase-portal` (d9e565ff-...) -> portal.securebase.tximhotep.com —
+  builds from `phase3a-portal/` (React 18/Vite 5,
+  `securebase-customer-portal`)
+- `securebase-demo` (e2653a23-...) -> demo.securebase.tximhotep.com
+
+CRITICAL: `netlify deploy --site <id>` controls WHERE a deploy goes but NOT
+what gets built — the build command and source directory come from whichever
+`netlify.toml` is found via the CURRENT WORKING DIRECTORY, not the `--site`
+flag. Running `netlify deploy --prod --site <portal-id>` from repo root will
+build and deploy the ROOT app to the portal's domain (this happened once
+during this session and was caught/corrected before going live for long).
+Always cd into the correct subdirectory first:
+
+Root site:
+  cd <repo-root> && netlify deploy --prod --site a4fc5c81-e95f-4b2c-8c48-5080c0046328
+
+Portal site:
+  cd phase3a-portal && netlify deploy --prod --site d9e565ff-5b33-4e21-b461-fbe24851f1bd
+
+### Marketplace fulfillment URL — AUDIT_ERROR root cause (2026-06-22)
+The fulfillment URL (https://portal.securebase.tximhotep.com/api/marketplace/resolve)
+returned a literal Netlify 404 — not an application error — because the
+securebase-portal site (see above) had no /api/marketplace/resolve
+redirect rule in its LIVE deploy, despite the correct rule already existing
+in source at phase3a-portal/public/_redirects (dated 6/17). The portal site
+was simply stale; redeploying it from the correct directory resolved this.
+The handler (marketplace_resolve_customer.py) already correctly returns
+HTTP 200 with HTML for requests carrying Accept: text/html (audit-bot
+compatibility per AWS requirements) — verified working as deployed, no code
+change needed there.
+
+### CI/CD — undocumented second ungated apply path (2026-06-22)
+.github/workflows/terraform-apply.yml (distinct from the already-documented
+terraform-securebase-apply.yml) had its own direct, ungated push-trigger
+into landing-zone/environments/prod — on: push: branches: [main], no
+terraform plan step, straight to terraform apply -auto-approve, no
+environment protection, no required reviewer. Root cause traced to commit
+f6600f7f (2026-03-24, "WIP: Removing workflow approvals") — a script
+(remove_workflow_approvals.sh) that deliberately strips environment: blocks
+and approval gates from workflow YAML, run during early pre-launch
+iteration. That script's blast radius was only confirmed against this one
+file this session — it may have stripped gates from other workflows in
+March too; unverified.
+
+terraform-apply.yml has been converted to workflow_dispatch with a
+required confirmed=APPLY input, mirroring the phase6-db-migrations.yml
+confirmed=MIGRATE pattern. Trigger via:
+  gh workflow run terraform-apply.yml -f confirmed=APPLY
+
+Its TF_VERSION was also misaligned (1.7.5 vs. the local pin of 1.5.7) and
+has been corrected to match.
+
+Also discovered: GitHubActionsRole lacks read permissions (SNS, SQS, EC2,
+KMS, S3, XRay, CloudWatch) across most of what this workflow's Terraform root
+actually touches — caused a CI run to fail with ~15 distinct AccessDenied
+errors when first re-triggered. Deliberately left unfixed (not widened) this
+session, since broadening this role's permissions cuts against the point of
+re-gating the workflow. Needs scoped, resource-specific IAM grants as a
+separate piece of work.
+
+## Deployment Safety Rules
+
+Terraform / landing-zone / IAM / DB migrations: Never push directly to
+main. Branch + local terraform plan review before merge, always. main
+can trigger an unattended terraform apply via more than one workflow (see
+CI/CD note above) — a push touching landing-zone/ or terraform/ may be
+equivalent to running apply against production yourself, unreviewed, right
+now. Do not assume any single workflow file's scope without reading its
+on: block directly — there is precedent for undocumented, ungated apply
+paths existing in parallel with documented ones.
+
+Docs / scripts / non-deployed config (including Netlify redirect configs,
+this file): direct-to-main is fine, no branch required.
+
+### Known open issue (as of 2026-06-22 session end)
+marketplace_subscription_handler was still failing on
+ModuleNotFoundError: No module named 'db_utils' as of this session's last
+confirmed test — AFTER a cryptography-only fix had already been deployed
+(that fix alone was insufficient; both gaps had to be fixed before this
+Lambda would work). The extra_files_for() patch to package-lambda.sh was
+written, but its actual presence in the file, a fresh package/deploy, and a
+clean re-invoke were NOT all confirmed in the same pass by session end.
+Before treating this as resolved, run:
+  grep -n "extra_files_for" phase2-backend/functions/package-lambda.sh
+  unzip -l phase2-backend/deploy/marketplace_subscription_handler.zip | grep db_utils
+
+Both must show the function/file present BEFORE re-testing with a live
+invoke. The subscription_handler DLQ has 9 backlogged real events (one real
+or test customer, dqxUD4EkUGg, three full subscribe/unsubscribe cycles
+spanning 6/17-6/22) that must be replayed manually, one at a time, in strict
+chronological timestamp order (queue is standard, not FIFO) once this is
+fixed — see prior session transcript for the exact sorted order and message
+IDs.
