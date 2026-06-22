@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-15T09:10:53.496800+00:00",
+  "generated": "2026-06-22T09:05:53.494602+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -35,12 +35,7 @@
         "score": 97,
         "verification_status": "valid"
       },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
+      "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Veritex_Community_Bank",
       "linkedin_dm": "Hi Robert,\n\nI'm a local Dallas founder building SecureBase \u2014 a compliance orchestration platform built specifically for Texas regional banks. We've automated FFIEC gap mapping and can deliver a 72-hour snapshot your team can act on immediately, without a 6-month implementation.\n\nFor Veritex Community Bank, that means closing audit findings faster and reducing examiner prep time significantly.\n\nWould you be open to a 20-minute call this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
@@ -550,12 +545,7 @@
         "score": 83,
         "verification_status": "accept_all"
       },
-      "pdl_enrichment": {
-        "linkedin_url": "",
-        "job_title": "",
-        "job_title_role": "",
-        "job_title_levels": []
-      },
+      "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
       "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
     },
