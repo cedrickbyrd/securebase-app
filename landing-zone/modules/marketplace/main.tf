@@ -372,15 +372,16 @@ resource "aws_cloudwatch_metric_alarm" "subscription_handler_errors" {
 }
 
 # ---------------------------------------------------------------------------
-# VPC endpoints — AWS Marketplace Entitlement + Metering Service APIs.
+# VPC endpoint — AWS Marketplace Metering Service API.
 #
 # All three marketplace Lambdas run inside vpc_config (private subnets, no
-# NAT/IGW route to the public internet). Without these interface endpoints,
-# any GetEntitlements call (resolve_customer, subscription_handler's
-# _cold_start_audit) or BatchMeterUsage call (metering_worker) has no route
-# out and hangs until the client-side timeout fires (see the 5s timeout
-# added to the entitlement clients as a stopgap — that timeout stays in
-# place as defense-in-depth even with these endpoints present).
+# NAT/IGW route to the public internet). Without this interface endpoint,
+# the BatchMeterUsage call (metering_worker) has no route out and hangs
+# until the client-side timeout fires (see the 5s timeout added to the
+# entitlement/metering clients as a stopgap — that timeout stays in place
+# as defense-in-depth even with this endpoint present). There is no
+# equivalent PrivateLink endpoint for the Entitlement Service — see note
+# below.
 #
 # Security group: a dedicated SG scoped to 443 ingress from the Lambda SG
 # only, rather than reusing lambda_security_group_id directly as the
@@ -391,7 +392,7 @@ resource "aws_cloudwatch_metric_alarm" "subscription_handler_errors" {
 resource "aws_security_group" "marketplace_vpc_endpoints" {
   count       = var.create_marketplace_vpc_endpoints ? 1 : 0
   name        = "securebase-${var.environment}-marketplace-vpc-endpoints"
-  description = "Allows marketplace Lambdas to reach the AWS Marketplace Entitlement and Metering Service interface endpoints over HTTPS"
+  description = "Allows marketplace Lambdas to reach the AWS Marketplace Metering Service interface endpoint over HTTPS"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -413,24 +414,20 @@ resource "aws_security_group" "marketplace_vpc_endpoints" {
   tags = local.common_tags
 }
 
-resource "aws_vpc_endpoint" "marketplace_entitlement" {
-  count               = var.create_marketplace_vpc_endpoints ? 1 : 0
-  vpc_id              = var.vpc_id
-  service_name        = "com.amazonaws.${var.aws_region}.aws-marketplace-entitlement"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = var.private_subnet_ids
-  security_group_ids  = [aws_security_group.marketplace_vpc_endpoints[0].id]
-  private_dns_enabled = true
-
-  tags = merge(local.common_tags, {
-    Name = "securebase-${var.environment}-marketplace-entitlement"
-  })
-}
+# aws_vpc_endpoint.marketplace_entitlement intentionally omitted.
+# AWS does not publish a PrivateLink Interface endpoint for the Marketplace
+# Entitlement Service in us-east-1 (verified via `aws ec2
+# describe-vpc-endpoint-services` — only agreement-marketplace,
+# discovery-marketplace, and metering-marketplace exist). GetEntitlements
+# calls from these Lambdas have no PrivateLink path and continue to rely on
+# the 5s client-side timeout described above as defense-in-depth. Resolving
+# entitlement connectivity (e.g. via NAT/IGW egress) is a separate
+# architectural and cost decision, out of scope here.
 
 resource "aws_vpc_endpoint" "marketplace_metering" {
   count               = var.create_marketplace_vpc_endpoints ? 1 : 0
   vpc_id              = var.vpc_id
-  service_name        = "com.amazonaws.${var.aws_region}.aws-marketplace-metering"
+  service_name        = "com.amazonaws.${var.aws_region}.metering-marketplace"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = var.private_subnet_ids
   security_group_ids  = [aws_security_group.marketplace_vpc_endpoints[0].id]
