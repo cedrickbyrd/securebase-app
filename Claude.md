@@ -565,3 +565,43 @@ spanning 6/17-6/22) that must be replayed manually, one at a time, in strict
 chronological timestamp order (queue is standard, not FIFO) once this is
 fixed — see prior session transcript for the exact sorted order and message
 IDs.
+
+
+### ✅ RESOLVED — database target confirmed correct (2026-06-22)
+
+While testing `marketplace_subscription_handler` after the db_utils fix, discovered
+all three marketplace Lambdas (`resolve_customer`, `subscription_handler`,
+`metering_worker`) are configured via `var.marketplace_db_host`
+(`landing-zone/environments/prod/marketplace.tfvars:45`) to point at:
+
+    securebase-phase2-proxy-dev.proxy-coti40osot2c.us-east-1.rds.amazonaws.com
+
+This proxy's only target is RDS cluster `securebase-phase2-dev` — "dev" all the
+way down to the cluster identifier itself, not just a display name.
+
+HOWEVER: `describe-db-proxies` for the entire AWS account returns only ONE
+proxy total (this one) — there is no separate, explicitly-named "prod" proxy
+anywhere. `describe-db-clusters` returns a SECOND cluster with an
+AWS-auto-generated identifier, `aws-apg-cyan-queen`, of unknown purpose,
+unknown age relative to `securebase-phase2-dev`, and unknown whether anything
+currently connects to it (no proxy targets it, per the one proxy that exists;
+unclear if anything connects directly).
+
+RESOLVED (same session, 2026-06-22): `securebase-phase2-dev` IS the correct
+and only real database for this platform — "dev" in the name is stale/legacy,
+not an indication of wrong environment. Confirmed via:
+- The proxy has TWO registered auth secrets — `securebase/dev/rds/admin-password`
+  AND `securebase/prod/rds/app-...`. The marketplace Lambdas use the prod app
+  secret specifically. One physical proxy/cluster, deliberately serving both
+  dev-admin and prod-app connections.
+- `aws-apg-cyan-queen` (the second cluster found) is UNRELATED to SecureBase —
+  tagged `VercelInstallId`/`VercelResourceId`/`aws-apn-id`, i.e. provisioned by
+  Vercel's AWS Marketplace integration for an unrelated project in this same
+  AWS account. `DatabaseName: null`, nothing in this repo references it.
+
+No customer data is in the wrong place. No action needed beyond an optional
+future rename of `securebase-phase2-dev`/`securebase-phase2-proxy-dev` for
+clarity — not urgent. The subscription_handler DLQ backlog and the
+db_utils/cryptography fixes can both be treated as fully resolved on the
+"correct database" question; see other notes in this file for their own
+independent status.
