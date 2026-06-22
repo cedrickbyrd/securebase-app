@@ -228,6 +228,7 @@ module "marketplace" {
   marketplace_product_code  = var.marketplace_product_code
   private_subnet_ids        = var.lambda_subnets != null ? var.lambda_subnets : aws_subnet.lambda.*.id
   lambda_security_group_id  = module.phase2_database.lambda_security_group_id
+  vpc_id                    = var.default_vpc_id != null ? var.default_vpc_id : aws_vpc.default[0].id
   tags                      = var.tags
 
   depends_on = [module.lambda_functions, module.phase2_database]
