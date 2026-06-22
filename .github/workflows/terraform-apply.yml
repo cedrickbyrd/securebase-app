@@ -1,11 +1,12 @@
 name: Terraform Apply
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'landing-zone/**'
-      - '.github/workflows/terraform-apply.yml'
+  workflow_dispatch:
+    inputs:
+      confirmed:
+        description: 'Type APPLY to confirm this will run terraform apply against prod landing-zone'
+        required: true
+        type: string
 
 concurrency:
   group: terraform-apply-${{ github.sha }}
@@ -16,7 +17,7 @@ permissions:
   id-token: write
 
 env:
-  TF_VERSION: '1.7.5'
+  TF_VERSION: '1.5.7'
 
 jobs:
   terraform-apply:
@@ -31,6 +32,13 @@ jobs:
         working-directory: landing-zone/environments/prod
 
     steps:
+      - name: Verify confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirmed }}" != "APPLY" ]; then
+            echo "::error::Confirmation not provided. Re-run with confirmed=APPLY to proceed."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
