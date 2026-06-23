@@ -301,6 +301,7 @@ module "marketplace" {
   marketplace_product_code  = var.marketplace_product_code
   private_subnet_ids        = var.lambda_subnets
   lambda_security_group_id  = var.marketplace_lambda_security_group_id
+  vpc_id                    = var.default_vpc_id
   tags                      = merge(var.tags, { Phase = "marketplace" })
 }
 
