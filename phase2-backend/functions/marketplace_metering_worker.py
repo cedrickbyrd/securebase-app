@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 
 import boto3
+from botocore.config import Config
 
 if os.environ.get("DB_HOST") and not os.environ.get("RDS_HOST"):
     os.environ["RDS_HOST"] = os.environ["DB_HOST"]
@@ -17,8 +18,16 @@ from db_utils import get_connection, release_connection
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
+# Short timeout for marketplace/SNS API calls — no VPC endpoint available for
+# SNS; must fail fast rather than hanging the full Lambda timeout.
+_MARKETPLACE_API_CONFIG = Config(
+    connect_timeout=5,
+    read_timeout=5,
+    retries={"max_attempts": 1},
+)
+
 metering_client = boto3.client("meteringmarketplace")
-sns_client = boto3.client("sns")
+sns_client = boto3.client("sns", config=_MARKETPLACE_API_CONFIG)
 
 MARKETPLACE_PRODUCT_CODE = os.environ.get("MARKETPLACE_PRODUCT_CODE", "")
 ALERTS_SNS_TOPIC_ARN = os.environ.get("ALERTS_SNS_TOPIC_ARN", "")
@@ -97,7 +106,12 @@ def _insert_metering_record(customer_id: str, marketplace_customer_id: str, dime
 def _publish_alert(subject: str, message: str):
     if not ALERTS_SNS_TOPIC_ARN:
         return
-    sns_client.publish(TopicArn=ALERTS_SNS_TOPIC_ARN, Subject=subject, Message=message)
+    try:
+        sns_client.publish(TopicArn=ALERTS_SNS_TOPIC_ARN, Subject=subject, Message=message)
+    except Exception:
+        # Alerting must never crash the worker — a missing VPC endpoint/NAT path to
+        # SNS would otherwise mask the real per-customer failure being reported.
+        logger.exception("Failed to publish alert: %s", subject)
 
 
 def _meter_customer(customer_id: str, marketplace_customer_id: str, tier: str):
