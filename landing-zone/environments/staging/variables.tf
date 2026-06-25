@@ -92,3 +92,58 @@ variable "staging_db_credentials_secret_arn" {
   type        = string
   default     = ""
 }
+
+# ============================================================================
+# Root module pass-through variables required by module "securebase"
+# ============================================================================
+variable "stripe_public_key" {
+  description = "The Stripe publishable key for frontend integration."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "stripe_secret_key" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "netlify_api_token" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "lambda_packages" {
+  type = map(string)
+  default = {
+    auth_v2                          = "s3://securebase-terraform-state-staging/lambda/auth_v2.zip"
+    health_check                     = "s3://securebase-terraform-state-staging/lambda/health_check.zip"
+    webhook_manager                  = "s3://securebase-terraform-state-staging/lambda/webhook_manager.zip"
+    billing_worker                   = "s3://securebase-terraform-state-staging/lambda/billing_worker.zip"
+    support_tickets                  = "s3://securebase-terraform-state-staging/lambda/support_tickets.zip"
+    cost_forecasting                 = "s3://securebase-terraform-state-staging/lambda/cost_forecasting.zip"
+    submit_lead                      = "s3://securebase-terraform-state-staging/lambda/submit_lead.zip"
+    demo_auth                        = "s3://securebase-terraform-state-staging/lambda/demo_auth.zip"
+    session_management               = "s3://securebase-terraform-state-staging/lambda/session_management.zip"
+    stripe_handler                   = "s3://securebase-terraform-state-staging/lambda/stripe_handler.zip"
+    marketplace_resolve_customer     = "s3://securebase-terraform-state-staging/lambda/marketplace_resolve_customer.zip"
+    marketplace_subscription_handler = "s3://securebase-terraform-state-staging/lambda/marketplace-entitlement.zip"
+    marketplace_metering_worker      = "s3://securebase-terraform-state-staging/lambda/marketplace-metering.zip"
+  }
+}
+
+variable "demo_auth_jwt_secret" {
+  description = "JWT signing secret for the demo-auth Lambda"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "demo_auth_password" {
+  description = "Demo login password"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

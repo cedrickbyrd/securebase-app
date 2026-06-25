@@ -85,6 +85,7 @@ variable "stripe_public_key" {
   description = "The Stripe publishable key for frontend integration."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "lambda_packages" {
@@ -94,6 +95,7 @@ variable "lambda_packages" {
 variable "netlify_api_token" {
   type      = string
   sensitive = true
+  default   = ""
 }
 
 variable "default_vpc_id" {
@@ -147,6 +149,7 @@ variable "enable_vpc" {
 variable "stripe_secret_key" {
   type      = string
   sensitive = true
+  default   = ""
 }
 
 # ── Phase 5.3 Variables ─────────────────────────────────────────────────────────────────

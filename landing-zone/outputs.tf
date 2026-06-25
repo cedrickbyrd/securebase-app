@@ -100,3 +100,13 @@ output "marketplace_resolve_lambda_name" {
   description = "Function name of marketplace resolve lambda when marketplace module is enabled"
   value       = length(module.marketplace) > 0 ? module.marketplace[0].marketplace_resolve_customer_name : null
 }
+
+output "lambda_security_group_id" {
+  description = "Security group ID used by backend Lambdas"
+  value       = module.phase2_database.lambda_security_group_id
+}
+
+output "cost_per_tenant_table_name" {
+  description = "DynamoDB table storing per-tenant daily costs (Phase 6 Track 5)"
+  value       = module.phase5_admin_metrics.cost_per_tenant_table_name
+}
