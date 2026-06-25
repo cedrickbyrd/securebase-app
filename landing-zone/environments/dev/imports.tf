@@ -87,47 +87,9 @@ import {
   id = "securebase-dev-analytics-functions-role"
 }
 
-# ── Phase 2 API drift fixes (2026-05-16 Terraform Apply job failure) ─────────
-# These imports reconcile resources that already exist in AWS but were missing
-# from Terraform state during the 2026-05-16 SecureBase workspace apply failure.
-
-import {
-  to = aws_lambda_function.pilot_availability
-  id = "securebase-pilot-availability"
-}
-
-import {
-  to = aws_lambda_function.validate_session
-  id = "securebase-validate-session"
-}
-
-import {
-  to = aws_lambda_function.stripe_webhook
-  id = "securebase-stripe-webhook"
-}
-
-import {
-  to = aws_lambda_permission.apigw_signup
-  id = "securebase-signup-handler/AllowExecutionFromAPIGateway"
-}
-
-import {
-  to = aws_lambda_permission.apigw_verify_email
-  id = "securebase-verify-email/AllowExecutionFromAPIGateway"
-}
-
-import {
-  to = aws_lambda_permission.apigw_onboarding_status
-  id = "securebase-onboarding-status/AllowExecutionFromAPIGateway"
-}
-
-import {
-  to = aws_dynamodb_table.pilot_slots
-  id = "securebase-pilot-slots"
-}
-
-# NOTE: aws_api_gateway_resource/method imports for auth_login, verify_email,
-# onboarding, pilot_availability, checkout, signup, validate_session, and
-# stripe_webhook were removed — the resources they target only exist in
-# terraform-backlog/ (not part of this environment's module tree), and their
-# import IDs were unresolved "NEEDS_RESOURCE_ID" placeholders.
+# NOTE: the "Phase 2 API drift fixes" import block (aws_lambda_function.*,
+# aws_lambda_permission.apigw_*, aws_dynamodb_table.pilot_slots, and the
+# aws_api_gateway_resource/method imports) was removed entirely — every
+# resource it targeted only exists in terraform-backlog/ (not part of this
+# environment's module tree), and the API Gateway import IDs were unresolved
+# "NEEDS_RESOURCE_ID" placeholders.
