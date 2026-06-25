@@ -77,6 +77,21 @@ DIMENSION_TO_TIER = {
 }
 
 
+def _normalize_record(record: dict) -> dict:
+    """Return an SNS-envelope dict regardless of whether this Lambda was invoked
+    directly by SNS (native event_source) or via an SQS event source mapping
+    (current architecture — SNS payload arrives JSON-encoded in record['body'])."""
+    if "Sns" in record:
+        return record["Sns"]
+    if "body" in record:
+        try:
+            return json.loads(record["body"])
+        except json.JSONDecodeError:
+            logger.warning("SQS record body is not valid JSON, skipping")
+            return {}
+    return {}
+
+
 def _build_sns_signing_string(sns_payload: dict) -> str:
     fields = [
         ("Message", sns_payload.get("Message")),
@@ -110,7 +125,7 @@ def _verify_sns_signature(record: dict) -> bool:
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import padding
 
-    sns_payload = record.get("Sns", {})
+    sns_payload = _normalize_record(record)
     signature = sns_payload.get("Signature")
     signature_version = sns_payload.get("SignatureVersion")
     signing_cert_url = sns_payload.get("SigningCertUrl") or sns_payload.get("SigningCertURL")
@@ -160,7 +175,7 @@ def _verify_sns_signature(record: dict) -> bool:
 
 
 def _extract_event_payload(record: dict) -> tuple[str, dict, str]:
-    sns_payload = record.get("Sns", {})
+    sns_payload = _normalize_record(record)
     message_id = sns_payload.get("MessageId", "")
 
     raw_message = sns_payload.get("Message", "{}")

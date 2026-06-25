@@ -90,13 +90,13 @@ variable "create_marketplace_vpc_endpoints" {
 }
 
 variable "aws_marketplace_sns_topic_arn" {
-  description = "AWS Marketplace subscription notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-<product_code>). Delivers subscribe-success, unsubscribe-pending, unsubscribe-success events. Cannot be subscribed via Terraform — register the subscription_handler Lambda endpoint via AMMP UI after deploy."
+  description = "AWS Marketplace subscription notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-<product_code>). Delivers subscribe-success, unsubscribe-pending, unsubscribe-success events. Subscribed via SQS (the only supported cross-account protocol for AWS-owned Marketplace topics) — see aws_sns_topic_subscription.marketplace_subscription_to_sqs."
   type        = string
   default     = ""
 }
 
 variable "aws_marketplace_entitlement_sns_topic_arn" {
-  description = "AWS Marketplace entitlement notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-<product_code>). Delivers entitlement-updated events (tier upgrades/downgrades). Set after confirming subscription notification topic is working."
+  description = "AWS Marketplace entitlement notification SNS topic ARN (account 287250355862, format: arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-<product_code>). Delivers entitlement-updated events (tier upgrades/downgrades). Subscribed via SQS — see aws_sns_topic_subscription.marketplace_entitlement_to_sqs."
   type        = string
   default     = ""
 }
