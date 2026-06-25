@@ -90,11 +90,6 @@ import {
 # ── Phase 2 API drift fixes (2026-05-16 Terraform Apply job failure) ─────────
 # These imports reconcile resources that already exist in AWS but were missing
 # from Terraform state during the 2026-05-16 SecureBase workspace apply failure.
-#
-# API Gateway import IDs below use placeholders for RESOURCE_ID. Fill each
-# NEEDS_RESOURCE_ID by running:
-# aws apigateway get-resources --rest-api-id 9xyetu7zq3 \
-#   --query "items[*].[path,id]" --output table
 
 import {
   to = aws_lambda_function.pilot_availability
@@ -131,67 +126,8 @@ import {
   id = "securebase-pilot-slots"
 }
 
-import {
-  to = aws_api_gateway_resource.auth_login
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID"
-}
-
-import {
-  to = aws_api_gateway_resource.verify_email
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID"
-}
-
-import {
-  to = aws_api_gateway_resource.onboarding
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID"
-}
-
-import {
-  to = aws_api_gateway_resource.pilot_availability
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID"
-}
-
-import {
-  to = aws_api_gateway_method.auth_options
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/OPTIONS"
-}
-
-import {
-  to = aws_api_gateway_method.checkout_post
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/POST"
-}
-
-import {
-  to = aws_api_gateway_method.checkout_options
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/OPTIONS"
-}
-
-import {
-  to = aws_api_gateway_method.signup_post
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/POST"
-}
-
-import {
-  to = aws_api_gateway_method.signup_options
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/OPTIONS"
-}
-
-import {
-  to = aws_api_gateway_method.validate_session_get
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/GET"
-}
-
-import {
-  to = aws_api_gateway_method.validate_session_options
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/OPTIONS"
-}
-
-import {
-  to = aws_api_gateway_method.stripe_webhook_post
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/POST"
-}
-
-import {
-  to = aws_api_gateway_method.stripe_webhook_options
-  id = "9xyetu7zq3/NEEDS_RESOURCE_ID/OPTIONS"
-}
+# NOTE: aws_api_gateway_resource/method imports for auth_login, verify_email,
+# onboarding, pilot_availability, checkout, signup, validate_session, and
+# stripe_webhook were removed — the resources they target only exist in
+# terraform-backlog/ (not part of this environment's module tree), and their
+# import IDs were unresolved "NEEDS_RESOURCE_ID" placeholders.

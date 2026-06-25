@@ -86,12 +86,11 @@ jobs:
         id: plan
         run: |
           set +e
-          terraform plan -no-color -input=false -detailed-exitcode > plan.txt
-          CODE=$?
+          terraform plan -no-color -input=false -detailed-exitcode 2>&1 | tee plan.txt
+          CODE=${PIPESTATUS[0]}
           set -e
           if [ "$CODE" -eq 1 ]; then
             echo "Terraform plan failed"
-            cat plan.txt
             exit 1
           fi
           if [ "$CODE" -eq 2 ]; then
@@ -101,6 +100,7 @@ jobs:
           fi
           echo "plan_file=${{ matrix.workspace }}-plan.txt" >> "$GITHUB_OUTPUT"
           cp plan.txt "${{ matrix.workspace }}-plan.txt"
+          exit 0
 
       - name: Upload full plan artifact
         if: steps.backend_check.outputs.configured == 'true'

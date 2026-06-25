@@ -39,6 +39,11 @@ output "api_gateway_endpoint" {
   value = try(module.api_gateway.api_gateway_endpoint, "Not deployed")
 }
 
+output "api_endpoints" {
+  description = "Map of all API Gateway endpoint URLs"
+  value       = try(module.api_gateway.api_endpoints, {})
+}
+
 output "admin_metrics_api_url" {
   value       = try("${module.api_gateway.api_gateway_endpoint}/admin", "Not deployed")
   description = "Live CloudWatch metrics endpoint for Phase 5.1 Admin Dashboard"
