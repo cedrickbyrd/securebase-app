@@ -6,8 +6,9 @@ test.describe('Marketplace Redirect Flow', () => {
 
   test('no token — shows invalid link error', async ({ page }) => {
     await page.goto(FULFILLMENT_URL);
-    // Component renders: "⚠️ Invalid marketplace link" — use partial match
-    await expect(page.getByText(/Invalid marketplace link/i)).toBeVisible();
+    // Component sets error state to "Invalid marketplace link" but rewrites
+    // it to this friendlier message before rendering (see MarketplaceRedirect.jsx)
+    await expect(page.getByText(/Marketplace link has expired/i)).toBeVisible();
     await expect(page.getByText(/support@securebase\.tximhotep\.com/i)).toBeVisible();
   });
 
