@@ -1,7 +1,7 @@
 # CEO Mode — Executive Dashboard
 *Snapshot date: 2026-06-26*
 
-A live-state companion to `CEO_REVIEW_PLAN.md` (May 2026) and `Executive Summary.md`. Where those describe strategy and positioning, this tracks **what is actually true in production right now**, pulled from the most recent engineering sessions (`Claude.md`, `docs/STATE_DRIFT_2026-04-22.md`, commit history).
+A live-state companion to `Executive Summary.md`. Where that describes strategy and positioning, this tracks **what is actually true in production right now**, pulled from the most recent engineering sessions (`Claude.md`, `docs/STATE_DRIFT_2026-04-22.md`, commit history). This dashboard supersedes the now-removed `docs/CEO_REVIEW_PLAN.md` (May 2026) as the executive-facing status view.
 
 ---
 
@@ -40,8 +40,8 @@ None of these are customer-data-loss risks; all are availability/operational ris
 | Metric | Value | Source |
 |---|---|---|
 | Pricing tiers | $2K–$25K/mo (Standard → Government) | `PRICING.md` |
-| Pilot program | 50% off, 6 months, target 20 companies | `CEO_REVIEW_PLAN.md` |
-| Year 1 ARR target | $1.2M (20 pilot customers) | `CEO_REVIEW_PLAN.md` |
+| Pilot program | 50% off, 6 months, target 20 companies | carried over from removed `CEO_REVIEW_PLAN.md` |
+| Year 1 ARR target | $1.2M (20 pilot customers) | carried over from removed `CEO_REVIEW_PLAN.md` |
 | Pilot status | Marketing ready; outreach not confirmed launched this session | unverified |
 
 *No commercial/financial data was re-verified in this session — only engineering state was. Treat business figures above as carried over, not confirmed current.*
@@ -58,4 +58,4 @@ None of these are customer-data-loss risks; all are availability/operational ris
 
 ---
 
-*This dashboard is meant to be regenerated each session from `Claude.md` and recent commits — it is a status mirror, not a plan. For strategy and roadmap, see `CEO_REVIEW_PLAN.md`.*
+*This dashboard is meant to be regenerated each session from `Claude.md` and recent commits — it is a status mirror, not a plan.*
