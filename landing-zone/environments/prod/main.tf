@@ -72,6 +72,12 @@ module "phase6_lambdas" {
   security_group_ids                = var.lambda_security_group_ids
   alert_sns_arn                     = data.aws_sns_topic.alerts.arn
 
+  # Phase 6.2 tenant fan-out: enumerate active tenants from the customers store
+  # (reusing the prod Aurora credentials secret) and assume each tenant's
+  # cross-account read role with this external ID.
+  tenant_registry_db_secret_arn = var.prod_db_credentials_secret_arn
+  securebase_external_id        = var.securebase_external_id
+
   tags = merge(var.tags, { Phase = "6" })
 
   depends_on = [module.phase6_audit_logging]
@@ -141,21 +147,21 @@ module "marketplace" {
 
   source = "../../modules/marketplace"
 
-  environment                          = var.environment
-  aws_region                           = var.target_region
-  lambda_packages                      = var.lambda_packages
-  lambda_role_arn                      = var.marketplace_lambda_role_arn
-  db_host                              = var.marketplace_db_host
-  db_secret_arn                        = var.marketplace_db_secret_arn
-  alerts_sns_topic_arn                 = var.marketplace_alerts_sns_topic_arn
-  ceo_sns_topic_arn                    = var.marketplace_ceo_sns_topic_arn
-  marketplace_product_code             = var.marketplace_product_code
-  private_subnet_ids                   = var.marketplace_private_subnet_ids
-  lambda_security_group_id             = var.marketplace_lambda_security_group_id
-  vpc_id                               = "vpc-003c9d5b0f9f1a02b"
-  onboarding_function_name             = var.marketplace_onboarding_function_name
-  dlq_kms_key_arn                      = var.marketplace_dlq_kms_key_arn
-  aws_marketplace_sns_topic_arn        = var.aws_marketplace_sns_topic_arn
+  environment                               = var.environment
+  aws_region                                = var.target_region
+  lambda_packages                           = var.lambda_packages
+  lambda_role_arn                           = var.marketplace_lambda_role_arn
+  db_host                                   = var.marketplace_db_host
+  db_secret_arn                             = var.marketplace_db_secret_arn
+  alerts_sns_topic_arn                      = var.marketplace_alerts_sns_topic_arn
+  ceo_sns_topic_arn                         = var.marketplace_ceo_sns_topic_arn
+  marketplace_product_code                  = var.marketplace_product_code
+  private_subnet_ids                        = var.marketplace_private_subnet_ids
+  lambda_security_group_id                  = var.marketplace_lambda_security_group_id
+  vpc_id                                    = "vpc-003c9d5b0f9f1a02b"
+  onboarding_function_name                  = var.marketplace_onboarding_function_name
+  dlq_kms_key_arn                           = var.marketplace_dlq_kms_key_arn
+  aws_marketplace_sns_topic_arn             = var.aws_marketplace_sns_topic_arn
   aws_marketplace_entitlement_sns_topic_arn = var.aws_marketplace_entitlement_sns_topic_arn
 
   tags = merge(var.tags, { Phase = "marketplace" })

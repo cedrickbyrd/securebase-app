@@ -309,7 +309,80 @@ class TestWriteScoreToDynamoDB:
 class TestLambdaHandler:
     """Integration-level tests for compliance_score_recalculator.lambda_handler."""
 
-    def test_handler_defaults_to_platform_customer(self):
+    def test_scheduled_run_fans_out_to_all_active_tenants(self):
+        """Empty (scheduled) event must async self-invoke once per tenant.
+
+        Regression test for the audit finding: the daily cron previously scored
+        only the 'platform' account (tenants_processed == 1). It must now read
+        the tenant registry and dispatch one invoke per active tenant plus the
+        platform account.
+        """
+        with patch('boto3.client'), patch('boto3.resource'):
+            import importlib
+            import compliance_score_recalculator
+            importlib.reload(compliance_score_recalculator)
+            compliance_score_recalculator.SELF_FUNCTION_NAME = 'self-fn'
+
+            # Three active tenants in the registry (Customer #1/#2/#3 convention,
+            # opaque ids only — no PII).
+            active_tenants = [
+                {'customer_id': 'cust-0001', 'role_arn': 'arn:aws:iam::111:role/SecureBaseReadOnly'},
+                {'customer_id': 'cust-0002', 'role_arn': 'arn:aws:iam::222:role/SecureBaseReadOnly'},
+                {'customer_id': 'cust-0003', 'role_arn': None},
+            ]
+            mock_lambda = MagicMock()
+            with patch.object(compliance_score_recalculator, '_get_active_tenants',
+                              return_value=active_tenants), \
+                 patch('compliance_score_recalculator.boto3.client',
+                       return_value=mock_lambda):
+                result = compliance_score_recalculator.lambda_handler({}, _make_context())
+
+        # platform + 3 tenants = 4 dispatched invocations.
+        assert result['mode'] == 'fan_out'
+        assert result['tenants_dispatched'] == 4
+        assert result['tenants_total'] == 4
+        assert result['errors'] == []
+        assert mock_lambda.invoke.call_count == 4
+
+        # Every dispatch must be async (fire-and-forget) and target this function.
+        dispatched_ids = []
+        for invoke_call in mock_lambda.invoke.call_args_list:
+            kwargs = invoke_call.kwargs
+            assert kwargs['InvocationType'] == 'Event'
+            assert kwargs['FunctionName'] == 'self-fn'
+            dispatched_ids.append(json.loads(kwargs['Payload'])['customer_id'])
+
+        assert 'platform' in dispatched_ids
+        assert {'cust-0001', 'cust-0002', 'cust-0003'}.issubset(set(dispatched_ids))
+
+        # The tenant with a role_arn must carry it through to the child invoke.
+        cust1_payload = next(
+            json.loads(c.kwargs['Payload'])
+            for c in mock_lambda.invoke.call_args_list
+            if json.loads(c.kwargs['Payload'])['customer_id'] == 'cust-0001'
+        )
+        assert cust1_payload['role_arn'] == 'arn:aws:iam::111:role/SecureBaseReadOnly'
+
+    def test_scheduled_fan_out_propagates_dry_run(self):
+        """dry_run on the scheduled event is forwarded to each child invoke."""
+        with patch('boto3.client'), patch('boto3.resource'):
+            import importlib
+            import compliance_score_recalculator
+            importlib.reload(compliance_score_recalculator)
+            compliance_score_recalculator.SELF_FUNCTION_NAME = 'self-fn'
+
+            mock_lambda = MagicMock()
+            with patch.object(compliance_score_recalculator, '_get_active_tenants',
+                              return_value=[{'customer_id': 'cust-0001', 'role_arn': None}]), \
+                 patch('compliance_score_recalculator.boto3.client',
+                       return_value=mock_lambda):
+                compliance_score_recalculator.lambda_handler({'dry_run': True}, _make_context())
+
+        for invoke_call in mock_lambda.invoke.call_args_list:
+            assert json.loads(invoke_call.kwargs['Payload'])['dry_run'] is True
+
+    def test_manual_single_tenant_invoke_still_scores_one_tenant(self):
+        """A manual invoke with customer_id scores exactly that tenant inline."""
         with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
@@ -319,11 +392,13 @@ class TestLambdaHandler:
                                return_value={'SOC2': 90.0, 'HIPAA': 85.0}) as mock_score, \
                  patch('compliance_score_recalculator.boto3.Session',
                        return_value=MagicMock()) as mock_session:
-                result = compliance_score_recalculator.lambda_handler({}, _make_context())
+                result = compliance_score_recalculator.lambda_handler(
+                    {'customer_id': 'platform'}, _make_context()
+                )
 
+        assert result['mode'] == 'single_tenant'
         assert result['tenants_processed'] == 1
         assert result['scores']['platform']['SOC2'] == 90.0
-        assert 'errors' in result
         assert result['errors'] == []
         mock_session.assert_called_once()
         called_args, called_kwargs = mock_score.call_args
@@ -331,8 +406,8 @@ class TestLambdaHandler:
         assert called_kwargs['dry_run'] is False
         assert called_kwargs['session'] is mock_session.return_value
 
-    def test_handler_with_dry_run(self):
-        """dry_run=True is passed through to _score_tenant."""
+    def test_single_tenant_with_dry_run(self):
+        """dry_run=True is passed through to _score_tenant on the manual path."""
         with patch('boto3.client'), patch('boto3.resource'):
             import importlib
             import compliance_score_recalculator
@@ -343,10 +418,10 @@ class TestLambdaHandler:
                  patch('compliance_score_recalculator.boto3.Session',
                        return_value=MagicMock()) as mock_session:
                 compliance_score_recalculator.lambda_handler(
-                    {'dry_run': True}, _make_context()
+                    {'customer_id': 'cust-0001', 'dry_run': True}, _make_context()
                 )
             called_args, called_kwargs = mock_score.call_args
-            assert called_args[0] == 'platform'
+            assert called_args[0] == 'cust-0001'
             assert called_kwargs['dry_run'] is True
             assert called_kwargs['session'] is mock_session.return_value
 
@@ -360,14 +435,17 @@ class TestLambdaHandler:
                                side_effect=RuntimeError('Simulated AWS API failure')), \
                  patch('compliance_score_recalculator.boto3.Session',
                        return_value=MagicMock()):
-                result = compliance_score_recalculator.lambda_handler({}, _make_context())
+                result = compliance_score_recalculator.lambda_handler(
+                    {'customer_id': 'platform'}, _make_context()
+                )
 
         assert result['tenants_processed'] == 0
         assert len(result['errors']) == 1
         assert 'platform' in result['errors'][0]
 
     def test_handler_assumes_role_when_role_arn_is_provided(self):
-        with patch('boto3.client'), patch('boto3.resource'):
+        with patch('boto3.client'), patch('boto3.resource'), \
+             patch.dict('os.environ', {'SECUREBASE_EXTERNAL_ID': 'test-external-id'}):
             import importlib
             import compliance_score_recalculator
             importlib.reload(compliance_score_recalculator)
@@ -394,3 +472,124 @@ class TestLambdaHandler:
         assert called_args[0] == 'target-tenant'
         assert called_kwargs['dry_run'] is False
         assert called_kwargs['session'] is mock_session.return_value
+
+
+# ---------------------------------------------------------------------------
+# Tests: _score_tenant — Config failure must NOT persist a spurious score=0
+# ---------------------------------------------------------------------------
+
+class TestScoreTenantConfigFailure:
+    """When AWS Config returns no data, no score row may be written."""
+
+    def _setup(self):
+        with patch('boto3.client'), patch('boto3.resource'), \
+             patch.dict('sys.modules', {'db_utils': MagicMock()}):
+            import importlib
+            import compliance_score_recalculator
+            importlib.reload(compliance_score_recalculator)
+            return compliance_score_recalculator
+
+    def _session_with_controls(self, mod):
+        """Build a fake session and force a non-empty control mapping load."""
+        session = MagicMock()
+        # _load_mapping returns controls so rule_names is non-empty.
+        mod._load_mapping = MagicMock(return_value={'controls': SAMPLE_CONTROLS})
+        return session
+
+    def test_empty_config_map_skips_write(self):
+        """An empty compliance map (Config query failed) must skip the write.
+
+        Regression test: previously the code wrote score=0 from an empty map,
+        which tripped the >10pt-drop alarm. Now the framework is skipped and no
+        DynamoDB write happens.
+        """
+        mod = self._setup()
+        session = self._session_with_controls(mod)
+
+        write_score = MagicMock()
+        write_violations = MagicMock()
+        mod._write_score_to_dynamodb = write_score
+        mod._write_control_violations_to_dynamodb = write_violations
+        # Simulate Config failure: empty compliance map for every framework.
+        mod._get_config_compliance = MagicMock(return_value={})
+
+        scores = mod._score_tenant('cust-0001', session=session, dry_run=False)
+
+        # No score persisted for any framework, and each is reported as None.
+        write_score.assert_not_called()
+        write_violations.assert_not_called()
+        assert scores  # frameworks were attempted
+        assert all(value is None for value in scores.values())
+
+    def test_nonempty_config_map_still_writes(self):
+        """A populated compliance map writes the score as before (no regression)."""
+        mod = self._setup()
+        session = self._session_with_controls(mod)
+
+        write_score = MagicMock()
+        write_violations = MagicMock()
+        mod._write_score_to_dynamodb = write_score
+        mod._write_control_violations_to_dynamodb = write_violations
+        mod._get_config_compliance = MagicMock(
+            return_value={c['config_rule']: 'COMPLIANT' for c in SAMPLE_CONTROLS}
+        )
+
+        scores = mod._score_tenant('cust-0001', session=session, dry_run=False)
+
+        assert write_score.called
+        assert all(value == pytest.approx(100.0) for value in scores.values())
+
+
+# ---------------------------------------------------------------------------
+# Tests: _get_active_tenants — reads active customers + role_arn (no PII)
+# ---------------------------------------------------------------------------
+
+class TestGetActiveTenants:
+    """Tenant-registry read returns active customer ids + cross-account roles."""
+
+    def _setup(self):
+        with patch('boto3.client'), patch('boto3.resource'), \
+             patch.dict('sys.modules', {'db_utils': MagicMock()}):
+            import importlib
+            import compliance_score_recalculator
+            importlib.reload(compliance_score_recalculator)
+            return compliance_score_recalculator
+
+    def test_returns_empty_when_db_secret_not_configured(self):
+        """Without DB_SECRET_ARN the read is a safe no-op (platform-only)."""
+        mod = self._setup()
+        mod.DB_SECRET_ARN = ''
+        assert mod._get_active_tenants() == []
+
+    def test_reads_active_tenants_with_role_arns(self):
+        """Active customers and their role_arns are returned as opaque records."""
+        mod = self._setup()
+        mod.DB_SECRET_ARN = 'arn:aws:secretsmanager:us-east-1:123:secret:db'
+
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [
+            ('cust-0001', 'arn:aws:iam::111:role/SecureBaseReadOnly'),
+            ('cust-0002', None),
+        ]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mod._get_db_connection = MagicMock(return_value=mock_conn)
+
+        tenants = mod._get_active_tenants()
+
+        assert tenants == [
+            {'customer_id': 'cust-0001', 'role_arn': 'arn:aws:iam::111:role/SecureBaseReadOnly'},
+            {'customer_id': 'cust-0002', 'role_arn': None},
+        ]
+        # Only the active-status query should run (no PII columns selected).
+        executed_sql = mock_cursor.execute.call_args[0][0]
+        assert "status = 'active'" in executed_sql
+        assert 'email' not in executed_sql.lower()
+        assert 'first_name' not in executed_sql.lower()
+
+    def test_db_failure_degrades_to_empty(self):
+        """A DB error returns an empty list so the caller still scores platform."""
+        mod = self._setup()
+        mod.DB_SECRET_ARN = 'arn:aws:secretsmanager:us-east-1:123:secret:db'
+        mod._get_db_connection = MagicMock(side_effect=RuntimeError('connect failed'))
+        assert mod._get_active_tenants() == []
