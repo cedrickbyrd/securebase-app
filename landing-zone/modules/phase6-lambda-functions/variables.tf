@@ -96,3 +96,25 @@ variable "mappings_bucket" {
   type        = string
   default     = ""
 }
+
+variable "tenant_registry_db_secret_arn" {
+  description = <<-EOT
+    Secrets Manager ARN holding the tenant-registry (customers) DB credentials.
+    Read by the compliance_score_recalculator scheduled fan-out to enumerate
+    active tenants. Leave empty to disable the tenant read (platform-only
+    scoring). When set, the function is placed in the VPC to reach the database.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "securebase_external_id" {
+  description = <<-EOT
+    sts:AssumeRole ExternalId used by the compliance_score_recalculator when
+    assuming a customer's cross-account read role. Required for cross-account
+    tenant scoring; leave empty for platform-only deployments.
+  EOT
+  type        = string
+  default     = ""
+  sensitive   = true
+}

@@ -193,7 +193,17 @@ variable "marketplace_dlq_kms_key_arn" {
 # Phase 6 / DB Migrator — prod secret ARN
 # ============================================================================
 variable "prod_db_credentials_secret_arn" {
-  description = "Secrets Manager ARN for prod Aurora credentials — used by db_migrator Lambda IAM policy"
+  description = "Secrets Manager ARN for prod Aurora credentials — used by db_migrator Lambda IAM policy and the compliance_score_recalculator tenant-registry read"
   type        = string
   default     = ""
+}
+
+# ============================================================================
+# Phase 6.2 / Compliance scoring — cross-account AssumeRole external ID
+# ============================================================================
+variable "securebase_external_id" {
+  description = "sts:AssumeRole ExternalId for compliance_score_recalculator cross-account tenant scoring"
+  type        = string
+  default     = ""
+  sensitive   = true
 }

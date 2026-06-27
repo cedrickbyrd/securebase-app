@@ -38,6 +38,14 @@ resource "aws_iam_role_policy_attachment" "phase6_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# audit_evidence_api and audit_log_packager already run in the VPC; the
+# compliance_score_recalculator joins the VPC when tenant_registry_db_secret_arn
+# is set. Grant ENI management so all VPC-resident phase6 functions can attach.
+resource "aws_iam_role_policy_attachment" "phase6_vpc_access" {
+  role       = aws_iam_role.phase6_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_iam_role_policy" "phase6_permissions" {
   name = "securebase-${var.environment}-phase6-permissions"
   role = aws_iam_role.phase6_lambda.id
@@ -55,9 +63,9 @@ resource "aws_iam_role_policy" "phase6_permissions" {
         ]
       },
       {
-        Sid    = "KMSEvidence"
-        Effect = "Allow"
-        Action = ["kms:GenerateDataKey*", "kms:Decrypt", "kms:DescribeKey"]
+        Sid      = "KMSEvidence"
+        Effect   = "Allow"
+        Action   = ["kms:GenerateDataKey*", "kms:Decrypt", "kms:DescribeKey"]
         Resource = var.evidence_kms_key_arn
       },
       {
@@ -73,21 +81,21 @@ resource "aws_iam_role_policy" "phase6_permissions" {
         ]
       },
       {
-        Sid    = "RDSProxy"
-        Effect = "Allow"
-        Action = ["rds-db:connect"]
+        Sid      = "RDSProxy"
+        Effect   = "Allow"
+        Action   = ["rds-db:connect"]
         Resource = "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:*/securebase"
       },
       {
-        Sid    = "SecretsManager"
-        Effect = "Allow"
-        Action = ["secretsmanager:GetSecretValue"]
+        Sid      = "SecretsManager"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
         Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:securebase/${var.environment}/*"
       },
       {
-        Sid    = "Logs"
-        Effect = "Allow"
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Sid      = "Logs"
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:${data.aws_region.current.name}:*:log-group:/aws/lambda/securebase-${var.environment}-phase6-*"
       },
       {
@@ -104,9 +112,9 @@ resource "aws_iam_role_policy" "phase6_permissions" {
         }
       },
       {
-        Sid    = "SecurityHubRead"
-        Effect = "Allow"
-        Action = ["securityhub:GetFindings"]
+        Sid      = "SecurityHubRead"
+        Effect   = "Allow"
+        Action   = ["securityhub:GetFindings"]
         Resource = "*"
         Condition = {
           StringEquals = { "aws:RequestedRegion" = data.aws_region.current.name }
@@ -441,6 +449,24 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
       CONTROL_VIOLATION_TABLE = aws_dynamodb_table.control_violation_log.name
       MAPPINGS_BUCKET         = var.mappings_bucket
       LOG_LEVEL               = "INFO"
+      # Scheduled fan-out: enumerate active tenants from the customers store and
+      # async self-invoke once per tenant. The runtime also injects
+      # AWS_LAMBDA_FUNCTION_NAME; SELF_FUNCTION_NAME makes the target explicit.
+      SELF_FUNCTION_NAME     = "securebase-${var.environment}-phase6-compliance-score-recalculator"
+      DB_SECRET_ARN          = var.tenant_registry_db_secret_arn
+      DB_NAME                = var.database_name
+      SECUREBASE_EXTERNAL_ID = var.securebase_external_id
+    }
+  }
+
+  # Only attach VPC config when a tenant-registry DB secret is supplied — the
+  # function needs to reach the customers database to enumerate tenants. Without
+  # it the function stays non-VPC and scores the platform account only.
+  dynamic "vpc_config" {
+    for_each = var.tenant_registry_db_secret_arn != "" ? [1] : []
+    content {
+      subnet_ids         = var.private_subnet_ids
+      security_group_ids = var.security_group_ids
     }
   }
 
@@ -449,7 +475,81 @@ resource "aws_lambda_function" "compliance_score_recalculator" {
     aws_dynamodb_table.control_violation_log,
   ]
 
+  # The psycopg2 Lambda layer is attached out-of-band (matching the marketplace
+  # function convention) via the layer packaging script. Ignore drift so plans
+  # do not strip it on every apply.
+  lifecycle {
+    ignore_changes = [layers]
+  }
+
   tags = merge(var.tags, { Phase = "6.2", Name = "securebase-${var.environment}-phase6-compliance-score-recalculator" })
+}
+
+# ----------------------------------------------------------------------------
+# Least-privilege self-invoke: the scheduled run fans out by asynchronously
+# invoking THIS function once per tenant (InvocationType='Event'). Scope the
+# permission to the function's own ARN only.
+# ----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "score_recalculator_self_invoke" {
+  name = "securebase-${var.environment}-phase6-score-recalculator-self-invoke"
+  role = aws_iam_role.phase6_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "SelfInvokeForTenantFanOut"
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = aws_lambda_function.compliance_score_recalculator.arn
+    }]
+  })
+}
+
+# ----------------------------------------------------------------------------
+# Read the tenant-registry DB credentials secret (only when configured).
+# The shared phase6 permissions policy grants secretsmanager:GetSecretValue on
+# securebase/${environment}/*; this adds the specific tenant-registry secret in
+# case it lives outside that namespace.
+# ----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "score_recalculator_tenant_db_secret" {
+  count = var.tenant_registry_db_secret_arn != "" ? 1 : 0
+  name  = "securebase-${var.environment}-phase6-score-recalculator-tenant-db-secret"
+  role  = aws_iam_role.phase6_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ReadTenantRegistrySecret"
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = var.tenant_registry_db_secret_arn
+    }]
+  })
+}
+
+# ----------------------------------------------------------------------------
+# Cross-account tenant scoring: the function assumes each customer's read-only
+# role to scan their account (RoleSessionName=securebase-scan-*). Scope to the
+# SecureBaseReadOnly* naming convention in any customer account rather than
+# granting sts:AssumeRole on "*". Only attached when tenant scoring is enabled.
+# ----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "score_recalculator_cross_account_assume" {
+  count = var.tenant_registry_db_secret_arn != "" ? 1 : 0
+  name  = "securebase-${var.environment}-phase6-score-recalculator-cross-account-assume"
+  role  = aws_iam_role.phase6_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "AssumeTenantReadOnlyRole"
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = "arn:aws:iam::*:role/SecureBaseReadOnly*"
+    }]
+  })
 }
 
 resource "aws_cloudwatch_log_group" "compliance_score_recalculator" {

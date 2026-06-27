@@ -14,22 +14,35 @@ Trigger:
     EventBridge schedule: ``cron(0 2 * * ? *)``  — daily at 02:00 UTC
 
 Event Schema:
-    {}   (no payload required for scheduled runs)
+    Scheduled (fan-out) run — empty payload:
+        {}
+        On an empty event the handler reads the tenant registry (active
+        customers + their cross-account role_arn) and asynchronously
+        self-invokes (InvocationType='Event') once per tenant. This keeps each
+        invocation short and avoids the 10-minute Lambda timeout that a
+        synchronous per-tenant loop would risk.
 
-    Optionally pass:
-    {
-        "customer_id": "<uuid>",                  # defaults to "platform"
-        "role_arn": "arn:aws:iam::...:role/...", # optional cross-account scan
-        "dry_run": true                           # compute scores but skip DynamoDB write
-    }
+    Manual / fan-out child run — single tenant:
+        {
+            "customer_id": "<uuid>",                  # required for single-tenant scoring
+            "role_arn": "arn:aws:iam::...:role/...", # optional cross-account scan
+            "dry_run": true                           # compute scores but skip DynamoDB write
+        }
+
+    The ``platform`` account can be scored explicitly with
+    {"customer_id": "platform"}.
 
 Environment Variables:
     COMPLIANCE_SCORES_TABLE   DynamoDB table name (default: securebase-compliance-scores)
     MAPPINGS_BUCKET           S3 bucket containing soc2/hipaa/fedramp mapping JSON files
-    RDS_HOST                  Aurora Serverless v2 endpoint (via RDS Proxy)
-    RDS_DATABASE              Database name (default: securebase)
-    RDS_USER                  Application database user
+    DB_SECRET_ARN             Secrets Manager ARN holding the tenant-registry DB
+                              credentials (host/port/dbname/username/password).
+                              Required for the scheduled fan-out tenant read.
+    DB_NAME                   Override database name (default: from secret / securebase)
     AWS_DEFAULT_REGION        AWS region for API calls (default: us-east-1)
+    SELF_FUNCTION_NAME        This Lambda's own function name, used for the
+                              per-tenant async self-invoke (defaults to the
+                              AWS_LAMBDA_FUNCTION_NAME provided by the runtime).
     SECUREBASE_EXTERNAL_ID    Required for cross-account AssumeRole when role_arn is provided
     LOG_LEVEL                 DEBUG | INFO | WARNING | ERROR (default: INFO)
 
@@ -101,6 +114,21 @@ CONTROL_VIOLATION_TABLE = os.environ.get(
 )
 MAPPINGS_BUCKET = os.environ.get('MAPPINGS_BUCKET', '')
 
+# Secrets Manager ARN for the tenant-registry (customers) database. Used by the
+# scheduled fan-out path to enumerate active tenants.
+DB_SECRET_ARN = os.environ.get('DB_SECRET_ARN', '')
+
+# This Lambda's own function name — used for the per-tenant async self-invoke.
+# The Lambda runtime always provides AWS_LAMBDA_FUNCTION_NAME; SELF_FUNCTION_NAME
+# is an explicit override (and lets unit tests set it deterministically).
+SELF_FUNCTION_NAME = (
+    os.environ.get('SELF_FUNCTION_NAME')
+    or os.environ.get('AWS_LAMBDA_FUNCTION_NAME', '')
+)
+
+# The platform account is always scored, in addition to any active tenants.
+PLATFORM_CUSTOMER_ID = 'platform'
+
 SEVERITY_WEIGHTS: Dict[str, float] = {
     'CRITICAL': 3.0,
     'HIGH': 2.0,
@@ -116,7 +144,7 @@ FRAMEWORK_MAPPING_KEYS = {
 }
 
 # Fallback: load mappings from Lambda package (when MAPPINGS_BUCKET is empty)
-_LOCAL_MAPPINGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'compliance')
+_LOCAL_MAPPINGS_DIR = os.path.join(os.path.dirname(__file__), 'compliance')
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +222,116 @@ def _get_config_compliance(rule_names: List[str], config_client: Any) -> Dict[st
         _log('warning', 'AWS Config query failed', error=str(exc))
 
     return compliance_map
+
+
+# ---------------------------------------------------------------------------
+# Tenant registry (customers store) read
+# ---------------------------------------------------------------------------
+
+
+def _get_db_connection(secret_arn: str) -> Any:
+    """Open a PostgreSQL connection to the tenant-registry database.
+
+    Mirrors the connection helper used by the Phase 6 ``db_migrator`` Lambda:
+    credentials are read from Secrets Manager, and psycopg2 is imported lazily
+    (it is provided by the shared Lambda layer at ``/opt/python``) so that unit
+    tests which never touch the database do not require the driver.
+
+    Args:
+        secret_arn: Secrets Manager ARN containing the DB credentials.
+
+    Returns:
+        An open psycopg2 connection.
+    """
+    import psycopg2  # Lazy import: provided by the Lambda layer, not unit tests.
+
+    sm = boto3.client('secretsmanager')
+    secret = json.loads(sm.get_secret_value(SecretId=secret_arn)['SecretString'])
+    host = secret.get('host') or secret.get('hostname')
+    port = int(secret.get('port', 5432))
+    dbname = (
+        os.environ.get('DB_NAME')
+        or secret.get('dbname')
+        or secret.get('database', 'securebase')
+    )
+    user = secret.get('username') or secret.get('user')
+    password = secret.get('password')
+    if not all([host, user, password]):
+        raise ValueError(f"Incomplete credentials in secret {secret_arn}")
+    return psycopg2.connect(
+        host=host, port=port, dbname=dbname, user=user, password=password,
+        sslmode='require', connect_timeout=10,
+    )
+
+
+def _get_active_tenants() -> List[Dict[str, Optional[str]]]:
+    """Read active tenants and their cross-account role ARNs from the registry.
+
+    Queries the ``customers`` table for tenants whose ``status = 'active'`` and
+    returns one entry per tenant. Customer names / PII are never selected — only
+    the opaque tenant ``id`` and the cross-account ``role_arn`` used for scoring.
+
+    The ``cross_account_role_arn`` column may not exist on every deployment yet;
+    the query degrades gracefully (falling back to a registry without it) and a
+    tenant without a usable role_arn is still returned so the platform-account
+    fallback scoring path applies.
+
+    Returns:
+        List of dicts: ``{"customer_id": <uuid>, "role_arn": <arn or None>}``.
+        Returns an empty list if DB_SECRET_ARN is not configured or the read
+        fails (the caller still scores the platform account).
+    """
+    if not DB_SECRET_ARN:
+        _log('warning',
+             'DB_SECRET_ARN not configured; cannot enumerate tenants, '
+             'scoring platform account only')
+        return []
+
+    queries = (
+        "SELECT id::text AS customer_id, cross_account_role_arn AS role_arn "
+        "FROM customers WHERE status = 'active'",
+        # Fallback for registries that have not yet added the role_arn column.
+        "SELECT id::text AS customer_id, NULL AS role_arn "
+        "FROM customers WHERE status = 'active'",
+    )
+
+    conn = None
+    try:
+        conn = _get_db_connection(DB_SECRET_ARN)
+        last_exc: Optional[Exception] = None
+        for sql in queries:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(sql)
+                    rows = cur.fetchall()
+                tenants = [
+                    {'customer_id': str(row[0]), 'role_arn': row[1]}
+                    for row in rows
+                    if row and row[0]
+                ]
+                _log('info', 'tenant registry read complete',
+                     active_tenants=len(tenants))
+                return tenants
+            except Exception as exc:  # noqa: BLE001
+                # Most likely an undefined-column error; roll back and retry the
+                # fallback query on the same connection.
+                last_exc = exc
+                try:
+                    conn.rollback()
+                except Exception:  # noqa: BLE001
+                    pass
+        if last_exc is not None:
+            raise last_exc
+        return []
+    except Exception as exc:  # noqa: BLE001
+        _log('error', 'Failed to read tenant registry', error=str(exc))
+        return []
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -415,7 +553,7 @@ def _score_tenant(
     customer_id: str,
     session: boto3.Session,
     dry_run: bool = False,
-) -> Dict[str, float]:
+) -> Dict[str, Optional[float]]:
     """Run compliance scoring for all three frameworks for a single tenant.
 
     Args:
@@ -423,9 +561,11 @@ def _score_tenant(
         dry_run:     If True, skip DynamoDB writes.
 
     Returns:
-        Dict mapping framework → score (0–100).
+        Dict mapping framework → score (0–100), or ``None`` for a framework
+        whose AWS Config query returned no data (its write is skipped so a
+        spurious score=0 is never persisted).
     """
-    scores: Dict[str, float] = {}
+    scores: Dict[str, Optional[float]] = {}
     config_client = session.client('config')
     s3_client = session.client('s3')
     cloudwatch_client = session.client('cloudwatch')
@@ -442,6 +582,20 @@ def _score_tenant(
         rule_names = [c['config_rule'] for c in controls if c.get('config_rule')]
 
         compliance_map = _get_config_compliance(rule_names, config_client)
+
+        # If the Config query returned nothing (service error, throttle, or
+        # Config not enabled in the target account), we have no real signal.
+        # Persisting a score now would write a spurious 0 and trip the
+        # >10-point drop alarm. Skip this framework entirely for this run.
+        if rule_names and not compliance_map:
+            _log('warning',
+                 'Empty Config compliance map; skipping write to avoid '
+                 'persisting a spurious score=0',
+                 customer_id=customer_id, framework=framework,
+                 rules_requested=len(rule_names))
+            scores[framework] = None
+            continue
+
         score, violations = _calculate_weighted_score(controls, compliance_map)
 
         controls_passing = sum(
@@ -477,57 +631,64 @@ def _score_tenant(
 
 
 # ---------------------------------------------------------------------------
-# Lambda handler
+# Session construction
 # ---------------------------------------------------------------------------
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Lambda entry point — recalculate compliance scores for platform/customer.
+def _build_session(target_customer: str, role_arn: Optional[str]) -> boto3.Session:
+    """Build a boto3 Session for the target account.
+
+    When ``role_arn`` is provided, assumes the customer's cross-account role
+    using ``SECUREBASE_EXTERNAL_ID``; otherwise returns the Lambda's own
+    (platform) session.
 
     Args:
-        event:   EventBridge scheduled event or manual invocation payload.
-        context: Lambda context object.
+        target_customer: Tenant UUID (or 'platform'), used for the session name.
+        role_arn:        Optional cross-account role ARN to assume.
 
     Returns:
-        Dict containing:
-            - ``tenants_processed`` (int): Number of tenants scored.
-            - ``scores``            (dict): Mapping of customer_id → framework scores.
-            - ``errors``            (list): List of error messages for failed tenants.
+        A configured boto3 Session.
     """
-    request_id = getattr(context, 'aws_request_id', str(uuid.uuid4()))
-    event = event or {}
-    dry_run: bool = bool(event.get('dry_run', False))
-    target_customer: str = event.get('customer_id') or 'platform'
-    role_arn: Optional[str] = event.get('role_arn')
+    if not role_arn:
+        return boto3.Session()
 
-    _log('info', 'compliance_score_recalculator invoked',
-         request_id=request_id,
-         dry_run=dry_run,
-         target_customer=target_customer,
-         role_mode='cross_account' if role_arn else 'platform')
+    external_id = os.environ.get('SECUREBASE_EXTERNAL_ID', '').strip()
+    if not external_id:
+        raise RuntimeError(
+            'SECUREBASE_EXTERNAL_ID environment variable must be configured '
+            '(non-empty) for cross-account scoring'
+        )
+    sts = boto3.client('sts')
+    assumed = sts.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName=f'securebase-scan-{target_customer}',
+        ExternalId=external_id,
+    )
+    creds = assumed['Credentials']
+    return boto3.Session(
+        aws_access_key_id=creds['AccessKeyId'],
+        aws_secret_access_key=creds['SecretAccessKey'],
+        aws_session_token=creds['SessionToken'],
+    )
 
-    all_scores: Dict[str, Dict[str, float]] = {}
+
+# ---------------------------------------------------------------------------
+# Single-tenant scoring (manual invoke or fan-out child)
+# ---------------------------------------------------------------------------
+
+
+def _score_single_tenant(
+    target_customer: str,
+    role_arn: Optional[str],
+    dry_run: bool,
+    request_id: str,
+) -> Dict[str, Any]:
+    """Score exactly one tenant and return the standard result envelope."""
+    all_scores: Dict[str, Dict[str, Optional[float]]] = {}
     errors: List[str] = []
 
     try:
-        if role_arn:
-            external_id = os.environ.get('SECUREBASE_EXTERNAL_ID', '').strip()
-            if not external_id:
-                raise RuntimeError('SECUREBASE_EXTERNAL_ID environment variable must be configured (non-empty) for cross-account scoring')
-            sts = boto3.client('sts')
-            assumed = sts.assume_role(
-                RoleArn=role_arn,
-                RoleSessionName=f'securebase-scan-{target_customer}',
-                ExternalId=external_id,
-            )
-            creds = assumed['Credentials']
-            session = boto3.Session(
-                aws_access_key_id=creds['AccessKeyId'],
-                aws_secret_access_key=creds['SecretAccessKey'],
-                aws_session_token=creds['SessionToken'],
-            )
-        else:
-            session = boto3.Session()
+        session = _build_session(target_customer, role_arn)
     except ClientError as exc:
         _log('error', 'Failed to initialize AWS session',
              customer_id=target_customer, error=str(exc))
@@ -542,12 +703,140 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
              customer_id=target_customer, error=str(exc))
         errors.append(error_msg)
 
-    _log('info', 'compliance_score_recalculator complete',
+    _log('info', 'compliance_score_recalculator single-tenant complete',
+         request_id=request_id,
          tenants_processed=len(all_scores),
          error_count=len(errors))
 
     return {
+        'mode': 'single_tenant',
         'tenants_processed': len(all_scores),
         'scores': all_scores,
         'errors': errors,
     }
+
+
+# ---------------------------------------------------------------------------
+# Scheduled fan-out (empty event) — async self-invoke per tenant
+# ---------------------------------------------------------------------------
+
+
+def _fan_out_tenants(dry_run: bool, request_id: str) -> Dict[str, Any]:
+    """Enumerate active tenants and async self-invoke once per tenant.
+
+    Each child invocation uses ``InvocationType='Event'`` (fire-and-forget) so
+    the scheduled run returns immediately and no single invocation has to score
+    every tenant serially — which would risk the 10-minute Lambda timeout.
+
+    The platform account is always included so platform-level posture continues
+    to be scored exactly as before.
+
+    Returns:
+        Result envelope with ``tenants_dispatched`` and any dispatch errors.
+    """
+    function_name = SELF_FUNCTION_NAME
+    if not function_name:
+        # Without a target name we cannot self-invoke; fall back to scoring the
+        # platform account inline so the scheduled run is never a no-op.
+        _log('error',
+             'SELF_FUNCTION_NAME/AWS_LAMBDA_FUNCTION_NAME unset; cannot '
+             'fan out, scoring platform account inline')
+        return _score_single_tenant(PLATFORM_CUSTOMER_ID, None, dry_run, request_id)
+
+    # Platform first, then each active tenant with its cross-account role_arn.
+    targets: List[Dict[str, Optional[str]]] = [
+        {'customer_id': PLATFORM_CUSTOMER_ID, 'role_arn': None}
+    ]
+    for tenant in _get_active_tenants():
+        cid = tenant.get('customer_id')
+        if not cid or cid == PLATFORM_CUSTOMER_ID:
+            continue
+        targets.append({'customer_id': cid, 'role_arn': tenant.get('role_arn')})
+
+    lambda_client = boto3.client('lambda')
+    dispatched = 0
+    errors: List[str] = []
+
+    for target in targets:
+        payload: Dict[str, Any] = {'customer_id': target['customer_id']}
+        if target.get('role_arn'):
+            payload['role_arn'] = target['role_arn']
+        if dry_run:
+            payload['dry_run'] = True
+        try:
+            lambda_client.invoke(
+                FunctionName=function_name,
+                InvocationType='Event',
+                Payload=json.dumps(payload).encode('utf-8'),
+            )
+            dispatched += 1
+        except ClientError as exc:
+            error_msg = f"customer_id={target['customer_id']}: {exc}"
+            _log('error', 'Failed to dispatch per-tenant scoring invoke',
+                 customer_id=target['customer_id'], error=str(exc))
+            errors.append(error_msg)
+
+    _log('info', 'compliance_score_recalculator fan-out complete',
+         request_id=request_id,
+         tenants_dispatched=dispatched,
+         tenants_total=len(targets),
+         error_count=len(errors))
+
+    return {
+        'mode': 'fan_out',
+        'tenants_dispatched': dispatched,
+        'tenants_total': len(targets),
+        'errors': errors,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Lambda handler
+# ---------------------------------------------------------------------------
+
+
+def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    """Lambda entry point — recalculate compliance scores.
+
+    Two dispatch modes:
+
+    * **Scheduled fan-out** — when the event carries no ``customer_id`` (e.g. the
+      daily EventBridge ``{}`` event), read the tenant registry and async
+      self-invoke once per active tenant (plus the platform account). Returns
+      ``{"mode": "fan_out", "tenants_dispatched": N, ...}``.
+
+    * **Single-tenant** — when the event carries a ``customer_id`` (a manual
+      invoke or a fan-out child), score that one tenant. Returns
+      ``{"mode": "single_tenant", "tenants_processed": 1, "scores": {...}, ...}``.
+
+    Args:
+        event:   EventBridge scheduled event or manual invocation payload.
+        context: Lambda context object.
+
+    Returns:
+        Result envelope (see modes above); always includes ``errors``.
+    """
+    request_id = getattr(context, 'aws_request_id', str(uuid.uuid4()))
+    event = event or {}
+    dry_run: bool = bool(event.get('dry_run', False))
+    target_customer: Optional[str] = event.get('customer_id')
+    role_arn: Optional[str] = event.get('role_arn')
+
+    is_fan_out = not target_customer
+
+    _log('info', 'compliance_score_recalculator invoked',
+         request_id=request_id,
+         dry_run=dry_run,
+         mode='fan_out' if is_fan_out else 'single_tenant',
+         target_customer=target_customer or '(fan-out)',
+         role_mode='cross_account' if role_arn else 'platform')
+
+    if is_fan_out:
+        return _fan_out_tenants(dry_run=dry_run, request_id=request_id)
+
+    return _score_single_tenant(
+        target_customer=target_customer,
+        role_arn=role_arn,
+        dry_run=dry_run,
+        request_id=request_id,
+    )
