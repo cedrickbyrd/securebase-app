@@ -247,3 +247,33 @@ npx playwright test tests/e2e/customer1-comprehensive.spec.js --reporter=list
 - Rate limiting: 100 req/hr per customer enforced server-side in Lambda
 - All auditor-facing HTML uses `escHtml()` — no string interpolation of user data into style attributes
 - **Customer PII (names, emails, tokens) must never appear in repo files, issues, or commit messages**
+- **Per-tenant compliance scores (consumed by `TenantDashboard.jsx`, `ComplianceDrift.jsx`, `ComplianceTrend.jsx`) are produced by the backend `compliance_score_recalculator` Lambda.** Until PR #867 (2026-06-27) the daily job only scored the `platform` account, so customer tenants had no scores to display. If a tenant's compliance panels look empty/stale, the gap may be backend-side (registry → score table), not the portal — see root `Claude.md` Session Notes 2026-06-27.
+
+
+## Session Notes — 2026-06-22
+
+### Netlify deploy guardrail (see also root Claude.md)
+This app (`securebase-portal`, site ID `d9e565ff-5b33-4e21-b461-fbe24851f1bd`,
+domain `portal.securebase.tximhotep.com`) was briefly, accidentally overwritten
+by a `netlify deploy --prod --site <this-id>` run from the REPO ROOT instead
+of from `phase3a-portal/`. `--site` only controls the deploy TARGET, not which
+`netlify.toml`/build gets used — that's determined by current working
+directory. Always `cd phase3a-portal` before deploying this app. Caught and
+corrected same session; root cause and full explanation in root `Claude.md`.
+
+### Marketplace fulfillment URL — fixed, then briefly broken again, now fixed
+`/api/marketplace/resolve` (the AWS Marketplace fulfillment URL target) had
+the correct redirect rule in `public/_redirects` since 6/17, but the LIVE
+deploy of this site was stale and didn't have it — causing a literal Netlify
+404 and an AWS `AUDIT_ERROR` on the listing. Confirmed fixed via a redeploy
+from the correct directory. Verified end-to-end with a request matching AWS's
+actual audit-bot signature (`Accept: text/html`) — returns HTTP 200 with the
+expected HTML body for invalid/expired tokens, per AWS's documented
+requirement.
+
+### DB cluster question (raised, then resolved same session)
+A database host containing "-dev" was briefly flagged as a possible
+wrong-environment concern for the marketplace backend Lambdas this portal's
+fulfillment flow calls. Fully resolved — confirmed as a stale/legacy name on
+the only real database the platform runs on, not an actual environment
+mismatch. Full investigation in root `Claude.md`.

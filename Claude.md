@@ -3,7 +3,7 @@
 **Repository:** `cedrickbyrd/securebase-app`
 **Role Context:** Principal Cloud Architect | Compliance-First SaaS Platform
 **Mission:** Build SOC 2, FedRAMP, and HIPAA-ready infrastructure and features
-**Last Updated:** June 16, 2026
+**Last Updated:** June 27, 2026
 
 ---
 
@@ -33,7 +33,7 @@ SecureBase is a security-first, multi-tenant AWS PaaS platform delivering **comp
 |-----------|-------------|--------|
 | 6.1 | Immutable Audit Logging + Evidence Vault | ✅ Complete (May 17, 2026) |
 | 6.1.1 | Scheduled Evidence Runs (Repeatable Vault) | ✅ Complete (May 17, 2026) |
-| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | ✅ Complete (May 17, 2026) |
+| 6.2 | Compliance Automation (50+ Config rules, SOC2/HIPAA/FedRAMP scoring) | ✅ Complete (May 17, 2026) — ⚠️ tenant fan-out bug fixed in PR #867 (see Session Notes 2026-06-27) |
 | 6.3 | Scalability / performance validation (10k VUs, p95 < 200ms) | 🔴 Deferred — trigger: AWS Marketplace listing published + first paid conversion |
 | 6.4 | Distributed Tracing & Advanced Observability | ✅ Complete (May 27, 2026) |
 | 6.5 | Cost Optimization & Per-Tenant Cost Governance | ✅ Complete (May 27, 2026) |
@@ -605,3 +605,52 @@ clarity — not urgent. The subscription_handler DLQ backlog and the
 db_utils/cryptography fixes can both be treated as fully resolved on the
 "correct database" question; see other notes in this file for their own
 independent status.
+
+## Phase 6.2 Compliance Scoring — Session Notes (2026-06-27)
+
+### Bug fixed (PR #867): daily cron only scored the platform account
+`compliance_score_recalculator` ran daily via EventBridge but only ever
+scored the `platform` account — `tenants_processed` was always `1` and no
+customer tenant was ever scored. Branch `fix/phase6-compliance-tenant-fanout`,
+PR #867 (against `main`, NOT pushed to main directly).
+
+What changed:
+- **Tenant fan-out (the fix):** on a scheduled (empty `{}`) event the handler
+  now reads active tenants from the customers registry and **async self-invokes**
+  (`InvocationType='Event'`) once per tenant + the platform account. Async, not
+  a serial loop, to stay clear of the 10-min Lambda timeout. A `customer_id` in
+  the event still takes the single-tenant path (manual invoke / fan-out child).
+- **Tenant registry read:** psycopg2 + Secrets Manager, mirroring `db_migrator.py`.
+  Reuses the existing `prod_db_credentials_secret_arn` (wired in
+  `landing-zone/environments/prod/main.tf` → `tenant_registry_db_secret_arn`).
+  Selects NO PII (only `id` + `cross_account_role_arn`). The
+  `cross_account_role_arn` column does NOT exist on the customers table yet —
+  the query falls back to `NULL role_arn` and degrades to platform-only on any
+  DB error, so this is safe to ship before that column/migration lands.
+- **No more spurious score=0:** when the AWS Config query returns an empty
+  compliance map, the DynamoDB write is now SKIPPED. Previously it persisted a
+  real `0`, which tripped the >10pt-drop alarm on any transient Config failure.
+- **IAM (least-privilege):** self-invoke scoped to the function's own ARN;
+  cross-account `sts:AssumeRole` scoped to `arn:aws:iam::*:role/SecureBaseReadOnly*`
+  (the established read-role naming convention); VPC config + tenant-registry
+  secret/assume policies attach ONLY when `tenant_registry_db_secret_arn` is set.
+
+Pre-existing gap surfaced (NOT fixed here): the shared phase6 permissions policy
+never granted cross-account `sts:AssumeRole`, so the single-tenant AssumeRole
+path (also used by `ffiec_/hipaa_compliance_assessment`) could not have worked
+end-to-end. PR #867 adds the scoped grant for the score recalculator only; the
+sibling assessment functions likely need the same.
+
+Follow-ups still open:
+- Add the `cross_account_role_arn` column to the customers table (migration) and
+  provision per-tenant `SecureBaseReadOnly*` roles before cross-account scoring
+  produces real tenant scores. Until then fan-out dispatches but each tenant is
+  scored against the platform session.
+- Deploy is via `landing-zone/environments/prod` (NOT `terraform-securebase-apply.yml`,
+  which targets `./terraform`). psycopg2 Lambda layer is attached out-of-band →
+  `lifecycle { ignore_changes = [layers] }` on the function.
+
+Verification this session: 34/34 phase6 tests pass (incl. new "fans out to N
+tenants" + "Config failure writes no 0"); `terraform validate` clean on the
+phase6 module and `environments/prod` (1.5.7); `fmt -check` clean on changed
+`.tf`; Lambda zip rebuilt with updated handler + mappings.
