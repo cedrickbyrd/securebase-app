@@ -1,0 +1,59 @@
+name: Marketplace Tests
+
+# CI for the AWS Marketplace Lambda handlers — runs the Python unit tests under
+# tests/marketplace/ whenever the marketplace functions or their tests change.
+# These handlers are not covered by any other workflow's pytest job.
+
+on:
+  push:
+    branches:
+      - main
+      - 'copilot/**'
+      - 'feature/**'
+      - 'fix/**'
+    paths:
+      - 'phase2-backend/functions/marketplace_*.py'
+      - 'tests/marketplace/**'
+      - '.github/workflows/marketplace-tests.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'phase2-backend/functions/marketplace_*.py'
+      - 'tests/marketplace/**'
+      - '.github/workflows/marketplace-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  unit-tests:
+    name: Unit Tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-mock boto3 cryptography PyJWT
+
+      - name: Run marketplace unit tests
+        run: |
+          pytest tests/marketplace/ -v --tb=short
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
