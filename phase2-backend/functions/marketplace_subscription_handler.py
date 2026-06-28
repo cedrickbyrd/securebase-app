@@ -5,6 +5,7 @@ import json
 import os
 import logging
 import re
+import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -75,6 +76,17 @@ DIMENSION_TO_TIER = {
     "healthcare_monthly": "healthcare",
     "government_monthly": "gov-federal",
 }
+
+# Tier -> compliance framework, mirroring marketplace_resolve_customer.TIER_FRAMEWORK_MAP.
+# Both columns are NOT NULL on the customers table, so a synthesized PENDING customer
+# must populate a valid (tier, framework) pair.
+TIER_FRAMEWORK_MAP = {
+    "standard": "cis",
+    "healthcare": "hipaa",
+    "fintech": "ffiec",
+    "gov-federal": "fedramp",
+}
+DEFAULT_PENDING_TIER = "standard"
 
 
 def _normalize_record(record: dict) -> dict:
@@ -212,6 +224,75 @@ def _lookup_customer(marketplace_customer_id: str):
         release_connection(conn)
 
 
+def _upsert_pending_customer(marketplace_customer_id: str, tier: str) -> str:
+    """Create (or fetch) a minimal PENDING customer for a subscribe event with no prior registration.
+
+    AWS Marketplace can deliver subscribe-success before the buyer completes the
+    fulfillment/registration step (marketplace_resolve_customer), so the customer row
+    may not exist yet. Rather than silently dropping the entitlement, synthesize a
+    placeholder keyed by marketplace_customer_id. Idempotent via ON CONFLICT on the
+    unique marketplace_customer_id column, so a later registration / repeated SNS event
+    updates the same row instead of erroring. Synthetic name/email/billing_email satisfy
+    the NOT NULL + UNIQUE constraints and exactly mirror marketplace_resolve_customer.
+    """
+    resolved_tier = tier if tier in TIER_FRAMEWORK_MAP else DEFAULT_PENDING_TIER
+    framework = TIER_FRAMEWORK_MAP[resolved_tier]
+    customer_id = str(uuid.uuid4())
+    synthetic_email = f"marketplace+{marketplace_customer_id.lower()}@securebase.local"
+    synthetic_name = f"marketplace-{marketplace_customer_id.lower()}"
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO customers (
+                    id,
+                    name,
+                    tier,
+                    framework,
+                    email,
+                    billing_email,
+                    payment_method,
+                    subscription_status,
+                    onboarding_status,
+                    marketplace_customer_id,
+                    marketplace_entitlement_status,
+                    marketplace_subscription_start
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (marketplace_customer_id) DO UPDATE SET
+                    marketplace_entitlement_status = EXCLUDED.marketplace_entitlement_status,
+                    subscription_status = EXCLUDED.subscription_status,
+                    tier = EXCLUDED.tier,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING id
+                """,
+                (
+                    customer_id,
+                    synthetic_name,
+                    resolved_tier,
+                    framework,
+                    synthetic_email,
+                    synthetic_email,
+                    "aws_marketplace",
+                    "active",
+                    "pending_registration",
+                    marketplace_customer_id,
+                    "active",
+                    datetime.now(timezone.utc),
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+        return str(row[0])
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        release_connection(conn)
+
+
 def _upsert_audit_event(customer_id: str, event_type: str, message_id: str, metadata: dict) -> bool:
     conn = get_connection()
     try:
@@ -310,11 +391,13 @@ def _refresh_entitlements(marketplace_customer_id: str):
     return "active", DIMENSION_TO_TIER.get(dimension)
 
 
-def _audit_get_entitlements(marketplace_customer_id: str) -> None:
+def _audit_get_entitlements(marketplace_customer_id: str) -> list:
     """Call GetEntitlements so AWS Marketplace audit logs a successful invocation.
 
     Must use the AMMP-registered product code and us-east-1. Failures are logged
-    but never re-raised so the subscription flow is not interrupted.
+    but never re-raised so the subscription flow is not interrupted. Returns the
+    list of entitlements (empty on failure) so the caller can derive the tier from
+    the same call — avoiding a second GetEntitlements round-trip on subscribe.
     """
     try:
         response = _audit_entitlement_client.get_entitlements(
@@ -329,6 +412,7 @@ def _audit_get_entitlements(marketplace_customer_id: str) -> None:
             len(entitlements),
             json.dumps(entitlements, default=str),
         )
+        return entitlements
     except Exception as exc:
         logger.error(
             "GetEntitlements audit call failed: product_code=%s customer=%s error=%s",
@@ -336,6 +420,26 @@ def _audit_get_entitlements(marketplace_customer_id: str) -> None:
             marketplace_customer_id,
             exc,
         )
+        return []
+
+
+def _tier_from_entitlements(entitlements: list) -> str | None:
+    """Map the first entitlement's dimension to an internal SecureBase tier.
+
+    Mirrors the dimension-parsing logic in _refresh_entitlements so subscribe-success
+    can set the tier from the GetEntitlements audit call without a second API round-trip.
+    Returns None if no dimension can be resolved (caller falls back to a default).
+    """
+    if not entitlements:
+        return None
+    entitlement = entitlements[0] or {}
+    value_obj = entitlement.get("Value") or {}
+    value_dimension = next(
+        (value for key, value in value_obj.items() if key.endswith("Value") and isinstance(value, str)),
+        None,
+    )
+    dimension = entitlement.get("Dimension") or value_dimension
+    return DIMENSION_TO_TIER.get(dimension)
 
 
 def _publish_ceo_alert(event_type: str, marketplace_customer_id: str):
@@ -379,14 +483,34 @@ def lambda_handler(event, _context):
             skipped += 1
             continue
 
+        # On subscribe-success, make the single AWS-audit-required GetEntitlements call
+        # and reuse its result to derive the entitled tier (GAP #5) — no second round-trip.
+        subscribe_tier = None
         if event_type == "subscribe-success":
-            _audit_get_entitlements(marketplace_customer_id)
+            entitlements = _audit_get_entitlements(marketplace_customer_id)
+            subscribe_tier = _tier_from_entitlements(entitlements)
 
         customer_id = _lookup_customer(marketplace_customer_id)
         if not customer_id:
-            logger.warning("No customer found for marketplace id %s", marketplace_customer_id)
-            skipped += 1
-            continue
+            # A subscribe-success can arrive before the buyer completes registration.
+            # Rather than silently dropping the entitlement (GAP #6), synthesize a PENDING
+            # customer so the subscription/tier are persisted, then alert the CEO so a human
+            # can follow up. All other event types with no matching customer are still skipped.
+            if event_type == "subscribe-success":
+                customer_id = _upsert_pending_customer(
+                    marketplace_customer_id,
+                    subscribe_tier or DEFAULT_PENDING_TIER,
+                )
+                logger.warning(
+                    "subscribe-success with no registered customer; created PENDING customer %s for marketplace id %s",
+                    customer_id,
+                    marketplace_customer_id,
+                )
+                _publish_ceo_alert("subscribe-without-registration", marketplace_customer_id)
+            else:
+                logger.warning("No customer found for marketplace id %s", marketplace_customer_id)
+                skipped += 1
+                continue
 
         inserted = _upsert_audit_event(customer_id, event_type, message_id, payload)
         if not inserted:
@@ -395,7 +519,12 @@ def lambda_handler(event, _context):
 
         if event_type == "subscribe-success":
             entitlement_status, subscription_status = EVENT_STATUS_UPDATES.get(event_type, (None, None))
-            _update_customer_status(customer_id, entitlement_status, subscription_status)
+            _update_customer_status(
+                customer_id,
+                entitlement_status,
+                subscription_status,
+                tier=subscribe_tier,
+            )
         elif event_type == "entitlement-updated":
             entitlement_status, new_tier = _refresh_entitlements(marketplace_customer_id)
             _update_customer_status(customer_id, entitlement_status, None, tier=new_tier)
