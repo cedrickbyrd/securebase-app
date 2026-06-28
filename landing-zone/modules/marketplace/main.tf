@@ -199,32 +199,79 @@ resource "aws_lambda_permission" "allow_sns_invoke_subscription_handler" {
   source_arn    = aws_sns_topic.marketplace_subscriptions.arn
 }
 
-# aws_sns_topic_subscription.aws_marketplace_to_handler intentionally omitted.
-# Terraform cannot Subscribe to the AWS-owned Marketplace SNS topic
-# (account 287250355862) — returns 403 by design. Register the
-# subscription_handler Lambda endpoint via AMMP UI after deploy.
-
-# Grants the AWS Marketplace subscription SNS topic permission to invoke the
-# handler Lambda. count=0 when var is unset — safe to populate before listing
-# publishes; the permission is inert until AMMP registers the endpoint.
-resource "aws_lambda_permission" "allow_aws_marketplace_sns" {
-  count         = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
-  statement_id  = "AllowAWSMarketplaceSNSInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.marketplace_subscription_handler.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = var.aws_marketplace_sns_topic_arn
+# AWS-owned Marketplace SNS topics (account 287250355862) only support the
+# "sqs" subscriber protocol for cross-account subscribers — "lambda" 403s by
+# design. See PR wiring this up: AWS-owned topic -> SQS -> event source
+# mapping -> subscription_handler Lambda.
+resource "aws_sqs_queue" "marketplace_sns_ingest" {
+  name                       = "securebase-${var.environment}-marketplace-sns-ingest"
+  message_retention_seconds  = 1209600 # 14 days — match existing DLQ convention
+  visibility_timeout_seconds = 60      # match subscription_handler Lambda timeout
+  sqs_managed_sse_enabled    = true
+  tags                       = local.common_tags
 }
 
-# Entitlement notification topic (entitlement-updated — tier upgrades/downgrades).
-# Same registration constraint — endpoint registered via AMMP UI, not Terraform.
-resource "aws_lambda_permission" "allow_aws_marketplace_entitlement_sns" {
-  count         = var.aws_marketplace_entitlement_sns_topic_arn != "" ? 1 : 0
-  statement_id  = "AllowAWSMarketplaceEntitlementSNSInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.marketplace_subscription_handler.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = var.aws_marketplace_entitlement_sns_topic_arn
+resource "aws_sqs_queue_policy" "marketplace_sns_ingest" {
+  queue_url = aws_sqs_queue.marketplace_sns_ingest.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "sns.amazonaws.com" }
+      Action    = "sqs:SendMessage"
+      Resource  = aws_sqs_queue.marketplace_sns_ingest.arn
+      Condition = {
+        ArnEquals = {
+          "aws:SourceArn" = [
+            var.aws_marketplace_sns_topic_arn,
+            var.aws_marketplace_entitlement_sns_topic_arn
+          ]
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_sns_topic_subscription" "marketplace_subscription_to_sqs" {
+  count     = var.aws_marketplace_sns_topic_arn != "" ? 1 : 0
+  topic_arn = var.aws_marketplace_sns_topic_arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.marketplace_sns_ingest.arn
+}
+
+resource "aws_sns_topic_subscription" "marketplace_entitlement_to_sqs" {
+  count     = var.aws_marketplace_entitlement_sns_topic_arn != "" ? 1 : 0
+  topic_arn = var.aws_marketplace_entitlement_sns_topic_arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.marketplace_sns_ingest.arn
+}
+
+resource "aws_lambda_event_source_mapping" "marketplace_sns_ingest" {
+  event_source_arn = aws_sqs_queue.marketplace_sns_ingest.arn
+  function_name    = aws_lambda_function.marketplace_subscription_handler.arn
+  batch_size       = 10
+}
+
+# Scoped SQS access for the new ingest queue. lambda_role_arn references a
+# role managed outside this module/state (securebase-production-lambda-execution),
+# so the permission is granted here as an inline policy on that role rather
+# than assumed to already be covered.
+resource "aws_iam_role_policy" "marketplace_sns_ingest_sqs" {
+  name = "marketplace-sns-ingest-sqs-access"
+  role = split("/", var.lambda_role_arn)[1]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ]
+      Resource = aws_sqs_queue.marketplace_sns_ingest.arn
+    }]
+  })
 }
 
 resource "aws_cloudwatch_event_rule" "marketplace_metering_hourly" {

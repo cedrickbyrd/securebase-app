@@ -18,9 +18,9 @@ alert_sns_arn    = "arn:aws:sns:us-east-1:731184206915:securebase-production-ale
 marketplace_product_code = "blblyu28f6s5mzwl089d4xoea"
 
 # AWS Marketplace SNS topics (account 287250355862) — populated from AMMP product page.
-# Terraform cannot SNS:Subscribe to these topics (403 by design).
-# Register the subscription_handler Lambda endpoint via AMMP UI after listing publishes.
-# These ARNs grant Lambda invoke permission to the Marketplace SNS topics.
+# Subscribed via SQS (protocol = "sqs") — the only supported cross-account
+# subscriber protocol for AWS-owned Marketplace topics; "lambda" 403s by design.
+# See landing-zone/modules/marketplace/main.tf: marketplace_sns_ingest queue.
 aws_marketplace_sns_topic_arn             = "arn:aws:sns:us-east-1:287250355862:aws-mp-subscription-notification-blblyu28f6s5mzwl089d4xoea"
 aws_marketplace_entitlement_sns_topic_arn = "arn:aws:sns:us-east-1:287250355862:aws-mp-entitlement-notification-blblyu28f6s5mzwl089d4xoea"
 

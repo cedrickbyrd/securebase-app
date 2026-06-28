@@ -18,19 +18,31 @@ sys.modules.setdefault('psycopg2.pool', MagicMock())
 sys.modules.setdefault('psycopg2.extras', MagicMock())
 sys.modules.setdefault('db_utils', MagicMock())
 
+def _sns_envelope(event_type):
+    return {
+        'MessageId': f'msg-{event_type}',
+        'Message': json.dumps({
+            'eventType': event_type,
+            'customerIdentifier': 'cust-abc123',
+        }),
+        'Signature': 'sig',
+        'SignatureVersion': '1',
+        'SigningCertUrl': 'https://sns.us-east-1.amazonaws.com/cert.pem',
+    }
+
+
 def sns_event(event_type):
     return {
         'Records': [{
-            'Sns': {
-                'MessageId': f'msg-{event_type}',
-                'Message': json.dumps({
-                    'eventType': event_type,
-                    'customerIdentifier': 'cust-abc123',
-                }),
-                'Signature': 'sig',
-                'SignatureVersion': '1',
-                'SigningCertUrl': 'https://sns.us-east-1.amazonaws.com/cert.pem',
-            }
+            'Sns': _sns_envelope(event_type),
+        }]
+    }
+
+
+def sqs_event(event_type):
+    return {
+        'Records': [{
+            'body': json.dumps(_sns_envelope(event_type)),
         }]
     }
 
@@ -48,6 +60,22 @@ class TestMarketplaceSubscriptionHandler(unittest.TestCase):
         mock_audit.return_value = True
 
         resp = lambda_handler(sns_event('subscribe-success'), None)
+
+        self.assertEqual(resp['statusCode'], 200)
+        mock_update.assert_called_once_with('uuid-1', 'active', 'active')
+
+    @patch('marketplace_subscription_handler._verify_sns_signature', return_value=True)
+    @patch('marketplace_subscription_handler._publish_ceo_alert')
+    @patch('marketplace_subscription_handler._update_customer_status')
+    @patch('marketplace_subscription_handler._upsert_audit_event')
+    @patch('marketplace_subscription_handler._lookup_customer')
+    def test_subscribe_success_via_sqs_matches_native_sns(self, mock_lookup, mock_audit, mock_update, _mock_alert, _mock_verify):
+        from marketplace_subscription_handler import lambda_handler
+
+        mock_lookup.return_value = 'uuid-1'
+        mock_audit.return_value = True
+
+        resp = lambda_handler(sqs_event('subscribe-success'), None)
 
         self.assertEqual(resp['statusCode'], 200)
         mock_update.assert_called_once_with('uuid-1', 'active', 'active')

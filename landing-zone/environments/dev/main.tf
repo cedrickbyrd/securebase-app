@@ -262,7 +262,7 @@ module "phase6_cost" {
 
   environment                      = var.environment
   cost_per_tenant_lambda_zip       = "${path.module}/../../files/phase6/cost_per_tenant.zip"
-  cost_per_tenant_table_name       = module.phase5_admin_metrics.cost_per_tenant_table_name
+  cost_per_tenant_table_name       = module.securebase.cost_per_tenant_table_name
   alert_sns_arn                    = module.phase5_alerting.alert_sns_arn
   monthly_cost_alert_threshold_usd = 50
 
@@ -271,7 +271,7 @@ module "phase6_cost" {
     Track = "5"
   })
 
-  depends_on = [module.phase5_admin_metrics, module.phase5_alerting]
+  depends_on = [module.securebase, module.phase5_alerting]
 }
 
 module "marketplace" {
