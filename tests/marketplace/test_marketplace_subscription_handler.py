@@ -205,7 +205,7 @@ class TestMarketplaceSubscriptionHandler(unittest.TestCase):
         response_mock.__enter__.return_value = response_mock
         with patch('marketplace_subscription_handler.base64.b64decode', return_value=b'signature'), \
              patch('marketplace_subscription_handler.urlopen', return_value=response_mock), \
-             patch('marketplace_subscription_handler.x509.load_pem_x509_certificate', return_value=cert_mock):
+             patch('cryptography.x509.load_pem_x509_certificate', return_value=cert_mock):
             verified = handler._verify_sns_signature(sns_event('subscribe-success')['Records'][0])
 
         self.assertTrue(verified)
