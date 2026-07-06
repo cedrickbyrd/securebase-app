@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-29T08:41:08.618948+00:00",
+  "generated": "2026-07-06T08:34:31.754088+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -1379,11 +1379,7 @@
       "contact_last": "FILL_IN",
       "location": "Mexia, TX",
       "outreach_note": "HQ Mexia at 1404 E Milam. Founded 1954. ~10,000 members, $102.7M assets, 3 branches (Mexia, Corsicana, Ennis). State-chartered CU regulated by TX Credit Union Dept and subject to NCUA exam cycles \u2014 FFIEC exam prep is a strong angle. Small institution; decision-maker is CEO/President.",
-      "hunter_domain": {
-        "email_pattern": "{f}{last}",
-        "organization": "Centex Citizens CU",
-        "emails_found": []
-      },
+      "hunter_domain": {},
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=banking&framework=ffiec&company=Centex_Citizens_Credit_Union",
