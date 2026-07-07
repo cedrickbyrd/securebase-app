@@ -17,15 +17,24 @@ jobs:
           python-version: '3.11'
       - name: Build Lambda zip with Linux dependencies
         run: |
-          mkdir -p /tmp/build
+          # Create a clean build directory
+          rm -rf /tmp/build && mkdir -p /tmp/build
+          
+          # Copy source code and modules
           cp phase2-backend/functions/marketplace_resolve_customer.py /tmp/build/
           cp phase2-backend/lambda_layer/python/db_utils.py /tmp/build/
-          pip install PyJWT psycopg2-binary \
+          
+          # Install all required dependencies for AWS Lambda (Python 3.11/x86_64)
+          # 'cryptography' is added to resolve your runtime import errors
+          pip install PyJWT psycopg2-binary cryptography \
             --platform manylinux2014_x86_64 \
             --target /tmp/build \
             --python-version 3.11 \
             --only-binary=:all: \
+            --upgrade \
             --quiet
+          
+          # Package the artifact
           cd /tmp/build && zip -r marketplace_resolve_customer.zip . -q
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c
