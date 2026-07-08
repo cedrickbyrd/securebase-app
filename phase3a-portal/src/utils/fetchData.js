@@ -26,18 +26,37 @@ const getMockData = (endpoint) => {
       passing: 135,
       failing: 7,
     },
+    // Added mock data for your compliance history charts/views
+    '/tenant/compliance/history': {
+      framework: 'all',
+      days: 90,
+      complianceScore: 94,
+      history: [
+        { date: '2026-05-01', passed: 130, failed: 12 },
+        { date: '2026-06-01', passed: 132, failed: 10 },
+        { date: '2026-07-01', passed: 135, failed: 7 }
+      ]
+    },
+    // Added mock data for your AWS IAM Cloud Connection view
+    '/cloud-connection/init': {
+      externalId: 'securebase-demo-env-ext-id-bc8d41a3',
+      awsAccountId: '123456789012',
+      roleName: 'SecureBase-Audit-ExecutionRole'
+    }
   };
 
-  // Return matched mock or a generic empty response
+  // Check if the requested endpoint contains any of our key routes
   for (const key of Object.keys(mockResponses)) {
     if (endpoint.includes(key)) return mockResponses[key];
   }
+  
+  // Clean fallback context for unhandled mock routes to prevent UI shell crashes
   return {};
 };
 
 const fetchData = async (endpoint) => {
   if (isDemoMode()) {
-    console.log(`[Demo Mode] Returning mock data for ${endpoint}`);
+    console.log(`[Demo Mode] Intercepted network request and returning mock data for: ${endpoint}`);
     return getMockData(endpoint);
   }
 
@@ -52,8 +71,9 @@ const fetchData = async (endpoint) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {
-    console.warn(`[API] Request failed for ${endpoint}, falling back to mock data:`, error.message);
-    return getMockData(endpoint);
+    // Hard boundary safety rule: production failures should never mask behind mock data
+    console.error(`[API Error] Request failed for ${endpoint}:`, error.message);
+    throw error; 
   }
 };
 
