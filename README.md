@@ -4,7 +4,7 @@
 **Deployment:** [securebase.tximhotep.com](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)  
 **Developer:** [Cedrick J. Byrd / TxImhotep LLC](https://tximhotep.com)
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-securebase.tximhotep.com-blue?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-demo.securebase.tximhotep.com-blue?style=for-the-badge)](https://demo.securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=demo)
 [![Book a Demo](https://img.shields.io/badge/Executive%20Briefing-Schedule%20Now-green?style=for-the-badge)](https://securebase.tximhotep.com/?utm_source=github&utm_medium=readme&utm_campaign=book_demo)
 
 ---
