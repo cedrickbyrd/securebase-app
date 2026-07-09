@@ -21,5 +21,7 @@
 /api/compliance/vendors/:vendor_id https://api.securebase.tximhotep.com/compliance/vendors/:vendor_id 200!
 /api/compliance/vendors/:vendor_id/baa https://api.securebase.tximhotep.com/compliance/vendors/:vendor_id/baa 200!
 /api/compliance/baa/expiring https://api.securebase.tximhotep.com/compliance/baa/expiring 200!
+####
+/api/marketplace/resolve https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/marketplace/resolve 200!
 /marketplace-redirect https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/marketplace/resolve 200!
 /* /index.html 200
