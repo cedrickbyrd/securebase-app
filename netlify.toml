@@ -38,13 +38,13 @@
 # ==============================================================================
 [[redirects]]
   from = "/api/marketplace/resolve"
-  to = "https://api.securebase.tximhotep.com/api/marketplace/resolve"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/marketplace/resolve"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/marketplace-redirect"
-  to = "https://api.securebase.tximhotep.com/api/marketplace/resolve"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/marketplace/resolve"
   status = 200
   force = true
 
