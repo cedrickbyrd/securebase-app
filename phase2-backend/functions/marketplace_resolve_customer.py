@@ -329,6 +329,7 @@ def _insert_marketplace_customer(
 ):
     customer_id = str(uuid.uuid4())
     synthetic_email = f"marketplace+{marketplace_customer_id.lower()}@securebase.local"
+    synthetic_name = f"marketplace-{marketplace_customer_id.lower()}"
 
     conn = get_connection()
     try:
@@ -337,6 +338,7 @@ def _insert_marketplace_customer(
                 """
                 INSERT INTO customers (
                     id,
+                    name,
                     tier,
                     framework,
                     email,
@@ -348,12 +350,13 @@ def _insert_marketplace_customer(
                     marketplace_entitlement_status,
                     marketplace_subscription_start
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (marketplace_customer_id) DO NOTHING
                 RETURNING id
                 """,
                 (
                     customer_id,
+                    synthetic_name,
                     tier,
                     framework,
                     synthetic_email,
@@ -383,7 +386,6 @@ def _insert_marketplace_customer(
         raise
     finally:
         release_connection(conn)
-
 
 def _trigger_onboarding(customer_id: str, email: str, tier: str = "standard"):
     payload = {
