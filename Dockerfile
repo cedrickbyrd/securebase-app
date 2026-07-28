@@ -16,7 +16,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=8080
+ENV PORT=10000
 
 # Install production dependencies only
 COPY package*.json ./
@@ -27,6 +27,6 @@ COPY --from=builder /app/dist ./dist
 
 USER node 
 
-EXPOSE 8080
+EXPOSE 10000
 
 CMD ["node", "dist/server.js"]
