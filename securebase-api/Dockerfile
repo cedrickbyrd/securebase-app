@@ -23,7 +23,7 @@ ENV PORT=10000
 
 # Copy package files and install production dependencies only
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy compiled dist folder from builder stage
 COPY --from=builder /app/dist ./dist
