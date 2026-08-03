@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-27T08:12:14.841922+00:00",
+  "generated": "2026-08-03T08:11:15.411104+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -335,7 +335,11 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 92
+            "confidence": 81
+          },
+          {
+            "value": "rrosas@gnty.com",
+            "confidence": 82
           }
         ]
       },
@@ -522,8 +526,29 @@
       "contact_first": "Aaron",
       "contact_last": "Wishon",
       "location": "Dallas, TX",
-      "hunter_domain": {},
-      "hunter_email": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Cook Children's",
+        "emails_found": [
+          {
+            "value": "soniaj@cookchildrens.org",
+            "confidence": 83
+          },
+          {
+            "value": "marie.howell@cookchildrens.org",
+            "confidence": 85
+          },
+          {
+            "value": "stephen.scobee@cookchildrens.org",
+            "confidence": 84
+          }
+        ]
+      },
+      "hunter_email": {
+        "email": "aaron.wishon@cookchildrens.org",
+        "score": 83,
+        "verification_status": "accept_all"
+      },
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Cook_Childrens_Health",
       "linkedin_dm": "Hi Aaron,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like Cook Children's Health, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -597,7 +622,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Children's Health",
+        "emails_found": [
+          {
+            "value": "fabio.sampo@childrens.com",
+            "confidence": 85
+          },
+          {
+            "value": "jana.mcalister@childrens.com",
+            "confidence": 85
+          },
+          {
+            "value": "stacy.gonzalez@childrens.com",
+            "confidence": 84
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Childrens_Health",
@@ -618,16 +660,16 @@
         "organization": "Parkland Health",
         "emails_found": [
           {
-            "value": "rey@parklandhealth.org",
-            "confidence": 89
+            "value": "roshan@parklandhealth.org",
+            "confidence": 81
           },
           {
-            "value": "roshan@parklandhealth.org",
-            "confidence": 87
+            "value": "rey@parklandhealth.org",
+            "confidence": 80
           },
           {
             "value": "sahar@parklandhealth.org",
-            "confidence": 67
+            "confidence": 69
           }
         ]
       },
@@ -646,7 +688,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}.{last}",
+        "organization": "Baylor Scott & White Health",
+        "emails_found": [
+          {
+            "value": "hope.gilbert@bswhealth.com",
+            "confidence": 85
+          },
+          {
+            "value": "jose.ortiz-jr@bswhealth.com",
+            "confidence": 85
+          },
+          {
+            "value": "elaine.gustin@bswhealth.com",
+            "confidence": 84
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Baylor_Scott_&_White_Health",
@@ -682,7 +741,24 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Dallas, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Strados Labs",
+        "emails_found": [
+          {
+            "value": "holly@stradoslabs.com",
+            "confidence": 99
+          },
+          {
+            "value": "alex@stradoslabs.com",
+            "confidence": 95
+          },
+          {
+            "value": "rachel@stradoslabs.com",
+            "confidence": 95
+          }
+        ]
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=Strados_Labs",
@@ -698,7 +774,11 @@
       "contact_first": "FILL_IN",
       "contact_last": "FILL_IN",
       "location": "Plano, TX",
-      "hunter_domain": {},
+      "hunter_domain": {
+        "email_pattern": "{first}",
+        "organization": "Procare Solutions",
+        "emails_found": []
+      },
       "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=saas&framework=soc2&company=Procare_Solutions",
@@ -931,15 +1011,15 @@
         "emails_found": [
           {
             "value": "tsteger@htlf.com",
-            "confidence": 90
+            "confidence": 85
           },
           {
             "value": "aeva@htlf.com",
-            "confidence": 92
+            "confidence": 84
           },
           {
             "value": "jrao@htlf.com",
-            "confidence": 90
+            "confidence": 81
           }
         ]
       },
@@ -1242,7 +1322,11 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 92
+            "confidence": 81
+          },
+          {
+            "value": "rrosas@gnty.com",
+            "confidence": 82
           }
         ]
       },
