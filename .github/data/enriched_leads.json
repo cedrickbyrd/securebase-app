@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-03T08:11:15.411104+00:00",
+  "generated": "2026-08-10T07:34:26.688307+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -22,10 +22,6 @@
         "emails_found": [
           {
             "value": "bburnett@veritexbank.com",
-            "confidence": 96
-          },
-          {
-            "value": "sepstein@veritexbank.com",
             "confidence": 96
           }
         ]
@@ -140,9 +136,9 @@
         ]
       },
       "hunter_email": {
-        "email": "russ.murrell@texascapitalbank.com",
-        "score": 97,
-        "verification_status": "valid"
+        "email": null,
+        "score": null,
+        "verification_status": null
       },
       "pdl_enrichment": {
         "linkedin_url": "",
@@ -381,7 +377,12 @@
       "hunter_domain": {
         "email_pattern": "{f}{last}",
         "organization": "Moody Bank",
-        "emails_found": []
+        "emails_found": [
+          {
+            "value": "amann@moodybank.com",
+            "confidence": 96
+          }
+        ]
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -424,15 +425,15 @@
         "emails_found": [
           {
             "value": "bfreeman@alliancebank.com",
-            "confidence": 67
-          },
-          {
-            "value": "smoore@alliancebank.com",
-            "confidence": 94
+            "confidence": 69
           },
           {
             "value": "dgrimal@alliancebank.com",
-            "confidence": 90
+            "confidence": 93
+          },
+          {
+            "value": "smoore@alliancebank.com",
+            "confidence": 92
           }
         ]
       },
@@ -503,7 +504,7 @@
         "emails_found": [
           {
             "value": "thomas.wilson@kelsey-seybold.com",
-            "confidence": 93
+            "confidence": 84
           }
         ]
       },
@@ -627,16 +628,16 @@
         "organization": "Children's Health",
         "emails_found": [
           {
+            "value": "jordan.whitehill@childrens.com",
+            "confidence": 69
+          },
+          {
             "value": "fabio.sampo@childrens.com",
             "confidence": 85
           },
           {
             "value": "jana.mcalister@childrens.com",
             "confidence": 85
-          },
-          {
-            "value": "stacy.gonzalez@childrens.com",
-            "confidence": 84
           }
         ]
       },
@@ -697,11 +698,11 @@
             "confidence": 85
           },
           {
-            "value": "jose.ortiz-jr@bswhealth.com",
-            "confidence": 85
+            "value": "elaine.gustin@bswhealth.com",
+            "confidence": 84
           },
           {
-            "value": "elaine.gustin@bswhealth.com",
+            "value": "levy.curry@bswhealth.com",
             "confidence": 84
           }
         ]
@@ -746,10 +747,6 @@
         "organization": "Strados Labs",
         "emails_found": [
           {
-            "value": "holly@stradoslabs.com",
-            "confidence": 99
-          },
-          {
             "value": "alex@stradoslabs.com",
             "confidence": 95
           },
@@ -777,7 +774,20 @@
       "hunter_domain": {
         "email_pattern": "{first}",
         "organization": "Procare Solutions",
-        "emails_found": []
+        "emails_found": [
+          {
+            "value": "chris@procaresolutions.com",
+            "confidence": 83
+          },
+          {
+            "value": "michael@procaresolutions.com",
+            "confidence": 83
+          },
+          {
+            "value": "sarah@procaresolutions.com",
+            "confidence": 82
+          }
+        ]
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -839,15 +849,15 @@
         "organization": "Hypergiant",
         "emails_found": [
           {
-            "value": "nathaniel.tabit@hypergiant.com",
+            "value": "aleksandr.orlov@hypergiant.com",
             "confidence": 99
           },
           {
-            "value": "ani.nosbian@hypergiant.com",
-            "confidence": 97
+            "value": "brandon.pierce@hypergiant.com",
+            "confidence": 98
           },
           {
-            "value": "brandon.pierce@hypergiant.com",
+            "value": "nathaniel.tabit@hypergiant.com",
             "confidence": 97
           }
         ]
@@ -963,12 +973,7 @@
       "hunter_domain": {
         "email_pattern": "{first}.{last}",
         "organization": "Western Alliance Bank",
-        "emails_found": [
-          {
-            "value": "annika.robinson@westernalliancebank.com",
-            "confidence": 97
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -1107,12 +1112,7 @@
       "hunter_domain": {
         "email_pattern": "{first}.{last}",
         "organization": "Renasant Bank",
-        "emails_found": [
-          {
-            "value": "phaedra.kelly@renasant.com",
-            "confidence": 97
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -1187,12 +1187,8 @@
         "organization": "QCR Holdings Inc",
         "emails_found": [
           {
-            "value": "sbreen@qcrh.com",
-            "confidence": 94
-          },
-          {
             "value": "hcutkomp@qcrh.com",
-            "confidence": 90
+            "confidence": 82
           }
         ]
       },
