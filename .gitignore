@@ -180,3 +180,7 @@ phase2-backend/functions/package/python_dateutil*/
 phase2-backend/functions/package/s3transfer*/
 phase2-backend/functions/package/six*/
 phase2-backend/functions/package/urllib3*/
+# SecureBase Treasury Sensitive Data Exclusion
+treasury/**
+!treasury/**/*.md
+!treasury/**/.gitkeep

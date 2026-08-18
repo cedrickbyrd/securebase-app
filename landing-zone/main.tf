@@ -5,13 +5,21 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
     netlify = {
       source  = "netlify/netlify"
       version = "~> 0.4.0" 
     }
   }
 }
-
+#################################
 # --- Data Sources & Identity ---
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

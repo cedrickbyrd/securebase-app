@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
 dotenv.config();
 
@@ -15,9 +16,25 @@ app.use(cors({
 
 app.use(express.json());
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
+
+if (!process.env.SUPABASE_URL) {
+  console.warn('⚠️ WARNING: SUPABASE_URL environment variable is missing in Render.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false, // Recommended for Node.js server backends
+  },
+  global: {
+    fetch,
+  },
+  // Pass the ws implementation to real-time client
+  realtime: {
+    transport: ws,
+  },
+});
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
