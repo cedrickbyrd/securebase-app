@@ -195,7 +195,9 @@ resource "aws_lambda_function" "dr_drill" {
       PRIMARY_REGION            = var.primary_region
       SECONDARY_REGION          = var.secondary_region
       AURORA_GLOBAL_CLUSTER_ID  = "securebase-${var.environment}-global"
+      AURORA_CLUSTER_ID         = var.aurora_cluster_id
       FAILOVER_LAMBDA_ARN       = aws_lambda_function.failover_orchestrator.arn
+      FAILOVER_VALIDATOR_LAMBDA_ARN = aws_lambda_function.failover_validator.arn
       DRILL_REPORT_BUCKET       = var.drill_report_bucket
       ALERT_SNS_ARN             = var.alert_sns_arn
       ENVIRONMENT               = var.environment
