@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-31T07:19:08.005152+00:00",
+  "generated": "2026-09-07T07:23:52.862195+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -26,7 +26,7 @@
           },
           {
             "value": "pjubenville@veritexbank.com",
-            "confidence": 96
+            "confidence": 97
           }
         ]
       },
@@ -136,7 +136,7 @@
         "emails_found": [
           {
             "value": "bill.murrell@texascapitalbank.com",
-            "confidence": 96
+            "confidence": 99
           }
         ]
       },
@@ -169,16 +169,16 @@
         "organization": "First United Bank",
         "emails_found": [
           {
-            "value": "mmcmorris@firstunitedbank.com",
-            "confidence": 99
-          },
-          {
             "value": "sreyaz@firstunitedbank.com",
-            "confidence": 98
+            "confidence": 84
           },
           {
-            "value": "skryvets@firstunitedbank.com",
-            "confidence": 98
+            "value": "cdiamond@firstunitedbank.com",
+            "confidence": 84
+          },
+          {
+            "value": "mmcmorris@firstunitedbank.com",
+            "confidence": 84
           }
         ]
       },
@@ -206,12 +206,12 @@
             "confidence": 85
           },
           {
-            "value": "clarson-kour@comerica.com",
+            "value": "ttanguay@comerica.com",
             "confidence": 84
           },
           {
-            "value": "ttanguay@comerica.com",
-            "confidence": 84
+            "value": "smaddur@comerica.com",
+            "confidence": 82
           }
         ]
       },
@@ -336,7 +336,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 82
+            "confidence": 84
           }
         ]
       },
@@ -361,7 +361,7 @@
         "emails_found": [
           {
             "value": "dramos@weststarbank.com",
-            "confidence": 97
+            "confidence": 98
           }
         ]
       },
@@ -386,7 +386,7 @@
         "emails_found": [
           {
             "value": "amann@moodybank.com",
-            "confidence": 82
+            "confidence": 84
           }
         ]
       },
@@ -483,11 +483,7 @@
         "organization": "University Health System",
         "emails_found": []
       },
-      "hunter_email": {
-        "email": "kajeevanrajanayagam@universityhealthsystem.com",
-        "score": 75,
-        "verification_status": "accept_all"
-      },
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=University_Health_Network",
       "linkedin_dm": "Hi Kajeevan,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like University Health Network, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -514,7 +510,7 @@
           },
           {
             "value": "priscilla.reece@kelsey-seybold.com",
-            "confidence": 65
+            "confidence": 67
           }
         ]
       },
@@ -550,7 +546,7 @@
             "confidence": 84
           },
           {
-            "value": "tammy.hoff@cookchildrens.org",
+            "value": "kelsey.bassett@cookchildrens.org",
             "confidence": 84
           }
         ]
@@ -575,29 +571,8 @@
       "contact_last": "Reyes",
       "location": "Dallas, TX",
       "outreach_note": "Smart Healthcare Facilities Convention May 2026 \u2014 mention event when reaching out",
-      "hunter_domain": {
-        "email_pattern": "{first}{last}",
-        "organization": "AccentCare",
-        "emails_found": [
-          {
-            "value": "davewisniewski@accentcare.com",
-            "confidence": 97
-          },
-          {
-            "value": "reginabagwell@accentcare.com",
-            "confidence": 99
-          },
-          {
-            "value": "lhernandez@accentcare.com",
-            "confidence": 99
-          }
-        ]
-      },
-      "hunter_email": {
-        "email": "paulreyes@accentcare.com",
-        "score": 98,
-        "verification_status": "valid"
-      },
+      "hunter_domain": {},
+      "hunter_email": {},
       "pdl_enrichment": {},
       "demo_url": "https://demo.securebase.tximhotep.com?persona=healthcare&framework=hipaa&company=AccentCare",
       "linkedin_dm": "Hi Paul,\n\nI'm a Dallas-based founder building SecureBase \u2014 a HIPAA compliance automation platform built on AWS. We map your controls directly to HIPAA \u00a7164 safeguards and surface gaps within 72 hours, not 6 months.\n\nFor organizations like AccentCare, teams typically see a 60% reduction in audit prep time.\n\nI'd love to show you a live demo tailored for your environment. Are you free this week?\n\n\u2014 Cedrick Byrd | Principal Cloud Architect | U.S. Army Veteran | SecureBase | Dallas, TX"
@@ -646,8 +621,8 @@
             "confidence": 83
           },
           {
-            "value": "dianna.gibbs@childrens.com",
-            "confidence": 83
+            "value": "erinne.conner@childrens.com",
+            "confidence": 82
           }
         ]
       },
@@ -692,7 +667,7 @@
         "emails_found": [
           {
             "value": "elaine.gustin@bswhealth.com",
-            "confidence": 81
+            "confidence": 83
           },
           {
             "value": "seena.sunil@bswhealth.com",
@@ -773,7 +748,7 @@
         "organization": "Procare Solutions",
         "emails_found": [
           {
-            "value": "liam@procaresolutions.com",
+            "value": "michael@procaresolutions.com",
             "confidence": 94
           },
           {
@@ -781,8 +756,8 @@
             "confidence": 93
           },
           {
-            "value": "michael@procaresolutions.com",
-            "confidence": 93
+            "value": "liam@procaresolutions.com",
+            "confidence": 90
           }
         ]
       },
@@ -908,15 +883,15 @@
         "organization": "Crossover Health",
         "emails_found": [
           {
+            "value": "jill.galvez@crossoverhealth.com",
+            "confidence": 99
+          },
+          {
             "value": "eileen.pruett@crossoverhealth.com",
             "confidence": 99
           },
           {
-            "value": "erik.krievs@crossoverhealth.com",
-            "confidence": 99
-          },
-          {
-            "value": "emily.watson@crossoverhealth.com",
+            "value": "monica.mejia@crossoverhealth.com",
             "confidence": 99
           }
         ]
@@ -1022,11 +997,11 @@
         "emails_found": [
           {
             "value": "aeva@htlf.com",
-            "confidence": 81
+            "confidence": 84
           },
           {
             "value": "jrao@htlf.com",
-            "confidence": 81
+            "confidence": 82
           }
         ]
       },
@@ -1051,15 +1026,15 @@
         "emails_found": [
           {
             "value": "gregory.cooksey@bannerbank.com",
-            "confidence": 99
+            "confidence": 97
           },
           {
             "value": "cindy.spain@bannerbank.com",
-            "confidence": 99
+            "confidence": 96
           },
           {
             "value": "sherman.pierce@bannerbank.com",
-            "confidence": 99
+            "confidence": 96
           }
         ]
       },
@@ -1083,16 +1058,16 @@
         "organization": "SouthState Bank",
         "emails_found": [
           {
-            "value": "patti.appleton@southstatebank.com",
-            "confidence": 98
+            "value": "cat.valeri@southstatebank.com",
+            "confidence": 83
           },
           {
             "value": "jsousa@southstatebank.com",
-            "confidence": 97
+            "confidence": 81
           },
           {
-            "value": "christy.greening@southstatebank.com",
-            "confidence": 92
+            "value": "shelby.clyburn@southstatebank.com",
+            "confidence": 85
           }
         ]
       },
@@ -1117,7 +1092,7 @@
         "emails_found": [
           {
             "value": "andrew.pestana@renasant.com",
-            "confidence": 99
+            "confidence": 96
           }
         ]
       },
@@ -1198,11 +1173,11 @@
             "confidence": 85
           },
           {
-            "value": "lmathias@qcrh.com",
+            "value": "hcutkomp@qcrh.com",
             "confidence": 83
           },
           {
-            "value": "hcutkomp@qcrh.com",
+            "value": "lmathias@qcrh.com",
             "confidence": 82
           }
         ]
@@ -1279,15 +1254,15 @@
         "organization": "VeraBank",
         "emails_found": [
           {
-            "value": "kcarrell@verabank.com",
+            "value": "bwilder@verabank.com",
             "confidence": 99
           },
           {
-            "value": "bwilder@verabank.com",
-            "confidence": 97
+            "value": "ttreece@verabank.com",
+            "confidence": 98
           },
           {
-            "value": "ttreece@verabank.com",
+            "value": "kcarrell@verabank.com",
             "confidence": 96
           }
         ]
@@ -1341,7 +1316,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 82
+            "confidence": 84
           }
         ]
       },
@@ -1376,15 +1351,15 @@
         "organization": "Woodforest National Bank",
         "emails_found": [
           {
-            "value": "athomas@woodforest.com",
-            "confidence": 99
-          },
-          {
-            "value": "alathbridge@woodforest.com",
+            "value": "crobbins@woodforest.com",
             "confidence": 99
           },
           {
             "value": "jody_bull@woodforest.com",
+            "confidence": 99
+          },
+          {
+            "value": "ping.yan@woodforest.com",
             "confidence": 99
           }
         ]
