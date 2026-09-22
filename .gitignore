@@ -184,3 +184,29 @@ phase2-backend/functions/package/urllib3*/
 treasury/**
 !treasury/**/*.md
 !treasury/**/.gitkeep
+
+# Python Lambda dependency vendor folders / dist-info
+phase2-backend/functions/*-info/
+phase2-backend/functions/bin/
+phase2-backend/functions/bcrypt/
+phase2-backend/functions/boto3/
+phase2-backend/functions/botocore/
+phase2-backend/functions/cffi/
+phase2-backend/functions/cryptography/
+phase2-backend/functions/dateutil/
+phase2-backend/functions/jmespath/
+phase2-backend/functions/jwt/
+phase2-backend/functions/pycparser/
+phase2-backend/functions/pyotp/
+phase2-backend/functions/s3transfer/
+phase2-backend/functions/six.py
+phase2-backend/functions/urllib3/
+vendor/
+
+# Test runs & audit outputs
+after.json
+express.json
+marketplace_audit_results.json
+mock_event.json
+GEMINI.md
+**/GEMINI.md
