@@ -1,0 +1,37 @@
+{
+  "pipeline_name": "SecureBase CISO Waterfall Enrichment",
+  "data_sources": [
+    {
+      "source": "Apollo / LinkedIn Sales Navigator",
+      "filters": {
+        "titles": ["CISO", "Chief Information Security Officer", "CSO", "VP Information Security"],
+        "industries": ["Fintech", "Banking", "Financial Services", "Healthtech"],
+        "headcount": "50-1000",
+        "geography": "United States"
+      }
+    }
+  ],
+  "enrichment_waterfall": [
+    {
+      "step": 1,
+      "provider": "BuiltWith / Wappalyzer",
+      "action": "Detect Cloud Infrastructure",
+      "target_signal": "AWS (Amazon Web Services)"
+    },
+    {
+      "step": 2,
+      "provider": "Claygent AI",
+      "action": "Find Compliance Gaps / GRC Vendors",
+      "prompt": "Check if target company uses Vanta, Drata, or has open SOC 2 compliance roles. Extract 1 key security initiative."
+    },
+    {
+      "step": 3,
+      "provider": "Smartlead / HeyReach Enroller",
+      "action": "Push to Automated Sequence",
+      "campaign_mapping": {
+        "AWS = True": "Q3-Fintech-CISO-Outreach",
+        "AWS = False": "Skip / Hold"
+      }
+    }
+  ]
+}

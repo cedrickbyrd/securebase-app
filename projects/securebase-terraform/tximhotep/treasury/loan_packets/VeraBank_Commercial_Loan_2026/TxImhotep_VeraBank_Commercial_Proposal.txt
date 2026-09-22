@@ -1,0 +1,44 @@
+================================================================================
+COMMERCIAL LOAN PROPOSAL & EXECUTIVE OVERVIEW
+Prepared for VeraBank | Attn: Rick Sanders, VP Commercial Lending
+================================================================================
+
+BORROWER:           TxImhotep LLC
+PRINCIPAL:          Cedrick Byrd, CEO & Cloud Architect
+CONTACT EMAIL:      Cedrickjbyrd@gmail.com
+REQUESTED FACILITY: $35,000 Commercial Term Loan / Operating Line of Credit
+PRIMARY COLLATERAL: First-Lien on 5.00 Acres Unencumbered Land (Limestone Co., TX)
+TARGET MARKET:      Mexia / Limestone County, TX
+PLATFORM URL:       securebase.tximhotep.com/pricing
+
+--------------------------------------------------------------------------------
+PRIMARY CREDIT COLLATERAL & SWEETENER
+--------------------------------------------------------------------------------
+First-Lien Position: 5.00 Acres of 100% unencumbered real estate in Limestone 
+County, TX (owned outright with zero existing mortgages or liens).
+Estimated Conservative Valuation: $45,000 – $60,000 (~60–75% LTV).
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE OVERVIEW & USE OF PROCEEDS
+--------------------------------------------------------------------------------
+TxImhotep LLC is a Texas business specializing in enterprise cloud architecture
+and compliance automation software. The requested $35,000 credit facility will
+be utilized directly for operating capital, scaling cloud infrastructure, and 
+supporting ongoing customer onboarding for our core platform, SecureBase.
+
+--------------------------------------------------------------------------------
+2. ENTITY & TECHNICAL QUALIFICATIONS
+--------------------------------------------------------------------------------
+- Legal Standing: Active Texas LLC in good standing (EIN & SOS registered)
+- AWS Partnership: Enrolled in AWS Partner Network (Software Path)
+- Technical Audit: AWS Foundational Technical Review (FTR) Auto-Approved
+- Core Product: SecureBase (Automated FFIEC, SOC2, and ISO compliance platform)
+- Primary Repayment: Operating software licensing revenue & cloud consulting
+
+--------------------------------------------------------------------------------
+3. REAL ESTATE COLLATERAL OVERVIEW (SITE PROFILE)
+--------------------------------------------------------------------------------
+The loan facility is structured with direct secondary protection via real estate
+collateral located in Mexia/Limestone County. A visual site inspection appendix 
+is included, providing ground-level road frontage markers, county boundary 
+overlays, and utility access indicators for quick drive-by reference.
