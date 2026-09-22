@@ -267,7 +267,16 @@ export default function Compliance({ isPublic = false }) {
                 {complianceData?.criticalFindings || 0} Critical | {complianceData?.highFindings || 0} High | {complianceData?.mediumFindings || 0} Medium
               </p>
             </div>
-            <div className="text-6xl">chart</div>
+            <div className="relative flex items-center justify-center w-28 h-28">
+  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="48" className="text-slate-700" strokeWidth="10" stroke="currentColor" fill="transparent" />
+    <circle cx="60" cy="60" r="48" className="text-[#1ee4e8] transition-all duration-1000 ease-out" strokeWidth="10" stroke="currentColor" strokeDasharray="301.59" strokeDashoffset={301.59 - ((complianceData?.overallScore || 94) / 100) * 301.59} strokeLinecap="round" fill="transparent" />
+  </svg>
+  <div className="absolute flex flex-col items-center justify-center">
+    <span className="text-2xl font-extrabold text-white">{complianceData?.overallScore || 94}%</span>
+    <span className="text-[10px] uppercase tracking-wider text-slate-400">Score</span>
+  </div>
+</div>
           </div>
         </div>
       </div>

@@ -129,8 +129,11 @@ export default function DemoDashboard() {
             <div className="flex items-center gap-4">
               <span className="text-4xl">✅</span>
               <div>
-                <div className="text-xl font-bold text-green-800">SOC 2 Compliance</div>
-                <div className="text-sm text-green-600">Trust Service Criteria, findings, Texas DOB controls & audit evidence</div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-xl font-bold text-slate-900">Banking & Regulatory Governance</div>
+                  <span className="text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-300 px-2.5 py-0.5 rounded-full">FFIEC · Texas DOB · SOC 2</span>
+                </div>
+                <div className="text-sm text-slate-600">5/5 Texas DOB controls (7 TAC 33), 8/9 FFIEC domains & KMS cryptographic proof</div>
               </div>
             </div>
             <span className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-700">

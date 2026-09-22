@@ -73,13 +73,25 @@ const LandingPage = () => {
           <span className="ml-auto font-bold text-cyan-300 whitespace-nowrap">Explore the Demo →</span>
         </a>
 
-        <div className="flex gap-4 justify-center flex-wrap">
-          <a href="#request-access" className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition">
-            Request Executive Access
+        <div className="flex gap-4 justify-center flex-wrap mb-4">
+          <a href="/login?autologin=true" className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold py-3.5 px-8 rounded-lg text-lg shadow-lg transition flex items-center gap-2">
+            <span>Launch Interactive Demo</span>
+            <span>→</span>
           </a>
-          <a href="/pricing" className="bg-slate-900/70 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition border border-cyan-300/40">
-            View Platform Options
+          <a href="#request-access" className="bg-slate-900/70 hover:bg-slate-800 text-white font-bold py-3.5 px-8 rounded-lg text-lg shadow-lg transition border border-cyan-300/40">
+            Schedule Executive Briefing
           </a>
+        </div>
+
+        <p className="text-xs text-slate-300 mb-8">
+          Direct sandbox access · No credentials required · Resets every 24h
+        </p>
+
+        <div className="pt-6 border-t border-white/20 max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-xs font-semibold text-slate-200 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5"><span className="text-cyan-300 font-bold">✓</span> Texas DOB (7 TAC 33) Ready</div>
+          <div className="flex items-center gap-1.5"><span className="text-cyan-300 font-bold">✓</span> FFIEC IT Handbook Aligned</div>
+          <div className="flex items-center gap-1.5"><span className="text-cyan-300 font-bold">✓</span> SOC 2 Type II Continuous</div>
+          <div className="flex items-center gap-1.5"><span className="text-cyan-300 font-bold">✓</span> AWS KMS Cryptographic Proof</div>
         </div>
       </header>
 

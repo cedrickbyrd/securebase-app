@@ -25,7 +25,7 @@ const SUPPORTED_FRAMEWORK_IDS = ['hipaa', 'soc2', 'pcidss'];
 // Framework display metadata — no scores, no mock data
 const FRAMEWORK_META = {
   hipaa:  { name: 'HIPAA',   description: 'Health Insurance Portability & Accountability Act', color: '#0f4c81', icon: '🏥' },
-  soc2:   { name: 'SOC 2',   description: 'Service Organization Control 2',                    color: '#7c3aed', icon: '🔐' },
+  soc2:   { name: 'Banking & Regulatory Governance', description: 'FFIEC · Texas DOB (7 TAC 33) · SOC 2', color: '#1ee4e8', icon: '🏛️' },
   pcidss: { name: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard',       color: '#0d9488', icon: '💳' },
 };
 
