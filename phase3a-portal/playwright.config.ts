@@ -1,18 +1,35 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: './e2e',
-  retries: process.env.CI ? 1 : 0,
+  retries: isCI ? 1 : 0,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.PORTAL_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
   },
-  projects: [
-    {
-      name: 'chromium',
-      use: { browserName: 'chromium' },
-    },
-  ],
+  projects: isCI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+      ]
+    : [
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+        {
+          name: 'chromium',
+          use: { browserName: 'chromium' },
+        },
+      ],
   webServer: {
     command: 'npm run dev -- --host 0.0.0.0',
     url: 'http://localhost:3000',

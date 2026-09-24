@@ -210,3 +210,4 @@ marketplace_audit_results.json
 mock_event.json
 GEMINI.md
 **/GEMINI.md
+.env
