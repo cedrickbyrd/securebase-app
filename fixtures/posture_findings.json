@@ -1,0 +1,81 @@
+{
+  "scan_id": "sb-scan-demo-99214a",
+  "generated_at": "2026-09-24T22:15:00Z",
+  "scope": {
+    "aws_accounts": ["112233445566"],
+    "gcp_projects": ["tximhotep-core-prod"]
+  },
+  "summary": {
+    "total_resources_evaluated": 184,
+    "compliant_count": 180,
+    "drift_count": 4,
+    "critical_severity": 1,
+    "high_severity": 2,
+    "medium_severity": 1
+  },
+  "findings": [
+    {
+      "finding_id": "sb-find-aws-sg-ssh-001",
+      "cloud_provider": "aws",
+      "target_scope": {
+        "account_id": "112233445566",
+        "region": "us-east-1"
+      },
+      "resource_type": "AWS::EC2::SecurityGroup",
+      "resource_id": "sg-04a29ef1803d1c9a1",
+      "resource_name": "sg-prod-ingress-01",
+      "severity": "CRITICAL",
+      "title": "Ingress Security Group permits unrestricted SSH access (0.0.0.0/0)",
+      "description": "Security group sg-04a29ef1803d1c9a1 allows inbound TCP traffic on port 22 from anywhere on the internet.",
+      "compliance_mappings": [
+        { "framework": "NIST_800_53", "control_id": "SC-7", "control_name": "Boundary Protection" },
+        { "framework": "NIST_800_53", "control_id": "AC-4", "control_name": "Information Flow Enforcement" },
+        { "framework": "SOC2", "control_id": "CC6.6", "control_name": "Logical and Physical Access Controls - Boundary Protection" },
+        { "framework": "CIS_AWS_BENCHMARK", "control_id": "5.2", "control_name": "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22" }
+      ],
+      "violation_details": {
+        "protocol": "tcp",
+        "from_port": 22,
+        "to_port": 22,
+        "disallowed_cidr": "0.0.0.0/0"
+      },
+      "iac_metadata": {
+        "managed_by": "terraform",
+        "repo": "cedrickbyrd/securebase-app",
+        "file_path": "infra/terraform/network/security_groups.tf",
+        "resource_address": "aws_security_group.prod_ingress"
+      }
+    },
+    {
+      "finding_id": "sb-find-aws-s3-enc-002",
+      "cloud_provider": "aws",
+      "target_scope": {
+        "account_id": "112233445566",
+        "region": "us-east-1"
+      },
+      "resource_type": "AWS::S3::Bucket",
+      "resource_id": "arn:aws:s3:::bucket-telemetry-us-east",
+      "resource_name": "bucket-telemetry-us-east",
+      "severity": "HIGH",
+      "title": "S3 bucket lacks customer-managed KMS encryption (SSE-KMS)",
+      "description": "Bucket is configured with default AES-256 (SSE-S3) rather than an audited customer-managed KMS key (CMK).",
+      "compliance_mappings": [
+        { "framework": "NIST_800_53", "control_id": "SC-13", "control_name": "Cryptographic Protection" },
+        { "framework": "NIST_800_53", "control_id": "SC-28", "control_name": "Protection of Information at Rest" },
+        { "framework": "SOC2", "control_id": "CC6.1", "control_name": "Logical Access Controls - Data Encryption at Rest" },
+        { "framework": "FEDRAMP_MODERATE", "control_id": "SC-28(1)", "control_name": "Cryptographic Protection for Data at Rest" }
+      ],
+      "violation_details": {
+        "current_encryption": "AES256",
+        "expected_encryption": "aws:kms",
+        "kms_key_id": null
+      },
+      "iac_metadata": {
+        "managed_by": "terraform",
+        "repo": "cedrickbyrd/securebase-app",
+        "file_path": "infra/terraform/storage/s3_buckets.tf",
+        "resource_address": "aws_s3_bucket.telemetry"
+      }
+    }
+  ]
+}
