@@ -1,0 +1,75 @@
+{
+  "remediate_network_exposure": {
+    "sg-04a29ef1803d1c9a1": {
+      "dry_run_response": {
+        "status": "SIMULATION_COMPLETE",
+        "execution_mode": "DRY_RUN",
+        "timestamp_utc": "2026-09-24T22:15:10Z",
+        "target_resource": "sg-04a29ef1803d1c9a1",
+        "blast_radius_assessment": {
+          "score": "HIGH",
+          "risk_factors": [
+            "Active Application Load Balancer attached (arn:aws:elasticloadbalancing:us-east-1:112233445566:loadbalancer/app/internal-core-lb/94a8f)",
+            "2 active EC2 instances using this security group (i-0a8bf7910e, i-0294fcbe91)",
+            "Zero-downtime policy violated if public CIDR is dropped without substituting internal VPN range"
+          ],
+          "requires_manual_approval": true,
+          "approval_channel": "Slack: #cloud-secops-approvals",
+          "recommended_action": "restrict_cidr_to_vpn"
+        },
+        "state_diff": {
+          "resource": "AWS::EC2::SecurityGroup",
+          "rule_diff": [
+            {
+              "type": "ingress",
+              "action": "MODIFY",
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "current_state": {
+                "cidr_blocks": ["0.0.0.0/0"],
+                "description": "Legacy bastion access"
+              },
+              "simulated_state": {
+                "cidr_blocks": ["10.200.0.0/16"],
+                "description": "Managed by SecureBase - Restricted to Corporate Transit Gateway"
+              }
+            }
+          ]
+        },
+        "iac_remediation_hook": {
+          "suggested_iac_action": "generate_terraform_pr",
+          "repo": "cedrickbyrd/securebase-app",
+          "branch": "securebase/remediate-sg-prod-ingress-ssh",
+          "pr_title": "fix(secops): restrict ingress SSH from 0.0.0.0/0 to internal VPN CIDR"
+        }
+      },
+      "live_execution_response": {
+        "status": "SUCCESS",
+        "execution_mode": "LIVE_EXECUTION",
+        "execution_id": "exec-sb-9481b7a2-f81d-43dc-8e50",
+        "timestamp_utc": "2026-09-24T22:15:22Z",
+        "cloud_provider": "aws",
+        "resource_id": "sg-04a29ef1803d1c9a1",
+        "action_taken": "revoke_and_replace_ingress_rule",
+        "audit_trail": {
+          "initiator": "SecureBase Orchestration Engine (Autonomous Mode)",
+          "auth_mechanism": "AWS STS AssumeRoleWithWebIdentity (Workload Identity Federation)",
+          "role_arn": "arn:aws:iam::112233445566:role/SecureBaseRemediationRole"
+        },
+        "compliance_resolution": {
+          "nist_800_53": ["SC-7", "AC-4"],
+          "soc2": ["CC6.6"],
+          "finding_id": "sb-find-aws-sg-ssh-001",
+          "previous_state": "FAIL",
+          "current_state": "PASS"
+        },
+        "verification": {
+          "post_check_passed": true,
+          "latency_seconds": 1.28,
+          "evidence_hash": "sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069"
+        }
+      }
+    }
+  }
+}
