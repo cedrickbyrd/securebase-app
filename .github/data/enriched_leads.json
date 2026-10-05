@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-28T07:33:34.490131+00:00",
+  "generated": "2026-10-05T07:33:15.185557+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -22,15 +22,15 @@
         "emails_found": [
           {
             "value": "sthomas@veritexbank.com",
-            "confidence": 99
+            "confidence": 95
           },
           {
             "value": "pjubenville@veritexbank.com",
-            "confidence": 98
+            "confidence": 95
           },
           {
             "value": "bburnett@veritexbank.com",
-            "confidence": 96
+            "confidence": 95
           }
         ]
       },
@@ -59,7 +59,7 @@
         "emails_found": [
           {
             "value": "lwilliams@ffin.com",
-            "confidence": 99
+            "confidence": 97
           }
         ]
       },
@@ -140,13 +140,13 @@
         "emails_found": [
           {
             "value": "bill.murrell@texascapitalbank.com",
-            "confidence": 96
+            "confidence": 95
           }
         ]
       },
       "hunter_email": {
         "email": "russ.m@texascapitalbank.com",
-        "score": 26,
+        "score": 21,
         "verification_status": null
       },
       "pdl_enrichment": {
@@ -173,16 +173,16 @@
         "organization": "First United Bank",
         "emails_found": [
           {
+            "value": "makinlotan@firstunitedbank.com",
+            "confidence": 97
+          },
+          {
+            "value": "bnaveen@firstunitedbank.com",
+            "confidence": 95
+          },
+          {
             "value": "sboothe@firstunitedbank.com",
-            "confidence": 84
-          },
-          {
-            "value": "sreyaz@firstunitedbank.com",
-            "confidence": 84
-          },
-          {
-            "value": "cdiamond@firstunitedbank.com",
-            "confidence": 84
+            "confidence": 95
           }
         ]
       },
@@ -207,15 +207,15 @@
         "emails_found": [
           {
             "value": "rrechlin@comerica.com",
-            "confidence": 91
-          },
-          {
-            "value": "ttanguay@comerica.com",
-            "confidence": 91
+            "confidence": 70
           },
           {
             "value": "clarson-kour@comerica.com",
-            "confidence": 81
+            "confidence": 70
+          },
+          {
+            "value": "rfrancis@comerica.com",
+            "confidence": 69
           }
         ]
       },
@@ -340,7 +340,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 84
+            "confidence": 75
           }
         ]
       },
@@ -360,12 +360,12 @@
       "contact_last": "FILL_IN",
       "location": "El Paso, TX",
       "hunter_domain": {
-        "email_pattern": "{f}{last}",
+        "email_pattern": "{first}.{last}",
         "organization": "WestStar Bank",
         "emails_found": [
           {
             "value": "dramos@weststarbank.com",
-            "confidence": 97
+            "confidence": 95
           }
         ]
       },
@@ -390,7 +390,7 @@
         "emails_found": [
           {
             "value": "amann@moodybank.com",
-            "confidence": 82
+            "confidence": 75
           }
         ]
       },
@@ -434,16 +434,16 @@
         "organization": "Alliance Bank",
         "emails_found": [
           {
-            "value": "bfreeman@alliancebank.com",
-            "confidence": 69
-          },
-          {
             "value": "dgrimal@alliancebank.com",
-            "confidence": 91
+            "confidence": 78
           },
           {
             "value": "smoore@alliancebank.com",
-            "confidence": 90
+            "confidence": 76
+          },
+          {
+            "value": "bfreeman@alliancebank.com",
+            "confidence": 69
           }
         ]
       },
@@ -514,11 +514,11 @@
         "emails_found": [
           {
             "value": "thomas.wilson@kelsey-seybold.com",
-            "confidence": 82
+            "confidence": 81
           },
           {
             "value": "priscilla.reece@kelsey-seybold.com",
-            "confidence": 67
+            "confidence": 66
           }
         ]
       },
@@ -546,15 +546,15 @@
         "organization": "Cook Children's",
         "emails_found": [
           {
+            "value": "betty.stroud@cookchildrens.org",
+            "confidence": 81
+          },
+          {
             "value": "marie.howell@cookchildrens.org",
             "confidence": 85
           },
           {
-            "value": "soniaj@cookchildrens.org",
-            "confidence": 84
-          },
-          {
-            "value": "tammy.hoff@cookchildrens.org",
+            "value": "glenna.stone@cookchildrens.org",
             "confidence": 84
           }
         ]
@@ -584,16 +584,16 @@
         "organization": "AccentCare",
         "emails_found": [
           {
-            "value": "davewisniewski@accentcare.com",
-            "confidence": 98
-          },
-          {
             "value": "trobinson@accentcare.com",
-            "confidence": 96
+            "confidence": 95
           },
           {
-            "value": "bettehaynes@accentcare.com",
-            "confidence": 99
+            "value": "davewisniewski@accentcare.com",
+            "confidence": 75
+          },
+          {
+            "value": "atran@accentcare.com",
+            "confidence": 98
           }
         ]
       },
@@ -646,12 +646,12 @@
             "confidence": 85
           },
           {
-            "value": "hannah.ramos@childrens.com",
-            "confidence": 83
+            "value": "kendall.rowden@childrens.com",
+            "confidence": 84
           },
           {
             "value": "dianna.gibbs@childrens.com",
-            "confidence": 83
+            "confidence": 84
           }
         ]
       },
@@ -695,16 +695,16 @@
         "organization": "Baylor Scott & White Health",
         "emails_found": [
           {
+            "value": "lindy.garcia@bswhealth.com",
+            "confidence": 79
+          },
+          {
             "value": "elaine.gustin@bswhealth.com",
-            "confidence": 82
+            "confidence": 75
           },
           {
             "value": "seena.sunil@bswhealth.com",
-            "confidence": 81
-          },
-          {
-            "value": "christopher.morales@bswhealth.com",
-            "confidence": 85
+            "confidence": 73
           }
         ]
       },
@@ -753,7 +753,7 @@
           },
           {
             "value": "rachel@stradoslabs.com",
-            "confidence": 93
+            "confidence": 91
           }
         ]
       },
@@ -778,15 +778,15 @@
         "emails_found": [
           {
             "value": "chris@procaresolutions.com",
-            "confidence": 94
+            "confidence": 79
           },
           {
             "value": "chanel@procaresolutions.com",
-            "confidence": 93
+            "confidence": 77
           },
           {
-            "value": "austin@procaresolutions.com",
-            "confidence": 93
+            "value": "liam@procaresolutions.com",
+            "confidence": 77
           }
         ]
       },
@@ -830,12 +830,12 @@
         "organization": "ParkHub",
         "emails_found": [
           {
-            "value": "austin.lewis@parkhub.com",
-            "confidence": 85
+            "value": "john.mcdonnell@parkhub.com",
+            "confidence": 79
           },
           {
-            "value": "john.mcdonnell@parkhub.com",
-            "confidence": 85
+            "value": "austin.lewis@parkhub.com",
+            "confidence": 78
           }
         ]
       },
@@ -859,16 +859,16 @@
         "organization": "Hypergiant",
         "emails_found": [
           {
-            "value": "ani.nosbian@hypergiant.com",
-            "confidence": 99
-          },
-          {
             "value": "brandon.pierce@hypergiant.com",
             "confidence": 99
           },
           {
             "value": "colin.leahy@hypergiant.com",
-            "confidence": 98
+            "confidence": 96
+          },
+          {
+            "value": "david.tinkov@hypergiant.com",
+            "confidence": 95
           }
         ]
       },
@@ -912,16 +912,16 @@
         "organization": "Crossover Health",
         "emails_found": [
           {
-            "value": "tashiana.stoner@crossoverhealth.com",
-            "confidence": 99
+            "value": "torrie.tucker@crossoverhealth.com",
+            "confidence": 95
           },
           {
-            "value": "hailey.gulbas@crossoverhealth.com",
-            "confidence": 99
+            "value": "jill.galvez@crossoverhealth.com",
+            "confidence": 95
           },
           {
-            "value": "megan.rhodes@crossoverhealth.com",
-            "confidence": 99
+            "value": "eileen.pruett@crossoverhealth.com",
+            "confidence": 95
           }
         ]
       },
@@ -1025,12 +1025,12 @@
         "organization": "HTLF",
         "emails_found": [
           {
-            "value": "aeva@htlf.com",
-            "confidence": 84
+            "value": "jrao@htlf.com",
+            "confidence": 75
           },
           {
-            "value": "jrao@htlf.com",
-            "confidence": 82
+            "value": "aeva@htlf.com",
+            "confidence": 67
           }
         ]
       },
@@ -1054,16 +1054,16 @@
         "organization": "Banner Bank",
         "emails_found": [
           {
-            "value": "gregory.cooksey@bannerbank.com",
-            "confidence": 96
-          },
-          {
             "value": "cindy.spain@bannerbank.com",
-            "confidence": 96
+            "confidence": 95
           },
           {
-            "value": "sherman.pierce@bannerbank.com",
-            "confidence": 96
+            "value": "chelsea.hall@bannerbank.com",
+            "confidence": 99
+          },
+          {
+            "value": "reece.evans@bannerbank.com",
+            "confidence": 95
           }
         ]
       },
@@ -1087,16 +1087,16 @@
         "organization": "SouthState Bank",
         "emails_found": [
           {
-            "value": "cat.valeri@southstatebank.com",
-            "confidence": 81
+            "value": "jsousa@southstatebank.com",
+            "confidence": 75
           },
           {
-            "value": "jsousa@southstatebank.com",
-            "confidence": 81
+            "value": "bradley.hitchcock@southstatebank.com",
+            "confidence": 95
           },
           {
             "value": "shelby.clyburn@southstatebank.com",
-            "confidence": 85
+            "confidence": 95
           }
         ]
       },
@@ -1121,7 +1121,7 @@
         "emails_found": [
           {
             "value": "andrew.pestana@renasant.com",
-            "confidence": 97
+            "confidence": 95
           }
         ]
       },
@@ -1145,16 +1145,16 @@
         "organization": "Byline Bank",
         "emails_found": [
           {
-            "value": "mpanozzo@bylinebank.com",
-            "confidence": 94
-          },
-          {
             "value": "amejias@bylinebank.com",
-            "confidence": 93
+            "confidence": 75
           },
           {
-            "value": "jsanford@bylinebank.com",
-            "confidence": 91
+            "value": "jpowers@bylinebank.com",
+            "confidence": 75
+          },
+          {
+            "value": "mpanozzo@bylinebank.com",
+            "confidence": 75
           }
         ]
       },
@@ -1198,16 +1198,16 @@
         "organization": "QCR Holdings Inc",
         "emails_found": [
           {
+            "value": "lmathias@qcrh.com",
+            "confidence": 79
+          },
+          {
             "value": "sbreen@qcrh.com",
-            "confidence": 85
+            "confidence": 78
           },
           {
             "value": "hcutkomp@qcrh.com",
-            "confidence": 83
-          },
-          {
-            "value": "lmathias@qcrh.com",
-            "confidence": 82
+            "confidence": 76
           }
         ]
       },
@@ -1283,16 +1283,16 @@
         "organization": "VeraBank",
         "emails_found": [
           {
-            "value": "bwilder@verabank.com",
-            "confidence": 99
-          },
-          {
             "value": "kcarrell@verabank.com",
-            "confidence": 98
+            "confidence": 95
           },
           {
             "value": "ttreece@verabank.com",
-            "confidence": 98
+            "confidence": 95
+          },
+          {
+            "value": "bwilder@verabank.com",
+            "confidence": 95
           }
         ]
       },
@@ -1345,7 +1345,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 84
+            "confidence": 75
           }
         ]
       },
@@ -1380,16 +1380,16 @@
         "organization": "Woodforest National Bank",
         "emails_found": [
           {
-            "value": "dmccall@woodforest.com",
-            "confidence": 99
+            "value": "cdaugherty@woodforest.com",
+            "confidence": 98
           },
           {
-            "value": "alathbridge@woodforest.com",
-            "confidence": 99
+            "value": "timothy.bryan@woodforest.com",
+            "confidence": 95
           },
           {
             "value": "david.woodstrom@woodforest.com",
-            "confidence": 98
+            "confidence": 95
           }
         ]
       },
