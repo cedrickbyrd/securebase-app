@@ -1,0 +1,15 @@
+{
+  "assessment_metadata": {
+    "client_identifier": "pilot-citizens-national-bank-ffiec-2026",
+    "evaluation_engine": "SecureBase-MCP/3.0",
+    "framework": "FFIEC IT Examination Handbook (2026 Revision)",
+    "generated_at": "2026-10-06T01:49:35.592457+00:00",
+    "execution_mode": "LIVE"
+  },
+  "summary": {
+    "overall_score": 97.25,
+    "status": "PASS",
+    "storage_health": "COMPLIANT"
+  },
+  "sha256_hash": "581927a297825e42d794ca64db443fbd34ed9bacfe2b96ac973af60c2fcb794f"
+}
