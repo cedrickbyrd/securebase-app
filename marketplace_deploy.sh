@@ -15,7 +15,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 PROD_DIR="${REPO_ROOT}/landing-zone/environments/prod"
-BACKEND_HCL="${REPO_ROOT}/landing-zone/environments/production/backend.hcl"
+BACKEND_HCL="${PROD_DIR}/backend.hcl"
 AUDIT_SCRIPT="${REPO_ROOT}/marketplace_audit.sh"
 REGION="us-east-1"
 PROD_BUCKET="securebase-terraform-state-prod"
@@ -78,7 +78,7 @@ for fn in "${!LAMBDA_ZIP_MAP[@]}"; do
   curl -sL "$url" -o "/tmp/${key}.zip"
   aws s3 cp "/tmp/${key}.zip" "s3://${PROD_BUCKET}/lambda/${key}.zip" --region "$REGION"
   rm -f "/tmp/${key}.zip"
-  echo "    ✓ Done"
+  echo "     ✓ Done"
 done
 echo ""
 

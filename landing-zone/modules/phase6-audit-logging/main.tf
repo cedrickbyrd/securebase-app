@@ -23,6 +23,33 @@ terraform {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+data "aws_iam_policy_document" "evidence_vault_policy" {
+  # ... Keep existing CloudTrail / Config / S3 log delivery statements ...
+
+  # FFIEC-IS-003: Enforce TLS in Transit
+  statement {
+    sid    = "EnforceTLSRequestsOnly"
+    effect = "Deny"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      "arn:aws:s3:::securebase-vault-logs",
+      "arn:aws:s3:::securebase-vault-logs/*"
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
 # ============================================================================
 # KMS Key for Evidence Bucket Encryption
 # ============================================================================
@@ -96,10 +123,10 @@ resource "aws_s3_bucket" "evidence" {
   object_lock_enabled = true
 
   tags = merge(var.tags, {
-    Name               = var.evidence_bucket_name
-    Environment        = var.environment
-    Phase              = "6.1"
-    DataClassification = "compliance-evidence"
+    Name                = var.evidence_bucket_name
+    Environment         = var.environment
+    Phase               = "6.1"
+    DataClassification  = "compliance-evidence"
     ComplianceFramework = "SOC2-HIPAA-FedRAMP"
   })
 }
