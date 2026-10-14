@@ -45,7 +45,7 @@ jobs:
         run: |
           # Bootstrap node runtime and execute formatting engine
           npm install @modelcontextprotocol/sdk zod --no-save
-          node .github/scripts/securebase-formatter.js tfplan.json > securebase-report.json
+          node .github/scripts/securebase-formatter.cjs tfplan.json > securebase-report.json
           echo "REPORT_EXISTS=true" >> \$GITHUB_ENV
 
       - name: Format & Post PR Compliance Report
@@ -95,7 +95,7 @@ jobs:
 
 ---
 
-## 2. PR Comment Formatter Script (`.github/scripts/securebase-formatter.js`)
+## 2. PR Comment Formatter Script (`.github/scripts/securebase-formatter.cjs`)
 
 Save this Node.js engine script to process the `tfplan.json` artifact, calculate posture metrics, and output markdown formatted for developer conversion.
 
