@@ -23,11 +23,10 @@ async def run_pipeline_tests():
     print("=" * 65)
     print(f"[*] Connecting to MCP server at {SERVER_URL}...")
 
-    # Ensure local plans directory exists within allowed path scope
     os.makedirs(PLANS_DIR, exist_ok=True)
     test_plan_path = os.path.join(PLANS_DIR, "test_plan.json")
 
-    # Create dummy terraform plan JSON inside allowed directory
+    # Generate compliant terraform plan JSON with explicit CMEK SSE configuration
     dummy_plan_data = {
         "format_version": "1.2",
         "terraform_version": "1.9.0",
@@ -39,14 +38,24 @@ async def run_pipeline_tests():
                 "change": {
                     "actions": ["create"],
                     "after": {
-                        "bucket": "securebase-vault-logs-test",
-                        "server_side_encryption_configuration": [
+                        "bucket": "securebase-vault-logs-test"
+                    }
+                }
+            },
+            {
+                "address": "aws_s3_bucket_server_side_encryption_configuration.securebase_vault_cmek",
+                "type": "aws_s3_bucket_server_side_encryption_configuration",
+                "name": "securebase_vault_cmek",
+                "change": {
+                    "actions": ["create"],
+                    "after": {
+                        "bucket": "aws_s3_bucket.securebase_vault.id",
+                        "rule": [
                             {
-                                "rule": [
+                                "apply_server_side_encryption_by_default": [
                                     {
-                                        "apply_server_side_encryption_by_default": [
-                                            {"sse_algorithm": "aws:kms"}
-                                        ]
+                                        "kms_master_key_id": "arn:aws:kms:us-east-1:731184206915:key/securebase-cmek-kms-id",
+                                        "sse_algorithm": "aws:kms"
                                     }
                                 ]
                             }
