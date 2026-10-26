@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-19T07:27:42.765939+00:00",
+  "generated": "2026-10-26T07:29:38.303913+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -170,7 +170,7 @@
         "emails_found": [
           {
             "value": "makinlotan@firstunitedbank.com",
-            "confidence": 99
+            "confidence": 97
           },
           {
             "value": "bnaveen@firstunitedbank.com",
@@ -203,7 +203,7 @@
         "emails_found": [
           {
             "value": "rrechlin@comerica.com",
-            "confidence": 70
+            "confidence": 95
           },
           {
             "value": "clarson-kour@comerica.com",
@@ -336,7 +336,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 77
+            "confidence": 78
           }
         ]
       },
@@ -543,14 +543,14 @@
         "emails_found": [
           {
             "value": "betty.stroud@cookchildrens.org",
-            "confidence": 83
+            "confidence": 81
           },
           {
             "value": "marie.howell@cookchildrens.org",
             "confidence": 85
           },
           {
-            "value": "glenna.stone@cookchildrens.org",
+            "value": "angela.stanley@cookchildrens.org",
             "confidence": 84
           }
         ]
@@ -589,7 +589,7 @@
           },
           {
             "value": "lhernandez@accentcare.com",
-            "confidence": 99
+            "confidence": 98
           }
         ]
       },
@@ -643,10 +643,10 @@
           },
           {
             "value": "erinne.conner@childrens.com",
-            "confidence": 83
+            "confidence": 84
           },
           {
-            "value": "dianna.gibbs@childrens.com",
+            "value": "victoria.nelson@childrens.com",
             "confidence": 83
           }
         ]
@@ -692,11 +692,11 @@
         "emails_found": [
           {
             "value": "lindy.garcia@bswhealth.com",
-            "confidence": 79
+            "confidence": 77
           },
           {
             "value": "elaine.gustin@bswhealth.com",
-            "confidence": 78
+            "confidence": 77
           },
           {
             "value": "seena.sunil@bswhealth.com",
@@ -745,7 +745,7 @@
         "emails_found": [
           {
             "value": "alex@stradoslabs.com",
-            "confidence": 77
+            "confidence": 78
           },
           {
             "value": "rachel@stradoslabs.com",
@@ -773,15 +773,15 @@
         "organization": "Procare Solutions",
         "emails_found": [
           {
-            "value": "liam@procaresolutions.com",
+            "value": "chanel@procaresolutions.com",
             "confidence": 79
           },
           {
-            "value": "chanel@procaresolutions.com",
-            "confidence": 77
+            "value": "austin@procaresolutions.com",
+            "confidence": 79
           },
           {
-            "value": "austin@procaresolutions.com",
+            "value": "liam@procaresolutions.com",
             "confidence": 77
           }
         ]
@@ -826,12 +826,12 @@
         "organization": "ParkHub",
         "emails_found": [
           {
-            "value": "john.mcdonnell@parkhub.com",
+            "value": "austin.lewis@parkhub.com",
             "confidence": 79
           },
           {
-            "value": "austin.lewis@parkhub.com",
-            "confidence": 78
+            "value": "john.mcdonnell@parkhub.com",
+            "confidence": 79
           }
         ]
       },
@@ -1055,7 +1055,7 @@
           },
           {
             "value": "chelsea.hall@bannerbank.com",
-            "confidence": 99
+            "confidence": 97
           },
           {
             "value": "reece.evans@bannerbank.com",
@@ -1199,15 +1199,15 @@
         "emails_found": [
           {
             "value": "hcutkomp@qcrh.com",
-            "confidence": 79
-          },
-          {
-            "value": "lmathias@qcrh.com",
             "confidence": 78
           },
           {
-            "value": "sbreen@qcrh.com",
+            "value": "lmathias@qcrh.com",
             "confidence": 77
+          },
+          {
+            "value": "sbreen@qcrh.com",
+            "confidence": 76
           }
         ]
       },
@@ -1345,7 +1345,7 @@
         "emails_found": [
           {
             "value": "sshaik@gnty.com",
-            "confidence": 77
+            "confidence": 78
           }
         ]
       },
@@ -1381,7 +1381,7 @@
         "emails_found": [
           {
             "value": "cdaugherty@woodforest.com",
-            "confidence": 96
+            "confidence": 97
           },
           {
             "value": "timothy.bryan@woodforest.com",
