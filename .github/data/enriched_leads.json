@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-26T07:29:38.303913+00:00",
+  "generated": "2026-11-02T07:09:42.652519+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -142,7 +142,7 @@
       },
       "hunter_email": {
         "email": "russ.m@texascapitalbank.com",
-        "score": 21,
+        "score": 26,
         "verification_status": null
       },
       "pdl_enrichment": {
@@ -170,14 +170,14 @@
         "emails_found": [
           {
             "value": "makinlotan@firstunitedbank.com",
-            "confidence": 97
+            "confidence": 96
           },
           {
-            "value": "bnaveen@firstunitedbank.com",
+            "value": "troy.kelso@firstunitedbank.com",
             "confidence": 95
           },
           {
-            "value": "sboothe@firstunitedbank.com",
+            "value": "bnaveen@firstunitedbank.com",
             "confidence": 95
           }
         ]
@@ -206,12 +206,12 @@
             "confidence": 95
           },
           {
-            "value": "clarson-kour@comerica.com",
-            "confidence": 70
+            "value": "kkuffert@comerica.com",
+            "confidence": 98
           },
           {
-            "value": "rfrancis@comerica.com",
-            "confidence": 65
+            "value": "lvedhapudi@comerica.com",
+            "confidence": 95
           }
         ]
       },
@@ -435,7 +435,7 @@
           },
           {
             "value": "smoore@alliancebank.com",
-            "confidence": 78
+            "confidence": 75
           },
           {
             "value": "bfreeman@alliancebank.com",
@@ -510,11 +510,11 @@
         "emails_found": [
           {
             "value": "thomas.wilson@kelsey-seybold.com",
-            "confidence": 81
+            "confidence": 82
           },
           {
             "value": "priscilla.reece@kelsey-seybold.com",
-            "confidence": 66
+            "confidence": 69
           }
         ]
       },
@@ -585,10 +585,10 @@
           },
           {
             "value": "davewisniewski@accentcare.com",
-            "confidence": 75
+            "confidence": 95
           },
           {
-            "value": "lhernandez@accentcare.com",
+            "value": "atran@accentcare.com",
             "confidence": 98
           }
         ]
@@ -642,11 +642,11 @@
             "confidence": 85
           },
           {
-            "value": "erinne.conner@childrens.com",
+            "value": "dianna.gibbs@childrens.com",
             "confidence": 84
           },
           {
-            "value": "victoria.nelson@childrens.com",
+            "value": "kendall.rowden@childrens.com",
             "confidence": 83
           }
         ]
@@ -691,12 +691,12 @@
         "organization": "Baylor Scott & White Health",
         "emails_found": [
           {
-            "value": "lindy.garcia@bswhealth.com",
-            "confidence": 77
+            "value": "elaine.gustin@bswhealth.com",
+            "confidence": 78
           },
           {
-            "value": "elaine.gustin@bswhealth.com",
-            "confidence": 77
+            "value": "lindy.garcia@bswhealth.com",
+            "confidence": 76
           },
           {
             "value": "seena.sunil@bswhealth.com",
@@ -773,16 +773,12 @@
         "organization": "Procare Solutions",
         "emails_found": [
           {
-            "value": "chanel@procaresolutions.com",
-            "confidence": 79
-          },
-          {
-            "value": "austin@procaresolutions.com",
-            "confidence": 79
-          },
-          {
             "value": "liam@procaresolutions.com",
-            "confidence": 77
+            "confidence": 79
+          },
+          {
+            "value": "chanel@procaresolutions.com",
+            "confidence": 78
           }
         ]
       },
@@ -1026,7 +1022,7 @@
           },
           {
             "value": "aeva@htlf.com",
-            "confidence": 68
+            "confidence": 66
           }
         ]
       },
@@ -1055,7 +1051,7 @@
           },
           {
             "value": "chelsea.hall@bannerbank.com",
-            "confidence": 97
+            "confidence": 96
           },
           {
             "value": "reece.evans@bannerbank.com",
@@ -1084,7 +1080,7 @@
         "emails_found": [
           {
             "value": "jsousa@southstatebank.com",
-            "confidence": 75
+            "confidence": 95
           },
           {
             "value": "jessica.turner@southstatebank.com",
@@ -1381,7 +1377,7 @@
         "emails_found": [
           {
             "value": "cdaugherty@woodforest.com",
-            "confidence": 97
+            "confidence": 99
           },
           {
             "value": "timothy.bryan@woodforest.com",
