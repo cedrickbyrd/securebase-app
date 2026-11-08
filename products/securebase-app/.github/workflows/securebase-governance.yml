@@ -1,0 +1,42 @@
+name: 'SecureBase IaC Governance'
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  compliance-scan:
+    name: 'Shift-Left Compliance Audit'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Run SecureBase Marketplace Action
+        uses: cedrickbyrd/securebase-app@v1.0.2
+        with:
+          working-directory: '.'
+          fail-on-severity: 'HIGH'
+          comment-on-pr: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-format: 'json'
+          report-name: 'shift-left-audit-evidence'
+
+      - name: Ingest Telemetry to Render Express API
+        if: always()
+        run: |
+          if [ -f "shift-left-audit-evidence.json" ]; then
+            echo "Evidence payload detected. Transmitting telemetry to Render Express..."
+            curl -s --max-time 15 -X POST "https://api.securebase.tximhotep.com/api/telemetry/pipeline-event" \
+              -H "Content-Type: application/json" \
+              -H "X-SecureBase-Origin: dogfood-ci" \
+              -d @shift-left-audit-evidence.json || echo "Render ingestion timed out or unreachable; skipping telemetry update."
+          else
+            echo "shift-left-audit-evidence.json not found; skipping ingestion."
+          fi
