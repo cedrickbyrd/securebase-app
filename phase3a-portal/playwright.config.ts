@@ -1,39 +1,33 @@
+// phase3a-portal/playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
-
-const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: './e2e',
-  retries: isCI ? 1 : 0,
+  timeout: 30000,
+  expect: { timeout: 15000 },
+  fullyParallel: false,
+  workers: 1, // Avoid port contention on older macOS kernels
   use: {
-    baseURL: process.env.PORTAL_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
   },
-  projects: isCI
-    ? [
-        {
-          name: 'chromium',
-          use: { ...devices['Desktop Chrome'] },
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Bypass chromium-headless-shell by using standard Chrome channel or older headless mode
+        channel: 'chrome',
+        launchOptions: {
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
         },
-        {
-          name: 'firefox',
-          use: { ...devices['Desktop Firefox'] },
-        },
-      ]
-    : [
-        {
-          name: 'firefox',
-          use: { ...devices['Desktop Firefox'] },
-        },
-        {
-          name: 'chromium',
-          use: { browserName: 'chromium' },
-        },
-      ],
-  webServer: {
-    command: 'npm run dev -- --host 0.0.0.0',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+      },
+    },
+  ],
 });
