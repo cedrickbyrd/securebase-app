@@ -1,3 +1,7 @@
+// phase3a-portal/src/services/apiService.js
+import { supabaseBridge } from './supabaseBridge';
+import { mockApiService } from './mockApiService';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const SESSION_TOKEN_KEY = 'sessionToken';
 
@@ -106,11 +110,53 @@ class ApiService {
   getUserProfile      = async () => this.get('/user/profile');
   getInvoices         = async () => this.get('/billing/invoices');
   getApiKeys          = async () => this.get('/api-keys');
-  getComplianceStatus  = async () => this.get('/compliance/status');
-  getComplianceScore   = async () => this.get('/compliance/score');
-  getComplianceFindings = async () => this.get('/compliance/findings');
   getTickets          = async (params) => this.get('/tickets', { params });
   createTicket        = async (ticketData) => this.post('/tickets', ticketData);
+
+  // ==============================================================================
+  // Compliance & Telemetry (Bridge Interceptors)
+  // ==============================================================================
+  getComplianceScore = async (tenantId = 'cnb-waxahachie', framework = 'ffiec') => {
+    if (import.meta.env.VITE_USE_SUPABASE === 'true') {
+      try {
+        const record = await supabaseBridge.getTenantComplianceScore(tenantId);
+        if (record) {
+          return {
+            tenantId: record.tenant_id,
+            score: record.overall_score ?? record.score ?? 85,
+            framework: record.framework || framework,
+            evaluatedAt: record.evaluated_at,
+            criticalFindings: record.critical_findings_count || 0,
+            status: record.status || 'COMPLIANT'
+          };
+        }
+      } catch (err) {
+        console.warn('[apiService] Supabase bridge failed, falling back to mock.', err);
+      }
+    }
+    
+    if (import.meta.env.VITE_USE_MOCK_API === 'true' || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return mockApiService.getComplianceScore(tenantId, framework);
+    }
+
+    return this.get(`/compliance/score/${tenantId}?framework=${framework}`);
+  };
+
+  getComplianceStatus = async (tenantId) => this.getComplianceScore(tenantId);
+  
+  getComplianceFindings = async () => {
+    if (import.meta.env.VITE_USE_MOCK_API === 'true' || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return mockApiService.getComplianceFindings();
+    }
+    return this.get('/compliance/findings');
+  };
+
+  getDriftAnalytics = async (tenantId = 'cnb-waxahachie') => {
+    if (import.meta.env.VITE_USE_MOCK_API === 'true' || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return mockApiService.getDriftAnalytics(tenantId);
+    }
+    return this.get(`/compliance/drift-analytics?tenantId=${encodeURIComponent(tenantId)}`);
+  };
 
   // Texas Fintech Compliance (fintech_pro / fintech_elite tiers)
   getFintechComplianceStatus = async (customerId) => {
@@ -127,7 +173,7 @@ class ApiService {
     return this.get(`/fintech/transactions?${params.toString()}`);
   };
 
-  // Signup & Onboarding — FIX: getOnboardingStatus now uses jobId not customer_id
+  // Signup & Onboarding
   signup              = async (payload) => this.post('/signup', payload);
   verifyEmail         = async (token, email) => this.post('/verify-email', { token, email });
   getOnboardingStatus = async (jobId) => this.get(`/onboarding/status?jobId=${encodeURIComponent(jobId)}`);
