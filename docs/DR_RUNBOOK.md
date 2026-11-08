@@ -286,6 +286,8 @@ cat /tmp/latest_drill.json | jq .
 
 The `dr_drill.py` Lambda automatically sets SSM `/securebase/dr/drill_in_progress=true` before triggering failover and clears it after the drill completes.
 
+The same drill execution now invokes `securebase-<env>-failover-validator` and records validator pass/fail status in the drill report so DynamoDB replica health and secondary API readiness are included in the monthly outcome.
+
 The `alert_router.py` Lambda reads this flag and suppresses non-critical PagerDuty pages during the suppression window.
 
 ---

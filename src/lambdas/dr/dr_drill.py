@@ -10,7 +10,9 @@ Environment variables:
     PRIMARY_REGION          AWS region string (default: us-east-1)
     SECONDARY_REGION        AWS region string (default: us-west-2)
     AURORA_GLOBAL_CLUSTER_ID  e.g. securebase-prod-global
+    AURORA_CLUSTER_ID       Primary Aurora cluster identifier (optional)
     FAILOVER_LAMBDA_ARN     ARN of the failover_orchestrator Lambda
+    FAILOVER_VALIDATOR_LAMBDA_ARN  ARN of failover validator Lambda (optional)
     DRILL_REPORT_BUCKET     S3 bucket for drill reports
     ALERT_SNS_ARN           SNS topic for notifications
     PAGERDUTY_API_KEY_PARAM SSM parameter name for PagerDuty API key
@@ -32,7 +34,9 @@ logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 PRIMARY_REGION          = os.environ.get("PRIMARY_REGION", "us-east-1")
 SECONDARY_REGION        = os.environ.get("SECONDARY_REGION", "us-west-2")
 GLOBAL_CLUSTER_ID       = os.environ.get("AURORA_GLOBAL_CLUSTER_ID", "")
+AURORA_CLUSTER_ID       = os.environ.get("AURORA_CLUSTER_ID", "")
 FAILOVER_LAMBDA_ARN     = os.environ.get("FAILOVER_LAMBDA_ARN", "")
+FAILOVER_VALIDATOR_LAMBDA_ARN = os.environ.get("FAILOVER_VALIDATOR_LAMBDA_ARN", "")
 DRILL_REPORT_BUCKET     = os.environ.get("DRILL_REPORT_BUCKET", "")
 ALERT_SNS_ARN           = os.environ.get("ALERT_SNS_ARN", "")
 PAGERDUTY_KEY_PARAM     = os.environ.get("PAGERDUTY_API_KEY_PARAM", "/securebase/pagerduty/api_key")
@@ -100,7 +104,10 @@ def _invoke_failover_lambda(lam) -> dict:
         InvocationType="RequestResponse",
         Payload=json.dumps({"action": "failover", "reason": "DR drill", "source": "dr_drill"}),
     )
-    payload = json.loads(response["Payload"].read())
+    payload_raw = response["Payload"].read()
+    if isinstance(payload_raw, bytes):
+        payload_raw = payload_raw.decode("utf-8")
+    payload = json.loads(payload_raw or "{}")
     if response.get("FunctionError"):
         raise RuntimeError(f"Failover Lambda error: {payload}")
     return payload
@@ -108,14 +115,15 @@ def _invoke_failover_lambda(lam) -> dict:
 
 def _get_aurora_replication_lag(cw) -> float:
     """Return latest Aurora Global DB replication lag sample in milliseconds."""
-    if not GLOBAL_CLUSTER_ID:
+    cluster_id = AURORA_CLUSTER_ID or GLOBAL_CLUSTER_ID
+    if not cluster_id:
         return 0.0
     try:
         now = datetime.now(timezone.utc)
         result = cw.get_metric_statistics(
             Namespace="AWS/RDS",
             MetricName="AuroraGlobalDBReplicationLag",
-            Dimensions=[{"Name": "DBClusterIdentifier", "Value": GLOBAL_CLUSTER_ID}],
+            Dimensions=[{"Name": "DBClusterIdentifier", "Value": cluster_id}],
             StartTime=now - timedelta(minutes=5),
             EndTime=now,
             Period=60,
@@ -128,6 +136,55 @@ def _get_aurora_replication_lag(cw) -> float:
     except ClientError as exc:
         logger.warning("Could not fetch Aurora replication lag: %s", exc)
         return 0.0
+
+
+def _invoke_failover_validator_lambda(lam, drill_id: str) -> dict:
+    """Synchronously invoke failover validator and return normalized result."""
+    if not FAILOVER_VALIDATOR_LAMBDA_ARN:
+        return {"skipped": True, "message": "FAILOVER_VALIDATOR_LAMBDA_ARN not configured"}
+
+    try:
+        response = lam.invoke(
+            FunctionName=FAILOVER_VALIDATOR_LAMBDA_ARN,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"source": "dr_drill", "drill_id": drill_id}),
+        )
+    except ClientError as exc:
+        return {"passed": False, "error": str(exc), "statusCode": None, "overall_passed": False}
+
+    payload_raw = response["Payload"].read()
+    if isinstance(payload_raw, bytes):
+        payload_raw = payload_raw.decode("utf-8")
+    payload = json.loads(payload_raw or "{}")
+    if response.get("FunctionError"):
+        return {
+            "passed": False,
+            "error": f"Failover validator Lambda error: {payload}",
+            "statusCode": payload.get("statusCode"),
+            "overall_passed": False,
+        }
+
+    status_code = payload.get("statusCode")
+    body = payload.get("body")
+    if isinstance(body, str):
+        try:
+            body = json.loads(body)
+        except json.JSONDecodeError:
+            logger.warning("Failover validator body was not JSON: %s", body)
+            body = {"raw_body": body}
+
+    overall_passed = body.get("overall_passed") if isinstance(body, dict) else None
+    missing_overall_flag = overall_passed is None
+    if missing_overall_flag:
+        passed = status_code == 200
+    else:
+        passed = status_code == 200 and overall_passed is not False
+    return {
+        "passed": passed,
+        "statusCode": status_code,
+        "overall_passed": overall_passed,
+        "warning": "overall_passed missing from validator response" if missing_overall_flag else None,
+    }
 
 
 def _invoke_failback(ssm, lam) -> None:
@@ -245,7 +302,26 @@ def handler(event, _context):
         _step("validate_rpo", "PASS" if rpo_passed else "FAIL",
               f"lag={pre_lag_ms:.1f}ms <= {RPO_TARGET_SECONDS * 1000}ms: {rpo_passed}")
 
-        report["passed"] = rto_passed and rpo_passed
+        # ── Step 8: Run post-failover validation checks (DDB/API/SSM) ─────────
+        validator_result = _invoke_failover_validator_lambda(lam, drill_id)
+        report["validator"] = validator_result
+        if validator_result.get("skipped"):
+            validator_passed = True
+            _step("validate_failover_post_checks", "SKIP", validator_result.get("message", ""))
+        else:
+            validator_passed = validator_result.get("passed", False)
+            validator_details = f"status={validator_result.get('statusCode')} overall_passed={validator_result.get('overall_passed')}"
+            if validator_result.get("error"):
+                validator_details = f"{validator_details} error={validator_result.get('error')}"
+            elif validator_result.get("warning"):
+                validator_details = f"{validator_details} warning={validator_result.get('warning')}"
+            _step(
+                "validate_failover_post_checks",
+                "PASS" if validator_passed else "FAIL",
+                validator_details,
+            )
+
+        report["passed"] = rto_passed and rpo_passed and validator_passed
         report["result"] = "PASS" if report["passed"] else "FAIL"
 
     except Exception as exc:  # pylint: disable=broad-except
@@ -307,5 +383,6 @@ def _finish(report, drill_id, ssm, s3, sns, lam, _step):
         "result":     report["result"],
         "rto_seconds": report.get("rto_seconds"),
         "rpo_lag_ms":  report.get("rpo_lag_ms"),
+        "validator":   report.get("validator"),
         "report_uri":  report_uri,
     }
