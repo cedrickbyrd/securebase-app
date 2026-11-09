@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-02T07:09:42.652519+00:00",
+  "generated": "2026-11-09T07:08:55.156366+00:00",
   "summary": {
     "total": 54,
     "enriched": 10,
@@ -52,12 +52,7 @@
       "hunter_domain": {
         "email_pattern": "{f}{last}",
         "organization": "First Financial Bank",
-        "emails_found": [
-          {
-            "value": "lwilliams@ffin.com",
-            "confidence": 95
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {
         "email": "csuarez@ffin.com",
@@ -170,7 +165,7 @@
         "emails_found": [
           {
             "value": "makinlotan@firstunitedbank.com",
-            "confidence": 96
+            "confidence": 97
           },
           {
             "value": "troy.kelso@firstunitedbank.com",
@@ -207,10 +202,10 @@
           },
           {
             "value": "kkuffert@comerica.com",
-            "confidence": 98
+            "confidence": 96
           },
           {
-            "value": "lvedhapudi@comerica.com",
+            "value": "mjarbo@comerica.com",
             "confidence": 95
           }
         ]
@@ -642,7 +637,7 @@
             "confidence": 85
           },
           {
-            "value": "dianna.gibbs@childrens.com",
+            "value": "kristin.scott@childrens.com",
             "confidence": 84
           },
           {
@@ -691,16 +686,16 @@
         "organization": "Baylor Scott & White Health",
         "emails_found": [
           {
-            "value": "elaine.gustin@bswhealth.com",
+            "value": "lindy.garcia@bswhealth.com",
             "confidence": 78
           },
           {
-            "value": "lindy.garcia@bswhealth.com",
+            "value": "elaine.gustin@bswhealth.com",
             "confidence": 76
           },
           {
             "value": "seena.sunil@bswhealth.com",
-            "confidence": 73
+            "confidence": 72
           }
         ]
       },
@@ -749,7 +744,7 @@
           },
           {
             "value": "rachel@stradoslabs.com",
-            "confidence": 90
+            "confidence": 96
           }
         ]
       },
@@ -771,16 +766,7 @@
       "hunter_domain": {
         "email_pattern": "{first}",
         "organization": "Procare Solutions",
-        "emails_found": [
-          {
-            "value": "liam@procaresolutions.com",
-            "confidence": 79
-          },
-          {
-            "value": "chanel@procaresolutions.com",
-            "confidence": 78
-          }
-        ]
+        "emails_found": []
       },
       "hunter_email": {},
       "pdl_enrichment": {},
@@ -1051,7 +1037,7 @@
           },
           {
             "value": "chelsea.hall@bannerbank.com",
-            "confidence": 96
+            "confidence": 98
           },
           {
             "value": "reece.evans@bannerbank.com",
@@ -1377,7 +1363,7 @@
         "emails_found": [
           {
             "value": "cdaugherty@woodforest.com",
-            "confidence": 99
+            "confidence": 96
           },
           {
             "value": "timothy.bryan@woodforest.com",
