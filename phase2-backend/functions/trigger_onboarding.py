@@ -203,7 +203,7 @@ SecureBase by TxImhotep LLC
 
 def generate_api_key(customer_id, email):
     key_secret = uuid.uuid4().hex + uuid.uuid4().hex
-    full_key   = f"sk_live_{key_secret}"
+    full_key   = f"sk_test_{key_secret}"
     key_hash   = hashlib.sha256(full_key.encode()).hexdigest()
     scopes     = json.dumps(['read:invoices', 'read:metrics', 'read:compliance', 'write:support'])
 

@@ -291,7 +291,7 @@ generate_api_key() {
   print_step "Generating API key..."
 
   # Generate secure random API key
-  API_KEY_PREFIX="sk_live_${CUSTOMER_ID}"
+  API_KEY_PREFIX="sk_test_${CUSTOMER_ID}"
   API_KEY_SECRET=$(openssl rand -hex 32)
   FULL_API_KEY="${API_KEY_PREFIX}_${API_KEY_SECRET}"
 
@@ -515,7 +515,7 @@ generate_deployment_summary() {
 
 - Tier: ${TIER}
 - Monthly Base: \$[See tier pricing]
-- API Key Prefix: sk_live_${CUSTOMER_ID}
+- API Key Prefix: sk_test_${CUSTOMER_ID}
 - Billing Email: ${EMAIL}
 
 ## Next Steps

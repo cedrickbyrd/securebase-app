@@ -270,7 +270,7 @@ Invoice Delivery: Automatic email to {billing_email}
 API Documentation: https://docs.securebase.tximhotep.com/api
 
 Your API Key (save securely):
-sk_live_{customer_id}_{random_suffix}
+sk_test_{customer_id}_{random_suffix}
 
 Questions? Reply to this email or contact support@securebase.tximhotep.com
 ```

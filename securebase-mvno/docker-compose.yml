@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  corelink-mcp:
+    build:
+      context: ./services/corelink-mcp-server
+    container_name: securebase-corelink-mcp
+    ports:
+      - "127.0.0.1:8085:8085"
+    environment:
+      - PORT=8085
+      - SECUREBASE_MCP_URL=http://host.docker.internal:8000
+      - SECUREBASE_ENV=local-sandbox
+    restart: unless-stopped

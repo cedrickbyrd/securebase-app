@@ -179,7 +179,7 @@ Features:
 
 **Environment Variables**:
 ```bash
-STRIPE_SECRET_KEY=sk_live_...
+STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PRICE_STANDARD=price_...
 STRIPE_PRICE_FINTECH=price_...
 STRIPE_PRICE_HEALTHCARE=price_...
@@ -501,7 +501,7 @@ Update Lambda environment variables:
 aws lambda update-function-configuration \
   --function-name securebase-create-checkout-session \
   --environment Variables="{
-    STRIPE_SECRET_KEY=sk_live_...,
+    STRIPE_SECRET_KEY=sk_test_...,
     STRIPE_PRICE_STANDARD=price_...,
     STRIPE_PRICE_FINTECH=price_...,
     STRIPE_PRICE_HEALTHCARE=price_...,
@@ -515,7 +515,7 @@ aws lambda update-function-configuration \
 aws lambda update-function-configuration \
   --function-name securebase-stripe-webhook \
   --environment Variables="{
-    STRIPE_SECRET_KEY=sk_live_...,
+    STRIPE_SECRET_KEY=sk_test_...,
     STRIPE_WEBHOOK_SECRET=whsec_...,
     SNS_TOPIC_ARN=arn:aws:sns:...,
     ONBOARDING_FUNCTION_NAME=securebase-trigger-onboarding

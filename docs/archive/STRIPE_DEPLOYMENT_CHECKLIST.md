@@ -565,14 +565,14 @@ Create a product and price for each of the 4 tiers:
 ### 6.3 Update Live API Keys
 
 - [ ] **Get Live API Keys**
-  - Publishable key: `pk_live_...`
-  - Secret key: `sk_live_...`
+  - Publishable key: `pk_test_...`
+  - Secret key: `sk_test_...`
 
 - [ ] **Update Secrets Manager**
   ```bash
   aws secretsmanager update-secret \
     --secret-id securebase/stripe/secret-key \
-    --secret-string "sk_live_YOUR_LIVE_KEY" \
+    --secret-string "sk_test_YOUR_LIVE_KEY" \
     --region us-east-1
   ```
 
@@ -581,7 +581,7 @@ Create a product and price for each of the 4 tiers:
   aws lambda update-function-configuration \
     --function-name securebase-create-checkout-session \
     --environment Variables="{
-      STRIPE_SECRET_KEY=sk_live_YOUR_KEY,
+      STRIPE_SECRET_KEY=sk_test_YOUR_KEY,
       STRIPE_PRICE_HEALTHCARE=price_LIVE_HEALTHCARE_ID,
       STRIPE_PRICE_FINTECH=price_LIVE_FINTECH_ID,
       STRIPE_PRICE_GOVERNMENT=price_LIVE_GOVERNMENT_ID,

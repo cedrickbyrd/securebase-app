@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimIdentityAttestation",
+  "type": "object",
+  "required": ["imsi", "eid", "imei", "apn", "tenant_id", "wif_role_arn"],
+  "properties": {
+    "imsi": { "type": "string", "pattern": "^[0-9]{15}$" },
+    "eid": { "type": "string", "pattern": "^[0-9]{32}$" },
+    "imei": { "type": "string", "pattern": "^[0-9]{15}$" },
+    "apn": { "type": "string" },
+    "tenant_id": { "type": "string" },
+    "wif_role_arn": { "type": "string" }
+  }
+}

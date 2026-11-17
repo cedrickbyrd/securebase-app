@@ -11,7 +11,7 @@
 - Users would see generic errors or undefined checkout URLs
 
 ### 2. **Placeholder Values in Configuration**
-- `live-config.js` had hardcoded placeholder `pk_live_YOUR_KEY_HERE`
+- `live-config.js` had hardcoded placeholder `pk_test_YOUR_KEY_HERE`
 - This would cause Stripe initialization to fail silently
 
 ### 3. **Backend Missing Stripe Configuration**
@@ -51,11 +51,11 @@ VITE_STRIPE_PUBLIC_KEY=pk_test_YOUR_TEST_KEY_HERE  # Must be replaced with actua
 
 ```javascript
 // Before:
-const LIVE_STRIPE_PUBLIC_KEY = 'pk_live_YOUR_KEY_HERE';
+const LIVE_STRIPE_PUBLIC_KEY = 'pk_test_YOUR_KEY_HERE';
 
 // After:
-const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_YOUR_KEY_HERE';
-if (LIVE_STRIPE_PUBLIC_KEY === 'pk_live_YOUR_KEY_HERE') {
+const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_YOUR_KEY_HERE';
+if (LIVE_STRIPE_PUBLIC_KEY === 'pk_test_YOUR_KEY_HERE') {
   console.error('⚠️ CRITICAL: VITE_STRIPE_PUBLIC_KEY not configured!');
 }
 ```
@@ -139,15 +139,15 @@ Features:
 1. **Set Frontend Stripe Key**:
    ```bash
    # In .env and .env.production
-   VITE_STRIPE_PUBLIC_KEY=pk_live_51YourActualKeyHere
+   VITE_STRIPE_PUBLIC_KEY=pk_test_51YourActualKeyHere
    ```
    - Get from: https://dashboard.stripe.com/apikeys
    - Use `pk_test_...` for dev/staging
-   - Use `pk_live_...` for production
+   - Use `pk_test_...` for production
 
 2. **Set Backend Lambda Environment Variables**:
    ```bash
-   STRIPE_SECRET_KEY=sk_live_51YourSecretKeyHere
+   STRIPE_SECRET_KEY=sk_test_51YourSecretKeyHere
    STRIPE_PRICE_STANDARD=price_1YourPriceIdHere
    STRIPE_PRICE_FINTECH=price_1YourPriceIdHere
    STRIPE_PRICE_HEALTHCARE=price_1YourPriceIdHere

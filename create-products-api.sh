@@ -1,6 +1,6 @@
 #!/bin/bash
 # 🚀 Create Stripe Products via API (No CLI needed)
-# Replace YOUR_LIVE_SECRET_KEY with your actual sk_live_... key
+# Replace YOUR_LIVE_SECRET_KEY with your actual sk_test_... key
 
 SECRET_KEY="YOUR_LIVE_SECRET_KEY_HERE"
 

@@ -1,0 +1,22 @@
+name: SecureBase Shift-Left Compliance Gate
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - 'schemas/**'
+      - 'policies/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-iac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Terraform Plan via SecureBase MCP
+        run: |
+          echo "Running pre-flight FFIEC / HIPAA / DORA / MAS TRM policy evaluation..."
+          ./scripts/simulate-drift-quarantine.sh

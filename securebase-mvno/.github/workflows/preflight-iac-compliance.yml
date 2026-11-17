@@ -1,0 +1,25 @@
+name: SecureBase-MVNO Pre-Flight IaC Compliance Gate
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - 'packet-core/**'
+      - 'policies/rego/**'
+
+permissions:
+  id-token: write # Keyless OIDC/WIF exchange (max TTL <= 3600s)
+  contents: read
+
+jobs:
+  evaluate-packet-core-iac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run SecureBase AST & OPA Rego Gate
+        uses: cedrickbyrd/securebase-app@v1.0.2
+        with:
+          frameworks: 'FFIEC,HIPAA,DORA,MAS_TRM'
+          rego-policy-dir: './policies/rego'
+          fail-closed: 'true'
+          worm-vault-sink: 'gs://securebase-worm-cdr-us/ci-manifests/'

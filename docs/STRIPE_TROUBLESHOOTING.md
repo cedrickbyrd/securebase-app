@@ -25,12 +25,12 @@ VITE_STRIPE_PUBLIC_KEY=pk_test_51ABC...XYZ
 #### For Production:
 ```bash
 # In phase3a-portal/.env.production
-VITE_STRIPE_PUBLIC_KEY=pk_live_51ABC...XYZ
+VITE_STRIPE_PUBLIC_KEY=pk_test_51ABC...XYZ
 ```
 
 **How to get your key**:
 1. Go to https://dashboard.stripe.com/apikeys
-2. Copy the "Publishable key" (starts with `pk_test_` or `pk_live_`)
+2. Copy the "Publishable key" (starts with `pk_test_` or `pk_test_`)
 3. Add to your `.env` file
 4. Restart your dev server or rebuild for production
 
@@ -50,7 +50,7 @@ Set the environment variable in your Lambda function:
 # Via AWS Console:
 # Lambda > Functions > securebase-dev-checkout > Configuration > Environment variables
 
-STRIPE_SECRET_KEY=sk_test_51ABC...XYZ  # or sk_live_... for production
+STRIPE_SECRET_KEY=sk_test_51ABC...XYZ  # or sk_test_... for production
 ```
 
 **Via Terraform**:
@@ -139,7 +139,7 @@ This is used for:
 ### Frontend Configuration
 - [ ] `VITE_STRIPE_PUBLIC_KEY` set in `.env`
 - [ ] `VITE_STRIPE_PUBLIC_KEY` set in `.env.production`
-- [ ] Key starts with `pk_test_` (dev) or `pk_live_` (prod)
+- [ ] Key starts with `pk_test_` (dev) or `pk_test_` (prod)
 - [ ] Dev server restarted after adding key
 - [ ] Production build regenerated after adding key
 

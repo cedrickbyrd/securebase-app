@@ -1,0 +1,6 @@
+{
+  "name": "SecureBase - Sovereign Cloud Compliance & Autonomous Remediation",
+  "description": "Sovereign cloud compliance and autonomous remediation engine by TxImhotep LLC. Evaluates pre-flight OpenTofu/Terraform IaC with Zero-Data Custody and produces cryptographic WORM evidence attestations for FFIEC, SOC 2 Type II, HIPAA, and NIST SP 800-53.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

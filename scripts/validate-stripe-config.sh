@@ -92,7 +92,7 @@ echo ""
 
 # Check live-config.js
 echo "Checking phase3a-portal/src/config/live-config.js..."
-if grep -q "pk_live_YOUR_KEY_HERE" phase3a-portal/src/config/live-config.js 2>/dev/null; then
+if grep -q "pk_test_YOUR_KEY_HERE" phase3a-portal/src/config/live-config.js 2>/dev/null; then
     echo -e "${YELLOW}⚠️  live-config.js still has placeholder key (will use env var as fallback)${NC}"
     ((warnings++))
 else
@@ -163,7 +163,7 @@ else
     echo "1. Add VITE_STRIPE_PUBLIC_KEY to .env and .env.production files"
     echo "2. Get your Stripe key from: https://dashboard.stripe.com/apikeys"
     echo "3. Use pk_test_... for development/staging"
-    echo "4. Use pk_live_... for production"
+    echo "4. Use pk_test_... for production"
     echo "5. Re-run this script to verify"
     echo ""
     echo "See docs/STRIPE_TROUBLESHOOTING.md for detailed instructions."

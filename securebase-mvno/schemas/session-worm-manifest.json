@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SessionWormManifest",
+  "type": "object",
+  "required": ["event_id", "imsi", "decision", "merkle_leaf_sha256", "ed25519_sig", "timestamp_utc"],
+  "properties": {
+    "event_id": { "type": "string" },
+    "imsi": { "type": "string" },
+    "decision": { "type": "string", "enum": ["ALLOW", "DENY", "QUARANTINE"] },
+    "merkle_leaf_sha256": { "type": "string" },
+    "ed25519_sig": { "type": "string" },
+    "timestamp_utc": { "type": "string", "format": "date-time" }
+  }
+}

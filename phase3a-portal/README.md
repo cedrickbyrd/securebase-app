@@ -75,7 +75,7 @@ phase3a-portal/
 | `VITE_API_BASE_URL` | API Gateway endpoint | `https://api.securebase.com/v1` | Yes |
 | `VITE_WS_URL` | WebSocket endpoint | `wss://ws.securebase.com` | Yes |
 | `VITE_ENV` | Environment identifier | `development`, `staging`, or `production` | Yes |
-| `VITE_STRIPE_PUBLIC_KEY` | Stripe publishable key | `pk_test_...` or `pk_live_...` | Yes |
+| `VITE_STRIPE_PUBLIC_KEY` | Stripe publishable key | `pk_test_...` or `pk_test_...` | Yes |
 | `VITE_PILOT_PROGRAM_ENABLED` | Enable pilot program features | `true` or `false` | No |
 | `VITE_ANALYTICS_ENABLED` | Enable analytics tracking | `true` or `false` | No |
 | `VITE_HEALTHCARE_PRICE_ID` | Healthcare tier price ID | `price_...` | Yes |

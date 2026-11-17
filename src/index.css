@@ -1,69 +1,35 @@
-@import './styles/variables.css';
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ============================================================
-   Post-Scan Experience animations
-   ============================================================ */
-
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes scale-in {
-  from {
-    transform: scale(0.85);
-    opacity: 0;
+  body {
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
   }
-  to {
-    transform: scale(1);
-    opacity: 1;
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
   }
 }
 
-@keyframes pulse-once {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.04); }
+/* Custom scrollbars for high-density code and audit manifests */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-/* Checkmark stroke draw animation */
-@keyframes draw-check {
-  from { stroke-dashoffset: 40; }
-  to   { stroke-dashoffset: 0; }
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
 }
-
-.animate-slide-up {
-  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.4);
+  border-radius: 3px;
 }
-
-.animate-fade-in {
-  animation: fade-in 0.35s ease-out;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.animate-pulse-once {
-  animation: pulse-once 1.2s ease-in-out 0.5s 2;
-}
-
-.animate-draw-check {
-  stroke-dasharray: 40;
-  stroke-dashoffset: 40;
-  animation: draw-check 0.5s ease-out 0.2s forwards;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
 }

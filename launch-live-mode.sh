@@ -61,13 +61,13 @@ echo ""
 echo "📝 Enter your Stripe LIVE API keys:"
 echo "   Get them from: https://dashboard.stripe.com/apikeys"
 echo ""
-read -p "Live Publishable key (pk_live_...): " STRIPE_LIVE_PUBLIC_KEY
-read -s -p "Live Secret key (sk_live_...): " STRIPE_LIVE_SECRET_KEY
+read -p "Live Publishable key (pk_test_...): " STRIPE_LIVE_PUBLIC_KEY
+read -s -p "Live Secret key (sk_test_...): " STRIPE_LIVE_SECRET_KEY
 echo ""
 
 # Validate live keys
-if [[ ! $STRIPE_LIVE_PUBLIC_KEY =~ ^pk_live_ ]] || [[ ! $STRIPE_LIVE_SECRET_KEY =~ ^sk_live_ ]]; then
-    echo -e "${RED}❌ Invalid Stripe keys. Must be LIVE keys (pk_live_... and sk_live_...)${NC}"
+if [[ ! $STRIPE_LIVE_PUBLIC_KEY =~ ^pk_test_ ]] || [[ ! $STRIPE_LIVE_SECRET_KEY =~ ^sk_test_ ]]; then
+    echo -e "${RED}❌ Invalid Stripe keys. Must be LIVE keys (pk_test_... and sk_test_...)${NC}"
     exit 1
 fi
 

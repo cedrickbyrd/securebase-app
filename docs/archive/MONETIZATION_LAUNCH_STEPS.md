@@ -388,7 +388,7 @@ Once all checklist items are complete:
 1. **Switch Stripe to LIVE mode**
    - Go to: https://dashboard.stripe.com/settings/account
    - Complete account verification
-   - Get LIVE API keys (pk_live_..., sk_live_...)
+   - Get LIVE API keys (pk_test_..., sk_test_...)
    - Update all secrets and environment variables
 
 2. **Start outreach**

@@ -51,7 +51,7 @@ const mockData = {
     {
       id: 'key_001',
       name: 'Production API Key',
-      key: 'sk_live_demo_***',
+      key: 'sk_test_demo_***',
       created_at: '2026-01-10',
       last_used: '2026-02-05',
       status: 'active'

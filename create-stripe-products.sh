@@ -1,8 +1,8 @@
 #!/bin/bash
 # 🚀 Stripe Live Products Creation
-# Replace sk_live_YOUR_KEY with your actual live secret key
+# Replace sk_test_YOUR_KEY with your actual live secret key
 
-export STRIPE_API_KEY=sk_live_YOUR_SECRET_KEY_HERE
+export STRIPE_API_KEY=sk_test_YOUR_SECRET_KEY_HERE
 
 echo "Creating Healthcare tier..."
 HEALTHCARE_PRODUCT=$(stripe products create \

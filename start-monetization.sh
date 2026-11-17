@@ -39,8 +39,8 @@ echo ""
 echo "1. Create Stripe account: https://dashboard.stripe.com/register"
 echo "2. Get API keys: https://dashboard.stripe.com/apikeys"
 echo ""
-read -p "Enter your Stripe SECRET key (sk_live_... or sk_test_...): " STRIPE_SECRET_KEY
-read -p "Enter your Stripe PUBLISHABLE key (pk_live_... or pk_test_...): " STRIPE_PUBLIC_KEY
+read -p "Enter your Stripe SECRET key (sk_test_... or sk_test_...): " STRIPE_SECRET_KEY
+read -p "Enter your Stripe PUBLISHABLE key (pk_test_... or pk_test_...): " STRIPE_PUBLIC_KEY
 
 # Step 2: Create Products & Prices
 echo ""

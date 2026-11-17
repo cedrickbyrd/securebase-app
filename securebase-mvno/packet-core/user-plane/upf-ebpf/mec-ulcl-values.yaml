@@ -1,0 +1,27 @@
+# 5G Standalone (5G SA) UPF Uplink Classifier (UL CL) & Local MEC Enclave Steering
+upf:
+  mode: 5g-sa-ulcl-mec
+  pfcpN4Endpoint: "10.240.8.10:8805"
+  blockN6PublicInternet: true
+  ulclRules:
+    - profileId: "branch-atm-ffiec-waxahachie"
+      framework: "FFIEC_AIO"
+      dnn: "apn.cnb-waxahachie.us.securebase.internal"
+      ueSubnet: "100.64.12.0/24"
+      localMecEnclave: "mec-us-tx-waxahachie-01"
+      farActionOnDrift: "DROP"
+      requireTpmPcrMatch: true
+      requireGsmaIotSafe: true
+    - profileId: "clinical-telemetry-hipaa-edge"
+      framework: "HIPAA_164_312"
+      dnn: "apn.med-telemetry.us.securebase.internal"
+      ueSubnet: "100.64.18.0/24"
+      localMecEnclave: "mec-us-hospital-icu-02"
+      farActionOnDrift: "DROP"
+      requireTpmPcrMatch: true
+      requireGsmaIotSafe: true
+mecWormSpool:
+  enabled: true
+  localRingBufferPath: "/var/lib/securebase/worm-edge-spool"
+  maxOfflineRetentionHours: 168
+  reconcileMode: "SEQUENTIAL_MERKLE_APPEND"

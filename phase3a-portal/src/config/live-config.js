@@ -1,8 +1,8 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_YOUR_KEY_HERE';
+const LIVE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_YOUR_KEY_HERE';
 
-if (LIVE_STRIPE_PUBLIC_KEY === 'pk_live_YOUR_KEY_HERE') {
+if (LIVE_STRIPE_PUBLIC_KEY === 'pk_test_YOUR_KEY_HERE') {
   console.error('⚠️ CRITICAL: VITE_STRIPE_PUBLIC_KEY not configured!');
 }
 

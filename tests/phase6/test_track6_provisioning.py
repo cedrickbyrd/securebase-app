@@ -28,7 +28,7 @@ class Track6ProvisioningTests(unittest.TestCase):
         self.assertIn("raw", key)
         self.assertIn("hash", key)
         self.assertIn("prefix", key)
-        self.assertTrue(key["raw"].startswith("sk_live_tenant-abc"))
+        self.assertTrue(key["raw"].startswith("sk_test_tenant-abc"))
         parts = key["raw"].split("_")
         self.assertEqual(len(parts[-2]), tenant_provisioner.API_KEY_SUFFIX_LENGTH)
         self.assertEqual(len(parts[-1]), tenant_provisioner.API_KEY_TOKEN_BYTES * 2)

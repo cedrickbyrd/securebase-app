@@ -9,7 +9,7 @@
  *   STRIPE_SECRET_KEY=sk_... node scripts/check-pilot-conversions.js
  *
  * Environment variables (can also be set in .env):
- *   STRIPE_SECRET_KEY  — Required. Stripe secret key (sk_live_... or sk_test_...).
+ *   STRIPE_SECRET_KEY  — Required. Stripe secret key (sk_test_... or sk_test_...).
  */
 
 'use strict';

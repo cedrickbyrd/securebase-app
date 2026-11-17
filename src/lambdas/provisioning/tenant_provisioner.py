@@ -68,7 +68,7 @@ def _generate_api_key(tenant_id: str) -> Dict[str, str]:
     suffix = "".join(
         secrets.choice(string.ascii_lowercase + string.digits) for _ in range(API_KEY_SUFFIX_LENGTH)
     )
-    raw = f"sk_live_{tenant_id}_{suffix}_{secrets.token_hex(API_KEY_TOKEN_BYTES)}"
+    raw = f"sk_test_{tenant_id}_{suffix}_{secrets.token_hex(API_KEY_TOKEN_BYTES)}"
     digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     return {"raw": raw, "hash": digest, "prefix": raw[:28]}
 

@@ -527,7 +527,7 @@ Settings → API Keys → Create New Key
   
 [Generate Key]
 
-API Key: sk_live_abc123...
+API Key: sk_test_abc123...
 Secret: Copy and save securely (shown once!)
 ```
 
@@ -535,7 +535,7 @@ Secret: Copy and save securely (shown once!)
 ```bash
 Settings → API Keys → Production API Access → Rotate
   
-New Key: sk_live_xyz789...
+New Key: sk_test_xyz789...
 Old Key: Valid for 7 days (grace period)
   
 Action Required:

@@ -13,7 +13,7 @@ variable "lambda_packages" {
 # Inside modules/securebase/variables.tf
 
 variable "stripe_public_key" {
-  description = "Stripe Live Public Key (pk_live_...)"
+  description = "Stripe Live Public Key (pk_test_...)"
   type        = string
 }
 

@@ -1,0 +1,30 @@
+# Binaries & Build Artifacts
+/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Terraform & OpenTofu
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Environment & Secrets (Zero Static Secrets Policy)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# macOS
+.DS_Store

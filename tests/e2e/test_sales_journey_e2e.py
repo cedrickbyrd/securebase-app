@@ -310,7 +310,7 @@ class TestSalesJourneyE2E(unittest.TestCase):
         first_email = ses_calls[0].kwargs
         second_email = ses_calls[1].kwargs
         expected_api_key = (
-            'sk_live_'
+            'sk_test_'
             'e2eapikeysecrettoken12345678901234'
             'e2eapikeysecrettoken12345678901234'
         )

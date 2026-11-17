@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-udm-ausf
+  namespace: securebase-packet-core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: free5gc-udm-ausf
+  template:
+    metadata:
+      labels:
+        app: free5gc-udm-ausf
+    spec:
+      serviceAccountName: mvno-wif-control-plane
+      containers:
+        - name: udm
+          image: ghcr.io/free5gc/udm:v3.4.3-r17
+          env:
+            - name: ZERO_CUSTODY_IMSI_SALT_KMS
+              value: "projects/securebase/locations/us-central1/keyRings/mvno-hsm/cryptoKeys/imsi-hmac"
+        - name: ausf
+          image: ghcr.io/free5gc/ausf:v3.4.3-r17

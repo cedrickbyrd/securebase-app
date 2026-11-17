@@ -75,7 +75,7 @@ def authenticate_api_key(event, context):
     Request Format:
     {
         "headers": {
-            "Authorization": "Bearer sk_live_1234567890abcdef..."
+            "Authorization": "Bearer sk_test_1234567890abcdef..."
         }
     }
     """

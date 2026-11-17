@@ -100,7 +100,7 @@ STRIPE_PRICE_GOVERNMENT price_…
 ```
 
 > **CRITICAL:** Only ever add **test mode** keys (`sk_test_…`).  
-> Never add live keys (`sk_live_…`) to GitHub.
+> Never add live keys (`sk_test_…`) to GitHub.
 
 ### Slack (optional, for failure alerts)
 

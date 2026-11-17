@@ -1,66 +1,43 @@
 {
-  "name": "securebase-app",
+  "name": "react-example",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": {
-    "node": ">=20.19.0"
-  },
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx server.ts",
+    "start": "node server.ts",
     "build": "vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
-    "test": "echo 'No unit tests configured for root marketing app' && exit 0",
-    "test:coverage": "echo 'No unit tests configured for root marketing app' && exit 0",
-    "validate:openapi": "swagger-cli validate docs/api/openapi.yaml"
+    "test": "vitest run",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.992.0",
-    "@aws-sdk/client-s3": "^3.995.0",
-    "@aws-sdk/client-ses": "^3.995.0",
-    "@aws-sdk/lib-dynamodb": "^3.992.0",
-    "@stripe/react-stripe-js": "^6.1.0",
-    "@stripe/stripe-js": "^9.0.1",
-    "@supabase/supabase-js": "^2.101.1",
-    "antd": "^6.3.0",
-    "axios": "^1.7.9",
-    "chart.js": "^4.5.1",
-    "lucide-react": "^0.562.0",
-    "qrcode.react": "^4.2.0",
-    "react": "^19.2.0",
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "chart.js": "^4.6.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.0",
-    "react-ga4": "^2.1.0",
-    "react-router-dom": "^7.13.1",
-    "stripe": "^20.4.1"
+    "react-dom": "^19.0.1",
+    "vite": "^8.3.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sts": "^3.967.0",
-    "@eslint/js": "^9.39.3",
-    "@octokit/rest": "^21.1.1",
-    "@playwright/test": "^1.58.2",
-    "@types/react": "^19.2.5",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
-    "@vitest/coverage-v8": "^3.2.7",
-    "autoprefixer": "^10.4.24",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "google-auth-library": "^10.9.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.21.0",
     "typescript": "^7.0.2",
-    "vite": "^6.4.1",
-    "vitest": "^3.2.7"
-  },
-  "overrides": {
-    "fast-xml-parser": "5.5.8",
-    "antd": {
-      "react": "$react",
-      "react-dom": "$react-dom"
-    }
+    "vitest": "^5.1.0"
   }
 }

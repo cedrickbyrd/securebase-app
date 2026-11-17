@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnifiedTriCloudAuditEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "batchId",
+    "collectedAtUtc",
+    "tenantId",
+    "events",
+    "merkleRootSha256",
+    "wormVaultUrn"
+  ],
+  "properties": {
+    "batchId": { "type": "string", "pattern": "^batch-[a-z0-9-]+$" },
+    "collectedAtUtc": { "type": "string" },
+    "tenantId": { "type": "string" },
+    "merkleRootSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "wormVaultUrn": { "type": "string" },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "cloud",
+          "sourceCollector",
+          "accountOrProject",
+          "actorIdentity",
+          "authMethod",
+          "action",
+          "resourceType",
+          "resourceId",
+          "encryptionCmek",
+          "publicExposure",
+          "tlsVersion",
+          "eventSha256"
+        ],
+        "properties": {
+          "eventId": { "type": "string" },
+          "cloud": { "type": "string", "enum": ["AWS", "GCP", "AZURE"] },
+          "sourceCollector": {
+            "type": "string",
+            "enum": [
+              "AWS_CLOUDTRAIL_CONFIG",
+              "GCP_CLOUD_AUDIT_SCC",
+              "AZURE_ACTIVITY_DEFENDER"
+            ]
+          },
+          "accountOrProject": { "type": "string" },
+          "actorIdentity": { "type": "string" },
+          "authMethod": {
+            "type": "string",
+            "enum": ["OIDC_WIF", "FEDERATED_STS", "STATIC_KEY", "CLIENT_SECRET"]
+          },
+          "action": { "type": "string" },
+          "resourceType": { "type": "string" },
+          "resourceId": { "type": "string" },
+          "encryptionCmek": { "type": "boolean" },
+          "publicExposure": { "type": "boolean" },
+          "tlsVersion": { "type": "string" },
+          "objectLockMode": {
+            "type": "string",
+            "enum": ["COMPLIANCE", "GOVERNANCE", "NONE"]
+          },
+          "retentionDays": { "type": "integer", "minimum": 0 },
+          "eventSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    }
+  }
+}

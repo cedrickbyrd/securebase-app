@@ -50,7 +50,7 @@ aws ssm put-parameter \
 # Use sk_test_... for non-production environments to avoid accidental charges
 aws ssm put-parameter \
   --name "/securebase/stripe/secret_key" \
-  --value "sk_live_..." \
+  --value "sk_test_..." \
   --type "SecureString" \
   --overwrite
 

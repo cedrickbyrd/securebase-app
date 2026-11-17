@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EdgeHardwareAttestation",
+  "type": "object",
+  "required": [
+    "endpoint_id",
+    "profile_type",
+    "imsi",
+    "iccid",
+    "private_ip",
+    "pcr0_sha256",
+    "pcr7_sha256",
+    "iot_safe_sig_valid",
+    "mec_enclave_id",
+    "public_breakout"
+  ],
+  "properties": {
+    "endpoint_id": { "type": "string" },
+    "profile_type": { "type": "string", "enum": ["BRANCH_ATM_FFIEC", "CLINICAL_TELEMETRY_HIPAA"] },
+    "imsi": { "type": "string", "pattern": "^[0-9]{15}$" },
+    "iccid": { "type": "string", "pattern": "^[0-9]{18,22}$" },
+    "private_ip": { "type": "string" },
+    "pcr0_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "pcr7_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "iot_safe_sig_valid": { "type": "boolean" },
+    "mec_enclave_id": { "type": "string" },
+    "public_breakout": { "type": "boolean", "const": false }
+  }
+}

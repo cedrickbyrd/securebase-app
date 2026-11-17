@@ -10,7 +10,7 @@ echo ""
 echo "📋 Step 1: Prerequisites"
 echo "• Stripe account verified with business info"
 echo "• Bank account connected for payouts"  
-echo "• Live API keys ready (pk_live_... and sk_live_...)"
+echo "• Live API keys ready (pk_test_... and sk_test_...)"
 echo ""
 
 # Install dependencies
@@ -30,7 +30,7 @@ echo ""
 echo "🛍️  Step 4: Create Stripe Products (Run these with your live secret key)"
 echo ""
 echo "# Set your live secret key"
-echo "export STRIPE_API_KEY=sk_live_YOUR_SECRET_KEY_HERE"
+echo "export STRIPE_API_KEY=sk_test_YOUR_SECRET_KEY_HERE"
 echo ""
 
 # Healthcare tier
@@ -110,7 +110,7 @@ echo ""
 
 echo "📝 Step 5: Update Portal Environment"
 echo "# Create phase3a-portal/.env.production with:"
-echo "VITE_STRIPE_PUBLIC_KEY=pk_live_YOUR_PUBLIC_KEY_HERE"
+echo "VITE_STRIPE_PUBLIC_KEY=pk_test_YOUR_PUBLIC_KEY_HERE"
 echo "VITE_API_BASE_URL=https://api.securebase.com/v1"  
 echo "VITE_ENV=production"
 echo "VITE_PILOT_PROGRAM_ENABLED=true"

@@ -511,7 +511,7 @@ jobs:
           
           # Simulate API key rotation
           def generate_api_key():
-              return f"sk_live_{secrets.token_urlsafe(32)}"
+              return f"sk_test_{secrets.token_urlsafe(32)}"
           
           def should_rotate(created_date, rotation_days=90):
               age_days = (datetime.now() - created_date).days

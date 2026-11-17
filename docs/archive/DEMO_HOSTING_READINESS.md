@@ -987,7 +987,7 @@ cat vite.config.js phase3a-portal/vite.config.js
 | `VITE_API_BASE_URL` | ✅ Yes | `https://api.securebase.com/v1` | `https://demo-api.securebase.tximhotep.com` | `https://api.securebase.com/v1` |
 | `VITE_WS_URL` | ✅ Yes | `wss://ws.securebase.com` | `wss://demo-ws.securebase.tximhotep.com` | `wss://ws.securebase.com` |
 | `VITE_ENV` | ✅ Yes | `development` | `demo` | `production` |
-| `VITE_STRIPE_PUBLIC_KEY` | ✅ Yes | None | `pk_test_demo_not_functional` | `pk_live_...` |
+| `VITE_STRIPE_PUBLIC_KEY` | ✅ Yes | None | `pk_test_demo_not_functional` | `pk_test_...` |
 | `VITE_HEALTHCARE_PRICE_ID` | ✅ Yes | `price_healthcare` | `price_demo_healthcare` | `price_live_healthcare` |
 | `VITE_FINTECH_PRICE_ID` | ✅ Yes | `price_fintech` | `price_demo_fintech` | `price_live_fintech` |
 | `VITE_GOVERNMENT_PRICE_ID` | ✅ Yes | `price_government` | `price_demo_government` | `price_live_government` |

@@ -1,0 +1,75 @@
+name: SecureBase Tri-Cloud Pre-Flight Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "policies/**"
+      - "schemas/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  securebase-preflight-gate:
+    name: Keyless OIDC Plan + securebase-mcp OPA Evaluation
+    runs-on: ubuntu-latest
+    env:
+      SECUREBASE_MCP_ENDPOINT: https://demo.securebase.tximhotep.com/api/harness/mcp/evaluate
+      SECUREBASE_WORM_VAULT: arn:aws:s3:::securebase-worm-evidence-us-east-1
+
+    steps:
+      - name: Checkout cedrickbyrd/securebase-app
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Keyless OIDC Role (Max 1800s TTL)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::594006980795:role/SecureBaseGitHubOidcRole
+          aws-region: us-east-1
+          role-duration-seconds: 1800
+
+      - name: Authenticate GCP Workload Identity Federation (securebase-gcp-dev)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/594006980795/locations/global/workloadIdentityPools/securebase-pool/providers/github-oidc
+          service_account: securebase-deployer@securebase-gcp-dev.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_lifetime: 1800s
+
+      - name: Setup OpenTofu & OPA
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Generate Pre-Flight Plan JSON
+        working-directory: infra/tricloud
+        run: |
+          tofu init -backend=false
+          tofu plan -out=tfplan.bin
+          tofu show -json tfplan.bin > ../../tfplan.json
+
+      - name: Gate Apply via securebase-mcp (evaluate_tf_plan + verify_worm_vault)
+        run: |
+          node -e '
+            const fs = require("fs");
+            const plan = JSON.parse(fs.readFileSync("tfplan.json", "utf8"));
+            fetch(process.env.SECUREBASE_MCP_ENDPOINT, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sourceType: "terraform_plan_json",
+                repository: "cedrickbyrd/securebase-app",
+                frameworks: ["FFIEC_AIO", "HIPAA_164_312", "NIST_800_53"],
+                strictMode: true,
+                payload: plan
+              })
+            }).then(async r => {
+              const out = await r.json();
+              if (!r.ok || !out.output?.compliant) {
+                console.error("BLOCKED BY SECUREBASE MCP:", JSON.stringify(out, null, 2));
+                process.exit(1);
+              }
+              console.log("PRE-FLIGHT COMPLIANT:", out.output.planSha256);
+            });
+          '

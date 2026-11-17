@@ -1,0 +1,17 @@
+upf:
+  replicaCount: 2
+  kernelModule: gtp5g-ebpf
+  multusInterfaces:
+    n3:
+      networkAttachment: "n3-ran-ipsec-nad"
+    n4:
+      networkAttachment: "n4-pfcp-cp-nad"
+    n6:
+      networkAttachment: "n6-tenant-psc-breakout-nad"
+  dnnList:
+    - dnn: "apn.cnb-waxahachie.us.securebase.internal"
+      cidr: "100.64.12.0/24" # Non-routable RFC 6598 CGNAT
+    - dnn: "apn.eurobank-de.euro.securebase.internal"
+      cidr: "100.72.8.0/24"
+    - dnn: "apn.sg-treasury.asia.securebase.internal"
+      cidr: "100.80.4.0/24"
