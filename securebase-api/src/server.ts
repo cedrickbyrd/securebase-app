@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
 import complianceRouter from './routes/compliance.js';
+import telemetryRouter from './routes/telemetry.js';
 
 dotenv.config();
 
@@ -55,8 +56,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
-// Mount compliance router
+// Mount API routers
 app.use('/api/v1/compliance', complianceRouter);
+app.use('/api/v1/telemetry', telemetryRouter);
 
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);

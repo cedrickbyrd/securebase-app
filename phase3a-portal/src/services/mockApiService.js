@@ -1,277 +1,114 @@
-// Mock API Service that returns data without making network calls
-const mockData = {
-  metrics: {
-    monthlyCharge: 1250.00,
-    totalRevenue: 45678.90,
-    activeCustomers: 12,
-    openTickets: 3,
-    apiCallsToday: 1543,
-    account_count: 5,
-    cloudtrail_events: 125847,
-    log_storage_gb: 245,
-    data_transfer_gb: 89
-  },
-  invoices: [
-    { 
-      id: 'inv_001', 
-      invoice_number: 'INV-2026-001',
-      amount: 1250.00,
-      total_amount: 1250.00, 
-      status: 'paid', 
-      date: '2026-01-14T12:00:00Z',
-      created_at: '2026-01-15',
-      due_date: '2026-02-15',
-      period_start: '2026-01-01',
-      period_end: '2026-01-31'
-    },
-    { 
-      id: 'inv_002', 
-      invoice_number: 'INV-2026-002',
-      amount: 890.50,
-      total_amount: 890.50, 
-      status: 'pending', 
-      date: '2026-02-01T12:00:00Z',
-      created_at: '2026-02-01',
-      due_date: '2026-03-01',
-      period_start: '2026-02-01',
-      period_end: '2026-02-28'
-    },
-    { 
-      id: 'inv_003', 
-      invoice_number: 'INV-2025-012',
-      amount: 1100.00,
-      total_amount: 1100.00, 
-      status: 'paid', 
-      date: '2025-12-14T12:00:00Z',
-      created_at: '2025-12-15',
-      due_date: '2026-01-15',
-      period_start: '2025-12-01',
-      period_end: '2025-12-31'
-    }
-  ],
-  apiKeys: [
-    { 
-      id: 'key_001', 
-      name: 'Production API Key',
-      key_preview: 'sb_prod_***************xyz',
-      status: 'active',
-      created_at: '2025-11-01T10:30:00Z',
-      last_used: '2026-02-07T14:22:00Z',
-      permissions: ['read', 'write']
-    },
-    { 
-      id: 'key_002', 
-      name: 'Development Key',
-      key_preview: 'sb_dev_***************abc',
-      status: 'active',
-      created_at: '2025-12-15T09:15:00Z',
-      last_used: '2026-02-06T11:45:00Z',
-      permissions: ['read']
-    },
-    { 
-      id: 'key_003', 
-      name: 'Legacy Key',
-      key_preview: 'sb_prod_***************old',
-      status: 'inactive',
-      created_at: '2025-06-01T08:00:00Z',
-      last_used: '2025-10-30T16:00:00Z',
-      permissions: ['read', 'write']
-    }
-  ],
-  compliance: {
-    status: 'passing',
-    overall_status: 'passing',
-    last_assessment: '2026-01-31T00:00:00Z',
-    passing: 4,
-    warning: 0,
-    failing: 0,
-    frameworks: [
-      {
-        id: 'soc2',
-        name: 'SOC 2 Type II',
-        status: 'passing',
-        last_check: '2026-01-31T00:00:00Z',
-        score: 98
-      },
-      {
-        id: 'hipaa',
-        name: 'HIPAA',
-        status: 'passing',
-        last_check: '2026-01-31T00:00:00Z',
-        score: 95
-      },
-      {
-        id: 'pci',
-        name: 'PCI DSS',
-        status: 'passing',
-        last_check: '2026-01-31T00:00:00Z',
-        score: 92
-      },
-      {
-        id: 'gdpr',
-        name: 'GDPR',
-        status: 'passing',
-        last_check: '2026-01-31T00:00:00Z',
-        score: 97
-      }
-    ]
-  },
-  tickets: [
-    {
-      id: 'ticket_001',
-      title: 'CloudTrail not enabled in us-west-2',
-      status: 'open',
-      priority: 'high',
-      created_at: '2026-02-05T10:30:00Z',
-      updated_at: '2026-02-07T14:22:00Z'
-    },
-    {
-      id: 'ticket_002',
-      title: 'Setup new IAM role for analytics',
-      status: 'in_progress',
-      priority: 'medium',
-      created_at: '2026-02-01T09:15:00Z',
-      updated_at: '2026-02-06T11:45:00Z'
-    }
-  ],
-  notifications: [
-    {
-      id: 'notif_001',
-      type: 'security',
-      severity: 'critical',
-      title: 'Security Alert',
-      message: 'Unusual API activity detected from IP 192.168.1.100',
-      timestamp: '2026-02-08T15:30:00Z',
-      read: false,
-      actionUrl: '/activity'
-    },
-    {
-      id: 'notif_002',
-      type: 'billing',
-      severity: 'warning',
-      title: 'Invoice Due',
-      message: 'Invoice INV-2026-002 is due in 3 days',
-      timestamp: '2026-02-07T10:00:00Z',
-      read: false,
-      actionUrl: '/invoices'
-    },
-    {
-      id: 'notif_003',
-      type: 'compliance',
-      severity: 'info',
-      title: 'Compliance Assessment Complete',
-      message: 'SOC 2 assessment completed successfully',
-      timestamp: '2026-02-06T14:22:00Z',
-      read: true,
-      actionUrl: '/compliance'
-    },
-    {
-      id: 'notif_004',
-      type: 'system',
-      severity: 'success',
-      title: 'Backup Completed',
-      message: 'Daily backup completed successfully',
-      timestamp: '2026-02-06T02:00:00Z',
-      read: true,
-      actionUrl: null
-    },
-    {
-      id: 'notif_005',
-      type: 'security',
-      severity: 'warning',
-      title: 'API Key Expiring Soon',
-      message: 'Production API Key will expire in 7 days',
-      timestamp: '2026-02-05T09:15:00Z',
-      read: false,
-      actionUrl: '/api-keys'
-    }
-  ]
-};
+// phase3a-portal/src/services/mockApiService.js
 
 export const mockApiService = {
-  // Authentication
-  login: (credentials) => {
-    if (credentials.username === 'demo' && credentials.password === 'demo') {
-      return Promise.resolve({
-        user: { username: 'demo', email: 'demo@securebase.com' },
-        token: 'demo-token-12345'
-      });
-    }
-    return Promise.reject(new Error('Invalid credentials'));
-  },
-
-  // Metrics
-  getMetrics: () => {
-    return Promise.resolve(mockData.metrics);
-  },
-
-  // Invoices
-  getInvoices: () => {
-    return Promise.resolve(mockData.invoices);
-  },
-
-  // API Keys
-  getApiKeys: () => {
-    return Promise.resolve(mockData.apiKeys);
-  },
-
-  // Compliance
-  getComplianceStatus: () => {
-    return Promise.resolve(mockData.compliance);
+  getComplianceScore: (tenantId = 'cnb-waxahachie', framework = 'ffiec') => {
+    return {
+      tenantId,
+      score: 92,
+      framework,
+      evaluatedAt: new Date().toISOString(),
+      criticalFindings: 0,
+      status: 'COMPLIANT'
+    };
   },
 
   getComplianceFindings: () => {
-    return Promise.resolve([]);
+    return []; // Return safe empty array to prevent map() errors in UI during demo
   },
 
-  downloadComplianceReport: () => {
-    return Promise.resolve({ message: 'Demo mode: Report download not available' });
-  },
+  getDriftAnalytics: (tenantId = 'cnb-waxahachie') => {
+    const today = new Date();
+    const history = [];
+    const events = [];
 
-  // Support Tickets
-  getTickets: () => {
-    return Promise.resolve(mockData.tickets);
-  },
-
-  // Notifications
-  getNotifications: () => {
-    // Get read state from localStorage
-    const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
-    
-    // Merge with mock data
-    const notificationsWithReadState = mockData.notifications.map(n => ({
-      ...n,
-      read: readNotifications.includes(n.id) || n.read
-    }));
-    
-    return Promise.resolve(notificationsWithReadState);
-  },
-
-  markNotificationAsRead: (id) => {
-    const notification = mockData.notifications.find(n => n.id === id);
-    if (notification) {
-      notification.read = true;
+    // 1. Generate 90 days of history
+    for (let i = 89; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
       
-      // Persist to localStorage
-      const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
-      if (!readNotifications.includes(id)) {
-        readNotifications.push(id);
-        localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+      let score = 92 + Math.random() * 6; // Base stable score
+      
+      // Simulate score drops on specific drift days
+      if (i === 67 || i === 32 || i === 15) {
+        score = 82 + Math.random() * 3;
       }
+      
+      history.push({
+        date: date.toISOString(),
+        score: parseFloat(score.toFixed(1))
+      });
     }
-    return Promise.resolve({ success: true, id });
-  },
 
-  markAllNotificationsAsRead: () => {
-    mockData.notifications.forEach(n => {
-      n.read = true;
-    });
-    
-    // Persist all notification IDs to localStorage
-    const allIds = mockData.notifications.map(n => n.id);
-    localStorage.setItem('readNotifications', JSON.stringify(allIds));
-    
-    return Promise.resolve({ success: true });
+    // 2. Inject rich drift events
+    events.push(
+      {
+        id: 'drift_001',
+        detectionTimestamp: new Date(today.getTime() - 67 * 24 * 60 * 60 * 1000).toISOString(),
+        resolutionTimestamp: new Date(today.getTime() - 65 * 24 * 60 * 60 * 1000).toISOString(),
+        controlId: 'AC-2',
+        controlName: 'Account Management',
+        controlCategory: 'Access Control',
+        framework: 'soc2',
+        severity: 'critical',
+        status: 'resolved',
+        previousState: 'compliant',
+        currentState: 'non-compliant',
+        rootCause: 'Password policy weakened via Terraform - minimum length reduced from 14 to 8 characters.',
+        remediationSteps: [
+          'Restore password minimum length to 14 characters in identity provider',
+          'Review AWS CloudTrail for policy modification source',
+          'Require PR approval for all IAM Terraform changes'
+        ],
+        assignedTo: 'security-ops@tximhotep.com',
+        resolutionNotes: 'Policy restored and shift-left PR gate enforced via SecureBase.',
+        sha256Evidence: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4'
+      },
+      {
+        id: 'drift_002',
+        detectionTimestamp: new Date(today.getTime() - 32 * 24 * 60 * 60 * 1000).toISOString(),
+        resolutionTimestamp: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        controlId: 'AU-2',
+        controlName: 'Audit Events',
+        controlCategory: 'Audit and Accountability',
+        framework: 'hipaa',
+        severity: 'high',
+        status: 'resolved',
+        previousState: 'compliant',
+        currentState: 'non-compliant',
+        rootCause: 'S3 bucket lifecycle rule altered, changing audit log retention from 7 years to 30 days.',
+        remediationSteps: [
+          'Restore S3 lifecycle rule to 2555 days (7 years)',
+          'Verify existing audit logs were not pruned',
+          'Apply S3 Object Lock (WORM) to compliance log bucket'
+        ],
+        assignedTo: 'compliance@tximhotep.com',
+        resolutionNotes: 'Retention restored. WORM compliance mode enabled.',
+        sha256Evidence: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+      },
+      {
+        id: 'drift_003',
+        detectionTimestamp: new Date(today.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+        resolutionTimestamp: null,
+        controlId: 'IA-5',
+        controlName: 'Authenticator Management',
+        controlCategory: 'Identification and Authentication',
+        framework: 'ffiec-cat',
+        severity: 'high',
+        status: 'in_progress',
+        previousState: 'compliant',
+        currentState: 'non-compliant',
+        rootCause: 'AWS IAM user created with console access but no MFA enforced.',
+        remediationSteps: [
+          'Enforce MFA requirement on IAM user provisioning',
+          'Implement SCP preventing actions without aws:MultiFactorAuthPresent',
+          'Run credential report audit across all accounts'
+        ],
+        assignedTo: 'identity-admin@tximhotep.com',
+        resolutionNotes: null,
+        sha256Evidence: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2'
+      }
+    );
+
+    return { history, events };
   }
 };
-
