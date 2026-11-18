@@ -1,0 +1,103 @@
+{
+  "activeDnsTarget": "AWS",
+  "regions": [
+    {
+      "cloud": "AWS",
+      "region": "us-east-1",
+      "role": "PRIMARY",
+      "endpointUrl": "https://us-east-1-edge.securebase.tximhotep.com/functions/v1/ingest-ci-scan",
+      "status": "HEALTHY",
+      "latencyMs": 14,
+      "rpoLagSeconds": 0,
+      "rtoSeconds": 0,
+      "lastProbedUtc": "2026-11-17T17:28:07.443Z"
+    },
+    {
+      "cloud": "GCP",
+      "region": "us-central1 (securebase-gcp-dev)",
+      "role": "SECONDARY",
+      "endpointUrl": "https://34.120.88.14/functions/v1/ingest-ci-scan",
+      "status": "HEALTHY",
+      "latencyMs": 21,
+      "rpoLagSeconds": 4,
+      "rtoSeconds": 28,
+      "lastProbedUtc": "2026-11-17T17:28:07.443Z"
+    },
+    {
+      "cloud": "AZURE",
+      "region": "eastus",
+      "role": "TERTIARY",
+      "endpointUrl": "https://securebase-eastus.azurefd.net/functions/v1/ingest-ci-scan",
+      "status": "HEALTHY",
+      "latencyMs": 26,
+      "rpoLagSeconds": 6,
+      "rtoSeconds": 35,
+      "lastProbedUtc": "2026-11-17T17:28:07.443Z"
+    }
+  ],
+  "drProbeHistory": [
+    {
+      "probeId": "probe-init-001",
+      "timestampUtc": "2026-11-17T17:28:07.443Z",
+      "trigger": "EVENTBRIDGE_PROBE",
+      "activeDnsTarget": "AWS (us-east-1)",
+      "rpoSeconds": 4,
+      "rtoSeconds": 28,
+      "supabaseReplicationStatus": "SYNCED",
+      "summary": "Scheduled RPO/RTO probe verified Route 53 primary active, Postgres WAL lag 4s (<= 60s SLA)."
+    }
+  ],
+  "merkleBatches": [
+    {
+      "batchId": "batch-tricloud-0001",
+      "tenantId": "cnb-waxahachie",
+      "collectedAtUtc": "2026-11-17T17:28:07.443Z",
+      "leafHashes": [
+        "ec67123e774cde218fbff8c5d877f119b6e324a9b2ff9c97386e631455f8f26f",
+        "88418ec84972ad47346afe56d410cf2f54d4fc06446e9e8950270a7a993bdd1d",
+        "0df92cb103c9ef5b36f82a586f5579cf6b9b1bcc533b28507416989a496c9a63"
+      ],
+      "merkleRootSha256": "ad319aa4f4f4c7afb237d00ee73d7e624d4df54f46fbbc352c0694c2d013abec",
+      "wormVaultUrn": "arn:aws:s3:::securebase-worm-evidence-us-east-1",
+      "retentionMode": "COMPLIANCE",
+      "retentionDays": 2555,
+      "supabaseRlsSynced": true,
+      "postureStatus": "COMPLIANT",
+      "violations": []
+    }
+  ],
+  "driftOverrides": {},
+  "guardrailHistory": [
+    {
+      "checkId": "grd-mwkz2dte",
+      "timestampUtc": "2026-11-17T17:34:26.162Z",
+      "cloud": "AWS",
+      "guardrailMechanism": "AWS Organizations SCP (SecureBase-Universal-ZeroTrust-SCP)",
+      "resourceName": "bad_s3_bucket",
+      "decision": "DENIED_BY_GUARDRAIL",
+      "violatedPolicies": [
+        "Zero Static Credentials (OIDC/WIF Mandatory)",
+        "Deny Public Storage / Ingress Exposure",
+        "Require Customer-Managed Encryption Key (CMEK)",
+        "Deny Legacy TLS (1.2 < 1.3)"
+      ],
+      "summary": "AWS Organizations SCP (SecureBase-Universal-ZeroTrust-SCP) blocked deployment (4 violation(s))."
+    },
+    {
+      "checkId": "grd-mwkyu9lg",
+      "timestampUtc": "2026-11-17T17:28:07.444Z",
+      "cloud": "AWS",
+      "guardrailMechanism": "AWS Organizations SCP (SecureBase-Universal-ZeroTrust-SCP)",
+      "resourceName": "bad_s3_bucket",
+      "decision": "DENIED_BY_GUARDRAIL",
+      "violatedPolicies": [
+        "Zero Static Credentials (OIDC/WIF Mandatory)",
+        "Deny Public Storage / Ingress Exposure",
+        "Require Customer-Managed Encryption Key (CMEK)",
+        "Deny Legacy TLS (1.2 < 1.3)"
+      ],
+      "summary": "AWS Organizations SCP (SecureBase-Universal-ZeroTrust-SCP) blocked deployment (4 violation(s))."
+    }
+  ],
+  "lastUpdatedUtc": "2026-11-17T17:34:26.162Z"
+}

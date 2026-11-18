@@ -8,9 +8,14 @@
   NPM_FLAGS = "--legacy-peer-deps"
   VITE_ENABLE_MOCK_API = "true"
   VITE_DEMO_MODE = "true"
-  VITE_USE_SUPABASE = "true"
-  VITE_SUPABASE_URL = "https://dvmuaivsbtrykqsnrtnv.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bXVhaXZzYnRyeWtxc25ydG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4NTgwMDAsImV4cCI6MjA1NDQzNDAwMH0"
+  VITE_API_BASE_URL = ""
+
+# API GATEWAY PROXY FOR TELEMETRY BEACON (NO NETLIFY FUNCTIONS)
+[[redirects]]
+  from = "/api/v1/telemetry/beacon"
+  to = "https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com/prod/telemetry/beacon"
+  status = 200
+  force = true
 
 # MARKETING / PRICING REDIRECTS
 [[redirects]]
@@ -25,13 +30,13 @@
   status = 301
   force = true
 
-# SINGLE PAGE APPLICATION (SPA) FALLBACK
+# SINGLE PAGE APPLICATION (SPA) FALLBACK (MUST BE LAST)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# CSP & SECURITY HEADERS (SUPABASE AUTHORIZED)
+# CSP & SECURITY HEADERS (LAMBDA JWT + API GATEWAY AUTHORIZED)
 [[headers]]
   for = "/*"
   [headers.values]
@@ -41,7 +46,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://dvmuaivsbtrykqsnrtnv.supabase.co https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
+      connect-src 'self' https://api.securebase.tximhotep.com https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
       frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
       frame-ancestors 'none';
       base-uri 'self';
@@ -64,7 +69,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://dvmuaivsbtrykqsnrtnv.supabase.co https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
+      connect-src 'self' https://api.securebase.tximhotep.com https://9xyetu7zq3.execute-api.us-east-1.amazonaws.com https://api.stripe.com https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://www.google.com;
       frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
       frame-ancestors 'none';
       form-action 'self' https://checkout.stripe.com;
