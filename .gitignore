@@ -216,3 +216,6 @@ GEMINI.md
 **/.terraform/
 *.tfstate
 *.tfstate.*
+
+# Local sandbox runtime state
+.data/
